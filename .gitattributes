@@ -1,0 +1,12 @@
+# Zeilenenden: im Repository immer LF, Git wandelt sie beim Auschecken passend um
+* text=auto
+
+# Binärdateien nie verändern
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
