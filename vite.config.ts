@@ -12,6 +12,7 @@ export default defineConfig(() => ({
   // damit React-Komponenten wie im echten Fenster gerendert werden können.
   test: {
     environment: "jsdom",
+    setupFiles: ["./src/test-setup.ts"],
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

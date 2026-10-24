@@ -8,4 +8,9 @@ describe("App (Startseite)", () => {
     const ueberschrift = screen.getByRole("heading", { level: 1 });
     expect(ueberschrift.textContent).toBe("Hallo Vault");
   });
+
+  it("räumt nach jedem Test auf, sodass die Überschrift nur einmal vorkommt", () => {
+    render(<App />);
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
 });
