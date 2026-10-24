@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 0 – Fundament
-- Zuletzt aktualisiert: 2026-10-24 22:41
+- Zuletzt aktualisiert: 2026-10-24 22:46
 - Nächster Schritt: Der Nutzer installiert die Microsoft C++ Build Tools (siehe „Offene Probleme“). Danach `npm run tauri build` ausführen, die Pfade von EXE und Installer bestätigen (und in `ANLEITUNG.md`, Abschnitt 4 korrigieren, falls sie abweichen), alle Kriterien im Chat nachweisen und die Etappe mit dem Abschluss-Commit beenden.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -23,6 +23,7 @@ Zusätzlich geprüft (Arbeitsregel 6): `npx tsc --noEmit` meldet keine Fehler. `
 - **Microsoft C++ Build Tools fehlen (blockiert Kriterium 4).** Rust ist installiert (stable, MSVC-Toolchain, cargo 1.99.1), aber ohne den C++-Linker `link.exe` kann weder `npm run tauri build` noch `npm run tauri dev` eine EXE erzeugen (ein Testprogramm scheitert mit „linker `link.exe` not found“). **Zu tun (Nutzer):** „Visual Studio Build Tools 2022“ mit der Arbeitslast „Desktopentwicklung mit C++“ installieren, Schritt für Schritt beschrieben in `ANLEITUNG.md`, Abschnitt 1. Kurzform im Terminal (eine Administrator-Abfrage erscheint):
   `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`
   Danach Terminal bzw. Claude Code neu starten, damit der PATH (inklusive `C:\Users\emre\.cargo\bin`) neu geladen wird.
+  Nachweis (2026-10-24 22:46): `npm run tauri build` scheitert schon bei den ersten Rust-Build-Skripten (`serde`, `typeid`, `thiserror`) mit „linking with `link.exe` failed“. Aus Git Bash heraus wird dabei irrtümlich das `link.exe` von Git (ein Coreutils-Werkzeug für Hardlinks) gefunden, deshalb lautet die Meldung dort „link: extra operand“; in PowerShell lautet sie „linker `link.exe` not found“. Beides hat dieselbe Ursache. Die Rust-Abhängigkeiten sind mit `cargo fetch` bereits heruntergeladen, der erste Build nach der Installation geht dadurch schneller.
 - Die in `ANLEITUNG.md` genannten Pfade von EXE und Installern sind aus den Tauri-Standardnamen abgeleitet und müssen nach dem ersten erfolgreichen Build bestätigt werden.
 
 ## Entscheidungen

@@ -122,6 +122,7 @@ aber alles, was Tauri braucht (zum Beispiel Dateizugriff), funktioniert dort nic
 ## Häufige Probleme
 
 - **`linker 'link.exe' not found`** beim Bauen: Die Microsoft C++ Build Tools fehlen, siehe Abschnitt 1.
+- **`link: extra operand`** und **`Try 'link --help'`** beim Bauen aus Git Bash: dieselbe Ursache. Git Bash bringt ein eigenes `link.exe` mit (ein Werkzeug für Hardlinks), das Rust irrtümlich benutzt, solange die Build Tools fehlen.
 - **`cargo: command not found`** oder **`'cargo' is not recognized`**: Rust ist nicht installiert oder das
   Terminal wurde nach der Installation nicht neu gestartet.
 - **`npm install` warnt mit `EBADENGINE`** oder **`npm test` bricht mit `Promise.withResolvers is not a function`
