@@ -1,22 +1,18 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 0 – Fundament ist abgeschlossen; als Nächstes kommt Etappe 1 – Vault und Seiten
-- Zuletzt aktualisiert: 2026-10-24 23:36
-- Nächster Schritt: Etappe 1 beginnen. Zuerst ihre Fertig-Kriterien aus CLAUDE.md wörtlich im Chat auflisten und hier als Checkliste übernehmen, dann mit dem ersten Kriterium starten (Vault-Ordner per Dialog auswählen, zuletzt geöffneten Vault merken).
+- Etappe: 1 – Vault und Seiten
+- Zuletzt aktualisiert: 2026-10-24 23:59
+- Nächster Schritt: Abhängigkeiten installieren (BlockNote, remark, Tauri-Dialog-Plugin, notify), Beispiel-Vault anlegen, Schnittstellen festlegen; dann Vault-Auswahl per Dialog und Merken des zuletzt geöffneten Vaults umsetzen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-Etappe 0 ist abgeschlossen, alle Kriterien sind erfüllt. Die Checkliste für Etappe 1 wird zu Beginn der nächsten Sitzung angelegt.
-
-- [x] Ein Tauri-2-Projekt mit React, TypeScript und Vite liegt im Projektordner, diese `CLAUDE.md` ist erhalten.
-- [x] Die Startseite der App zeigt den Text „Hallo Vault“. (`src/App.tsx`; geprüft durch `src/App.test.tsx` und den Frontend-Build `npm run build`)
-- [x] Vitest ist eingerichtet, mindestens ein Beispieltest läuft mit `npm test` grün. (Vitest 5.0.5 mit jsdom, 1 Testdatei, 2 Tests)
-- [x] `npm run tauri build` endet ohne Fehler, der Pfad der erzeugten EXE bzw. des Installers ist genannt. Nachweis vom 2026-10-24: Rust-Kompilierung in 2 min 52 s, Exit-Code 0, erzeugt wurden `src-tauri\target\release\localprojekt.exe` (4,2 MB), `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` (2,0 MB) und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe` (1,4 MB).
-- [x] Git ist eingerichtet, die `.gitignore` deckt u. a. `node_modules`, `target` und `dist` ab, `git status` ist nach dem Commit sauber.
-- [x] Eine `ANLEITUNG.md` erklärt auf Deutsch: Voraussetzungen, App im Entwicklungsmodus starten (`npm run tauri dev`), EXE bauen, Tests ausführen.
-- [x] `FORTSCHRITT.md` ist nach der Vorlage angelegt und auf dem aktuellen Stand.
-
-Zusätzlich geprüft (Arbeitsregel 6): `npm test` grün (1 Datei, 2 Tests), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler.
+- [ ] Der Vault-Ordner lässt sich per Dialog auswählen, der zuletzt geöffnete Vault öffnet sich beim nächsten Start automatisch.
+- [ ] Die Sidebar zeigt den Ordnerbaum mit Ordnern und `.md`-Dateien, versteckte Ordner sind ausgeblendet.
+- [ ] Seiten und Ordner lassen sich anlegen, umbenennen und löschen (Löschen nur nach Bestätigung).
+- [ ] Eine Seite öffnet sich im Block-Editor und wird kurz nach der letzten Eingabe automatisch als Markdown gespeichert.
+- [ ] Wird eine Datei außerhalb der App geändert, lädt die App sie neu. Wird sie gelöscht, verschwindet sie aus der Sidebar.
+- [ ] Roundtrip-Tests: Markdown → Editor-Format → Markdown liefert für Überschriften, Absätze, fett/kursiv, Listen, Checklisten, Zitate, Code-Blöcke, Links und Bilder denselben Inhalt.
+- [ ] Frontmatter bleibt beim Bearbeiten im Editor unverändert erhalten (Test vorhanden).
 
 ## Abgeschlossene Etappen
 - Etappe 0 – Fundament (abgeschlossen am 2026-10-24)
