@@ -8,7 +8,7 @@
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
 - [x] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
-- [ ] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
+- [x] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
 - [x] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
 - [ ] Der Windows-Build funktioniert weiterhin.
 
