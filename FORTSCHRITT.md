@@ -9,7 +9,7 @@
 - [x] Volltextsuche über alle Seiten des Vaults.
 - [x] Schnellsuche mit Strg+P zum Öffnen von Seiten.
 - [x] Vorlagen: Seiten aus dem Ordner `Vorlagen/` lassen sich als Grundlage für neue Seiten nutzen.
-- [ ] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
+- [x] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
 - [ ] Der Suchindex liegt im App-Datenordner, nicht im Vault.
 - [x] Tests für Suche und Backlinks.
 
