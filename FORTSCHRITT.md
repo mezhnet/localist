@@ -1,12 +1,20 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 12 – Baustein-Bibliothek: Grundbausteine ist abgeschlossen. Als Nächstes kommt Etappe 13 – Lernen, Diagramme und eigene Bausteine.
-- Zuletzt aktualisiert: 2026-10-25 20:36
-- Nächster Schritt: Etappe 13 beginnen (Fertig-Kriterien aus `CLAUDE.md` übernehmen; Karteikarte, Kartenstapel, Quiz, Diagramm in `src/bausteine/`).
+- Etappe: 13 – Lernen, Diagramme und eigene Bausteine
+- Zuletzt aktualisiert: 2026-10-25 20:40
+- Nächster Schritt: Lernlogik (Kartenstapel, Quiz) und Diagramm-Daten als testbare Funktionen, dann Karteikarte, Kartenstapel, Quiz und Diagramm in `src/bausteine/`.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- Etappe 13 ist noch nicht begonnen.
+- [ ] Karteikarte: umdrehen per Klick, Fingertipp oder Leertaste.
+- [ ] Kartenstapel: Lernmodus mit einer Karte nach der anderen und den Knöpfen „Gewusst“ und „Nochmal“. Nicht gewusste Karten kommen erneut dran, am Ende gibt es eine Auswertung.
+- [ ] Quiz: Multiple-Choice-Fragen mit sofortiger Rückmeldung und Punktzahl.
+- [ ] Diagramm: liest die Daten aus der enthaltenen `<table>`, wird als SVG gezeichnet, passt sich an hell und dunkel an und braucht keine Online-Bibliothek. Das Formular enthält einen Daten-Editor.
+- [ ] Alle vier nutzen das Markup aus der Tabelle im Speicherformat und haben Formulare zum Bearbeiten ohne Code.
+- [ ] Eigene Bausteine („Code-Speicher“): Markierten Code als eigenen Baustein speichern (Name und Beschreibung), siehe Speicherformat. Eigene Bausteine erscheinen in Werkzeugleiste und „/“-Menü. Ein Bereich „Bausteine“ in der Sidebar zeigt die ganze Bibliothek (eingebaute und eigene) mit Vorschau. Eigene Bausteine lassen sich bearbeiten, umbenennen und löschen.
+- [ ] Hilfe-Ansicht in der App: alle eingebauten Bausteine mit kurzer Erklärung und Beispielcode zum Kopieren.
+- [ ] Die Beispielseite `Bausteine.html` enthält auch die neuen Bausteine.
+- [ ] Tests für die Lernlogik (Reihenfolge, Wiederholung, Auswertung), die Diagramm-Daten aus Tabellen und das Speichern und Laden eigener Bausteine.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
