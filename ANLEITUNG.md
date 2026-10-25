@@ -1,7 +1,23 @@
-# Anleitung
+# Anleitung für Localist 1.0.0
 
-Diese Anleitung erklärt, wie du die App auf deinem Windows-PC startest, testest und als EXE baust.
-Alle Befehle gibst du in einem Terminal (PowerShell oder Eingabeaufforderung) **im Projektordner** ein,
+Localist ist ein Notiz- und Projektmanager im Stil von Notion, der alle Seiten als Markdown-Dateien in einem Ordner
+deiner Wahl speichert. Diese Anleitung erklärt, wie du Localist installierst, im Entwicklungsmodus startest, testest
+und selbst baust.
+
+## 0. Localist einfach nur benutzen
+
+Wer nur die fertige App möchte, braucht keine der Entwicklerwerkzeuge unten:
+
+1. `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe` doppelklicken (oder die MSI-Datei daneben).
+2. Den Schritten des deutschen Installationsassistenten folgen. Danach steht **Localist** im Startmenü.
+3. Beim ersten Start einen Vault-Ordner wählen (siehe Abschnitt 8).
+
+Deinstallieren geht wie bei jedem Programm über Windows-Einstellungen → Apps. Deine Vault-Ordner bleiben dabei
+unangetastet.
+
+## Für Entwicklerinnen und Entwickler
+
+Alle folgenden Befehle gibst du in einem Terminal (PowerShell oder Eingabeaufforderung) **im Projektordner** ein,
 also in `C:\Users\emre\Documents\eigen_apps\LocalProjekt`.
 
 ## 1. Voraussetzungen
@@ -84,12 +100,16 @@ npm run tauri build
 Der Befehl prüft zuerst die TypeScript-Typen, baut dann die Oberfläche und kompiliert zum Schluss die
 Rust-Hülle im Release-Modus. Ergebnis (Pfade relativ zum Projektordner):
 
-- Programm zum direkten Starten: `src-tauri\target\release\localprojekt.exe`
-- Installer (MSI): `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi`
-- Installer (Setup-EXE): `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`
+- Programm zum direkten Starten: `src-tauri\target\release\localist.exe`
+- Installer (MSI, deutsch): `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi`
+- Installer (Setup-EXE, deutsch): `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe`
 
 Beim allerersten Build lädt Tauri die Installer-Werkzeuge (WiX und NSIS) einmalig herunter, dafür ist eine
 Internetverbindung nötig.
+
+**Version und Icon ändern:** Die Versionsnummer steht in `package.json`, `src-tauri/Cargo.toml` und
+`src-tauri/tauri.conf.json` (alle drei gleich halten). Das App-Icon entsteht aus `app-icon.svg`. Nach einer Änderung
+erzeugt `npx tauri icon app-icon.svg` alle Größen in `src-tauri/icons/` neu.
 
 ## 5. Tests ausführen
 
@@ -136,7 +156,7 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
    Die App merkt sich den Ordner und öffnet ihn beim nächsten Start automatisch. „Wechseln“ oben in der Sidebar
    öffnet einen anderen Ordner.
 2. **Sidebar:** Ein Klick auf einen Ordner klappt ihn auf, ein Klick auf eine Seite öffnet sie. Versteckte Ordner wie
-   `.meinapp` und Dateien, die keine `.md`-Dateien sind, werden nicht angezeigt.
+   `.localist` und Dateien, die keine `.md`-Dateien sind, werden nicht angezeigt.
 3. **Anlegen:** „+ Neue Seite“ bzw. „+ Neuer Ordner“ oben, das „+“ neben einem Ordner oder ein Rechtsklick. Eine neue
    Seite bekommt sofort eine eindeutige `id` im Frontmatter. Den Titel tippst du gleich oben auf der Seite ein.
 4. **Umbenennen:** großen Seitentitel ändern, in der Sidebar `F2` drücken oder Rechtsklick → „Umbenennen“.
@@ -172,14 +192,41 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
     stehen rechts unter „Ohne Datum“ und lassen sich von dort in den Kalender ziehen.
 17. **Suchen:** `Strg+P` öffnet die Schnellsuche nach Seitentiteln (auch Abkürzungen wie „wsr“ für „Website-Relaunch“).
     `Strg+Umschalt+F` durchsucht den Text aller Seiten. Mit ↑/↓ auswählen, Enter öffnet, Esc schließt.
-    Der Suchindex liegt im Cache-Ordner der App (`%LOCALAPPDATA%\de.localprojekt.desktop\suchindex\`), nicht im Vault.
+    Der Suchindex liegt im Cache-Ordner der App (`%LOCALAPPDATA%\de.localist.desktop\suchindex\`), nicht im Vault.
     Du kannst ihn jederzeit löschen, er wird automatisch neu aufgebaut.
 18. **Vorlagen:** Jede Seite im Ordner `Vorlagen/` ist eine Vorlage. „+ Seite aus Vorlage“ (oder Rechtsklick auf einen
     Ordner) legt eine neue Seite mit Eigenschaften und Inhalt der Vorlage an. `{{title}}`, `{{date}}` und `{{time}}`
     werden dabei ersetzt.
 19. **Backlinks:** Unten auf jeder Seite steht unter „Verlinkt von“, welche Seiten mit `[[…]]` auf sie verweisen.
 
+## Was Localist wo speichert
+
+| Was | Wo |
+|---|---|
+| Deine Seiten, Eigenschaften, Datenbanken (`_ansichten.yaml`) | im Vault-Ordner, als normale Dateien |
+| Einstellungen des Vaults (z. B. Eigenschaftstypen) | `<Vault>\.localist\settings.json` |
+| Zuletzt geöffneter Vault | `%APPDATA%\de.localist.desktop\zustand.json` |
+| Suchindex (jederzeit löschbar) | `%LOCALAPPDATA%\de.localist.desktop\suchindex\` |
+| Hell/Dunkel, zuletzt gewählte Ansicht einer Datenbank | im Browser-Speicher der App (WebView2) |
+
+Vaults aus der Vorabversion mit dem Einstellungsordner `.meinapp` werden beim ersten Öffnen automatisch übernommen:
+Localist benennt den Ordner in `.localist` um. Auch der zuletzt geöffnete Vault wird aus der Vorabversion übernommen.
+
 ## Häufige Probleme
+
+### In der App
+
+- **„Der Vault-Ordner ist nicht erreichbar“**: Der Ordner wurde verschoben, umbenannt oder das Laufwerk (z. B. ein
+  USB-Stick) ist nicht angeschlossen. Sobald er wieder da ist, lädt Localist ihn von selbst. Sonst „Anderen Vault
+  öffnen …“ wählen.
+- **„Die Datei … ist keine gültige UTF-8-Textdatei“**: Die Datei endet auf `.md`, ist aber keine Textdatei (oder in
+  einer alten Zeichenkodierung gespeichert). In einem Texteditor als UTF-8 speichern.
+- **„Speichern fehlgeschlagen: …“**: Meist ist die Datei schreibgeschützt oder ein anderes Programm sperrt sie.
+  Die Eingaben bleiben im Editor erhalten und werden bei der nächsten Änderung erneut gespeichert.
+- **„Da ist etwas schiefgegangen“**: Ein unerwarteter Fehler in der Oberfläche. „App neu laden“ klicken. Gespeicherte
+  Seiten sind davon nicht betroffen.
+
+### Beim Entwickeln und Bauen
 
 - **`linker 'link.exe' not found`** beim Bauen: Die Microsoft C++ Build Tools fehlen, siehe Abschnitt 1.
 - **`link: extra operand`** und **`Try 'link --help'`** beim Bauen aus Git Bash: dieselbe Ursache. Git Bash bringt ein eigenes `link.exe` mit (ein Werkzeug für Hardlinks), das Rust irrtümlich benutzt, solange die Build Tools fehlen.
