@@ -1,12 +1,18 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 11 – HTML-Seiten: Code-Editor ist abgeschlossen. Als Nächstes kommt Etappe 12 – Baustein-Bibliothek: Grundbausteine.
-- Zuletzt aktualisiert: 2026-10-25 19:26
-- Nächster Schritt: Etappe 12 beginnen (Fertig-Kriterien aus `CLAUDE.md` übernehmen; `localist.css`/`localist.js` beim Build aus `src/bausteine/` und `tokens.css` erzeugen).
+- Etappe: 12 – Baustein-Bibliothek: Grundbausteine
+- Zuletzt aktualisiert: 2026-10-25 19:40
+- Nächster Schritt: `localist.css`/`localist.js` beim Build aus `src/bausteine/` und `tokens.css` erzeugen, beim Öffnen eines Vaults nach `.localist/bausteine/` schreiben, Schema liefert die gebündelte Fassung.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- Etappe 12 ist noch nicht begonnen.
+- [ ] `localist.css` und `localist.js` entstehen beim Build aus dem Quellcode der App (`src/bausteine/` und `tokens.css`). Beim Öffnen eines Vaults werden sie nach `.localist/bausteine/` geschrieben, wenn sie fehlen oder Version bzw. Inhalt abweichen (Versionsnummer in der Datei). Das Schema `localist-seite` liefert dieselbe gebündelte Fassung aus.
+- [ ] Grundbausteine mit dem Markup aus der Tabelle im Speicherformat: Callout, Toggle, Tabelle, Checkliste, Spalten, Bild, Trennlinie, Code-Block und Seitenlink.
+- [ ] Werkzeugleiste über dem Code-Editor und „/“-Menü im Code-Editor: Ein Klick fügt den Baustein sauber eingerückt an der Cursorposition ein. Die Autovervollständigung kennt alle Bausteine.
+- [ ] Bearbeiten ohne Code: In „Lesen“ und „Geteilt“ zeigt jeder Baustein beim Überfahren ein Stift-Symbol. Es öffnet ein Formular, bei Tabellen einen Tabellen-Editor zum Hinzufügen und Entfernen von Zeilen und Spalten. Speichern ändert nur diesen Baustein im Code.
+- [ ] Häkchen in Checklisten lassen sich in „Lesen“ setzen und werden in der Datei gespeichert.
+- [ ] Die Beispielseite `beispiel-vault/Lernen/Bausteine.html` zeigt alle Bausteine. Per Doppelklick in Edge oder Chrome geöffnet sieht der Inhalt aus wie in „Lesen“ und ist interaktiv (Screenshots beider Fälle in `docs/screenshots/etappe-12/`).
+- [ ] Tests: Einfügen erzeugt den erwarteten Code, Formulare ändern nur den betroffenen Baustein, der Text jedes Bausteins steht ohne Skript lesbar in der Datei.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
