@@ -7,7 +7,7 @@
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Kanban-Ansicht einer Datenbank, gruppiert nach einer Status- oder Auswahl-Eigenschaft.
-- [ ] Eine Karte per Drag & Drop in eine andere Spalte zu ziehen ändert den Wert in der Datei.
+- [x] Eine Karte per Drag & Drop in eine andere Spalte zu ziehen ändert den Wert in der Datei.
 - [ ] Neue Karten lassen sich direkt in einer Spalte anlegen, ein Klick auf eine Karte öffnet die Seite.
 - [ ] Mehrere Ansichten pro Datenbank (z. B. Tabelle und Kanban), umschaltbar per Reiter, gespeichert in `_ansichten.yaml`.
 - [x] Tests für die Kanban-Logik (Gruppieren, Wert ändern).
