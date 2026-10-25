@@ -1,0 +1,24 @@
+# Datenbank-Einstellungen dieses Ordners (Eigenschaftstypen und Ansichten).
+# Jede .md-Datei in diesem Ordner ist ein Eintrag.
+eigenschaften:
+  status:
+    typ: status
+    optionen:
+      - Geplant
+      - In Arbeit
+      - Erledigt
+  fällig:
+    typ: datum
+  priorität:
+    typ: auswahl
+    optionen:
+      - niedrig
+      - mittel
+      - hoch
+ansichten:
+  - name: Tabelle
+    typ: tabelle
+    sortierung:
+      - eigenschaft: fällig
+        richtung: aufsteigend
+    filter: []

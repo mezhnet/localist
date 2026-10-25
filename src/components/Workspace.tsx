@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewriteLinks, type PageRef } from "../lib/links";
+import { createDatabaseConfig, VIEWS_FILE } from "../lib/database";
 import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
+import { useSchemas } from "../lib/useSchemas";
 import {
   confirmAction,
   createFolder,
@@ -19,6 +21,7 @@ import {
   type TreeNode,
   type VaultInfo,
 } from "../lib/vault-api";
+import { DatabaseView, loadRows } from "./DatabaseView";
 import { PageView } from "./PageView";
 import { Sidebar } from "./Sidebar";
 
@@ -47,11 +50,19 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   const [externalVersion, setExternalVersion] = useState(0);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  /** Geöffnete Datenbank (Ordnerpfad); dann ist keine Seite offen. */
+  const [database, setDatabase] = useState<string | null>(null);
+  const [databaseVersion, setDatabaseVersion] = useState(0);
   const saverRef = useRef<AutoSaver | null>(null);
   const pageRef = useRef(page);
   pageRef.current = page;
+  const databaseRef = useRef(database);
+  databaseRef.current = database;
 
   const showError = useCallback((text: string) => setNotice({ kind: "error", text }), []);
+  const schemas = useSchemas(tree, showError);
+  const reloadConfigRef = useRef(schemas.reloadConfig);
+  reloadConfigRef.current = schemas.reloadConfig;
 
   // Hinweise verschwinden nach einigen Sekunden von selbst, Fehler bleiben bis zum Schließen stehen.
   useEffect(() => {
@@ -81,6 +92,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
         closePage();
         setNotice({ kind: "info", text: `„${pageTitle(current.path)}“ wurde außerhalb der App gelöscht oder verschoben.` });
       }
+      const db = databaseRef.current;
+      if (db && !findNode(next, db)?.database) setDatabase(null);
     } catch (error) {
       showError(errorMessage(error));
     }
@@ -104,6 +117,13 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       const touchesOpenPage = openPath !== undefined && (change.path === openPath || change.newPath === openPath);
       if ((touchesOpenPage && change.kind !== "removed") || change.kind === "rescan") {
         setExternalVersion((version) => version + 1);
+      }
+      for (const path of [change.path, change.newPath]) {
+        if (path?.endsWith(`/${VIEWS_FILE}`)) void reloadConfigRef.current(parentDir(path));
+      }
+      const db = databaseRef.current;
+      if (db && [change.path, change.newPath].some((path) => path && isInside(path, db))) {
+        setDatabaseVersion((version) => version + 1);
       }
       clearTimeout(timer);
       timer = setTimeout(() => void refreshTree(), 150);
@@ -139,6 +159,41 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     await saverRef.current?.flush();
     pageRef.current = { key: nextPageKey++, path, isNew };
     setPage(pageRef.current);
+    setDatabase(null);
+  };
+
+  const openDatabase = async (folder: string) => {
+    await saverRef.current?.flush();
+    pageRef.current = null;
+    setPage(null);
+    setDatabase(folder);
+  };
+
+  /** Macht einen Ordner zur Datenbank: legt _ansichten.yaml mit den erkannten Eigenschaften an. */
+  const convertToDatabase = async (folder: string) => {
+    try {
+      const pages = (findNode(tree, folder)?.children ?? []).filter((node) => node.kind === "page").map((node) => node.path);
+      const config = createDatabaseConfig(await loadRows(pages));
+      await schemas.saveConfig(folder, config);
+      await refreshTree();
+      await openDatabase(folder);
+      const count = Object.keys(config.eigenschaften).length;
+      setNotice({ kind: "info", text: `„${pageTitle(folder)}“ ist jetzt eine Datenbank mit ${count} ${count === 1 ? "Eigenschaft" : "Eigenschaften"}.` });
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
+
+  const createDatabaseRow = async (folder: string): Promise<string | null> => {
+    try {
+      const title = uniqueName(childrenOf(tree, folder), "Unbenannt");
+      const path = await createPage(folder, title);
+      await refreshTree();
+      return path;
+    } catch (error) {
+      showError(errorMessage(error));
+      return null;
+    }
   };
 
   const handleCreatePage = async (dir: string) => {
@@ -171,6 +226,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       const current = pageRef.current;
       const newPath = await renameEntry(node.path, newName);
       if (current && isInside(current.path, node.path)) setPagePath(movePath(current.path, node.path, newPath));
+      const db = databaseRef.current;
+      if (db && isInside(db, node.path)) setDatabase(movePath(db, node.path, newPath));
 
       const moved = new Map<string, string>();
       for (const page of oldPages) {
@@ -280,7 +337,10 @@ export function Workspace({ vault, onSwitchVault }: Props) {
         openPath={page?.path ?? null}
         renamingPath={renamingPath}
         onRenamingDone={() => setRenamingPath(null)}
+        openDatabase={database}
         onOpen={(path) => void openPage(path)}
+        onOpenDatabase={(path) => void openDatabase(path)}
+        onConvertToDatabase={(path) => void convertToDatabase(path)}
         onCreatePage={(dir) => void handleCreatePage(dir)}
         onCreateFolder={(dir) => void handleCreateFolder(dir)}
         onRename={(node, newName) => void rename(node, newName)}
@@ -299,7 +359,26 @@ export function Workspace({ vault, onSwitchVault }: Props) {
             </button>
           </div>
         )}
-        {page ? (
+        {database && schemas.configs[database] ? (
+          <DatabaseView
+            key={database}
+            folder={database}
+            config={schemas.configs[database]}
+            pagePaths={(findNode(tree, database)?.children ?? []).filter((node) => node.kind === "page").map((node) => node.path)}
+            version={databaseVersion}
+            onSaveConfig={(config) => void schemas.saveConfig(database, config)}
+            onOpenPage={(path) => void openPage(path)}
+            onCreateRow={() => createDatabaseRow(database)}
+            onRenamePage={(path, title) => {
+              const node = findNode(tree, path);
+              return node ? rename(node, title) : Promise.resolve(false);
+            }}
+            beforeWrite={async () => {
+              await saverRef.current?.flush();
+            }}
+            onError={showError}
+          />
+        ) : page ? (
           <WikiLinkContext.Provider value={linkActions}>
             <PageView
               key={page.key}
@@ -309,6 +388,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               saverRef={saverRef}
               onRename={renameOpenPage}
               onError={showError}
+              propertySchema={schemas.schemaForPage(page.path)}
+              onPropertyType={(name, type) => void schemas.setTypeForPage(page.path, name, type)}
             />
           </WikiLinkContext.Provider>
         ) : (

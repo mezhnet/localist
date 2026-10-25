@@ -133,6 +133,96 @@ describe("Sidebar", () => {
   });
 });
 
+describe("Eigenschaften und Datenbanken", () => {
+  const commitInput = (input: HTMLElement, value: string) => {
+    fireEvent.change(input, { target: { value } });
+    fireEvent.blur(input);
+  };
+
+  it("Eigenschaften-Leiste: Werte ändern, Eigenschaft hinzufügen, unbekannte Felder bleiben erhalten", async () => {
+    vault().externalWrite(
+      "Notizen/Ideen.md",
+      "---\nid: 42\nunbekannt: bleibt # Kommentar\nerledigt: false\n---\n# Ideen\n",
+    );
+    await openVaultFromStart();
+    await openPage("Notizen", "Ideen");
+    const checkbox = await screen.findByRole("checkbox", { name: "erledigt" });
+    fireEvent.click(checkbox);
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toBe("---\nid: 42\nunbekannt: bleibt # Kommentar\nerledigt: true\n---\n# Ideen\n"));
+
+    // Neue Eigenschaft vom Typ Datum: im Frontmatter als YYYY-MM-DD
+    fireEvent.click(screen.getByRole("button", { name: "+ Eigenschaft hinzufügen" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Name der Eigenschaft" }), { target: { value: "fällig" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Typ der neuen Eigenschaft" }), { target: { value: "datum" } });
+    fireEvent.click(screen.getByRole("button", { name: "Hinzufügen" }));
+    const date = await screen.findByLabelText("fällig");
+    fireEvent.change(date, { target: { value: "2026-12-24" } });
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toContain("erledigt: true\nfällig: 2026-12-24\n---\n"));
+    expect(vault().files.get(".meinapp/settings.json")).toContain('"fällig": "datum"');
+
+    // Mehrfachauswahl als YAML-Liste
+    fireEvent.click(screen.getByRole("button", { name: "+ Eigenschaft hinzufügen" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Name der Eigenschaft" }), { target: { value: "tags" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Typ der neuen Eigenschaft" }), { target: { value: "mehrfachauswahl" } });
+    fireEvent.click(screen.getByRole("button", { name: "Hinzufügen" }));
+    const tags = await screen.findByRole("combobox", { name: "tags" });
+    fireEvent.change(tags, { target: { value: "Arbeit" } });
+    fireEvent.keyDown(tags, { key: "Enter" });
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toContain("tags:\n  - Arbeit\n---\n# Ideen\n"));
+    expect(vault().files.get("Notizen/Ideen.md")).toContain("unbekannt: bleibt # Kommentar\n");
+  });
+
+  it("wandelt einen Ordner in eine Datenbank um und zeigt eine Zeile pro Seite", async () => {
+    vault().externalWrite("Notizen/Ideen.md", "---\nid: 1\nstatus: Offen\naufwand: 3\n---\n");
+    vault().externalWrite("Notizen/Formatierung.md", "---\nid: 2\nstatus: Fertig\n---\n");
+    await openVaultFromStart();
+    fireEvent.contextMenu(await screen.findByText("Notizen"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "In Datenbank umwandeln" }));
+    await waitFor(() => expect(vault().files.has("Notizen/_ansichten.yaml")).toBe(true));
+    const yaml = vault().files.get("Notizen/_ansichten.yaml")!;
+    expect(yaml).toContain("eigenschaften:\n  status:\n    typ: status\n");
+    expect(yaml).toContain("  aufwand:\n    typ: zahl\n");
+    expect(yaml).toContain("ansichten:\n  - name: Tabelle\n    typ: tabelle\n");
+
+    const table = await screen.findByRole("table");
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(3); // Kopfzeile + 2 Seiten
+    expect(within(table).getAllByRole("columnheader").map((th) => th.textContent?.trim())).toEqual(["Aa Name", "◐ status", "# aufwand", "+"]);
+  });
+
+  it("Tabelle: Zellen bearbeiten, sortieren und filtern (gespeichert in _ansichten.yaml), neue Zeile mit id", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await screen.findByText("Projekte"));
+    const table = await screen.findByRole("table");
+    await within(table).findByDisplayValue("Website-Relaunch");
+    // Sortierung aus der Datei: fällig aufsteigend → Website (2026) vor Umzug (2027)
+    const names = () => within(table).queryAllByRole("textbox", { name: /^Name von/ }).map((input) => (input as HTMLInputElement).value);
+    expect(names()).toEqual(["Website-Relaunch", "Umzug"]);
+
+    // Zelle bearbeiten schreibt ins Frontmatter der Seite
+    commitInput(within(table).getByRole("combobox", { name: "priorität von „Umzug“" }), "hoch");
+    await waitFor(() => expect(vault().files.get("Projekte/Umzug.md")).toContain("fällig: 2027-03-01\npriorität: hoch\n---\n"));
+
+    // Absteigend sortieren über das Spaltenmenü
+    fireEvent.click(within(table).getByRole("button", { name: /fällig/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Absteigend sortieren" }));
+    await waitFor(() => expect(names()).toEqual(["Umzug", "Website-Relaunch"]));
+    expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("sortierung:\n      - eigenschaft: fällig\n        richtung: absteigend\n");
+
+    // Filter: status ist "In Arbeit"
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(screen.getByRole("button", { name: "+ Filter hinzufügen" }));
+    commitInput(await screen.findByRole("combobox", { name: "Filterwert" }), "In Arbeit");
+    await waitFor(() => expect(names()).toEqual(["Website-Relaunch"]));
+    expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("filter:\n      - eigenschaft: status\n        operator: ist\n        wert: In Arbeit\n");
+
+    // Neue Zeile legt eine .md-Datei mit id an
+    fireEvent.click(screen.getByRole("button", { name: "Filter (1)" }));
+    fireEvent.click(screen.getByRole("button", { name: "+ Neu" }));
+    await waitFor(() => expect(vault().files.get("Projekte/Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\n---\n$/));
+  });
+});
+
 describe("Seiten im Editor", () => {
   it("öffnet eine Seite im Block-Editor", async () => {
     await openVaultFromStart();

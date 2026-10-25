@@ -19,6 +19,8 @@ export interface TreeNode {
   path: string;
   kind: TreeNodeKind;
   children?: TreeNode[];
+  /** Ordner mit _ansichten.yaml (Datenbank). */
+  database?: boolean;
 }
 
 export type VaultChangeKind = "created" | "modified" | "removed" | "renamed" | "rescan";

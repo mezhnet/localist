@@ -9,8 +9,12 @@ import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-ap
 const ROOT = "beispiel-vault (Browser-Vorschau)";
 const PREFIX = "../../beispiel-vault/";
 
-const pageSeed = import.meta.glob("../../beispiel-vault/**/*.md", { query: "?raw", import: "default", eager: true });
-const assetSeed = import.meta.glob(["../../beispiel-vault/**/*", "!**/*.md"], { query: "?url", import: "default", eager: true });
+const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispiel-vault/**/*.yaml"], {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const assetSeed = import.meta.glob(["../../beispiel-vault/**/*", "!**/*.md", "!**/*.yaml"], { query: "?url", import: "default", eager: true });
 
 interface DevVault {
   files: Map<string, string>;
@@ -69,11 +73,12 @@ export function installDevBackend(): void {
     const nodes: TreeNode[] = [];
     for (const folder of folders) {
       if (parentOf(folder) === dir && !hidden(folder)) {
-        nodes.push({ name: nameOf(folder), path: folder, kind: "folder", children: listDir(folder) });
+        const database = files.has(`${folder}/_ansichten.yaml`);
+        nodes.push({ name: nameOf(folder), path: folder, kind: "folder", children: listDir(folder), ...(database ? { database } : {}) });
       }
     }
     for (const file of files.keys()) {
-      if (parentOf(file) === dir && !hidden(file)) nodes.push({ name: nameOf(file).replace(/\.md$/i, ""), path: file, kind: "page" });
+      if (parentOf(file) === dir && !hidden(file) && /\.md$/i.test(file)) nodes.push({ name: nameOf(file).replace(/\.md$/i, ""), path: file, kind: "page" });
     }
     return nodes;
   };

@@ -12,12 +12,16 @@ export interface SidebarActions {
   onRename: (node: TreeNode, newName: string) => void;
   onDelete: (node: TreeNode) => void;
   onSwitchVault: () => void;
+  onOpenDatabase: (path: string) => void;
+  onConvertToDatabase: (path: string) => void;
 }
 
 interface Props extends SidebarActions {
   vaultName: string;
   tree: TreeNode[];
   openPath: string | null;
+  /** Geöffnete Datenbank (Ordnerpfad) oder null. */
+  openDatabase: string | null;
   /** Eintrag, der gerade umbenannt werden soll (z. B. direkt nach dem Anlegen). */
   renamingPath: string | null;
   onRenamingDone: () => void;
@@ -83,7 +87,7 @@ export function Sidebar(props: Props) {
             <RenameInput node={node} depth={depth} onDone={(name) => finishRename(node, name)} />
           ) : (
             <div
-              className={`tree-row${node.path === openPath ? " active" : ""}`}
+              className={`tree-row${node.path === openPath || node.path === props.openDatabase ? " active" : ""}`}
               style={{ paddingLeft: 8 + depth * 14 }}
               onContextMenu={(event) => openMenu(event, node)}
             >
@@ -91,7 +95,14 @@ export function Sidebar(props: Props) {
                 type="button"
                 className="tree-label"
                 title={node.path}
-                onClick={() => (isFolder ? toggle(node.path) : props.onOpen(node.path))}
+                onClick={() => {
+                  if (!isFolder) props.onOpen(node.path);
+                  else if (node.database) {
+                    // Eine Datenbank öffnet sich als Tabelle und klappt ihre Einträge auf.
+                    setExpanded((previous) => new Set([...previous, node.path]));
+                    props.onOpenDatabase(node.path);
+                  } else toggle(node.path);
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "F2") {
                     event.preventDefault();
@@ -103,7 +114,7 @@ export function Sidebar(props: Props) {
                 }}
               >
                 <span className="tree-icon" aria-hidden="true">
-                  {isFolder ? (isOpen ? "▾" : "▸") : "📄"}
+                  {node.database ? "🗃️" : isFolder ? (isOpen ? "▾" : "▸") : "📄"}
                 </span>
                 <span className="tree-name">{node.name}</span>
               </button>
@@ -173,6 +184,11 @@ export function Sidebar(props: Props) {
           onCreate={(kind) => createIn(menu.node?.path ?? "", kind)}
           onRename={() => menu.node && setRenaming(menu.node.path)}
           onDelete={() => menu.node && props.onDelete(menu.node)}
+          onDatabase={() => {
+            if (!menu.node) return;
+            if (menu.node.database) props.onOpenDatabase(menu.node.path);
+            else props.onConvertToDatabase(menu.node.path);
+          }}
         />
       )}
     </nav>
@@ -231,9 +247,10 @@ interface ContextMenuProps {
   onCreate: (kind: "page" | "folder") => void;
   onRename: () => void;
   onDelete: () => void;
+  onDatabase: () => void;
 }
 
-function ContextMenu({ menu, onClose, onCreate, onRename, onDelete }: ContextMenuProps) {
+function ContextMenu({ menu, onClose, onCreate, onRename, onDelete, onDatabase }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const close = (event: MouseEvent | KeyboardEvent) => {
@@ -266,6 +283,7 @@ function ContextMenu({ menu, onClose, onCreate, onRename, onDelete }: ContextMen
     <div ref={ref} className="context-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
       {canCreate && item("Neue Seite", () => onCreate("page"))}
       {canCreate && item("Neuer Ordner", () => onCreate("folder"))}
+      {menu.node?.kind === "folder" && item(menu.node.database ? "Datenbank öffnen" : "In Datenbank umwandeln", onDatabase)}
       {menu.node && item("Umbenennen", onRename)}
       {menu.node && item("Löschen …", onDelete, true)}
     </div>

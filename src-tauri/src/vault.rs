@@ -8,6 +8,9 @@ use std::path::{Component, Path, PathBuf};
 use std::thread;
 use std::time::Duration;
 
+/// Datei, die einen Ordner zur Datenbank macht.
+pub const VIEWS_FILE: &str = "_ansichten.yaml";
+
 /// Ordner mit den Einstellungen eines Vaults (wie `.obsidian`).
 pub const SETTINGS_DIR: &str = ".meinapp";
 
@@ -26,6 +29,9 @@ pub struct TreeNode {
     pub kind: NodeKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub children: Option<Vec<TreeNode>>,
+    /// Ordner mit `_ansichten.yaml`: eine Datenbank.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub database: bool,
 }
 
 /// Versteckte Einträge (Name beginnt mit ".") erscheinen nicht in der Sidebar.
@@ -126,10 +132,11 @@ fn list_dir(root: &Path, dir: &Path) -> Vec<TreeNode> {
         let Some(rel) = to_rel(root, &path) else { continue };
         if file_type.is_dir() {
             let children = list_dir(root, &path);
-            folders.push(TreeNode { name, path: rel, kind: NodeKind::Folder, children: Some(children) });
+            let database = path.join(VIEWS_FILE).is_file();
+            folders.push(TreeNode { name, path: rel, kind: NodeKind::Folder, children: Some(children), database });
         } else if file_type.is_file() {
             if let Some(title) = page_title(&name) {
-                pages.push(TreeNode { name: title, path: rel, kind: NodeKind::Page, children: None });
+                pages.push(TreeNode { name: title, path: rel, kind: NodeKind::Page, children: None, database: false });
             }
         }
     }
@@ -404,6 +411,8 @@ mod tests {
         assert_eq!(notizen.len(), 1);
         assert_eq!(notizen[0].path, "Notizen/Ideen.md");
         assert_eq!(tree[2].children.as_ref().unwrap()[0].name, "Umzug");
+        assert!(tree[2].database, "Projekte hat _ansichten.yaml und ist eine Datenbank");
+        assert!(!tree[1].database);
     }
 
     #[test]

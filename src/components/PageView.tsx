@@ -7,7 +7,9 @@ import { AutoSaver, errorMessage } from "../lib/autosave";
 import { pageTitle } from "../lib/tree";
 import { importAttachment, pickImage, readPage, resolveAttachment, writePage } from "../lib/vault-api";
 import { parsePage, serializePage, type ParsedPage } from "../markdown";
-import { getFrontmatterField, setFrontmatterField } from "../markdown/frontmatter";
+import { readProperties, setProperty, type PropertyType, type PropertyValue } from "../lib/properties";
+import { getFrontmatterField, replaceFrontmatterEntry, setFrontmatterField } from "../markdown/frontmatter";
+import { PropertiesBar, type PropertySchema } from "./PropertiesBar";
 import { BlockEditor } from "./BlockEditor";
 import { PageHeader } from "./PageHeader";
 
@@ -22,6 +24,10 @@ interface Props {
   saverRef: MutableRefObject<AutoSaver | null>;
   onRename: (newTitle: string) => Promise<boolean>;
   onError: (message: string) => void;
+  /** Typen und Vorschläge für die Eigenschaften-Leiste. */
+  propertySchema: PropertySchema;
+  /** Typ einer Eigenschaft festlegen (in der Datenbank oder den Vault-Einstellungen). */
+  onPropertyType: (name: string, type: PropertyType) => void;
 }
 
 interface Loaded {
@@ -30,7 +36,7 @@ interface Loaded {
   version: number;
 }
 
-export function PageView({ path, isNew = false, externalVersion, saverRef, onRename, onError }: Props) {
+export function PageView({ path, isNew = false, externalVersion, saverRef, onRename, onError, propertySchema, onPropertyType }: Props) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const formatRef = useRef<ParsedPage["format"] | null>(null);
@@ -110,11 +116,17 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
   }, [cover]);
 
   /** Ändert ein Feld im Frontmatter (icon, cover) und speichert sofort. */
-  const setField = (key: string, value: string | null) => {
+  const setField = (key: string, value: string | null) => updateFrontmatter((fm) => setFrontmatterField(fm, key, value));
+
+  /** Eigenschaft setzen. Leeren behält das Feld ("name:"), damit es in der Leiste sichtbar bleibt. */
+  const setPropertyValue = (name: string, value: PropertyValue | null) =>
+    updateFrontmatter((fm) => (value === null ? replaceFrontmatterEntry(fm, name, [`${name}:`]) : setProperty(fm, name, value)));
+
+  const updateFrontmatter = (change: (frontmatter: string | null) => string | null) => {
     const format = formatRef.current;
     const saver = saverRef.current;
     if (!format || !saver || !loaded) return;
-    format.frontmatter = setFrontmatterField(format.frontmatter, key, value);
+    format.frontmatter = change(format.frontmatter);
     setFrontmatter(format.frontmatter);
     const blocks = loaded.page.blocks;
     saver.schedule(() => serializePage(format, editorRef.current ? editorRef.current.document : blocks));
@@ -154,6 +166,21 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
       )}
       <div className="page">
         <PageTitle title={pageTitle(path)} autoFocus={isNew} onRename={onRename} />
+        {loaded && (
+          <PropertiesBar
+            values={readProperties(frontmatter)}
+            schema={propertySchema}
+            onSetValue={setPropertyValue}
+            onSetType={(name, type) => {
+              onPropertyType(name, type);
+              // Neue Eigenschaft: leer anlegen, damit sie gleich in der Leiste erscheint.
+              if (!(name in readProperties(frontmatter))) {
+                updateFrontmatter((fm) => replaceFrontmatterEntry(fm, name, [type === "checkbox" ? `${name}: false` : `${name}:`]));
+              }
+            }}
+            onRemove={(name) => updateFrontmatter((fm) => replaceFrontmatterEntry(fm, name, null))}
+          />
+        )}
         {loaded ? (
           <BlockEditor
             key={loaded.version}
