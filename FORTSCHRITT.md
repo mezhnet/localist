@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 5 – Kalender
-- Zuletzt aktualisiert: 2026-10-25 13:40
-- Nächster Schritt: Datumslogik mit Tests, danach Kalenderansicht (Monat/Woche), Drag & Drop, neuer Eintrag per Klick, Liste „Ohne Datum“.
+- Zuletzt aktualisiert: 2026-10-25 13:50
+- Nächster Schritt: Abschlussprüfung der Etappe 5 (npm test, tsc, tauri build) und Abschluss-Commit.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Kalenderansicht einer Datenbank mit Monats- und Wochenansicht, basierend auf einer Datums-Eigenschaft.
+- [x] Kalenderansicht einer Datenbank mit Monats- und Wochenansicht, basierend auf einer Datums-Eigenschaft.
 - [ ] Einen Eintrag per Drag & Drop zu verschieben ändert das Datum in der Datei.
 - [ ] Ein Klick auf einen Tag legt einen neuen Eintrag mit diesem Datum an.
 - [ ] Einträge ohne Datum erscheinen in einer Liste „Ohne Datum“.
