@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 5 – Kalender
-- Zuletzt aktualisiert: 2026-10-25 13:33
+- Zuletzt aktualisiert: 2026-10-25 13:40
 - Nächster Schritt: Datumslogik mit Tests, danach Kalenderansicht (Monat/Woche), Drag & Drop, neuer Eintrag per Klick, Liste „Ohne Datum“.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -10,7 +10,7 @@
 - [ ] Einen Eintrag per Drag & Drop zu verschieben ändert das Datum in der Datei.
 - [ ] Ein Klick auf einen Tag legt einen neuen Eintrag mit diesem Datum an.
 - [ ] Einträge ohne Datum erscheinen in einer Liste „Ohne Datum“.
-- [ ] Tests für die Datumslogik (Format, Wochen- und Monatsgrenzen).
+- [x] Tests für die Datumslogik (Format, Wochen- und Monatsgrenzen).
 
 ## Abgeschlossene Etappen
 - Etappe 4 – Kanban (abgeschlossen am 2026-10-25). Nachweise: `npm test` 99 von 99 Tests grün (10 Testdateien, dreimal hintereinander stabil), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Reiter Tabelle/Kanban, Spalten Geplant/In Arbeit/Erledigt/Ohne status mit Karten. Dabei behoben: Die Datenbank lud bei jedem Neuzeichnen alle Dateien neu, was eine gerade verschobene Karte zurücksetzen konnte.
@@ -52,6 +52,7 @@
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Die Kalenderansicht rechnet nur mit Kalendertagen in UTC (`src/lib/calendar.ts`), nie mit lokaler Uhrzeit, damit Sommer-/Winterzeit keinen Tag verschiebt. Wochen beginnen am Montag, Kalenderwochen nach ISO 8601. Beim Verschieben bleibt eine Uhrzeit (`YYYY-MM-DDTHH:MM`) erhalten. In `_ansichten.yaml` hat eine Kalender-Ansicht `typ: kalender`, `datum: <Eigenschaft>` und `modus: monat|woche`.
 - 2026-10-25: Eigenschaften werden im Frontmatter zeilengenau geändert (`src/lib/properties.ts`): Nur die Zeilen des geänderten Feldes werden mit der Bibliothek `yaml` neu geschrieben, alle anderen Zeilen (auch unbekannte Felder und Kommentare) bleiben unverändert. Gelesen wird mit YAML 1.2, dadurch bleiben Datumswerte Text im Format `YYYY-MM-DD` bzw. `YYYY-MM-DDTHH:MM`. Typnamen und Schlüssel in `_ansichten.yaml` sind deutsch (`eigenschaften`, `ansichten`, `typ`, `optionen`, `sortierung`, `filter`), Typen: text, zahl, auswahl, mehrfachauswahl, status, datum, checkbox, url. Eigenschaftstypen außerhalb von Datenbanken stehen in `.meinapp/settings.json` unter `eigenschaften`.
 - 2026-10-25: Der zuletzt geöffnete Vault wird in `zustand.json` im App-Datenordner gemerkt (Windows: `%APPDATA%de.localprojekt.desktop`), nicht im Vault. Beim Öffnen legt die App `.meinapp/settings.json` an, falls es fehlt.
 - 2026-10-25: Löschen verschiebt Seiten und Ordner in den Papierkorb des Systems (Rust-Paket `trash`), damit nichts endgültig verloren geht.
