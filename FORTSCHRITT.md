@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 4 – Kanban
-- Zuletzt aktualisiert: 2026-10-25 13:08
+- Zuletzt aktualisiert: 2026-10-25 13:14
 - Nächster Schritt: Kanban-Logik mit Tests, danach Reiter für mehrere Ansichten und die Kanban-Oberfläche.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -10,7 +10,7 @@
 - [ ] Eine Karte per Drag & Drop in eine andere Spalte zu ziehen ändert den Wert in der Datei.
 - [ ] Neue Karten lassen sich direkt in einer Spalte anlegen, ein Klick auf eine Karte öffnet die Seite.
 - [ ] Mehrere Ansichten pro Datenbank (z. B. Tabelle und Kanban), umschaltbar per Reiter, gespeichert in `_ansichten.yaml`.
-- [ ] Tests für die Kanban-Logik (Gruppieren, Wert ändern).
+- [x] Tests für die Kanban-Logik (Gruppieren, Wert ändern).
 
 ## Abgeschlossene Etappen
 - Etappe 3 – Eigenschaften und Tabelle (abgeschlossen am 2026-10-25). Nachweise: `npm test` 91 von 91 Tests grün (9 Testdateien), `cargo test` 13 von 13 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Datenbank „Projekte“ als Tabelle (sortiert nach fällig aus `_ansichten.yaml`), Eigenschaften-Leiste auf „Website-Relaunch“.
