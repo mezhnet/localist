@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 3 – Eigenschaften und Tabelle
-- Zuletzt aktualisiert: 2026-10-25 12:40
-- Nächster Schritt: Eigenschaften im Frontmatter lesen/schreiben (mit Tests), danach Eigenschaften-Leiste, Datenbank-Ordner und Tabellenansicht.
+- Zuletzt aktualisiert: 2026-10-25 13:05
+- Nächster Schritt: Abschlussprüfung der Etappe 3 (npm test, tsc, tauri build) und Abschluss-Commit.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Oben auf jeder Seite gibt es eine Eigenschaften-Leiste mit den Typen Text, Zahl, Auswahl, Mehrfachauswahl, Status, Datum, Checkbox und URL, gespeichert im Frontmatter.
+- [x] Oben auf jeder Seite gibt es eine Eigenschaften-Leiste mit den Typen Text, Zahl, Auswahl, Mehrfachauswahl, Status, Datum, Checkbox und URL, gespeichert im Frontmatter.
 - [ ] Ein Ordner lässt sich in eine Datenbank umwandeln (legt `_ansichten.yaml` an, dort stehen auch die Eigenschaftstypen).
 - [ ] Tabellenansicht: eine Zeile pro Seite, eine Spalte pro Eigenschaft, Werte direkt in der Zelle bearbeitbar.
 - [ ] Sortieren und Filtern, die Einstellungen werden in `_ansichten.yaml` gespeichert.
