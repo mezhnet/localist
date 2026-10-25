@@ -68,8 +68,24 @@ export function yamlString(value: string): string {
  * Liefert das neue Frontmatter (oder null, wenn danach nichts mehr drinsteht und vorher keins da war).
  */
 export function setFrontmatterField(frontmatter: string | null, key: string, value: string | null): string | null {
+  return replaceFrontmatterEntry(frontmatter, key, value === null ? null : [`${key}: ${yamlString(value)}`]);
+}
+
+/** Zeilen zwischen "---" und dem Abschluss (ohne die Begrenzer). */
+export function frontmatterInner(frontmatter: string | null): string {
+  if (frontmatter === null) return "";
+  const lines = frontmatter.split(/\r?\n/);
+  const closing = lines.findIndex((line, index) => index > 0 && /^(?:---|\.\.\.)[ \t]*$/.test(line));
+  return lines.slice(1, closing === -1 ? undefined : closing).join("\n");
+}
+
+/**
+ * Ersetzt den Eintrag `key` (seine Zeile plus eingerückte Folgezeilen, z. B. Listen) durch `entry`,
+ * entfernt ihn (entry = null) oder hängt ihn am Ende an. Alle anderen Zeilen bleiben unverändert.
+ */
+export function replaceFrontmatterEntry(frontmatter: string | null, key: string, entry: string[] | null): string | null {
   if (frontmatter === null) {
-    return value === null ? null : `---\n${key}: ${yamlString(value)}\n---\n`;
+    return entry === null ? null : `---\n${entry.join("\n")}\n---\n`;
   }
   const eol = frontmatter.includes("\r\n") ? "\r\n" : "\n";
   const lines = frontmatter.split(/\r?\n/);
@@ -79,13 +95,12 @@ export function setFrontmatterField(frontmatter: string | null, key: string, val
   const index = lines.findIndex((line, i) => i > 0 && i < closing && pattern.test(line));
 
   if (index !== -1) {
-    // Eingerückte Folgezeilen gehören zum Feld (z. B. Listen) und werden mit ersetzt.
+    // Eingerückte Folgezeilen und Listenpunkte ("- …") gehören zum Feld und werden mit ersetzt.
     let end = index + 1;
-    while (end < closing && /^[ \t]+\S/.test(lines[end])) end++;
-    const replacement = value === null ? [] : [`${key}: ${yamlString(value)}`];
-    lines.splice(index, end - index, ...replacement);
-  } else if (value !== null) {
-    lines.splice(closing, 0, `${key}: ${yamlString(value)}`);
+    while (end < closing && /^([ \t]+\S|-([ \t]|$))/.test(lines[end])) end++;
+    lines.splice(index, end - index, ...(entry ?? []));
+  } else if (entry !== null) {
+    lines.splice(closing, 0, ...entry);
   }
   return lines.join(eol);
 }

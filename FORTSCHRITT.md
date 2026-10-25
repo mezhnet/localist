@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 3 – Eigenschaften und Tabelle
-- Zuletzt aktualisiert: 2026-10-25 12:24
+- Zuletzt aktualisiert: 2026-10-25 12:40
 - Nächster Schritt: Eigenschaften im Frontmatter lesen/schreiben (mit Tests), danach Eigenschaften-Leiste, Datenbank-Ordner und Tabellenansicht.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -11,7 +11,7 @@
 - [ ] Tabellenansicht: eine Zeile pro Seite, eine Spalte pro Eigenschaft, Werte direkt in der Zelle bearbeitbar.
 - [ ] Sortieren und Filtern, die Einstellungen werden in `_ansichten.yaml` gespeichert.
 - [ ] Eine neue Zeile legt eine neue `.md`-Datei mit `id` an.
-- [ ] Tests für Frontmatter lesen und schreiben, inklusive Erhalt unbekannter Felder und Datumsformat.
+- [x] Tests für Frontmatter lesen und schreiben, inklusive Erhalt unbekannter Felder und Datumsformat.
 
 ## Abgeschlossene Etappen
 - Etappe 2 – Notion-Feeling (abgeschlossen am 2026-10-25). Nachweise: `npm test` 73 von 73 Tests grün (7 Testdateien), `cargo test` 13 von 13 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Slash-Menü mit Callout und Toggle, Toggle wird als `> [!note]- Details` gespeichert, `[[`-Vorschläge, Klick auf Link öffnet die Seite, Umbenennen passt Links an, Dunkelmodus folgt dem System. Der Ziehgriff erscheint beim Überfahren eines Blocks; das Verschieben selbst ist die eingebaute Funktion von BlockNote und ließ sich im Testwerkzeug nicht automatisch ausführen (es erzeugt keine echten Drag-Ereignisse).
@@ -40,6 +40,7 @@
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Eigenschaften werden im Frontmatter zeilengenau geändert (`src/lib/properties.ts`): Nur die Zeilen des geänderten Feldes werden mit der Bibliothek `yaml` neu geschrieben, alle anderen Zeilen (auch unbekannte Felder und Kommentare) bleiben unverändert. Gelesen wird mit YAML 1.2, dadurch bleiben Datumswerte Text im Format `YYYY-MM-DD` bzw. `YYYY-MM-DDTHH:MM`. Typnamen und Schlüssel in `_ansichten.yaml` sind deutsch (`eigenschaften`, `ansichten`, `typ`, `optionen`, `sortierung`, `filter`), Typen: text, zahl, auswahl, mehrfachauswahl, status, datum, checkbox, url. Eigenschaftstypen außerhalb von Datenbanken stehen in `.meinapp/settings.json` unter `eigenschaften`.
 - 2026-10-25: Der zuletzt geöffnete Vault wird in `zustand.json` im App-Datenordner gemerkt (Windows: `%APPDATA%de.localprojekt.desktop`), nicht im Vault. Beim Öffnen legt die App `.meinapp/settings.json` an, falls es fehlt.
 - 2026-10-25: Löschen verschiebt Seiten und Ordner in den Papierkorb des Systems (Rust-Paket `trash`), damit nichts endgültig verloren geht.
 - 2026-10-25: Für die Entwicklung im Browser simuliert `src/lib/dev-backend.ts` die Rust-Kommandos mit einem Vault im Arbeitsspeicher (Inhalt aus `beispiel-vault/`). Die Oberflächen-Tests (`src/App.test.tsx`) nutzen dieselbe Simulation. In der gebauten App ist sie nicht enthalten.
