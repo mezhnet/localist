@@ -14,6 +14,9 @@ export interface SidebarActions {
   onSwitchVault: () => void;
   onOpenDatabase: (path: string) => void;
   onConvertToDatabase: (path: string) => void;
+  onQuickOpen: () => void;
+  onSearch: () => void;
+  onCreateFromTemplate: (dir: string) => void;
 }
 
 interface Props extends SidebarActions {
@@ -166,8 +169,17 @@ export function Sidebar(props: Props) {
         </button>
       </div>
       <div className="sidebar-actions">
+        <button type="button" onClick={props.onQuickOpen} title="Seite nach Titel öffnen">
+          ⌕ Schnellsuche <kbd>Strg+P</kbd>
+        </button>
+        <button type="button" onClick={props.onSearch} title="Text in allen Seiten suchen">
+          🔍 Volltextsuche <kbd>Strg+⇧+F</kbd>
+        </button>
         <button type="button" onClick={() => createIn("", "page")}>
           + Neue Seite
+        </button>
+        <button type="button" onClick={() => props.onCreateFromTemplate("")}>
+          + Seite aus Vorlage
         </button>
         <button type="button" onClick={() => createIn("", "folder")}>
           + Neuer Ordner
@@ -184,6 +196,7 @@ export function Sidebar(props: Props) {
           onCreate={(kind) => createIn(menu.node?.path ?? "", kind)}
           onRename={() => menu.node && setRenaming(menu.node.path)}
           onDelete={() => menu.node && props.onDelete(menu.node)}
+          onTemplate={() => props.onCreateFromTemplate(menu.node?.path ?? "")}
           onDatabase={() => {
             if (!menu.node) return;
             if (menu.node.database) props.onOpenDatabase(menu.node.path);
@@ -248,9 +261,10 @@ interface ContextMenuProps {
   onRename: () => void;
   onDelete: () => void;
   onDatabase: () => void;
+  onTemplate: () => void;
 }
 
-function ContextMenu({ menu, onClose, onCreate, onRename, onDelete, onDatabase }: ContextMenuProps) {
+function ContextMenu({ menu, onClose, onCreate, onRename, onDelete, onDatabase, onTemplate }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const close = (event: MouseEvent | KeyboardEvent) => {
@@ -282,6 +296,7 @@ function ContextMenu({ menu, onClose, onCreate, onRename, onDelete, onDatabase }
   return (
     <div ref={ref} className="context-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
       {canCreate && item("Neue Seite", () => onCreate("page"))}
+      {canCreate && item("Neue Seite aus Vorlage …", onTemplate)}
       {canCreate && item("Neuer Ordner", () => onCreate("folder"))}
       {menu.node?.kind === "folder" && item(menu.node.database ? "Datenbank öffnen" : "In Datenbank umwandeln", onDatabase)}
       {menu.node && item("Umbenennen", onRename)}

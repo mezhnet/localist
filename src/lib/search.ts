@@ -62,7 +62,12 @@ function snippet(body: string, terms: string[]): { snippet: string; highlight: [
     return { snippet: body.slice(0, 140) + (body.length > 140 ? " …" : ""), highlight: null };
   }
   const first = positions.sort((a, b) => a.at - b.at)[0];
-  const start = Math.max(0, first.at - 50);
+  let start = Math.max(0, first.at - 50);
+  // Ausschnitt an einer Wortgrenze beginnen lassen, nicht mitten im Wort.
+  if (start > 0) {
+    const space = body.indexOf(" ", start);
+    if (space !== -1 && space < first.at) start = space + 1;
+  }
   const end = Math.min(body.length, first.at + first.term.length + 90);
   const prefix = start > 0 ? "… " : "";
   return {

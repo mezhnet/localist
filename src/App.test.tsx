@@ -339,6 +339,55 @@ describe("Kalender", () => {
   });
 });
 
+describe("Komfort: Suche, Strg+P, Vorlagen, Backlinks", () => {
+  it("Volltextsuche findet Text in allen Seiten und öffnet den Treffer", async () => {
+    await openVaultFromStart();
+    fireEvent.click(screen.getByRole("button", { name: /Volltextsuche/ }));
+    const input = await screen.findByRole("textbox", { name: "Volltextsuche" });
+    fireEvent.change(input, { target: { value: "wochenplanung" } });
+    const option = await screen.findByRole("option", { name: /Ideen/ });
+    expect(option.querySelector("mark")?.textContent).toBe("Wochenplanung");
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(await screen.findByText("Hier sammle ich lose Gedanken.")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("Strg+P öffnet die Schnellsuche, Enter öffnet die Seite", async () => {
+    await openVaultFromStart();
+    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
+    const input = await screen.findByRole("textbox", { name: "Schnellsuche" });
+    fireEvent.change(input, { target: { value: "wsr" } });
+    const results = screen.getByRole("listbox", { name: "Ergebnisse" });
+    expect(within(results).getAllByRole("option").map((o) => o.querySelector(".dialog-title")?.textContent)).toEqual(["Website-Relaunch"]);
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(await screen.findByText("Domain prüfen")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
+    fireEvent.keyDown(await screen.findByRole("textbox", { name: "Schnellsuche" }), { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("legt eine neue Seite aus einer Vorlage an (Eigenschaften und Inhalt, eigene id)", async () => {
+    await openVaultFromStart();
+    fireEvent.click(screen.getByRole("button", { name: "+ Seite aus Vorlage" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Projekt/ }));
+    await waitFor(() => expect(vault().files.get("Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\nstatus: Geplant\npriorität: mittel\n---\n# Ziel\n/));
+    expect(vault().files.get("Unbenannt.md")).toContain("- [ ] Ersten Schritt eintragen\n");
+    expect(vault().files.get("Vorlagen/Projekt.md")).toBe("---\nstatus: Geplant\npriorität: mittel\n---\n# Ziel\n\nWas soll am Ende stehen?\n\n# Nächste Schritte\n\n- [ ] Ersten Schritt eintragen\n");
+    expect(await screen.findByDisplayValue("Unbenannt")).toBeTruthy();
+  });
+
+  it("zeigt unten auf der Seite, welche Seiten auf sie verlinken", async () => {
+    await openVaultFromStart();
+    await openPage("Notizen", "Ideen");
+    const backlinks = await screen.findByRole("region", { name: "Backlinks" });
+    const link = await within(backlinks).findByRole("button", { name: /Website-Relaunch/ });
+    expect(link.textContent).toContain("Siehe auch [[Ideen]].");
+    fireEvent.click(link);
+    expect(await screen.findByText("Domain prüfen")).toBeTruthy();
+    expect(within(await screen.findByRole("region", { name: "Backlinks" })).getByText(/Noch keine Seite verlinkt hierher/)).toBeTruthy();
+  });
+});
+
 describe("Seiten im Editor", () => {
   it("öffnet eine Seite im Block-Editor", async () => {
     await openVaultFromStart();

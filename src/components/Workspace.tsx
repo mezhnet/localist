@@ -5,7 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewriteLinks, type PageRef } from "../lib/links";
+import { today } from "../lib/calendar";
 import { createDatabaseConfig, VIEWS_FILE } from "../lib/database";
+import { instantiateTemplate, TEMPLATES_DIR } from "../lib/search";
+import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
 import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
 import { useSchemas } from "../lib/useSchemas";
 import {
@@ -17,11 +20,14 @@ import {
   onVaultChanged,
   readPage,
   renameEntry,
+  vaultIndex,
   writePage,
   type TreeNode,
   type VaultInfo,
 } from "../lib/vault-api";
+import { Backlinks } from "./Backlinks";
 import { DatabaseView, loadRows } from "./DatabaseView";
+import { QuickSwitcher, SearchDialog, TemplatePicker } from "./Dialogs";
 import { PageView } from "./PageView";
 import { Sidebar } from "./Sidebar";
 
@@ -53,6 +59,9 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   /** Geöffnete Datenbank (Ordnerpfad); dann ist keine Seite offen. */
   const [database, setDatabase] = useState<string | null>(null);
   const [databaseVersion, setDatabaseVersion] = useState(0);
+  /** Wird bei jeder Änderung im Vault erhöht (z. B. damit Backlinks neu berechnet werden). */
+  const [vaultVersion, setVaultVersion] = useState(0);
+  const [dialog, setDialog] = useState<{ kind: "quick" } | { kind: "search" } | { kind: "template"; dir: string } | null>(null);
   const saverRef = useRef<AutoSaver | null>(null);
   const pageRef = useRef(page);
   pageRef.current = page;
@@ -126,7 +135,10 @@ export function Workspace({ vault, onSwitchVault }: Props) {
         setDatabaseVersion((version) => version + 1);
       }
       clearTimeout(timer);
-      timer = setTimeout(() => void refreshTree(), 150);
+      timer = setTimeout(() => {
+        void refreshTree();
+        setVaultVersion((version) => version + 1);
+      }, 150);
     }).then(
       (stop) => (disposed ? stop() : (unlisten = stop)),
       (error) => showError(`Der Dateiwächter ist nicht verfügbar: ${errorMessage(error)}`),
@@ -137,6 +149,25 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       clearTimeout(timer);
     };
   }, [refreshTree, showError]);
+
+  // Tastenkürzel: Strg+P Schnellsuche, Strg+Umschalt+F Volltextsuche.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (key === "p" && !event.shiftKey) {
+        event.preventDefault(); // sonst öffnet sich der Druckdialog
+        setDialog({ kind: "quick" });
+      } else if (key === "f" && event.shiftKey) {
+        event.preventDefault();
+        setDialog({ kind: "search" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const loadIndex = useCallback(() => vaultIndex(), []);
 
   // Vor dem Schließen des Fensters ungespeicherte Eingaben sichern.
   useEffect(() => {
@@ -179,6 +210,22 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       await openDatabase(folder);
       const count = Object.keys(config.eigenschaften).length;
       setNotice({ kind: "info", text: `„${pageTitle(folder)}“ ist jetzt eine Datenbank mit ${count} ${count === 1 ? "Eigenschaft" : "Eigenschaften"}.` });
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
+
+  /** Neue Seite in `dir` aus einer Vorlage: Eigenschaften und Inhalt der Vorlage, eigene id. */
+  const createFromTemplate = async (dir: string, templatePath: string) => {
+    try {
+      const title = uniqueName(childrenOf(tree, dir), "Unbenannt");
+      const path = await createPage(dir, title);
+      const id = getFrontmatterField(splitFrontmatter(await readPage(path)).frontmatter, "id") ?? "";
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      await writePage(path, instantiateTemplate(await readPage(templatePath), { id, title, date: today(), time }));
+      await refreshTree();
+      await openPage(path, true);
     } catch (error) {
       showError(errorMessage(error));
     }
@@ -341,6 +388,9 @@ export function Workspace({ vault, onSwitchVault }: Props) {
         onOpen={(path) => void openPage(path)}
         onOpenDatabase={(path) => void openDatabase(path)}
         onConvertToDatabase={(path) => void convertToDatabase(path)}
+        onQuickOpen={() => setDialog({ kind: "quick" })}
+        onSearch={() => setDialog({ kind: "search" })}
+        onCreateFromTemplate={(dir) => setDialog({ kind: "template", dir })}
         onCreatePage={(dir) => void handleCreatePage(dir)}
         onCreateFolder={(dir) => void handleCreateFolder(dir)}
         onRename={(node, newName) => void rename(node, newName)}
@@ -390,7 +440,9 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               onError={showError}
               propertySchema={schemas.schemaForPage(page.path)}
               onPropertyType={(name, type) => void schemas.setTypeForPage(page.path, name, type)}
-            />
+            >
+              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} onOpen={(path) => void openPage(path)} />
+            </PageView>
           </WikiLinkContext.Provider>
         ) : (
           <div className="empty-state">
@@ -398,6 +450,37 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           </div>
         )}
       </main>
+      {dialog?.kind === "quick" && (
+        <QuickSwitcher
+          pages={pages}
+          onClose={() => setDialog(null)}
+          onOpen={(path) => {
+            setDialog(null);
+            void openPage(path);
+          }}
+        />
+      )}
+      {dialog?.kind === "search" && (
+        <SearchDialog
+          loadIndex={loadIndex}
+          onClose={() => setDialog(null)}
+          onOpen={(path) => {
+            setDialog(null);
+            void openPage(path);
+          }}
+        />
+      )}
+      {dialog?.kind === "template" && (
+        <TemplatePicker
+          templates={pages.filter((page) => isInside(page.path, TEMPLATES_DIR))}
+          onClose={() => setDialog(null)}
+          onPick={(templatePath) => {
+            const dir = dialog.dir;
+            setDialog(null);
+            void createFromTemplate(dir, templatePath);
+          }}
+        />
+      )}
     </div>
   );
 }

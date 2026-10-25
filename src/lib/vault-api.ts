@@ -98,6 +98,11 @@ export async function pickImage(): Promise<string | null> {
   return typeof result === "string" ? result : null;
 }
 
+/** Suchindex aller Seiten (Titel und Inhalt). Die Rust-Seite hält ihn im Cache-Ordner der App aktuell. */
+export function vaultIndex(): Promise<{ path: string; title: string; content: string }[]> {
+  return invoke("vault_index");
+}
+
 /** Abonniert Änderungen im Vault (auch von außen). Liefert die Funktion zum Abbestellen. */
 export function onVaultChanged(handler: (change: VaultChange) => void): Promise<UnlistenFn> {
   return listen<VaultChange>(VAULT_CHANGED_EVENT, (event) => handler(event.payload));

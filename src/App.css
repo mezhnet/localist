@@ -1420,3 +1420,142 @@ button {
   font-size: 13px;
   margin: 0 0 4px;
 }
+
+/* Tastenkürzel-Hinweise in der Sidebar */
+.sidebar-actions kbd {
+  float: right;
+  font: inherit;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Dialoge: Schnellsuche, Volltextsuche, Vorlagen */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(15, 15, 15, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+
+.dialog {
+  width: min(620px, 92vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(15, 15, 15, 0.3);
+  overflow: hidden;
+}
+
+.dialog-input {
+  font: inherit;
+  font-size: 16px;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  outline: none;
+  background: transparent;
+  color: var(--text);
+}
+
+.dialog-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.dialog-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dialog-list li.selected {
+  background: var(--active);
+}
+
+.dialog-list .dialog-empty {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.dialog-title {
+  font-weight: 500;
+}
+
+.dialog-sub {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.dialog-snippet {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.dialog-snippet mark {
+  background: color-mix(in srgb, #ffd43b 55%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}
+
+.dialog-footer {
+  border-top: 1px solid var(--border);
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Backlinks unter der Seite */
+.backlinks {
+  margin: 48px 0 0 54px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.backlinks h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.backlinks ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.backlink {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.backlink:hover {
+  background: var(--hover);
+}
+
+.backlink-context {
+  color: var(--text-muted);
+  font-size: 13px;
+}

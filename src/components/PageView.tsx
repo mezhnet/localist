@@ -1,7 +1,7 @@
 // Eine geöffnete Seite: lädt die Datei, zeigt Titel und Editor, speichert automatisch
 // und lädt neu, wenn die Datei außerhalb der App geändert wurde.
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import type { VaultEditor } from "../editor/schema";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { pageTitle } from "../lib/tree";
@@ -28,6 +28,8 @@ interface Props {
   propertySchema: PropertySchema;
   /** Typ einer Eigenschaft festlegen (in der Datenbank oder den Vault-Einstellungen). */
   onPropertyType: (name: string, type: PropertyType) => void;
+  /** Wird unter dem Editor angezeigt (Backlinks). */
+  children?: ReactNode;
 }
 
 interface Loaded {
@@ -36,7 +38,7 @@ interface Loaded {
   version: number;
 }
 
-export function PageView({ path, isNew = false, externalVersion, saverRef, onRename, onError, propertySchema, onPropertyType }: Props) {
+export function PageView({ path, isNew = false, externalVersion, saverRef, onRename, onError, propertySchema, onPropertyType, children }: Props) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const formatRef = useRef<ParsedPage["format"] | null>(null);
@@ -192,6 +194,7 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
         ) : (
           <p className="muted">Lädt …</p>
         )}
+        {loaded && children}
       </div>
     </div>
   );

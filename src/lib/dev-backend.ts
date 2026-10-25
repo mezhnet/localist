@@ -151,6 +151,10 @@ export function installDevBackend(): void {
           remove(a.path);
           notify({ kind: "removed", path: a.path });
           return null;
+        case "vault_index":
+          return [...files]
+            .filter(([path]) => /\.md$/i.test(path) && !hidden(path))
+            .map(([path, content]) => ({ path, title: nameOf(path).replace(/\.md$/i, ""), content }));
         case "resolve_attachment": {
           const dir = parentOf(a.page);
           const target = decodeURIComponent(a.target);
