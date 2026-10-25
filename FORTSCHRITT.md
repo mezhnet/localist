@@ -1,12 +1,17 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 10 – HTML-Seiten: Grundlage und sichere Anzeige ist abgeschlossen. Als Nächstes kommt Etappe 11 – HTML-Seiten: Code-Editor.
-- Zuletzt aktualisiert: 2026-10-25 18:14
-- Nächster Schritt: Etappe 11 beginnen (Fertig-Kriterien aus `CLAUDE.md` übernehmen; CodeMirror 6 einbinden, Ansichten „Lesen“, „Code“, „Geteilt“).
+- Etappe: 11 – HTML-Seiten: Code-Editor
+- Zuletzt aktualisiert: 2026-10-25 18:47
+- Nächster Schritt: CodeMirror 6 einbinden, Editor-Logik (nur `<main>`, Zeilenenden, BOM) mit Tests absichern
 
 ## Fertig-Kriterien der aktuellen Etappe
-- Etappe 11 ist noch nicht begonnen.
+- [ ] Drei Ansichten: „Lesen“, „Code“ und „Geteilt“ (Code links, Vorschau rechts, auf schmalen Bildschirmen untereinander). Umschalten per Schaltflächen und Strg+E. Die zuletzt gewählte Ansicht wird gemerkt, eine neue HTML-Seite öffnet in „Geteilt“.
+- [ ] Code-Editor mit CodeMirror 6: Syntaxhervorhebung (hell und dunkel), Zeilennummern, Einklappen, Suchen und Ersetzen, Autovervollständigung für HTML-Tags.
+- [ ] Vereinfachte Ansicht: Der Editor zeigt nur den Inhalt von `<main>`. Ein Schalter „Ganze Datei“ zeigt alles. Fehlt `<main>`, wird immer die ganze Datei angezeigt.
+- [ ] In „Geteilt“ aktualisiert sich die Vorschau kurz nach dem Tippen, ohne dass die Scrollposition springt.
+- [ ] Automatisches Speichern wie bei Notizen. Tests belegen: Unveränderte Teile der Datei bleiben Zeichen für Zeichen gleich, auch in einer Datei mit CRLF-Zeilenenden und BOM. Die App ändert nur, was der Nutzer bearbeitet hat.
+- [ ] Fehlerhaftes HTML (z. B. nicht geschlossene Tags) führt nie zu Datenverlust. Die Vorschau zeigt, was der Browser daraus macht.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
