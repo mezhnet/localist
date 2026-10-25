@@ -130,8 +130,11 @@ function achsenZeichnen(svg, daten, typ) {
   });
   var anzahl = daten.zeilen.length;
   var gruppe = flaecheB / Math.max(anzahl, 1);
+  // Linien: etwas Abstand zu den Rändern, damit die äußeren Beschriftungen ganz zu sehen sind
+  var innenRand = 28;
   var mitte = function (i) {
-    return typ === "linie" ? RAND.links + (anzahl === 1 ? flaecheB / 2 : (i * flaecheB) / (anzahl - 1)) : RAND.links + gruppe * i + gruppe / 2;
+    if (typ !== "linie") return RAND.links + gruppe * i + gruppe / 2;
+    return anzahl === 1 ? RAND.links + flaecheB / 2 : RAND.links + innenRand + (i * (flaecheB - 2 * innenRand)) / (anzahl - 1);
   };
   daten.zeilen.forEach(function (zeile, i) {
     svg.appendChild(svgElement("text", { x: mitte(i), y: HOEHE - RAND.unten + 20, "text-anchor": "middle", class: "l-diagramm-text" }, kurz(zeile.beschriftung, 14)));

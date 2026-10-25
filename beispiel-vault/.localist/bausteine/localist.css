@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 1.0.0+c63c3339 – Aussehen (localist.css)
+/*! Localist-Bausteine 1.0.0+55327b46 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus der Schrift Inter, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -1118,6 +1118,11 @@ l-kartenstapel:defined > l-karteikarte {
   display: inline-block;
   margin: 0 0 var(--space-3);
   text-align: left;
+}
+
+.l-stapel-ergebnis > .l-knopf {
+  display: block;
+  margin: var(--space-3) auto 0;
 }
 
 /* ---- quiz.css ---- */

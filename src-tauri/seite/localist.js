@@ -1,10 +1,10 @@
-/*! Localist-Bausteine 1.0.0+c63c3339 – Funktion (localist.js)
+/*! Localist-Bausteine 1.0.0+55327b46 – Funktion (localist.js)
     Diese Datei verwaltet Localist. Sie entsteht aus src/bausteine/*.js und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
 (function () {
 "use strict";
-var VERSION = "1.0.0+c63c3339";
+var VERSION = "1.0.0+55327b46";
 
 // ---- basis.js ----
 // Gemeinsame Hilfen aller Bausteine. localist.js ist ein klassisches Skript ohne Framework: Es läuft in der
@@ -255,8 +255,11 @@ function achsenZeichnen(svg, daten, typ) {
   });
   var anzahl = daten.zeilen.length;
   var gruppe = flaecheB / Math.max(anzahl, 1);
+  // Linien: etwas Abstand zu den Rändern, damit die äußeren Beschriftungen ganz zu sehen sind
+  var innenRand = 28;
   var mitte = function (i) {
-    return typ === "linie" ? RAND.links + (anzahl === 1 ? flaecheB / 2 : (i * flaecheB) / (anzahl - 1)) : RAND.links + gruppe * i + gruppe / 2;
+    if (typ !== "linie") return RAND.links + gruppe * i + gruppe / 2;
+    return anzahl === 1 ? RAND.links + flaecheB / 2 : RAND.links + innenRand + (i * (flaecheB - 2 * innenRand)) / (anzahl - 1);
   };
   daten.zeilen.forEach(function (zeile, i) {
     svg.appendChild(svgElement("text", { x: mitte(i), y: HOEHE - RAND.unten + 20, "text-anchor": "middle", class: "l-diagramm-text" }, kurz(zeile.beschriftung, 14)));

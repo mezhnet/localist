@@ -123,9 +123,20 @@
     });
     document.documentElement.appendChild(werkzeug);
   };
+  // Ändert ein Baustein seine Größe (z. B. Quiz nach einer Antwort), wandern Rahmen und Stift mit.
+  var groesse = typeof ResizeObserver === "function" ? new ResizeObserver(function () {
+    if (aktuell) zeigen(aktuell);
+  }) : null;
   var zeigen = function (element) {
     clearTimeout(verbergen);
     if (!werkzeug) return;
+    if (groesse && element !== aktuell) {
+      groesse.disconnect();
+      if (element) {
+        groesse.observe(element);
+        groesse.observe(document.body);
+      }
+    }
     if (!element) {
       verbergen = setTimeout(function () {
         aktuell = null;

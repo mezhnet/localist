@@ -84,3 +84,8 @@ l-kartenstapel:defined > l-karteikarte {
   margin: 0 0 var(--space-3);
   text-align: left;
 }
+
+.l-stapel-ergebnis > .l-knopf {
+  display: block;
+  margin: var(--space-3) auto 0;
+}

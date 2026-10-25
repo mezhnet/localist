@@ -4,12 +4,14 @@
 // Szenen "etappe11": Code-Editor in „Code“ und „Geteilt“, Suchen und Ersetzen, Autovervollständigung.
 // Szenen "etappe12": Beispielseite Lernen/Bausteine.html in „Lesen“, Stift-Symbol, Formular, Tabellen-Editor,
 // Werkzeugleiste mit „/“-Menü und dieselbe Datei per Doppelklick im Browser (file://, mit echten Mausklicks).
+// Szenen "etappe13": Karteikarte, Kartenstapel (Lernmodus bis zur Auswertung), Quiz und Diagramme mit echten
+// Klicks in der Seite, Diagramm-Formular, Bereich „Bausteine“ (Bibliothek und Hilfe), eigener Baustein.
 // Nutzt das installierte Microsoft Edge unsichtbar im Hintergrund über das DevTools-Protokoll, ohne zusätzliche Pakete.
 // Damit Kanban und Kalender etwas zeigen, legt das Skript einige Beispiel-Einträge an – nur im Arbeitsspeicher
 // der Vorschau (dev-backend.ts), echte Dateien ändern sich nicht.
 //
 // Aufruf, während die Vorschau läuft (z. B. `npm run dev -- --port 1430`):
-//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9 [etappe9|etappe10|etappe11|etappe12]
+//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9 [etappe9|etappe10|etappe11|etappe12|etappe13]
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -300,6 +302,103 @@ async function runBrowser(theme) {
   await shot(`browser-${theme}`);
 }
 
+/** Mittelpunkt eines Elements in der Seite (iframe), umgerechnet in Fensterkoordinaten der App. */
+async function frameMitte(selector) {
+  const inner = await evaluateInFrame("Bausteine.html", `(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+  const frameBox = await evaluate(`(() => { const r = [...document.querySelectorAll('iframe.html-frame')].find((f) => !f.classList.contains('is-loading')).getBoundingClientRect(); return { x: r.x, y: r.y }; })()`);
+  return { x: frameBox.x + inner.x, y: frameBox.y + inner.y };
+}
+
+async function klickInSeite(selector) {
+  const punkt = await frameMitte(selector);
+  await realClick(punkt.x, punkt.y);
+  await sleep(250);
+}
+
+async function runLernen(theme, device) {
+  const prefix = await openVault(theme, device);
+  await evaluate(`localStorage.setItem("html-ansicht", "lesen"); true`);
+  await click('.tree [title="Lernen"]');
+  await waitFor(`document.querySelector('.tree [title="Lernen/Bausteine.html"]')`, "Bausteine.html im Ordnerbaum");
+  await click('.tree [title="Lernen/Bausteine.html"]');
+  await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('.html-preview').style.height`, "Beispielseite mit Höhe");
+  await sleep(1000);
+  if (prefix) {
+    await hoverBaustein("l-kartenstapel");
+    await klickInSeite("l-kartenstapel > l-karteikarte:not([hidden])");
+    await shot(`${prefix}kartenstapel-${theme}`);
+    return;
+  }
+  // Karteikarte und Kartenstapel: umdrehen, bewerten, Auswertung
+  await hoverBaustein("l-karteikarte");
+  await klickInSeite("main > l-karteikarte");
+  await klickInSeite("l-kartenstapel > l-karteikarte:not([hidden])");
+  await shot(`karteikarte-und-stapel-${theme}`);
+  for (const knopf of ["Nochmal", "Gewusst", "Gewusst", "Gewusst"]) {
+    const offen = await evaluateInFrame("Bausteine.html", `document.querySelector("l-kartenstapel > l-karteikarte:not([hidden])")?.hasAttribute("data-umgedreht")`);
+    if (!offen) await klickInSeite("l-kartenstapel > l-karteikarte:not([hidden])").catch(() => {});
+    const id = await evaluateInFrame("Bausteine.html", `(() => { const b = [...document.querySelectorAll('l-kartenstapel button')].find((b) => b.textContent === ${JSON.stringify(knopf)}); if (!b || b.disabled) return false; b.id = 'knopf-jetzt'; return true; })()`);
+    if (id) await klickInSeite("#knopf-jetzt");
+    await evaluateInFrame("Bausteine.html", `document.getElementById('knopf-jetzt')?.removeAttribute('id')`);
+  }
+  await hoverBaustein("l-kartenstapel");
+  await shot(`kartenstapel-auswertung-${theme}`);
+  // Quiz: erste Frage falsch, zweite richtig
+  await hoverBaustein("l-quiz");
+  await klickInSeite("l-quizfrage:nth-of-type(1) li:nth-child(1)");
+  await klickInSeite("l-quizfrage:nth-of-type(2) li:nth-child(3)");
+  await shot(`quiz-${theme}`);
+  // Diagramme
+  await hoverBaustein("l-diagramm");
+  await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 1500, deviceScaleFactor: 1, mobile: false });
+  await sleep(600);
+  await hoverBaustein("l-diagramm");
+  await shot(`diagramme-${theme}`);
+  await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+  await sleep(500);
+  // Formular mit Daten-Editor
+  const pencil = await hoverBaustein("l-diagramm");
+  await realClick(pencil.x, pencil.y);
+  await waitFor(`document.querySelector('[role="dialog"][aria-label="Diagramm bearbeiten"]')`, "Diagramm-Formular");
+  await shot(`formular-diagramm-${theme}`);
+  await key("Escape", "Escape", 27);
+  await sleep(300);
+  // Bereich „Bausteine“: Bibliothek und Hilfe
+  await evaluate(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Bausteine").click()`);
+  await waitFor(`document.querySelector('.bibliothek-vorschau iframe')`, "Bibliothek");
+  await sleep(1500);
+  await evaluate(`[...document.querySelectorAll('.bibliothek-eintrag')].find((b) => b.textContent.includes("Kartenstapel")).click()`);
+  await sleep(1200);
+  await shot(`bibliothek-${theme}`);
+  await evaluate(`[...document.querySelectorAll('[role="tab"]')].find((t) => t.textContent === "Hilfe").click()`);
+  await waitFor(`document.querySelector('.hilfe-eintrag')`, "Hilfe");
+  await shot(`hilfe-${theme}`);
+  if (theme !== "hell") return;
+  // Markierten Code als eigenen Baustein speichern
+  await click('.tree [title="Notizen"]');
+  await waitFor(`document.querySelector('.tree [title="Notizen/DNS.html"]')`, "DNS.html");
+  await evaluate(`localStorage.setItem("html-ansicht", "code"); true`);
+  await click('.tree [title="Notizen/DNS.html"]');
+  await waitFor(`document.querySelector('.cm-editor') && document.querySelector('.baustein-leiste')`, "Code-Ansicht");
+  await sleep(500);
+  await evaluate(`(() => {
+    const content = document.querySelector('.cm-content');
+    content.focus();
+    const zeile = [...content.querySelectorAll('.cm-line')].find((l) => l.textContent.startsWith('<l-callout'));
+    const range = document.createRange();
+    range.selectNodeContents(zeile);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  })()`);
+  await sleep(300);
+  await evaluate(`[...document.querySelectorAll('.baustein-leiste button')].find((b) => b.textContent.includes("Als Baustein speichern")).click()`);
+  await waitFor(`document.querySelector('[role="dialog"][aria-label="Als eigenen Baustein speichern"]')`, "Dialog eigener Baustein");
+  await evaluate(`(() => { const set = (label, value) => { const input = document.querySelector('[role="dialog"] [aria-label="' + label + '"]'); const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; setter.call(input, value); input.dispatchEvent(new Event("input", { bubbles: true })); }; set("Name", "DNS-Tipp"); set("Beschreibung", "Merksatz zu DNS"); })()`);
+  await shot("eigener-baustein-speichern-hell");
+  await key("Escape", "Escape", 27);
+}
+
 async function run(theme, device) {
   const mobile = device === "handy";
   await send("Emulation.setDeviceMetricsOverride", mobile ? { width: 360, height: 740, deviceScaleFactor: 2, mobile: true } : { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
@@ -350,6 +449,7 @@ try {
       if (scenes === "etappe10") await runHtml(theme, device);
       else if (scenes === "etappe11") await runEditor(theme, device);
       else if (scenes === "etappe12") await runBausteine(theme, device);
+      else if (scenes === "etappe13") await runLernen(theme, device);
       else await run(theme, device);
     }
   }

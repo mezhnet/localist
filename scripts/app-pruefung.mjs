@@ -249,6 +249,98 @@ try {
     }
     const erwartet = vorher.replace('<input type="checkbox"> Eine eigene Lernseite anlegen', '<input type="checkbox" checked> Eine eigene Lernseite anlegen');
     report.push(`Häkchen in „Lesen“ gesetzt (echter Klick): Datei ${nachher === erwartet ? "geändert, nur diese Stelle (checked ergänzt)" : nachher === vorher ? "NICHT geändert" : "ANDERS geändert"}: ${await shot("app-haekchen")}`);
+
+    // Etappe 13: Lern-Bausteine mit echten Klicks in der Seite
+    const mitte = async (selector) => {
+      const { inner, frame } = await scrollTo(selector);
+      return { x: frame.x + inner.x + inner.width / 2, y: frame.y + inner.y + inner.height / 2 };
+    };
+    const lern = await inPage(
+      `({ karten: document.querySelectorAll("l-karteikarte").length, diagramme: document.querySelectorAll("l-diagramm[data-gezeichnet] > svg").length, stapel: document.querySelector(".l-stapel-zaehler")?.textContent, quiz: document.querySelector(".l-quiz-punkte")?.textContent })`,
+    );
+    report.push(`Lern-Bausteine: ${lern.karten} Karteikarten, Kartenstapel „${lern.stapel}“, Quiz „${lern.quiz}“, ${lern.diagramme} Diagramme als SVG gezeichnet`);
+    let punkt = await mitte("main > l-karteikarte");
+    await click(punkt.x, punkt.y);
+    await sleep(300);
+    const umgedreht = await inPage(`document.querySelector("main > l-karteikarte").hasAttribute("data-umgedreht")`);
+    punkt = await mitte("l-kartenstapel > l-karteikarte:not([hidden])");
+    await click(punkt.x, punkt.y);
+    await sleep(300);
+    const knopf = await inPage(`(() => { const b = [...document.querySelectorAll("l-kartenstapel button")].find((b) => b.textContent === "Gewusst"); b.id = "pruef-knopf"; return !b.disabled; })()`);
+    punkt = await mitte("#pruef-knopf");
+    await click(punkt.x, punkt.y);
+    await sleep(300);
+    const stapelNachher = await inPage(`document.querySelector(".l-stapel-zaehler").textContent`);
+    punkt = await mitte("l-quizfrage li:nth-child(2)");
+    await click(punkt.x, punkt.y);
+    await sleep(300);
+    const quizNachher = await inPage(`[document.querySelector(".l-quiz-punkte").textContent, document.querySelector(".l-quiz-rueckmeldung").textContent]`);
+    report.push(
+      `Echte Klicks: Karteikarte umgedreht: ${umgedreht ? "ja" : "NEIN"}; Kartenstapel nach Umdrehen ${knopf ? "bewertbar" : "NICHT bewertbar"}, nach „Gewusst“: „${stapelNachher}“; Quiz nach Klick auf „32“: „${quizNachher[1]}“, „${quizNachher[0]}“: ${await shot("app-lernen")}`,
+    );
+
+    // Bereich „Bausteine“: Bibliothek über das Schema, mit den eigenen Bausteinen des Vaults
+    await evaluate(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Bausteine").click()`);
+    await waitFor(`document.querySelector('.bibliothek-vorschau iframe')`, "Bibliothek");
+    await sleep(1500);
+    const bibliothekTarget = (await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()).find((t) => t.url.includes("bibliothek.html"));
+    const bibliothek = bibliothekTarget
+      ? await new Promise((resolve) => {
+          const s = new WebSocket(bibliothekTarget.webSocketDebuggerUrl);
+          s.onopen = () =>
+            s.send(
+              JSON.stringify({
+                id: 1,
+                method: "Runtime.evaluate",
+                params: { expression: `({ eintraege: document.querySelectorAll("section.eintrag").length, eigene: [...document.querySelectorAll("section[id^=eigen-] h2")].map((h) => h.textContent), url: location.href })`, returnByValue: true },
+              }),
+            );
+          s.onmessage = (event) => {
+            resolve(JSON.parse(event.data).result?.result?.value);
+            s.close();
+          };
+        })
+      : null;
+    report.push(
+      bibliothek
+        ? `Bibliothek (${bibliothek.url}): ${bibliothek.eintraege} Einträge mit Vorschau, eigene Bausteine aus dem Vault: ${bibliothek.eigene.join(", ")}: ${await shot("app-bibliothek")}`
+        : "Bibliothek: iframe NICHT gefunden",
+    );
+
+    // Eigenen Baustein aus markiertem Code speichern (Rust-Befehl schreibt die Datei)
+    await evaluate(`document.querySelector('.tree [title="Notizen/DNS.html"]').click()`);
+    await waitFor(`document.querySelector('[aria-label="Ansicht (Strg+E)"]')`, "HTML-Seite DNS");
+    await pickMode("Code");
+    await waitFor(`document.querySelector('.cm-editor .cm-line') && document.querySelector('.baustein-leiste')`, "Code-Ansicht");
+    await evaluate(`(() => {
+      const content = document.querySelector('.cm-content');
+      content.focus();
+      const zeile = [...content.querySelectorAll('.cm-line')].find((l) => l.textContent.startsWith('<l-callout'));
+      const range = document.createRange();
+      range.selectNodeContents(zeile);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+    })()`);
+    await sleep(300);
+    await evaluate(`[...document.querySelectorAll('.baustein-leiste button')].find((b) => b.textContent.includes("Als Baustein speichern")).click()`);
+    await waitFor(`document.querySelector('[role="dialog"][aria-label="Als eigenen Baustein speichern"]')`, "Dialog eigener Baustein");
+    await evaluate(`(() => { const set = (label, value) => { const input = document.querySelector('[role="dialog"] [aria-label="' + label + '"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, value); input.dispatchEvent(new Event("input", { bubbles: true })); }; set("Name", "App-Test"); set("Beschreibung", "Gespeichert in der gebauten App"); })()`);
+    await evaluate(`[...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === "Speichern").click()`);
+    const eigenDatei = join(vault, ".localist/bausteine/eigene/App-Test.html");
+    let eigenInhalt = null;
+    for (let i = 0; i < 30 && eigenInhalt === null; i++) {
+      await sleep(200);
+      try {
+        eigenInhalt = readFileSync(eigenDatei, "utf8");
+      } catch {
+        // noch nicht geschrieben
+      }
+    }
+    const inLeiste = await waitFor(`[...document.querySelectorAll('.baustein-leiste button')].some((b) => b.textContent === "App-Test")`, "neuer Baustein in der Werkzeugleiste").catch(() => false);
+    report.push(
+      `Eigener Baustein aus markiertem Code gespeichert: ${eigenInhalt ? JSON.stringify(eigenInhalt.split("\n").slice(0, 2).join("\n")) : "NICHT geschrieben"}; in der Werkzeugleiste: ${inLeiste ? "ja" : "NEIN"}: ${await shot("app-eigener-baustein")}`,
+    );
+    await pickMode("Lesen");
   }
 
   report.push(problems.length === 0 ? "Konsole: keine Fehler und keine CSP-Verstöße." : `Konsole: ${problems.length} Meldungen:\n  ${problems.join("\n  ")}`);

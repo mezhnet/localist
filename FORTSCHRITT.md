@@ -1,25 +1,32 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 13 – Lernen, Diagramme und eigene Bausteine
-- Zuletzt aktualisiert: 2026-10-25 21:20
-- Nächster Schritt: Screenshots, gebaute App prüfen, Klickliste, Abschluss von Etappe 13.
+- Etappe: 13 – Lernen, Diagramme und eigene Bausteine ist abgeschlossen. Als Nächstes kommt Etappe 14 – Notizbücher, Umwandeln und Export.
+- Zuletzt aktualisiert: 2026-10-25 21:45
+- Nächster Schritt: Etappe 14 beginnen (Fertig-Kriterien aus `CLAUDE.md` übernehmen; `_notizbuch.yaml`, Notizbuch-Ansicht).
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Karteikarte: umdrehen per Klick, Fingertipp oder Leertaste.
-- [x] Kartenstapel: Lernmodus mit einer Karte nach der anderen und den Knöpfen „Gewusst“ und „Nochmal“. Nicht gewusste Karten kommen erneut dran, am Ende gibt es eine Auswertung.
-- [x] Quiz: Multiple-Choice-Fragen mit sofortiger Rückmeldung und Punktzahl.
-- [x] Diagramm: liest die Daten aus der enthaltenen `<table>`, wird als SVG gezeichnet, passt sich an hell und dunkel an und braucht keine Online-Bibliothek. Das Formular enthält einen Daten-Editor.
-- [x] Alle vier nutzen das Markup aus der Tabelle im Speicherformat und haben Formulare zum Bearbeiten ohne Code.
-- [x] Eigene Bausteine („Code-Speicher“): Markierten Code als eigenen Baustein speichern (Name und Beschreibung), siehe Speicherformat. Eigene Bausteine erscheinen in Werkzeugleiste und „/“-Menü. Ein Bereich „Bausteine“ in der Sidebar zeigt die ganze Bibliothek (eingebaute und eigene) mit Vorschau. Eigene Bausteine lassen sich bearbeiten, umbenennen und löschen.
-- [x] Hilfe-Ansicht in der App: alle eingebauten Bausteine mit kurzer Erklärung und Beispielcode zum Kopieren.
-- [x] Die Beispielseite `Bausteine.html` enthält auch die neuen Bausteine.
-- [x] Tests für die Lernlogik (Reihenfolge, Wiederholung, Auswertung), die Diagramm-Daten aus Tabellen und das Speichern und Laden eigener Bausteine.
+- Etappe 14 ist noch nicht begonnen.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
 
-Stand: am 2026-10-25 mit dem Stand von Etappe 12 in der Browser-Vorschau (Port 1430) erneut durchgeklickt, alle 12 Punkte bestanden (Text „Klickliste Etappe 12.“ gespeichert, `> [!info] Hinweis Etappe 12`-Callout über das „/“-Menü, `[[Formatierung]]` aus den Vorschlägen und per Klick geöffnet, Eigenschaft `kategorie: Lernen`, Zelle `priorität: mittel`, Sortierung „fällig absteigend“ und Filter „status ist Geplant“ in `_ansichten.yaml`, Karte „Umzug“ nach „Erledigt“ gezogen (`status: Erledigt`), Woche „KW 43 · 19.10.–25.10.2026“ und Monat Oktober 2026, Klick auf den 30. legt `Projekte/Unbenannt.md` mit `fällig: 2026-10-30` an, Volltextsuche „Wochenplanung“ findet „Ideen“ mit markiertem Treffer, Strg+P „relaunch“ öffnet „Website-Relaunch“, Vorlage „Projekt“ mit neuer `id`, Backlinks unter „Ideen“: „Bausteine“, „DNS“ und „Website-Relaunch“, Dunkel bleibt nach dem Neuladen). Die Kanban-Karte wurde wie in Etappe 2 mit echten Drag-Ereignissen per Skript gezogen, weil das Vorschau-Fenster für natives Drag & Drop keine Ereignisse erzeugt.
+Stand: am 2026-10-25 mit dem Stand von Etappe 13 in der Browser-Vorschau (Port 1430) erneut durchgeklickt, alle 12 Punkte bestanden. Seit Etappe 13 erledigt das `scripts/klickliste.mjs` mit echter Tastatur und Maus in Microsoft Edge (Aufruf `node scripts/klickliste.mjs http://localhost:1430 "Etappe 13"`); nur die Kanban-Karte wird wie bisher mit Drag-Ereignissen per Skript gezogen. Ausgabe:
+    ```
+    Klickliste „Version 1.0“ (Etappe 13), Vorschau http://localhost:1430:
+    [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 13.“
+    [x] 2. Callout über das „/“-Menü: eingefügt
+    [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 13 [[Formatierung]]“, Klick öffnet „Formatierung“
+    [x] 4. Eigenschaft: `kategorie: Lernen` im Frontmatter
+    [x] 5. Tabelle: Zelle, Sortierung, Filter: priorität: mittel; absteigend: Umzug, Website-Relaunch; Filter status ist Geplant: Umzug
+    [x] 6. Kanban: „Umzug“ nach „Erledigt“ (status: Erledigt)
+    [x] 7. Kalender: Woche „KW 43 · 19.10.–25.10.2026“, Monat, Klick auf einen Tag legt Projekte/Unbenannt.md → fällig: 2026-10-14 an
+    [x] 8. Volltextsuche „Wochenplanung“: Treffer: Ideen (markiert: „Wochenplanung“)
+    [x] 9. Strg+P: „relaunch“ + Enter öffnet „Website-Relaunch“
+    [x] 10. Vorlage „Projekt“: `Unbenannt.md` mit neuer id, Eigenschaften und Inhalt der Vorlage
+    [x] 11. Backlinks unter „Ideen“: Verlinkt von 3🧱BausteineLink „Ideen“🧠DNSLink „Ideen“🚀Website-RelaunchSiehe auch [[Ideen]].
+    [x] 12. Hell/Dunkel bleibt nach dem Neuladen: sofort „dark“, nach dem Neuladen „dark“
+    ```
 - [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
 - [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
 - [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
@@ -34,6 +41,44 @@ Stand: am 2026-10-25 mit dem Stand von Etappe 12 in der Browser-Vorschau (Port 1
 - [x] Hell/Dunkel: Umschalten wirkt sofort und bleibt nach dem Neuladen erhalten.
 
 ## Abgeschlossene Etappen
+- Etappe 13 – Lernen, Diagramme und eigene Bausteine (abgeschlossen am 2026-10-25). Nachweise: `npm test` 266 von 266 Tests grün (24 Testdateien, neu `src/bausteine/lernen.test.ts` (11: Lernlogik, Karteikarte, Quiz, Diagramm-Daten), `src/lib/eigene-bausteine.test.ts` (5), 5 Formular-Tests „Formulare der Lern-Bausteine und Diagramme“ in `src/lib/baustein-formulare.test.ts`, 7 Oberflächen-Tests „Lern-Bausteine und Diagramme bearbeiten (Etappe 13)“ und „Eigene Bausteine, Bibliothek und Hilfe (Etappe 13)“), `cargo test` 38 von 38 grün (neu `eigene::tests::dateiformat_mit_beschreibung_in_der_ersten_zeile`, `eigene::tests::speichern_laden_umbenennen_und_loeschen`, `eigene::tests::bibliothek_zeigt_eingebaute_und_eigene_bausteine`, Bibliothek im Schema-Test), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`Localist_1.0.0_x64-setup.exe` 2,57 MiB, `Localist_1.0.0_x64_de-DE.msi` 3,29 MiB). Klickliste „Version 1.0“ abgehakt (siehe oben). Screenshots (`npm run screenshots -- http://localhost:1430 docs/screenshots/etappe-13 etappe13`):
+    - Karteikarte und Kartenstapel umgedreht: [hell](docs/screenshots/etappe-13/karteikarte-und-stapel-hell.png) / [dunkel](docs/screenshots/etappe-13/karteikarte-und-stapel-dunkel.png), Auswertung: [hell](docs/screenshots/etappe-13/kartenstapel-auswertung-hell.png) / [dunkel](docs/screenshots/etappe-13/kartenstapel-auswertung-dunkel.png), Quiz beantwortet: [hell](docs/screenshots/etappe-13/quiz-hell.png) / [dunkel](docs/screenshots/etappe-13/quiz-dunkel.png), Diagramme: [hell](docs/screenshots/etappe-13/diagramme-hell.png) / [dunkel](docs/screenshots/etappe-13/diagramme-dunkel.png)
+    - Diagramm-Formular mit Daten-Editor: [hell](docs/screenshots/etappe-13/formular-diagramm-hell.png) / [dunkel](docs/screenshots/etappe-13/formular-diagramm-dunkel.png), Bibliothek: [hell](docs/screenshots/etappe-13/bibliothek-hell.png) / [dunkel](docs/screenshots/etappe-13/bibliothek-dunkel.png), Hilfe: [hell](docs/screenshots/etappe-13/hilfe-hell.png) / [dunkel](docs/screenshots/etappe-13/hilfe-dunkel.png), [Eigenen Baustein speichern](docs/screenshots/etappe-13/eigener-baustein-speichern-hell.png)
+    - Handy (360 × 740): Kartenstapel [hell](docs/screenshots/etappe-13/handy-kartenstapel-hell.png) / [dunkel](docs/screenshots/etappe-13/handy-kartenstapel-dunkel.png)
+    - Gebaute `localist.exe`: [Lern-Bausteine](docs/screenshots/etappe-13/app-lernen.png), [Bibliothek](docs/screenshots/etappe-13/app-bibliothek.png), [eigener Baustein](docs/screenshots/etappe-13/app-eigener-baustein.png) und die Ansichten aus Etappe 10–12
+  - Gebaute App geprüft mit `node scripts/app-pruefung.mjs <localist.exe> <Kopie von beispiel-vault> docs/screenshots/etappe-13`:
+    ```
+    App gestartet: http://tauri.localhost/, Vault „pruef-vault“
+    Notiz „Ideen“ geöffnet: docs\screenshots\etappe-13\app-notiz.png
+    Datenbank „Projekte“ geöffnet (2 Zeilen): docs\screenshots\etappe-13\app-datenbank.png
+    HTML-Seite „DNS“ geöffnet: src http://localist-seite.localhost/Notizen/DNS.html?v=1, sandbox="allow-scripts", Höhe von der Brücke 1001px
+    Im iframe: Bild aus dem Vault geladen (1 px breit), __TAURI_INTERNALS__: object, window.ipc: object, Ursprung: null
+    Strg+P mit Fokus in der HTML-Seite öffnet die Schnellsuche der App: ja
+    Klick auf den Link „Ideen“ in der HTML-Seite öffnet die Notiz in der App: ja
+    Ansicht „Code“: CodeMirror mit Zeilennummern läuft: docs\screenshots\etappe-13\app-code.png
+    Ansicht „Geteilt“: Editor und Vorschau nebeneinander: docs\screenshots\etappe-13\app-geteilt.png
+    Vault geöffnet → .localist/bausteine/localist.css: gleich der gebündelten Fassung, /*! Localist-Bausteine 1.0.0+55327b46 – Aussehen (localist.c…
+    Vault geöffnet → .localist/bausteine/localist.js: gleich der gebündelten Fassung
+    In der Seite: Bausteine 1.0.0+55327b46, Schrift Inter geladen, Callout-Hintergrund rgba(91, 143, 240, 0.14), Code-Beschriftung „HTML“
+    Stift-Symbol am Callout (echte Maus in WebView2): docs\screenshots\etappe-13\app-stift.png; Klick öffnet das Formular: ja
+    Formular zeigt den Text aus der Datei: „Ein Callout hebt einen Hinweis hervor.“: docs\screenshots\etappe-13\app-formular.png
+    Häkchen in „Lesen“ gesetzt (echter Klick): Datei geändert, nur diese Stelle (checked ergänzt): docs\screenshots\etappe-13\app-haekchen.png
+    Lern-Bausteine: 4 Karteikarten, Kartenstapel „0 von 3 gewusst“, Quiz „Punkte: 0 von 2“, 3 Diagramme als SVG gezeichnet
+    Echte Klicks: Karteikarte umgedreht: ja; Kartenstapel nach Umdrehen bewertbar, nach „Gewusst“: „1 von 3 gewusst“; Quiz nach Klick auf „32“: „Richtig!“, „Punkte: 1 von 2“: docs\screenshots\etappe-13\app-lernen.png
+    Bibliothek (http://localist-seite.localhost/.localist/bausteine/bibliothek.html?v=1): 14 Einträge mit Vorschau, eigene Bausteine aus dem Vault: Lernziel-Box: docs\screenshots\etappe-13\app-bibliothek.png
+    Eigener Baustein aus markiertem Code gespeichert: "<!-- beschreibung: Gespeichert in der gebauten App -->\n<l-callout typ=\"tipp\">DNS übersetzt Namen wie example.com in IP-Adressen.</l-callout>"; in der Werkzeugleiste: ja: docs\screenshots\etappe-13\app-eigener-baustein.png
+    Konsole: keine Fehler und keine CSP-Verstöße.
+    ```
+  - Sicherheitstest `localist.exe --sicherheitstest`: „Ergebnis: 21 von 21 Prüfungen bestanden“ (Exit-Code 0).
+  - [x] Karteikarte: umdrehen per Klick, Fingertipp oder Leertaste.
+  - [x] Kartenstapel: Lernmodus mit einer Karte nach der anderen und den Knöpfen „Gewusst“ und „Nochmal“. Nicht gewusste Karten kommen erneut dran, am Ende gibt es eine Auswertung.
+  - [x] Quiz: Multiple-Choice-Fragen mit sofortiger Rückmeldung und Punktzahl.
+  - [x] Diagramm: liest die Daten aus der enthaltenen `<table>`, wird als SVG gezeichnet, passt sich an hell und dunkel an und braucht keine Online-Bibliothek. Das Formular enthält einen Daten-Editor.
+  - [x] Alle vier nutzen das Markup aus der Tabelle im Speicherformat und haben Formulare zum Bearbeiten ohne Code.
+  - [x] Eigene Bausteine („Code-Speicher“): Markierten Code als eigenen Baustein speichern (Name und Beschreibung), siehe Speicherformat. Eigene Bausteine erscheinen in Werkzeugleiste und „/“-Menü. Ein Bereich „Bausteine“ in der Sidebar zeigt die ganze Bibliothek (eingebaute und eigene) mit Vorschau. Eigene Bausteine lassen sich bearbeiten, umbenennen und löschen.
+  - [x] Hilfe-Ansicht in der App: alle eingebauten Bausteine mit kurzer Erklärung und Beispielcode zum Kopieren.
+  - [x] Die Beispielseite `Bausteine.html` enthält auch die neuen Bausteine.
+  - [x] Tests für die Lernlogik (Reihenfolge, Wiederholung, Auswertung), die Diagramm-Daten aus Tabellen und das Speichern und Laden eigener Bausteine.
 - Etappe 12 – Baustein-Bibliothek: Grundbausteine (abgeschlossen am 2026-10-25). Nachweise: `npm test` 238 von 238 Tests grün (22 Testdateien, neu `src/bausteine/bausteine.test.ts` (7), `src/lib/bausteine.test.ts` (10), `src/lib/baustein-formulare.test.ts` (17), neue Fälle in `src/lib/bridge.test.ts` und 12 Oberflächen-Tests „Bausteine (Etappe 12)“ und „Bausteine ohne Code bearbeiten (Etappe 12)“ in `src/App.test.tsx`), `cargo test` 35 von 35 grün (neu `bausteine::tests::gebuendelte_bausteine_tragen_eine_version`, `bausteine::tests::bausteine_werden_beim_oeffnen_geschrieben_wenn_sie_fehlen_oder_abweichen`), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `…\bundle\nsis\Localist_1.0.0_x64-setup.exe` (2,54 MiB), `…\bundle\msi\Localist_1.0.0_x64_de-DE.msi` (3,25 MiB)). Klickliste „Version 1.0“ abgehakt (siehe oben). Screenshots (`npm run screenshots -- http://localhost:1430 docs/screenshots/etappe-12 etappe12`):
     - „Lesen“ in der App (Vorschau, ganze Seite): [hell](docs/screenshots/etappe-12/lesen-hell.png) / [dunkel](docs/screenshots/etappe-12/lesen-dunkel.png), Handy: [hell](docs/screenshots/etappe-12/handy-lesen-hell.png) / [dunkel](docs/screenshots/etappe-12/handy-lesen-dunkel.png)
     - Dieselbe Datei per Doppelklick im Browser (`file://`, Edge, Toggle und Häkchen mit echten Mausklicks gesetzt): [hell](docs/screenshots/etappe-12/browser-hell.png) / [dunkel](docs/screenshots/etappe-12/browser-dunkel.png)
@@ -245,6 +290,12 @@ Stand: am 2026-10-25 mit dem Stand von Etappe 12 in der Browser-Vorschau (Port 1
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Etappe 13 – Lern-Bausteine in `src/bausteine/` (`karteikarte`, `kartenstapel`, `quiz`, `diagramm` je `.css`/`.js`). Ohne Skript stehen Frage und Antwort bzw. Antworten und Tabelle lesbar da; erst mit Skript (`:defined`, `[hidden]`, `data-gezeichnet`) wird umgedreht, ausgeblendet oder gezeichnet. Die Logik liegt getrennt von der Anzeige unter `window.Localist` (`lernen`, `quiz`, `diagramm`, `umdrehen`) und wird an der erzeugten `localist.js` getestet. Kartenstapel: Reihenfolge wie in der Datei, „Nochmal“ legt die Karte ans Ende, „Gewusst“ legt sie weg; bewerten erst nach dem Umdrehen; Auswertung mit „beim ersten Mal gewusst“ und den wiederholten Karten. Der Lernstand wird nicht gespeichert (steht unter „Zukunft“).
+- 2026-10-25: Etappe 13 – Diagramm ohne Bibliothek: Daten aus der `<table>` (erste Zeile = Reihen, wenn `<th>` oder ohne Zahlen; deutsche Zahlen wie „1.234,5“ und Einheiten werden erkannt), SVG über `createElementNS` mit Texten nur per `textContent`, Farben aus den neuen Tokens `--color-chart-1 … 6` (hell und dunkel). Die Tabelle bleibt im Dokument (nur für Bildschirmleser sichtbar). Die Tabelle eines Diagramms zählt nicht als eigener Baustein (Brücke und `baustein-formulare.ts` gleich); das Diagramm-Formular bearbeitet sie mit dem Tabellen-Editor (Daten-Editor).
+- 2026-10-25: Etappe 13 – Eigene Bausteine: Rust `src-tauri/src/eigene.rs` (Befehle `eigene_bausteine`, `eigenen_baustein_speichern`, `eigenen_baustein_loeschen`; Namen wie Dateinamen geprüft, keine Pfade aus dem Ordner heraus, Löschen in den Papierkorb), TS-Gegenstück `src/lib/eigene-bausteine.ts` für Vorschau und Tests. Code wird mit „\n“ gespeichert; „--“ in der Beschreibung wird zu „–“, damit der Kommentar nicht endet. Bibliothek: virtuelle Seite `.localist/bausteine/bibliothek.html`, die das Schema aus der beim Build erzeugten Vorlage `src-tauri/seite/bibliothek.html` (alle eingebauten Bausteine mit Beispiel aus dem Katalog) und den eigenen Bausteinen des Vaults zusammensetzt; sie läuft wie jede HTML-Seite in der abgeschotteten Anzeige (eigene Bausteine sind Code des Nutzers). Die Dateien der eigenen Bausteine selbst liefert das Schema weiterhin nicht aus. Neue Brücken-Nachricht `anker` (zu einem Abschnitt scrollen, nur einfache ids).
+- 2026-10-25: Etappe 13 – Einfügen bei markiertem Text (z. B. dem Platzhalter des zuletzt eingefügten Bausteins): Der neue Baustein kommt hinter die Zeile, statt mitten hinein. Der Hover-Rahmen des Stifts folgt Größenänderungen (ResizeObserver), z. B. wenn ein Quiz nach einer Antwort wächst.
+- 2026-10-25: Etappe 13 – `scripts/klickliste.mjs` klickt die Klickliste „Version 1.0“ automatisch mit echter Tastatur und Maus in Edge durch, weil das eingebaute Vorschau-Fenster der App dafür zu klein eingestellt sein kann. `scripts/screenshots.mjs` hat die Szene `etappe13`, `scripts/app-pruefung.mjs` prüft zusätzlich Lern-Bausteine, Bibliothek und das Speichern eines eigenen Bausteins in der gebauten App.
+- 2026-10-25: Etappe 13 – Bewusst geänderte Tests (keiner gelöscht): (1) `src/App.test.tsx`: Die erwarteten Listen von Werkzeugleiste und „/“-Menü enthalten die vier neuen Bausteine sowie den eigenen Beispiel-Baustein „Lernziel-Box“ und „Als Baustein speichern“; die Anzahl der Bausteine in `Bausteine.html` ist 22 statt 13 (neue Bausteine am Ende angehängt, die Nummern der alten bleiben gleich). (2) `src/lib/baustein-formulare.test.ts`: Anzahl 22 statt 13; der Vergleich mit dem Browser-DOM nimmt die Tabellen von Diagrammen aus (wie die Brücke). (3) `src/lib/bausteine.test.ts`: „localist.css versteckt ohne Skript keinen Inhalt“ erlaubt Regeln, die nur mit Skript gelten (`:defined`, `[hidden]`, `[data-gezeichnet]`, `:empty`). (4) `src/bausteine/bausteine.test.ts`: Die Nachbildung von CRLF wandelt vorhandene CRLF nicht doppelt um (Dateien können unter Windows mit CRLF ausgecheckt sein).
 - 2026-10-25: Etappe 12 – `localist.css`/`localist.js`: Quellen in `src/bausteine/` (je Baustein eine `.css`, Skripte in `.js`, `basis` zuerst), gebaut von `src/bausteine/bauen.ts` über das Vite-Plugin `localistBausteine` in `vite.config.ts` (beim Build vor dem Rust-Teil und in der Vorschau bei jeder Änderung; in Tests nicht, dort prüft `src/bausteine/bausteine.test.ts`, dass die Dateien aktuell sind). Ziele: `src-tauri/seite/` (dort bündelt Rust sie mit `include_str!`, `src-tauri/src/bausteine.rs`) und `beispiel-vault/.localist/bausteine/` (damit der Beispiel-Vault per Doppelklick funktioniert). Erste Zeile jeder Datei: `/*! Localist-Bausteine <App-Version>+<Prüfsumme> …`; die Prüfsumme (FNV-1a über den Inhalt) ändert sich mit jeder Quelländerung. Beim Öffnen eines Vaults schreibt `bausteine::ensure` beide Dateien atomar, wenn sie fehlen oder abweichen (ein Fehler dabei verhindert das Öffnen nicht); `eigene/` bleibt unberührt. Das Schema liefert immer die gebündelte Fassung. Die erzeugten Dateien stehen in `.gitattributes` mit `eol=lf`, damit die Prüfsumme nicht vom Auschecken abhängt.
 - 2026-10-25: Etappe 12 – Schrift: Inter (lateinische Zeichen inkl. Umlaute, 48 KB, Lizenz SIL OFL 1.1 aus `@fontsource-variable/inter`) ist als `data:`-Adresse samt Lizenztext in `localist.css` eingebettet (Datei ~88 KB). Grund: Die Seite im iframe ist ein eigenes Dokument und kommt nicht an die Schriftdateien der App; so sehen „Lesen“ und der Doppelklick im Browser gleich aus. Die CSP der Seiten erlaubt `font-src data:` bereits.
 - 2026-10-25: Etappe 12 – Bausteine nutzen nur Variablen aus `tokens.css` (der Farbtest gilt auch für `src/bausteine/*.css`). Ohne Skript bleibt alles lesbar und formatiert; `localist.js` ergänzt nur: Callout-Beschriftung für Bildschirmleser, Klick auf den Text eines Checklisten-Punkts setzt das Häkchen, Sprach-Beschriftung über Code-Blöcken (`data-sprache`). Das Skript ändert nie die Datei. Die Brücke setzt in der App `data-localist="app"`, dann entfällt der eigene Seitenrand. Das iframe übernimmt das Farbschema der App (`color-scheme: inherit` statt `normal`), sonst malte der Browser im Dunkelmodus einen deckenden Hintergrund hinter die Seite.

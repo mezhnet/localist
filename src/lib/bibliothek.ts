@@ -46,6 +46,7 @@ export function bibliothekVorlage(): string {
     ".gruppe { margin: var(--space-8) 0 0; color: var(--color-text-muted); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); letter-spacing: 0.04em; text-transform: uppercase; }",
     ".gruppe:first-child { margin-top: 0; }",
     ".leer { color: var(--color-text-muted); }",
+    ':root[data-localist="app"] main { padding: var(--space-4) var(--space-5) var(--space-8); }',
     "</style>",
     "</head>",
     "<body>",
