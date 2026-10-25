@@ -88,7 +88,8 @@ describe("Sidebar", () => {
     const tree = await openVaultFromStart();
     await within(tree).findByText("Notizen");
     const top = within(tree).getAllByRole("treeitem").map((item) => item.querySelector(".tree-name")?.textContent);
-    expect(top).toEqual(["Anhänge", "Notizen", "Projekte", "Vorlagen"]);
+    // „Lernen“ kam in Etappe 12 mit der Beispielseite Bausteine.html dazu.
+    expect(top).toEqual(["Anhänge", "Lernen", "Notizen", "Projekte", "Vorlagen"]);
     expect(screen.queryByText(".localist")).toBeNull();
 
     fireEvent.click(within(tree).getByText("Anhänge"));
@@ -557,9 +558,11 @@ describe("Seiten im Editor", () => {
     fireEvent.change(title, { target: { value: "Gedanken" } });
     fireEvent.blur(title);
     await waitFor(() => expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("Siehe auch [[Gedanken]]."));
-    // Seit Etappe 10 verlinkt auch die HTML-Seite Notizen/DNS.html auf „Ideen“ (<a href>); sie wird mit angepasst.
+    // Seit Etappe 10 verlinkt auch die HTML-Seite Notizen/DNS.html auf „Ideen“ (<a href>); sie wird mit angepasst,
+    // seit Etappe 12 ebenso der Seitenlink in Lernen/Bausteine.html.
     expect(vault().files.get("Notizen/DNS.html")).toContain('<a href="Gedanken.md">Ideen</a>');
-    expect(await screen.findByText("Links in 2 Seiten angepasst.")).toBeTruthy();
+    expect(vault().files.get("Lernen/Bausteine.html")).toContain('<a class="l-seitenlink" href="../Notizen/Gedanken.md">Ideen</a>');
+    expect(await screen.findByText("Links in 3 Seiten angepasst.")).toBeTruthy();
   });
 
   it("schaltet zwischen hell und dunkel um und merkt sich die Wahl", async () => {
@@ -747,7 +750,8 @@ describe("HTML-Seiten (Etappe 10)", () => {
 
     fireEvent.keyDown(window, { key: "f", ctrlKey: true, shiftKey: true });
     fireEvent.change(await screen.findByRole("textbox", { name: "Volltextsuche" }), { target: { value: "Port 53" } });
-    const hit = await screen.findByRole("option", { name: /DNS/ });
+    // Seit Etappe 12 steht „DNS“ auch in Lernen/Bausteine.html: gesucht ist der Treffer mit dem Titel „DNS“.
+    const hit = await screen.findByRole("option", { name: /^DNS/ });
     expect(hit.querySelector("mark")?.textContent).toBe("Port");
     expect(hit.textContent).toContain("Port 53 (UDP und TCP)");
   });
