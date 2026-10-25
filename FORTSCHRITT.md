@@ -1,19 +1,21 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 6 – Komfort
-- Zuletzt aktualisiert: 2026-10-25 14:18
-- Nächster Schritt: Abschlussprüfung der Etappe 6 (npm test, tsc, tauri build) und Abschluss-Commit.
+- Etappe: 7 – Version 1.0 für den PC
+- Zuletzt aktualisiert: 2026-10-25 14:22
+- Nächster Schritt: Fertig-Kriterien der neuen Etappe als Checkliste übernehmen und mit der Umsetzung beginnen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Volltextsuche über alle Seiten des Vaults.
-- [x] Schnellsuche mit Strg+P zum Öffnen von Seiten.
-- [x] Vorlagen: Seiten aus dem Ordner `Vorlagen/` lassen sich als Grundlage für neue Seiten nutzen.
-- [x] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
-- [x] Der Suchindex liegt im App-Datenordner, nicht im Vault.
-- [x] Tests für Suche und Backlinks.
+- (werden zu Beginn der Etappe eingetragen)
 
 ## Abgeschlossene Etappen
+- Etappe 6 – Komfort (abgeschlossen am 2026-10-25). Nachweise: `npm test` 123 von 123 Tests grün (12 Testdateien), `cargo test` 16 von 16 grün (darunter `index_liegt_im_cache_ordner_und_nicht_im_vault`), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Volltextsuche mit markiertem Treffer, „Verlinkt von“ unter „Ideen“.
+  - [x] Volltextsuche über alle Seiten des Vaults.
+  - [x] Schnellsuche mit Strg+P zum Öffnen von Seiten.
+  - [x] Vorlagen: Seiten aus dem Ordner `Vorlagen/` lassen sich als Grundlage für neue Seiten nutzen.
+  - [x] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
+  - [x] Der Suchindex liegt im App-Datenordner, nicht im Vault.
+  - [x] Tests für Suche und Backlinks.
 - Etappe 5 – Kalender (abgeschlossen am 2026-10-25). Nachweise: `npm test` 111 von 111 Tests grün (11 Testdateien, zweimal hintereinander stabil), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Monatsansicht Oktober 2026 mit markiertem heutigen Tag und einem Termin mit Uhrzeit, Liste „Ohne Datum“.
   - [x] Kalenderansicht einer Datenbank mit Monats- und Wochenansicht, basierend auf einer Datums-Eigenschaft.
   - [x] Einen Eintrag per Drag & Drop zu verschieben ändert das Datum in der Datei.

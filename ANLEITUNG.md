@@ -170,6 +170,14 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
     wählst du Monat oder Woche und blätterst mit ‹ und ›. Ein Klick auf einen Tag legt eine Seite mit diesem Datum an,
     ein Eintrag lässt sich auf einen anderen Tag ziehen (eine Uhrzeit bleibt dabei erhalten). Einträge ohne Datum
     stehen rechts unter „Ohne Datum“ und lassen sich von dort in den Kalender ziehen.
+17. **Suchen:** `Strg+P` öffnet die Schnellsuche nach Seitentiteln (auch Abkürzungen wie „wsr“ für „Website-Relaunch“).
+    `Strg+Umschalt+F` durchsucht den Text aller Seiten. Mit ↑/↓ auswählen, Enter öffnet, Esc schließt.
+    Der Suchindex liegt im Cache-Ordner der App (`%LOCALAPPDATA%\de.localprojekt.desktop\suchindex\`), nicht im Vault.
+    Du kannst ihn jederzeit löschen, er wird automatisch neu aufgebaut.
+18. **Vorlagen:** Jede Seite im Ordner `Vorlagen/` ist eine Vorlage. „+ Seite aus Vorlage“ (oder Rechtsklick auf einen
+    Ordner) legt eine neue Seite mit Eigenschaften und Inhalt der Vorlage an. `{{title}}`, `{{date}}` und `{{time}}`
+    werden dabei ersetzt.
+19. **Backlinks:** Unten auf jeder Seite steht unter „Verlinkt von“, welche Seiten mit `[[…]]` auf sie verweisen.
 
 ## Häufige Probleme
 
