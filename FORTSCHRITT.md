@@ -8,7 +8,7 @@
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Kalenderansicht einer Datenbank mit Monats- und Wochenansicht, basierend auf einer Datums-Eigenschaft.
 - [x] Einen Eintrag per Drag & Drop zu verschieben ändert das Datum in der Datei.
-- [ ] Ein Klick auf einen Tag legt einen neuen Eintrag mit diesem Datum an.
+- [x] Ein Klick auf einen Tag legt einen neuen Eintrag mit diesem Datum an.
 - [ ] Einträge ohne Datum erscheinen in einer Liste „Ohne Datum“.
 - [x] Tests für die Datumslogik (Format, Wochen- und Monatsgrenzen).
 
