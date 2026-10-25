@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 6 – Komfort
-- Zuletzt aktualisiert: 2026-10-25 14:02
-- Nächster Schritt: Suchindex in Rust (App-Datenordner), Such- und Backlink-Logik mit Tests, danach Volltextsuche, Strg+P, Vorlagen und Backlinks in der Oberfläche.
+- Zuletzt aktualisiert: 2026-10-25 14:18
+- Nächster Schritt: Abschlussprüfung der Etappe 6 (npm test, tsc, tauri build) und Abschluss-Commit.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Volltextsuche über alle Seiten des Vaults.
+- [x] Volltextsuche über alle Seiten des Vaults.
 - [ ] Schnellsuche mit Strg+P zum Öffnen von Seiten.
 - [ ] Vorlagen: Seiten aus dem Ordner `Vorlagen/` lassen sich als Grundlage für neue Seiten nutzen.
 - [ ] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
