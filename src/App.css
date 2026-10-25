@@ -1800,3 +1800,18 @@ button {
     margin: 8px 8px 0;
   }
 }
+
+/* Dialoge sind immer linksbündig (auch über der zentrierten Startseite) */
+.dialog {
+  text-align: left;
+}
+
+.primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+  filter: none;
+}
+
+.sidebar-footer {
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}

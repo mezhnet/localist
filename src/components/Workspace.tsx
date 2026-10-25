@@ -494,7 +494,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           </WikiLinkContext.Provider>
         ) : (
           <div className="empty-state">
-            <p>Wähle links eine Seite aus oder lege eine neue an.</p>
+            <p>Wähle eine Seite in der Seitenleiste aus oder lege eine neue an.</p>
           </div>
         )}
       </main>
