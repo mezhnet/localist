@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Workspace } from "./components/Workspace";
 import { errorMessage } from "./lib/autosave";
 import { ThemeProvider } from "./lib/theme";
@@ -10,7 +11,9 @@ type Phase = "starting" | "ready";
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

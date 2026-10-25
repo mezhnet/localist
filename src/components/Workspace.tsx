@@ -56,6 +56,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   const [externalVersion, setExternalVersion] = useState(0);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  /** Der Vault-Ordner ist verschwunden (z. B. USB-Stick abgezogen oder umbenannt). */
+  const [vaultMissing, setVaultMissing] = useState(false);
   /** Geöffnete Datenbank (Ordnerpfad); dann ist keine Seite offen. */
   const [database, setDatabase] = useState<string | null>(null);
   const [databaseVersion, setDatabaseVersion] = useState(0);
@@ -95,6 +97,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   const refreshTree = useCallback(async () => {
     try {
       const next = sortTree(await listTree());
+      setVaultMissing(false);
       setTree(next);
       const current = pageRef.current;
       if (current && !findNode(next, current.path)) {
@@ -104,8 +107,21 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       const db = databaseRef.current;
       if (db && !findNode(next, db)?.database) setDatabase(null);
     } catch (error) {
-      showError(errorMessage(error));
+      const message = errorMessage(error);
+      if (/Vault-Ordner .* wurde nicht gefunden/.test(message)) setVaultMissing(true);
+      else showError(message);
     }
+  }, [showError]);
+
+  // Unerwartete Fehler im Hintergrund als Meldung zeigen statt sie still zu verschlucken.
+  useEffect(() => {
+    const onRejection = (event: PromiseRejectionEvent) => {
+      const message = errorMessage(event.reason);
+      if (/ResizeObserver/.test(message)) return;
+      showError(`Unerwarteter Fehler: ${message}`);
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => window.removeEventListener("unhandledrejection", onRejection);
   }, [showError]);
 
   useEffect(() => {
@@ -409,7 +425,20 @@ export function Workspace({ vault, onSwitchVault }: Props) {
             </button>
           </div>
         )}
-        {database && schemas.configs[database] ? (
+        {vaultMissing ? (
+          <div className="empty-state">
+            <div className="vault-missing" role="alert">
+              <h2>Der Vault-Ordner ist nicht erreichbar</h2>
+              <p>
+                „{vault.root}“ wurde nicht gefunden. Vielleicht wurde er verschoben, umbenannt oder das Laufwerk ist nicht
+                angeschlossen. Sobald er wieder da ist, lädt die App ihn automatisch.
+              </p>
+              <button type="button" className="primary" onClick={onSwitchVault}>
+                Anderen Vault öffnen …
+              </button>
+            </div>
+          </div>
+        ) : database && schemas.configs[database] ? (
           <DatabaseView
             key={database}
             folder={database}

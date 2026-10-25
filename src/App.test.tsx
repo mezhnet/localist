@@ -388,6 +388,56 @@ describe("Komfort: Suche, Strg+P, Vorlagen, Backlinks", () => {
   });
 });
 
+describe("Verständliche Fehlermeldungen statt Abstürzen", () => {
+  it("eine nicht lesbare Datei zeigt eine deutsche Meldung, die App läuft weiter", async () => {
+    clearMocks();
+    mockIPC(
+      (cmd) => {
+        if (cmd === "get_last_vault") return "Testvault";
+        if (cmd === "open_vault") return { root: "C:\\Vault", name: "Testvault" };
+        if (cmd === "list_tree") return [{ name: "Kaputt", path: "Kaputt.md", kind: "page" }];
+        if (cmd === "read_page") throw "Die Datei „Kaputt.md“ ist keine gültige UTF-8-Textdatei.";
+        if (cmd === "vault_index") return [];
+        return null;
+      },
+      { shouldMockEvents: true },
+    );
+    render(<App />);
+    fireEvent.click(await screen.findByText("Kaputt"));
+    expect(await screen.findByText("Die Seite konnte nicht geöffnet werden: Die Datei „Kaputt.md“ ist keine gültige UTF-8-Textdatei.")).toBeTruthy();
+    expect(screen.getByRole("tree")).toBeTruthy();
+  });
+
+  it("fehlt der Vault-Ordner während der Arbeit, gibt es einen klaren Hinweis statt Fehlerflut", async () => {
+    await openVaultFromStart();
+    act(() => vault().setMissing(true));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Der Vault-Ordner ist nicht erreichbar");
+    expect(within(alert).getByRole("button", { name: "Anderen Vault öffnen …" })).toBeTruthy();
+    // Ist der Ordner wieder da, geht es normal weiter.
+    act(() => vault().setMissing(false));
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+    expect(screen.getByText("Notizen")).toBeTruthy();
+  });
+
+  it("ein unerwarteter Fehler in der Oberfläche zeigt eine Meldung mit „App neu laden“", async () => {
+    const { ErrorBoundary } = await import("./components/ErrorBoundary");
+    const Kaputt = () => {
+      throw new Error("Test-Absturz");
+    };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <ErrorBoundary>
+        <Kaputt />
+      </ErrorBoundary>,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("Da ist etwas schiefgegangen");
+    expect(alert.textContent).toContain("Test-Absturz");
+    expect(screen.getByRole("button", { name: "App neu laden" })).toBeTruthy();
+  });
+});
+
 describe("Seiten im Editor", () => {
   it("öffnet eine Seite im Block-Editor", async () => {
     await openVaultFromStart();

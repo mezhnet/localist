@@ -530,6 +530,18 @@ mod tests {
     }
 
     #[test]
+    fn verstaendliche_fehlermeldungen_auf_deutsch() {
+        let vault = TestVault::new();
+        fs::write(vault.0.join("Binär.md"), [0xff, 0xfe, 0x00, 0x41]).unwrap();
+        assert_eq!(read_text(&vault.0.join("Binär.md")).unwrap_err(), "Die Datei „Binär.md“ ist keine gültige UTF-8-Textdatei.");
+        assert_eq!(read_text(&vault.0.join("Fehlt.md")).unwrap_err(), "Die Datei „Fehlt.md“ wurde nicht gefunden.");
+        let missing = vault.0.join("weg");
+        assert!(list_tree(&missing).unwrap_err().starts_with("Der Vault-Ordner"));
+        assert_eq!(write_atomic(&missing.join("A.md"), b"x").unwrap_err(), "Der Ordner für „A.md“ existiert nicht mehr.");
+        assert!(delete_entry(&vault.0, "").unwrap_err().contains("Vault selbst"));
+    }
+
+    #[test]
     fn seitentitel_aus_dateinamen() {
         assert_eq!(page_title("Ideen.md"), Some("Ideen".into()));
         assert_eq!(page_title("Notiz.MD"), Some("Notiz".into()));

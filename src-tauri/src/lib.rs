@@ -19,8 +19,14 @@ struct AppState {
 
 impl AppState {
     fn root(&self) -> Result<PathBuf, String> {
-        self.root.lock().unwrap().clone().ok_or_else(|| "Es ist kein Vault geöffnet.".to_string())
+        lock(&self.root).clone().ok_or_else(|| "Es ist kein Vault geöffnet.".to_string())
     }
+}
+
+/// Sperrt einen Mutex. War ein anderer Zugriff mittendrin abgebrochen, wird trotzdem weitergearbeitet,
+/// statt die ganze App zu beenden (die Daten darin sind einfache Pfade ohne halbfertigen Zustand).
+fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 /// Geöffneter Vault: absoluter Pfad und Anzeigename (Ordnername).
@@ -79,10 +85,10 @@ async fn open_vault(app: AppHandle, state: State<'_, AppState>, path: String) ->
     vault::ensure_settings(&root)?;
 
     // Alten Wächter zuerst beenden, dann den neuen starten.
-    state.watcher.lock().unwrap().take();
+    lock(&state.watcher).take();
     let new_watcher = watcher::start(app.clone(), root.clone())?;
-    *state.watcher.lock().unwrap() = Some(new_watcher);
-    *state.root.lock().unwrap() = Some(root.clone());
+    *lock(&state.watcher) = Some(new_watcher);
+    *lock(&state.root) = Some(root.clone());
 
     // Bilder aus dem Vault dürfen im Editor angezeigt werden (Tauri-Asset-Protokoll).
     let _ = app.asset_protocol_scope().allow_directory(&root, true);

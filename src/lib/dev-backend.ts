@@ -23,6 +23,8 @@ interface DevVault {
   externalWrite: (path: string, content: string) => void;
   /** Simuliert Löschen von außen. */
   externalDelete: (path: string) => void;
+  /** Simuliert einen verschwundenen Vault-Ordner (z. B. abgezogener USB-Stick). */
+  setMissing: (missing: boolean) => void;
 }
 
 declare global {
@@ -103,9 +105,13 @@ export function installDevBackend(): void {
     for (const folder of [...folders]) if (folder === path || folder.startsWith(`${path}/`)) folders.delete(folder);
   };
 
+  let missing = false;
   mockIPC(
     (cmd, args) => {
       const a = (args ?? {}) as Record<string, any>;
+      if (missing && !cmd.startsWith("plugin:") && cmd !== "get_last_vault") {
+        throw `Der Vault-Ordner „${ROOT}“ wurde nicht gefunden.`;
+      }
       switch (cmd) {
         case "get_last_vault":
           return localStorage.getItem("dev-last-vault");
@@ -194,6 +200,10 @@ export function installDevBackend(): void {
     externalDelete(path) {
       remove(path);
       notify({ kind: "removed", path });
+    },
+    setMissing(value) {
+      missing = value;
+      notify({ kind: "rescan" });
     },
   };
 }
