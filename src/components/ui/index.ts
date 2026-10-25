@@ -2,6 +2,6 @@
 export { Badge, Button, IconButton, Kbd, type ButtonProps, type ButtonVariant } from "./Button";
 export { cx } from "./cx";
 export { Dialog } from "./Dialog";
-export { Field, Input, Select } from "./Input";
+export { Checkbox, Field, Input, Select, Textarea } from "./Input";
 export { Menu, MenuItem, MenuLabel, MenuSeparator, useMenu, type MenuAnchor } from "./Menu";
 export { Segmented, Tab, TabList, type SegmentedOption } from "./Tabs";

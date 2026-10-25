@@ -1,7 +1,9 @@
 // Nachrichten zwischen der App und HTML-Seiten in der abgeschotteten Anzeige (Brücken-Skript:
 // src-tauri/seite/bruecke.js). Das iframe hat keinen eigenen Ursprung (event.origin ist "null"). Die App
 // prüft deshalb zuerst `event.source === iframe.contentWindow`, dann hier den Nachrichtentyp und die Felder,
-// und bei Links, dass der Pfad im Vault liegt. An die Seite schickt die App nur das Farbschema.
+// und bei Links, dass der Pfad im Vault liegt. An die Seite schickt die App nur Farbschema, Scrollposition und
+// ob Bausteine bearbeitet werden dürfen.
+import { BAUSTEINE, type BausteinArt } from "./bausteine";
 
 export interface SecurityCheck {
   pruefung: string;
@@ -19,7 +21,13 @@ export type BridgeMessage =
   | { typ: "extern"; url: string }
   | { typ: "taste"; taste: "p" | "f" | "e"; umschalt: boolean }
   | { typ: "position"; y: number }
+  /** Stift-Symbol eines Bausteins geklickt (Nummer und Anzahl wie im iframe gezählt). */
+  | { typ: "bearbeiten"; index: number; art: BausteinArt; anzahl: number }
+  /** Häkchen in einer Checkliste gesetzt oder entfernt. */
+  | { typ: "haekchen"; index: number; an: boolean }
   | { typ: "sicherheitstest"; ergebnisse: SecurityCheck[] };
+
+const isIndex = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 100_000;
 
 const MAX_TEXT = 2000;
 
@@ -56,6 +64,14 @@ export function parseBridgeMessage(data: unknown): BridgeMessage | null {
         return { typ: "taste", taste: message.taste, umschalt: message.umschalt };
       }
       return null;
+    case "bearbeiten": {
+      const art = BAUSTEINE.find((info) => info.art === message.art)?.art;
+      return art && isIndex(message.index) && isIndex(message.anzahl) && message.index < message.anzahl
+        ? { typ: "bearbeiten", index: message.index, art, anzahl: message.anzahl }
+        : null;
+    }
+    case "haekchen":
+      return isIndex(message.index) && typeof message.an === "boolean" ? { typ: "haekchen", index: message.index, an: message.an } : null;
     case "sicherheitstest": {
       if (!Array.isArray(message.ergebnisse) || message.ergebnisse.length > 50) return null;
       const ergebnisse: SecurityCheck[] = [];
@@ -100,4 +116,19 @@ export function themeMessage(theme: "light" | "dark") {
 
 export function scrollMessage(y: number) {
   return { localist: 1, typ: "scrollen", y: Math.max(0, Math.round(y)) } as const;
+}
+
+/** Stift-Symbole und Häkchen-Meldungen in der Seite an- oder ausschalten. */
+export function editMessage(an: boolean) {
+  return { localist: 1, typ: "stifte", an } as const;
+}
+
+/**
+ * Hat der Nutzer gerade etwas getan (Klick, Taste)? Ein Klick im iframe zählt auch für die App (HTML-Standard:
+ * Nutzeraktivierung gilt für alle übergeordneten Fenster). So kann ein Skript der Seite ohne Zutun des
+ * Nutzers weder Häkchen in die Datei schreiben noch Formulare öffnen. Ohne diese Browser-Funktion (Tests): ja.
+ */
+export function userIsActive(): boolean {
+  const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+  return activation ? activation.isActive : true;
 }

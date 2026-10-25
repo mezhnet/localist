@@ -1143,3 +1143,114 @@ describe("Bausteine (Etappe 12)", () => {
     await waitFor(() => expect(completions()).toEqual(expect.arrayContaining(["info", "tipp", "warnung", "fehler"])));
   });
 });
+
+describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
+  const frame = () => [...document.querySelectorAll<HTMLIFrameElement>("iframe.html-frame")].find((element) => !element.classList.contains("is-loading"))!;
+  const fromFrame = (data: unknown) =>
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, ...(data as object) }, source: frame().contentWindow }));
+    });
+  const file = () => vault().files.get("Lernen/Bausteine.html")!;
+
+  async function openBausteine(mode: "lesen" | "geteilt" = "lesen") {
+    localStorage.setItem("html-ansicht", mode);
+    await openVaultFromStart();
+    await openPage("Lernen", "Bausteine");
+    await waitFor(() => expect(frame()).toBeTruthy());
+    return file();
+  }
+
+  it("die Seite bekommt beim Start die Erlaubnis für Stift-Symbole und Häkchen", async () => {
+    await openBausteine();
+    const posted: unknown[] = [];
+    frame().contentWindow!.postMessage = ((data: unknown) => posted.push(data)) as typeof window.postMessage;
+    fromFrame({ typ: "bereit" });
+    expect(posted).toContainEqual({ localist: 1, typ: "stifte", an: true });
+  });
+
+  it("Stift am Callout öffnet ein Formular, Speichern ändert nur diesen Baustein", async () => {
+    const original = await openBausteine();
+    fromFrame({ typ: "bearbeiten", index: 0, art: "callout", anzahl: 13 });
+    const dialog = within(await screen.findByRole("dialog", { name: "Callout bearbeiten" }));
+    expect((dialog.getByRole("textbox", { name: "Text" }) as HTMLTextAreaElement).value).toBe("Ein Callout hebt einen Hinweis hervor.");
+    fireEvent.click(dialog.getByRole("button", { name: "Warnung" }));
+    fireEvent.change(dialog.getByRole("textbox", { name: "Text" }), { target: { value: "Nicht vergessen: speichern & sichern" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() => expect(file()).not.toBe(original));
+    expect(file()).toBe(original.replace('<l-callout typ="info">Ein Callout hebt einen Hinweis hervor.</l-callout>', '<l-callout typ="warnung">Nicht vergessen: speichern &amp; sichern</l-callout>'));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // Die Anzeige lädt die geänderte Seite neu.
+    await waitFor(() => expect([...document.querySelectorAll("iframe.html-frame")].some((element) => /\?v=2$/.test(element.getAttribute("src")!))).toBe(true));
+  });
+
+  it("Tabellen-Editor: Zeile hinzufügen, Spalte entfernen, Überschrift bleibt", async () => {
+    const original = await openBausteine();
+    fromFrame({ typ: "bearbeiten", index: 5, art: "tabelle", anzahl: 13 });
+    const dialog = within(await screen.findByRole("dialog", { name: "Tabelle bearbeiten" }));
+    expect((dialog.getByRole("textbox", { name: "Zeile 2, Spalte 1" }) as HTMLInputElement).value).toBe("DNS");
+    expect(dialog.getByRole("checkbox", { name: "Erste Zeile ist Überschrift" })).toHaveProperty("checked", true);
+    fireEvent.click(dialog.getByRole("button", { name: "Zeile hinzufügen" }));
+    fireEvent.change(dialog.getByRole("textbox", { name: "Zeile 5, Spalte 1" }), { target: { value: "SSH" } });
+    fireEvent.change(dialog.getByRole("textbox", { name: "Zeile 5, Spalte 2" }), { target: { value: "22" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Spalte 3 entfernen" }));
+    expect(dialog.queryByRole("textbox", { name: "Zeile 1, Spalte 3" })).toBeNull();
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() => expect(file()).not.toBe(original));
+    expect(file()).toBe(
+      original.replace(
+        /<table>[\s\S]*?<\/table>/,
+        "<table>\n  <tr><th>Protokoll</th><th>Port</th></tr>\n  <tr><td>DNS</td><td>53</td></tr>\n  <tr><td>HTTP</td><td>80</td></tr>\n  <tr><td>HTTPS</td><td>443</td></tr>\n  <tr><td>SSH</td><td>22</td></tr>\n</table>",
+      ),
+    );
+  });
+
+  it("in „Geteilt“: Checkliste im Formular ergänzen, der Code-Editor zeigt die neue Fassung", async () => {
+    const original = await openBausteine("geteilt");
+    fromFrame({ typ: "bearbeiten", index: 6, art: "checkliste", anzahl: 13 });
+    const dialog = within(await screen.findByRole("dialog", { name: "Checkliste bearbeiten" }));
+    fireEvent.click(dialog.getByRole("button", { name: "Punkt hinzufügen" }));
+    fireEvent.change(dialog.getByRole("textbox", { name: "Punkt 4" }), { target: { value: "Mit Freunden teilen" } });
+    fireEvent.click(dialog.getByRole("checkbox", { name: "Punkt 2 erledigt" }));
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    const expected = original.replace(
+      /<ul class="l-checkliste">[\s\S]*?<\/ul>/,
+      '<ul class="l-checkliste">\n  <li><input type="checkbox" checked> Bausteine kennenlernen</li>\n  <li><input type="checkbox" checked> Eine eigene Lernseite anlegen</li>\n  <li><input type="checkbox"> Die Seite im Browser öffnen</li>\n  <li><input type="checkbox"> Mit Freunden teilen</li>\n</ul>',
+    );
+    await waitFor(() => expect(file()).toBe(expected));
+    await waitFor(() => expect(EditorView.findFromDOM(document.querySelector(".cm-editor") as HTMLElement)!.state.sliceDoc()).toContain("Mit Freunden teilen"));
+  });
+
+  it("„Baustein entfernen“ fragt nach und entfernt nur diesen Baustein", async () => {
+    const original = await openBausteine();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    fromFrame({ typ: "bearbeiten", index: 9, art: "trennlinie", anzahl: 13 });
+    const dialog = within(await screen.findByRole("dialog", { name: "Trennlinie bearbeiten" }));
+    fireEvent.click(dialog.getByRole("button", { name: "Baustein entfernen" }));
+    await waitFor(() => expect(file()).toBe(original.replace("<hr>\n", "")));
+    expect(window.confirm).toHaveBeenCalledWith("Trennlinie wirklich aus der Seite entfernen?");
+  });
+
+  it("Häkchen in „Lesen“ werden in der Datei gespeichert", async () => {
+    const original = await openBausteine();
+    fromFrame({ typ: "haekchen", index: 1, an: true });
+    await waitFor(() => expect(file()).toBe(original.replace('<input type="checkbox"> Eine eigene Lernseite', '<input type="checkbox" checked> Eine eigene Lernseite')));
+    fromFrame({ typ: "haekchen", index: 0, an: false });
+    await waitFor(() => expect(file()).toContain('<li><input type="checkbox"> Bausteine kennenlernen</li>'));
+    // Kein Neuladen der Anzeige nötig: Das Häkchen ist dort schon gesetzt.
+    expect(frame().getAttribute("src")).toMatch(/\?v=1$/);
+  });
+
+  it("passt die Seite nicht zur Datei (z. B. ein Skript hat Bausteine erzeugt), ändert das Formular nichts", async () => {
+    const original = await openBausteine();
+    fromFrame({ typ: "bearbeiten", index: 0, art: "callout", anzahl: 14 });
+    expect(await screen.findByText(/lässt sich nicht ohne Code bearbeiten/)).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fromFrame({ typ: "haekchen", index: 7, an: true });
+    expect(await screen.findByText(/Das Häkchen konnte nicht gespeichert werden/)).toBeTruthy();
+    expect(file()).toBe(original);
+    // Unbekannte Bausteinarten oder falsche Felder werden gar nicht erst angenommen.
+    fromFrame({ typ: "bearbeiten", index: 0, art: "skript", anzahl: 13 });
+    fromFrame({ typ: "haekchen", index: -1, an: true });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});

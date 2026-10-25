@@ -4,9 +4,11 @@
 // Der Editor zeigt nur den Inhalt von <main> (Schalter „Ganze Datei“ zeigt alles). Gespeichert wird automatisch:
 // unveränderter Anfang + Editor-Text + unveränderter Rest (siehe src/lib/html-editor.ts).
 // Über dem Editor fügt die Werkzeugleiste Bausteine ein, im Editor auch das „/“-Menü.
+// In „Lesen“ und „Geteilt“ öffnet das Stift-Symbol eines Bausteins ein Formular; Häkchen werden gespeichert.
 import { FileCode } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { AutoSaver, errorMessage } from "../lib/autosave";
+import { bausteinAnzahl, bausteinEntfernen, bausteinLesen, bausteinSchreiben, haekchenSetzen, type BausteinWerte } from "../lib/baustein-formulare";
 import { bausteinInfo, type BausteinArt } from "../lib/bausteine";
 import { encodePath, readHead, relativePath, setMeta } from "../lib/html";
 import {
@@ -22,7 +24,8 @@ import {
 import type { PageRef } from "../lib/links";
 import { useTheme } from "../lib/theme";
 import { pageTitle, parentDir } from "../lib/tree";
-import { importAttachment, pickImage, readPage, writePage } from "../lib/vault-api";
+import { confirmAction, importAttachment, pickImage, readPage, writePage } from "../lib/vault-api";
+import { BausteinDialog } from "./BausteinDialog";
 import { BausteinLeiste } from "./BausteinLeiste";
 import { CodeEditor, type CodeEditorApi } from "./CodeEditor";
 import { PagePicker } from "./Dialogs";
@@ -79,6 +82,10 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
   const editorApi = useRef<CodeEditorApi | null>(null);
   /** Auswahl der Seite für einen neuen Seitenlink. */
   const [pickingPage, setPickingPage] = useState(false);
+  /** Baustein, der gerade im Formular bearbeitet wird (Nummer wie im iframe gezählt). */
+  const [formular, setFormular] = useState<{ index: number; werte: BausteinWerte } | null>(null);
+  /** Änderungen aus Formular und Häkchen nacheinander schreiben, damit keine eine andere überholt. */
+  const changes = useRef<Promise<void>>(Promise.resolve());
 
   const setMode = useCallback((next: HtmlViewMode) => {
     setModeState(next);
@@ -193,6 +200,72 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
     }
     editorApi.current?.insert(info.vorlage({ src }), info.auswahl);
   };
+
+  /**
+   * Ändert die Datei sofort an genau einer Stelle (Formular, Entfernen, Häkchen). `change` liefert den neuen
+   * Inhalt, null wenn die Stelle nicht (mehr) da ist, oder wirft einen Fehler mit verständlicher Meldung.
+   */
+  const applyChange = (change: (content: string) => string | null, notFound: string, reloadPreview: boolean) => {
+    changes.current = changes.current.then(async () => {
+      const saver = saverRef.current;
+      await saver?.flush();
+      const content = current.current;
+      if (content === null || !saver) return;
+      let updated: string | null;
+      try {
+        updated = change(content);
+      } catch (error) {
+        onError(errorMessage(error));
+        return;
+      }
+      if (updated === null) {
+        onError(notFound);
+        setPreviewVersion((version) => version + 1);
+        return;
+      }
+      if (updated === content) return;
+      try {
+        await writePage(pathRef.current, updated);
+        saver.lastSaved = updated;
+        adopt(updated, reloadPreview);
+      } catch (error) {
+        onError(errorMessage(error));
+      }
+    });
+    return changes.current;
+  };
+
+  /** Stift-Symbol: Formular für diesen Baustein öffnen, wenn er in der Datei an derselben Stelle steht. */
+  const editBaustein = async (index: number, art: BausteinArt, anzahl: number) => {
+    await changes.current;
+    await saverRef.current?.flush();
+    const content = current.current;
+    if (content === null) return;
+    const werte = bausteinAnzahl(content) === anzahl ? bausteinLesen(content, index) : null;
+    if (!werte || werte.art !== art) {
+      onError("Dieser Baustein lässt sich nicht ohne Code bearbeiten, weil ein Skript der Seite sie verändert hat. Bitte in der Ansicht „Code“ ändern.");
+      return;
+    }
+    setFormular({ index, werte });
+  };
+
+  const saveBaustein = (werte: BausteinWerte) => {
+    if (!formular) return;
+    const { index } = formular;
+    setFormular(null);
+    void applyChange((content) => bausteinSchreiben(content, index, werte), "Der Baustein wurde in der Datei nicht gefunden.", true);
+  };
+
+  const removeBaustein = async () => {
+    if (!formular) return;
+    const { index, werte } = formular;
+    if (!(await confirmAction(`${bausteinInfo(werte.art).name} wirklich aus der Seite entfernen?`, "Baustein entfernen"))) return;
+    setFormular(null);
+    void applyChange((content) => bausteinEntfernen(content, index), "Der Baustein wurde in der Datei nicht gefunden.", true);
+  };
+
+  const toggleCheckbox = (index: number, an: boolean) =>
+    void applyChange((content) => haekchenSetzen(content, index, an), "Das Häkchen konnte nicht gespeichert werden: Die Checkliste wurde in der Datei nicht gefunden.", false);
 
   const insertPageLink = (page: PageRef) => {
     setPickingPage(false);
@@ -325,6 +398,8 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
                   title={title}
                   onOpenLink={onOpenLink}
                   onOpenExternal={onOpenExternal}
+                  onEditBaustein={(index, art, anzahl) => void editBaustein(index, art, anzahl)}
+                  onToggleCheckbox={toggleCheckbox}
                 />
               </div>
             )}
@@ -332,6 +407,17 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
         )}
         {text !== null && children}
       </div>
+      {formular && (
+        <BausteinDialog
+          werte={formular.werte}
+          pagePath={path}
+          pages={pages}
+          onSave={saveBaustein}
+          onRemove={() => void removeBaustein()}
+          onClose={() => setFormular(null)}
+          onError={onError}
+        />
+      )}
       {pickingPage && (
         <PagePicker
           pages={pages.filter((page) => page.path !== path)}

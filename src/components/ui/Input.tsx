@@ -1,8 +1,8 @@
-// Eingabefelder: Textfeld (mit optionalem Symbol) und Auswahlliste.
+// Eingabefelder: Textfeld (mit optionalem Symbol), mehrzeiliges Textfeld, Kästchen und Auswahlliste.
 // Varianten: default (mit Rahmen), inline (unsichtbar bis zum Überfahren, z. B. in Tabellenzellen)
 // und bare (ganz ohne Rahmen, z. B. das große Suchfeld im Such-Dialog).
 import { ChevronDown } from "lucide-react";
-import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cx } from "./cx";
 
 export type InputSize = "sm" | "md" | "lg";
@@ -50,6 +50,26 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     </span>
   );
 });
+
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  /** Festbreitenschrift, z. B. für Code oder HTML. */
+  mono?: boolean;
+}
+
+/** Mehrzeiliges Textfeld (wächst nicht von selbst; `rows` bestimmt die Höhe). */
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea({ mono = false, className, rows = 4, ...rest }, ref) {
+  return <textarea ref={ref} rows={rows} className={cx("ui-input", "ui-textarea", mono && "ui-textarea--mono", className)} {...rest} />;
+});
+
+/** Kästchen mit Beschriftung daneben. */
+export function Checkbox({ label, checked, onChange, ...rest }: { label: ReactNode; checked: boolean; onChange: (checked: boolean) => void } & Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "checked" | "type">) {
+  return (
+    <label className="ui-checkbox">
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} {...rest} />
+      <span>{label}</span>
+    </label>
+  );
+}
 
 /** Beschriftetes Feld für Formulare: Titel, Eingabe und optionaler Hinweis. */
 export function Field({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {

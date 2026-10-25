@@ -343,6 +343,35 @@
   pointer-events: none;
 }
 
+.ui-textarea {
+  height: auto;
+  min-height: var(--size-control-lg);
+  padding: var(--space-1-5) var(--space-2-5);
+  line-height: var(--line-height-normal);
+  resize: vertical;
+}
+
+.ui-textarea--mono {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.ui-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+}
+
+.ui-checkbox input {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
 .ui-field {
   display: flex;
   flex-direction: column;

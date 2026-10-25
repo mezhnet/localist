@@ -1,6 +1,8 @@
 // localist.css und localist.js: entstehen aus tokens.css und src/bausteine/, die erzeugten Dateien sind aktuell
 // und tragen eine Version, und das Skript macht die Grundbausteine interaktiv, ohne die Seite umzubauen.
 import { afterEach, describe, expect, it } from "vitest";
+import interLizenz from "../../node_modules/@fontsource-variable/inter/LICENSE?raw";
+import interSchrift from "../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?inline";
 import pkg from "../../package.json";
 import vaultCss from "../../beispiel-vault/.localist/bausteine/localist.css?raw";
 import vaultJs from "../../beispiel-vault/.localist/bausteine/localist.js?raw";
@@ -12,7 +14,8 @@ import { bausteineBauen, bausteinVersion } from "./bauen";
 const css = import.meta.glob("./*.css", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const js = import.meta.glob("./*.js", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const lf = (text: string) => text.replace(/\r\n/g, "\n");
-const gebaut = bausteineBauen({ appVersion: pkg.version, tokens, css, js });
+const schrift = { base64: interSchrift.slice(interSchrift.indexOf("base64,") + "base64,".length), lizenz: interLizenz };
+const gebaut = bausteineBauen({ appVersion: pkg.version, tokens, css, js, schrift });
 
 describe("localist.css und localist.js (Build)", () => {
   it("die erzeugten Dateien passen zum Quellcode (sonst: npm run build oder npm run dev ausführen)", () => {
@@ -32,7 +35,7 @@ describe("localist.css und localist.js (Build)", () => {
 
   it("enthält tokens.css und alle Grundbausteine, basis zuerst", () => {
     const order = [...gebaut.css.matchAll(/\/\* ---- ([\w.-]+) ---- \*\//g)].map((m) => m[1]);
-    expect(order.slice(0, 2)).toEqual(["tokens.css", "basis.css"]);
+    expect(order.slice(0, 3)).toEqual(["schrift", "tokens.css", "basis.css"]);
     for (const name of ["callout", "toggle", "tabelle", "checkliste", "spalten", "bild", "trennlinie", "code", "seitenlink"]) {
       expect(order, name).toContain(`${name}.css`);
     }
@@ -41,11 +44,18 @@ describe("localist.css und localist.js (Build)", () => {
     }
   });
 
+  it("bettet die Schrift Inter samt Lizenz ein, damit Seiten in App und Browser gleich aussehen", () => {
+    expect(gebaut.css).toContain('font-family: "Inter Variable";');
+    expect(gebaut.css).toMatch(/src: url\(data:font\/woff2;base64,[A-Za-z0-9+/=]{60000,}\) format\("woff2-variations"\);/);
+    expect(gebaut.css).toContain("SIL Open Font License, Version 1.1");
+    expect(tokens).toContain('--font-sans: "Inter Variable"');
+  });
+
   it("eine Änderung an einer Quelle ändert die Version, CRLF beim Auschecken nicht", () => {
-    const geaendert = bausteineBauen({ appVersion: pkg.version, tokens, css: { ...css, "./callout.css": `${css["./callout.css"]}\n/* neu */` }, js });
+    const geaendert = bausteineBauen({ appVersion: pkg.version, tokens, css: { ...css, "./callout.css": `${css["./callout.css"]}\n/* neu */` }, js, schrift });
     expect(geaendert.version).not.toBe(gebaut.version);
     const crlf = Object.fromEntries(Object.entries(css).map(([name, text]) => [name, text.replace(/\n/g, "\r\n")]));
-    expect(bausteineBauen({ appVersion: pkg.version, tokens: tokens.replace(/\n/g, "\r\n"), css: crlf, js }).version).toBe(gebaut.version);
+    expect(bausteineBauen({ appVersion: pkg.version, tokens: tokens.replace(/\n/g, "\r\n"), css: crlf, js, schrift }).version).toBe(gebaut.version);
   });
 });
 

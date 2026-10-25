@@ -2,16 +2,19 @@
 // und auf dem Handy (360 × 740). Szenen "etappe9": Startseite, Notiz, Tabelle, Kanban, Kalender.
 // Szenen "etappe10": HTML-Seite in der abgeschotteten Anzeige, „Neu“-Menü und „Verschieben nach …“.
 // Szenen "etappe11": Code-Editor in „Code“ und „Geteilt“, Suchen und Ersetzen, Autovervollständigung.
+// Szenen "etappe12": Beispielseite Lernen/Bausteine.html in „Lesen“, Stift-Symbol, Formular, Tabellen-Editor,
+// Werkzeugleiste mit „/“-Menü und dieselbe Datei per Doppelklick im Browser (file://, mit echten Mausklicks).
 // Nutzt das installierte Microsoft Edge unsichtbar im Hintergrund über das DevTools-Protokoll, ohne zusätzliche Pakete.
 // Damit Kanban und Kalender etwas zeigen, legt das Skript einige Beispiel-Einträge an – nur im Arbeitsspeicher
 // der Vorschau (dev-backend.ts), echte Dateien ändern sich nicht.
 //
 // Aufruf, während die Vorschau läuft (z. B. `npm run dev -- --port 1430`):
-//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9 [etappe9|etappe10|etappe11]
+//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9 [etappe9|etappe10|etappe11|etappe12]
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const [base = "http://localhost:1430", outDir = "docs/screenshots/etappe-9", scenes = "etappe9"] = process.argv.slice(2);
 const EDGE = process.env.EDGE_PATH ?? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
@@ -174,6 +177,129 @@ async function runEditor(theme, device) {
   await shot("code-vorschlaege-hell");
 }
 
+/** Wertet einen Ausdruck in einem iframe aus (abgeschottete Seiten laufen in Edge als eigenes Ziel). */
+async function evaluateInFrame(urlPart, expression) {
+  const targets = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
+  const target = targets.find((candidate) => candidate.type === "iframe" && candidate.url.includes(urlPart));
+  if (!target) throw new Error(`iframe nicht gefunden: ${urlPart}`);
+  const frameSocket = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise((resolveOpen) => (frameSocket.onopen = resolveOpen));
+  const result = await new Promise((resolveResult) => {
+    frameSocket.onmessage = (event) => resolveResult(JSON.parse(event.data).result?.result?.value);
+    frameSocket.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+  });
+  frameSocket.close();
+  return result;
+}
+
+const mouse = (type, x, y) => send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", clickCount: type === "mouseMoved" ? 0 : 1 });
+const realClick = async (x, y) => {
+  await mouse("mouseMoved", x, y);
+  await mouse("mousePressed", x, y);
+  await mouse("mouseReleased", x, y);
+};
+
+/** Bringt einen Baustein der Seite ins Bild, fährt mit der Maus darüber und liefert die Lage des Stifts. */
+async function hoverBaustein(selector) {
+  const visibleFrame = `[...document.querySelectorAll('iframe.html-frame')].find((f) => !f.classList.contains('is-loading'))`;
+  const rect = `(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, height: r.height, width: r.width }; })()`;
+  const first = await evaluateInFrame("Bausteine.html", rect);
+  await evaluate(`(() => {
+    const frame = ${visibleFrame};
+    let box = frame.parentElement;
+    while (box && !/(auto|scroll)/.test(getComputedStyle(box).overflowY)) box = box.parentElement;
+    (box ?? document.scrollingElement).scrollTop += frame.getBoundingClientRect().top + ${first.y} - 140;
+  })()`);
+  await sleep(300);
+  const inner = await evaluateInFrame("Bausteine.html", rect);
+  const frameBox = await evaluate(`(() => { const r = ${visibleFrame}.getBoundingClientRect(); return { x: r.x, y: r.y }; })()`);
+  await mouse("mouseMoved", frameBox.x + inner.x + Math.min(60, inner.width / 2), frameBox.y + inner.y + Math.min(12, inner.height / 2));
+  await sleep(300);
+  return {
+    x: inner.width < 160 ? frameBox.x + inner.right + 20 : frameBox.x + inner.right - 18,
+    y: inner.height < 36 ? frameBox.y + inner.y + inner.height / 2 : frameBox.y + inner.y + 18,
+  };
+}
+
+async function runBausteine(theme, device) {
+  const prefix = await openVault(theme, device);
+  await evaluate(`localStorage.setItem("html-ansicht", "lesen"); true`);
+  await click('.tree [title="Lernen"]');
+  await waitFor(`document.querySelector('.tree [title="Lernen/Bausteine.html"]')`, "Bausteine.html im Ordnerbaum");
+  await click('.tree [title="Lernen/Bausteine.html"]');
+  await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('.html-preview').style.height`, "Beispielseite mit Höhe");
+  await sleep(1000);
+  if (prefix) {
+    await shot(`${prefix}lesen-${theme}`);
+    return;
+  }
+  // Ganze Seite: Fenster so hoch wie der Inhalt
+  await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 2300, deviceScaleFactor: 1, mobile: false });
+  await sleep(800);
+  await shot(`lesen-${theme}`);
+  await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+  await sleep(500);
+
+  // Stift-Symbol beim Überfahren, ein echter Klick darauf öffnet das Formular
+  const pencil = await hoverBaustein("l-callout");
+  await shot(`stift-${theme}`);
+  await realClick(pencil.x, pencil.y);
+  await waitFor(`document.querySelector('[role="dialog"][aria-label="Callout bearbeiten"]')`, "Formular für den Callout");
+  await shot(`formular-callout-${theme}`);
+  await key("Escape", "Escape", 27);
+  await sleep(300);
+
+  // Tabellen-Editor
+  const tablePencil = await hoverBaustein("table");
+  await realClick(tablePencil.x, tablePencil.y);
+  await waitFor(`document.querySelector('[role="dialog"][aria-label="Tabelle bearbeiten"]')`, "Tabellen-Editor");
+  await evaluate(`[...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent.includes("Zeile hinzufügen")).click()`);
+  await sleep(300);
+  await shot(`tabellen-editor-${theme}`);
+  await key("Escape", "Escape", 27);
+  await sleep(300);
+
+  // Werkzeugleiste und „/“-Menü im Code-Editor
+  await evaluate(`[...document.querySelectorAll('[aria-label="Ansicht (Strg+E)"] button')].find((b) => b.textContent === "Code").click()`);
+  await waitFor(`document.querySelector('.cm-editor') && document.querySelector('.baustein-leiste')`, "Code-Ansicht mit Werkzeugleiste");
+  await evaluate(`(() => { const content = document.querySelector('.cm-content'); content.focus(); const line = [...content.querySelectorAll('.cm-line')][3]; window.getSelection().collapse(line, 0); })()`);
+  await send("Input.insertText", { text: "/" });
+  await waitFor(`document.querySelector('.cm-tooltip-autocomplete')`, "„/“-Menü");
+  await shot(`werkzeugleiste-${theme}`);
+  // Das getippte „/“ wieder entfernen und speichern lassen (die Vorschau merkt sich HTML-Seiten bis zum Neustart).
+  await key("Escape", "Escape", 27);
+  await key("Backspace", "Backspace", 8);
+  await sleep(1500);
+}
+
+/** Dieselbe Seite per Doppelklick: direkt aus dem Ordner im Browser (file://), Bausteine aus .localist/bausteine. */
+async function runBrowser(theme) {
+  const url = pathToFileURL(resolve("beispiel-vault/Lernen/Bausteine.html")).href;
+  await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 2100, deviceScaleFactor: 1, mobile: false });
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme === "hell" ? "light" : "dark" }] });
+  await send("Page.navigate", { url });
+  await waitFor(`document.documentElement.getAttribute("data-localist-bausteine")`, "localist.js geladen");
+  // Interaktiv: Toggle aufklappen und einen Checklisten-Punkt per Klick auf den Text abhaken (echte Mausklicks)
+  const at = (selector) => evaluate(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: r.x + 60, y: r.y + r.height / 2 }; })()`);
+  const summary = await at("details > summary");
+  await realClick(summary.x, summary.y);
+  const item = await at("ul.l-checkliste > li:nth-child(2)");
+  await realClick(item.x, item.y);
+  await sleep(300);
+  const check = await evaluate(`({
+    adresse: location.protocol,
+    bausteine: document.documentElement.getAttribute("data-localist-bausteine"),
+    calloutFarbe: getComputedStyle(document.querySelector("l-callout")).backgroundColor,
+    toggleOffen: document.querySelector("details").open,
+    haekchen: [...document.querySelectorAll("ul.l-checkliste input")].map((input) => input.checked),
+    callout: document.querySelector("l-callout").getAttribute("aria-label"),
+    codeSprache: document.querySelector("pre").getAttribute("data-sprache"),
+    bildBreite: document.querySelector("figure img").naturalWidth,
+  })`);
+  console.log(`  file:// (${theme}): ${JSON.stringify(check)}`);
+  await shot(`browser-${theme}`);
+}
+
 async function run(theme, device) {
   const mobile = device === "handy";
   await send("Emulation.setDeviceMetricsOverride", mobile ? { width: 360, height: 740, deviceScaleFactor: 2, mobile: true } : { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
@@ -223,8 +349,12 @@ try {
       console.log(`${device === "pc" ? "PC" : "Handy"}, ${theme}:`);
       if (scenes === "etappe10") await runHtml(theme, device);
       else if (scenes === "etappe11") await runEditor(theme, device);
+      else if (scenes === "etappe12") await runBausteine(theme, device);
       else await run(theme, device);
     }
+  }
+  if (scenes === "etappe12") {
+    for (const theme of ["hell", "dunkel"]) await runBrowser(theme);
   }
 } finally {
   socket.close();

@@ -10,6 +10,31 @@ export interface BausteinQuellen {
   /** Dateiname → Inhalt, z. B. "callout.css". */
   css: Record<string, string>;
   js: Record<string, string>;
+  /** Schrift Inter (lateinische Zeichen) als Base64 und ihr Lizenztext; wird in localist.css eingebettet. */
+  schrift?: { base64: string; lizenz: string };
+}
+
+/** Zeichen der eingebetteten Schrift (wie @fontsource „latin“, mit Umlauten und ß). */
+const SCHRIFT_ZEICHEN =
+  "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
+
+/** @font-face für Inter: eingebettet, damit Seiten in der App (eigenes Dokument im iframe) und im Browser gleich aussehen. */
+function schriftCss(schrift: { base64: string; lizenz: string }): string {
+  const lizenz = lf(schrift.lizenz).trimEnd().replace(/\*\//g, "* /");
+  return [
+    "/* Schrift Inter, eingebettet. Lizenz:",
+    lizenz,
+    "*/",
+    "@font-face {",
+    '  font-family: "Inter Variable";',
+    "  font-style: normal;",
+    "  font-display: swap;",
+    "  font-weight: 100 900;",
+    `  src: url(data:font/woff2;base64,${schrift.base64}) format("woff2-variations");`,
+    `  unicode-range: ${SCHRIFT_ZEICHEN};`,
+    "}",
+    "",
+  ].join("\n");
 }
 
 export interface GebauteBausteine {
@@ -47,7 +72,11 @@ function header(version: string, kind: string, file: string, sources: string): s
 }
 
 export function bausteineBauen(quellen: BausteinQuellen): GebauteBausteine {
-  const cssBody = [["tokens.css", lf(quellen.tokens)] as [string, string], ...ordered(quellen.css)]
+  const cssBody = [
+    ...(quellen.schrift ? [["schrift", schriftCss(quellen.schrift)] as [string, string]] : []),
+    ["tokens.css", lf(quellen.tokens)] as [string, string],
+    ...ordered(quellen.css),
+  ]
     .map(([name, text]) => `/* ---- ${name} ---- */\n${text}`)
     .join("\n");
   const jsBody = ordered(quellen.js)
@@ -56,7 +85,7 @@ export function bausteineBauen(quellen: BausteinQuellen): GebauteBausteine {
   const version = `${quellen.appVersion}+${checksum(cssBody + "\u0000" + jsBody)}`;
   return {
     version,
-    css: `${header(version, "Aussehen", "localist.css", "src/styles/tokens.css und src/bausteine/*.css")}\n${cssBody}`,
+    css: `${header(version, "Aussehen", "localist.css", "der Schrift Inter, src/styles/tokens.css und src/bausteine/*.css")}\n${cssBody}`,
     js:
       `${header(version, "Funktion", "localist.js", "src/bausteine/*.js")}\n` +
       // Klassisches Skript (kein Modul), damit es auch per Doppelklick über file:// lädt.

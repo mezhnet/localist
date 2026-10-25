@@ -4,9 +4,9 @@
 import { parse, type DefaultTreeAdapterTypes } from "parse5";
 import { isInside, parentDir } from "./tree";
 
-type Node = DefaultTreeAdapterTypes.Node;
-type Element = DefaultTreeAdapterTypes.Element;
-type ParentNode = DefaultTreeAdapterTypes.ParentNode;
+export type Node = DefaultTreeAdapterTypes.Node;
+export type Element = DefaultTreeAdapterTypes.Element;
+export type ParentNode = DefaultTreeAdapterTypes.ParentNode;
 
 /** Ordner mit `localist.css`, `localist.js` und eigenen Bausteinen (relativ zum Vault). */
 export const BAUSTEINE_DIR = ".localist/bausteine";
@@ -15,26 +15,26 @@ export function isHtmlPath(path: string): boolean {
   return /\.html$/i.test(path);
 }
 
-interface Edit {
+export interface Edit {
   start: number;
   end: number;
   text: string;
 }
 
 /** Wendet Änderungen an (von hinten nach vorn, damit die Positionen stimmen). */
-function applyEdits(text: string, edits: Edit[]): string {
+export function applyEdits(text: string, edits: Edit[]): string {
   let out = text;
   for (const edit of [...edits].sort((a, b) => b.start - a.start)) out = out.slice(0, edit.start) + edit.text + out.slice(edit.end);
   return out;
 }
 
 /** Parst mit Quellpositionen. Ein BOM wird vorher abgetrennt, `offset` gleicht die Positionen aus. */
-function parseWithPositions(text: string): { document: DefaultTreeAdapterTypes.Document; offset: number } {
+export function parseWithPositions(text: string): { document: DefaultTreeAdapterTypes.Document; offset: number } {
   const offset = text.startsWith("﻿") ? 1 : 0;
   return { document: parse(text.slice(offset), { sourceCodeLocationInfo: true }), offset };
 }
 
-function isElement(node: Node): node is Element {
+export function isElement(node: Node): node is Element {
   return "tagName" in node;
 }
 
@@ -57,11 +57,11 @@ function find(node: ParentNode, tag: string): Element | undefined {
   return undefined;
 }
 
-function attr(element: Element, name: string): string | undefined {
+export function attr(element: Element, name: string): string | undefined {
   return element.attrs.find((a) => a.name === name)?.value;
 }
 
-function lineEnding(text: string): string {
+export function lineEnding(text: string): string {
   return text.includes("\r\n") ? "\r\n" : "\n";
 }
 
@@ -73,7 +73,7 @@ export function escapeAttribute(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
-function textContent(node: ParentNode): string {
+export function textContent(node: ParentNode): string {
   return childrenOf(node)
     .map((child) => ("value" in child && child.nodeName === "#text" ? child.value : isElement(child) ? textContent(child) : ""))
     .join("");

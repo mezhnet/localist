@@ -3,7 +3,8 @@
 // ersetzt sie erst dann: Die Vorschau springt nicht. Nachrichten werden nur aus den eigenen iframes
 // angenommen und in src/lib/bridge.ts geprüft.
 import { useEffect, useRef, useState } from "react";
-import { parseBridgeMessage, scrollMessage, themeMessage } from "../lib/bridge";
+import type { BausteinArt } from "../lib/bausteine";
+import { editMessage, parseBridgeMessage, scrollMessage, themeMessage, userIsActive } from "../lib/bridge";
 import { useTheme } from "../lib/theme";
 import { pageUrl } from "../lib/vault-api";
 import { cx } from "./ui";
@@ -17,6 +18,9 @@ interface Props {
   title: string;
   onOpenLink: (path: string) => void;
   onOpenExternal: (url: string) => void;
+  /** Bausteine mit Stift-Symbol bearbeiten und Häkchen speichern (nur mit diesen Rückrufen). */
+  onEditBaustein?: (index: number, art: BausteinArt, anzahl: number) => void;
+  onToggleCheckbox?: (index: number, an: boolean) => void;
 }
 
 /** So lange darf eine neue Fassung zum Laden brauchen, bevor sie trotzdem gezeigt wird. */
@@ -30,14 +34,14 @@ interface Frame {
   shown: boolean;
 }
 
-export function PagePreview({ path, version, fitContent, title, onOpenLink, onOpenExternal }: Props) {
+export function PagePreview({ path, version, fitContent, title, onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox }: Props) {
   const [frames, setFrames] = useState<Frame[]>([{ version, shown: true }]);
   const [height, setHeight] = useState<number | null>(null);
   const elements = useRef(new Map<number, HTMLIFrameElement>());
   const scrollY = useRef(0);
   const { resolved } = useTheme();
-  const actions = useRef({ onOpenLink, onOpenExternal, resolved, fitContent });
-  actions.current = { onOpenLink, onOpenExternal, resolved, fitContent };
+  const actions = useRef({ onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, fitContent });
+  actions.current = { onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, fitContent };
 
   /** Macht eine Fassung sichtbar und entfernt alle älteren. */
   const show = (shownVersion: number) =>
@@ -62,6 +66,7 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
       const waiting = !isVisible && frames.some((frame) => frame.version === frameVersion && !frame.shown);
       if (message.typ === "bereit") {
         element.contentWindow?.postMessage(themeMessage(actions.current.resolved), "*");
+        element.contentWindow?.postMessage(editMessage(actions.current.onEditBaustein !== undefined), "*");
         if (waiting && !actions.current.fitContent) {
           // Erst an die alte Stelle scrollen, dann zeigen (sobald die Seite die Position bestätigt).
           if (scrollY.current > 0) {
@@ -75,6 +80,10 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
       } else if (message.typ === "position") {
         if (isVisible) scrollY.current = message.y;
         else if (waiting && !actions.current.fitContent && Math.abs(message.y - scrollY.current) <= 2) show(frameVersion);
+      } else if (isVisible && message.typ === "bearbeiten" && userIsActive()) {
+        actions.current.onEditBaustein?.(message.index, message.art, message.anzahl);
+      } else if (isVisible && message.typ === "haekchen" && userIsActive()) {
+        actions.current.onToggleCheckbox?.(message.index, message.an);
       } else if (isVisible && message.typ === "link") actions.current.onOpenLink(message.pfad);
       else if (isVisible && message.typ === "extern") actions.current.onOpenExternal(message.url);
       else if (isVisible && message.typ === "taste") {

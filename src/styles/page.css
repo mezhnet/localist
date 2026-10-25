@@ -585,7 +585,9 @@
   height: 100%;
   border: none;
   background: transparent;
-  color-scheme: normal;
+  /* Gleiches Farbschema wie die App (die Brücke stellt die Seite darauf ein): Sonst malt der Browser einen
+     deckenden Hintergrund hinter die Seite, der sich im Dunkelmodus von der App abhebt. */
+  color-scheme: inherit;
 }
 
 .html-frame.is-loading {

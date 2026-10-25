@@ -20,6 +20,8 @@ const PAGE_PREFIX = "/__localist-seite/";
  * Geschrieben wird nur, wenn sich etwas geändert hat. In Tests nicht: Dort prüft ein Test, dass alles aktuell ist.
  */
 function localistBausteine(): Plugin {
+  /** Schrift Inter (SIL Open Font License 1.1), wird in localist.css eingebettet. */
+  const INTER = "node_modules/@fontsource-variable/inter";
   const quellen = (ext: string) =>
     Object.fromEntries(
       (readdirSync("src/bausteine") as string[]).filter((name) => name.endsWith(ext)).map((name) => [name, readFileSync(`src/bausteine/${name}`, "utf8") as string]),
@@ -30,6 +32,10 @@ function localistBausteine(): Plugin {
       tokens: readFileSync("src/styles/tokens.css", "utf8"),
       css: quellen(".css"),
       js: quellen(".js"),
+      schrift: {
+        base64: readFileSync(`${INTER}/files/inter-latin-wght-normal.woff2`).toString("base64"),
+        lizenz: readFileSync(`${INTER}/LICENSE`, "utf8"),
+      },
     });
     for (const dir of [SEITE, "beispiel-vault/.localist/bausteine"]) {
       mkdirSync(dir, { recursive: true });

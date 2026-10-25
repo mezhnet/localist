@@ -193,3 +193,96 @@
     display: none;
   }
 }
+
+/* ---------- Baustein bearbeiten (Stift-Symbol in HTML-Seiten) ---------- */
+.baustein-dialog__titel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.baustein-dialog__titel svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  color: var(--color-text-muted);
+}
+
+.baustein-dialog__entfernen {
+  margin-right: auto;
+}
+
+.baustein-formular {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.baustein-formular__liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.baustein-formular__zeile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.baustein-formular__spalte {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.baustein-formular__spalte > .ui-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.baustein-formular__haken {
+  flex: none;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.baustein-formular__knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tabellen-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tabellen-editor__raster {
+  overflow-x: auto;
+}
+
+.tabellen-editor table {
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+}
+
+.tabellen-editor th {
+  text-align: center;
+}
+
+.tabellen-editor td {
+  min-width: var(--table-col-width);
+}
+
+.tabellen-editor td:first-child {
+  min-width: 0;
+}
+
+.tabellen-editor tr.is-head .ui-input {
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-bg-subtle);
+}
