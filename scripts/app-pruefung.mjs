@@ -5,7 +5,7 @@
 //
 // Aufruf: node scripts/app-pruefung.mjs <localist.exe> <Vault-Kopie> <Screenshot-Ordner>
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -175,6 +175,80 @@ try {
     const split = await waitFor(`document.querySelector('.html-workspace.is-geteilt .cm-editor') && document.querySelector('.html-workspace.is-geteilt iframe.html-frame')`, "Geteilt").catch(() => false);
     report.push(`Ansicht „Geteilt“: Editor und Vorschau ${split ? "nebeneinander" : "NICHT da"}: ${await shot("app-geteilt")}`);
     await pickMode("Lesen");
+  }
+
+  // Bausteine (Etappe 12): Dateien im Vault, Stift-Symbol mit echter Maus, Häkchen landet in der Datei
+  {
+    const firstLine = (text) => text.split("\n")[0];
+    const imVault = readFileSync(join(vault, ".localist/bausteine/localist.css"), "utf8");
+    const gebuendelt = readFileSync("src-tauri/seite/localist.css", "utf8");
+    report.push(`Vault geöffnet → .localist/bausteine/localist.css: ${imVault === gebuendelt ? "gleich der gebündelten Fassung" : "WEICHT AB"}, ${firstLine(imVault).slice(0, 60)}…`);
+    const jsGleich = readFileSync(join(vault, ".localist/bausteine/localist.js"), "utf8") === readFileSync("src-tauri/seite/localist.js", "utf8");
+    report.push(`Vault geöffnet → .localist/bausteine/localist.js: ${jsGleich ? "gleich der gebündelten Fassung" : "WEICHT AB"}`);
+
+    await evaluate(`document.querySelector('.tree [title="Lernen"]').click()`);
+    await waitFor(`document.querySelector('.tree [title="Lernen/Bausteine.html"]')`, "Lernen aufgeklappt");
+    await evaluate(`document.querySelector('.tree [title="Lernen/Bausteine.html"]').click()`);
+    await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('.html-preview').style.height`, "Bausteine.html in „Lesen“");
+    await sleep(800);
+    const bausteineTarget = (await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()).find((t) => t.url.includes("Bausteine.html"));
+    const inPage = async (expression) => {
+      const pageSocket = new WebSocket(bausteineTarget.webSocketDebuggerUrl);
+      await new Promise((resolve) => (pageSocket.onopen = resolve));
+      const answer = await new Promise((resolve) => {
+        pageSocket.onmessage = (event) => resolve(JSON.parse(event.data));
+        pageSocket.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true, awaitPromise: true } }));
+      });
+      pageSocket.close();
+      return answer.result?.result?.value;
+    };
+    const look = await inPage(
+      `document.fonts.ready.then(() => ({ version: document.documentElement.getAttribute("data-localist-bausteine"), schrift: document.fonts.check('16px "Inter Variable"'), callout: getComputedStyle(document.querySelector("l-callout")).backgroundColor, sprache: document.querySelector("pre").getAttribute("data-sprache") }))`,
+    );
+    report.push(`In der Seite: Bausteine ${look.version}, Schrift Inter ${look.schrift ? "geladen" : "NICHT geladen"}, Callout-Hintergrund ${look.callout}, Code-Beschriftung „${look.sprache}“`);
+
+    const rect = (selector) => inPage(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, width: r.width, height: r.height }; })()`);
+    const frameAt = () => evaluate(`(() => { const r = [...document.querySelectorAll('iframe.html-frame')].find((f) => !f.classList.contains('is-loading')).getBoundingClientRect(); return { x: r.x, y: r.y }; })()`);
+    const scrollTo = async (selector) => {
+      const inner = await rect(selector);
+      const frame = await frameAt();
+      await evaluate(`document.querySelector('.main').scrollTop += ${Math.round(frame.y + inner.y - 200)}`);
+      await sleep(300);
+      return { inner: await rect(selector), frame: await frameAt() };
+    };
+
+    // Stift: Maus über den ersten Callout, dann auf den Stift oben rechts klicken
+    const callout = await scrollTo("l-callout");
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: callout.frame.x + callout.inner.x + 80, y: callout.frame.y + callout.inner.y + 12 });
+    await sleep(400);
+    const stiftX = callout.frame.x + callout.inner.right - 18;
+    const stiftY = callout.frame.y + callout.inner.y + 18;
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: stiftX, y: stiftY });
+    await sleep(200);
+    const vorStift = await shot("app-stift");
+    await click(stiftX, stiftY);
+    const formular = await waitFor(`document.querySelector('[role="dialog"][aria-label="Callout bearbeiten"]')`, "Formular nach Klick auf den Stift").catch(() => false);
+    report.push(`Stift-Symbol am Callout (echte Maus in WebView2): ${vorStift}; Klick öffnet das Formular: ${formular ? "ja" : "NEIN"}`);
+    if (formular) {
+      const text = await evaluate(`document.querySelector('[role="dialog"] textarea').value`);
+      report.push(`Formular zeigt den Text aus der Datei: „${text}“: ${await shot("app-formular")}`);
+      await send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+      await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+      await sleep(300);
+    }
+
+    // Häkchen: echter Klick auf das zweite Kästchen der Checkliste, danach steht „checked“ in der Datei
+    const datei = join(vault, "Lernen/Bausteine.html");
+    const vorher = readFileSync(datei, "utf8");
+    const box = await scrollTo("ul.l-checkliste > li:nth-child(2) > input");
+    await click(box.frame.x + box.inner.x + box.inner.width / 2, box.frame.y + box.inner.y + box.inner.height / 2);
+    let nachher = vorher;
+    for (let i = 0; i < 30 && nachher === vorher; i++) {
+      await sleep(200);
+      nachher = readFileSync(datei, "utf8");
+    }
+    const erwartet = vorher.replace('<input type="checkbox"> Eine eigene Lernseite anlegen', '<input type="checkbox" checked> Eine eigene Lernseite anlegen');
+    report.push(`Häkchen in „Lesen“ gesetzt (echter Klick): Datei ${nachher === erwartet ? "geändert, nur diese Stelle (checked ergänzt)" : nachher === vorher ? "NICHT geändert" : "ANDERS geändert"}: ${await shot("app-haekchen")}`);
   }
 
   report.push(problems.length === 0 ? "Konsole: keine Fehler und keine CSP-Verstöße." : `Konsole: ${problems.length} Meldungen:\n  ${problems.join("\n  ")}`);
