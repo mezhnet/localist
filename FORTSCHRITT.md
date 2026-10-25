@@ -1,12 +1,22 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 9 – Neues Design ist abgeschlossen. Als Nächstes kommt Etappe 10 – HTML-Seiten: Grundlage und sichere Anzeige.
-- Zuletzt aktualisiert: 2026-10-25 16:14
-- Nächster Schritt: Etappe 10 beginnen (Fertig-Kriterien aus `CLAUDE.md` übernehmen, mit `.html`-Dateien in Sidebar, Strg+P und Suche anfangen).
+- Etappe: 10 – HTML-Seiten: Grundlage und sichere Anzeige
+- Zuletzt aktualisiert: 2026-10-25 17:29
+- Nächster Schritt: `.html`-Dateien in Vault (Rust), Ordnerbaum, Strg+P und Suche; danach Anlegen, Umbenennen, Verschieben
 
 ## Fertig-Kriterien der aktuellen Etappe
-- Etappe 10 ist noch nicht begonnen.
+- [ ] `.html`-Dateien erscheinen in Sidebar, Strg+P und Suche mit eigenem Symbol. Das „Neu“-Menü legt eine HTML-Seite nach dem Speicherformat an (mit `localist-id`). Vorlagen aus `Vorlagen/` funktionieren auch für HTML-Seiten (siehe Speicherformat).
+- [ ] Anlegen, Umbenennen und Löschen funktionieren für HTML-Seiten wie für Notizen. Ein neuer oder umbenannter Name darf pro Ordner über beide Typen nur einmal vorkommen. Beim Umbenennen wird `<title>` angepasst.
+- [ ] Neu für beide Typen und Ordner: **Verschieben** per Drag & Drop in der Sidebar und über „Verschieben nach…“. Dabei werden Links im Vault angepasst und bei HTML-Seiten die relativen Pfade (Bausteine, Bilder, Links) neu berechnet.
+- [ ] Das Schema `localist-seite` mit eigener CSP und Brücken-Skript ist umgesetzt (siehe „Sicherheit“). Bis Etappe 12 liefert es für `localist.js` und `localist.css` leere Platzhalter. Die Ansicht „Lesen“ zeigt die Seite darüber in der abgeschotteten Anzeige. Bilder aus dem Vault werden angezeigt, Icon und Cover aus den `<meta>`-Tags erscheinen im Seitenkopf wie bei Notizen. Die Tastenkürzel der App (z. B. Strg+P) wirken auch, wenn die Seite den Fokus hat.
+- [ ] Die App-weite CSP ist gesetzt, der Wert steht in `FORTSCHRITT.md`, und die gebaute `localist.exe` funktioniert damit (Notiz, Datenbank, HTML-Seite geöffnet).
+- [ ] Automatischer Sicherheitstest in der echten App: z. B. `localist.exe --sicherheitstest <vault>` öffnet eine Testseite in der abgeschotteten Anzeige, sammelt die Ergebnisse per `postMessage` und gibt sie als Tabelle auf der Konsole aus. Geprüft wird: `window.__TAURI__`, `window.__TAURI_INTERNALS__`, `parent.document`, `localStorage`, `fetch` ins Netzwerk, `fetch` an die Tauri-IPC (`http://ipc.localhost/…`), ein Bild von `https://…`, `location.href` nach außen und eine Datei außerhalb des Vaults (`../`, `%2e%2e`). Alles schlägt fehl. Die Konsolenausgabe steht im Chat und in `FORTSCHRITT.md`.
+- [ ] Links: Ein Klick auf einen Link zu einer Notiz oder HTML-Seite öffnet sie in der App, externe Links öffnen im Standardbrowser. Notizen können HTML-Seiten verlinken (`[[Name.html]]`, mit Vorschlägen beim Tippen). Backlinks und das Anpassen von Links beim Umbenennen und Verschieben gelten für beide Typen. Dafür werden `src/lib/links.ts`, `src-tauri/src/vault.rs`, der Suchindex und `src/lib/dev-backend.ts` auf beide Endungen erweitert.
+- [ ] Suche und Backlinks werten den sichtbaren Text von HTML-Seiten aus (ohne Tags, Skripte und Styles).
+- [ ] Wird eine HTML-Seite außerhalb der App geändert, lädt die Anzeige neu.
+- [ ] Die Browser-Vorschau zeigt HTML-Seiten über die Vite-Middleware (Arbeitsregel 8).
+- [ ] Tests für Anlegen, Umbenennen und Verschieben (Kopfbereich, relative Pfade), Pfadprüfung des Schemas, Textauszug für die Suche, Links in beide Richtungen und die Prüfung der `postMessage`-Nachrichten.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
