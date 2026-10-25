@@ -1,18 +1,20 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 7 – Version 1.0 für den PC
-- Zuletzt aktualisiert: 2026-10-25 14:58
-- Nächster Schritt: Abschlussprüfung der Etappe 7 (npm test, tsc, tauri build) und Abschluss-Commit.
+- Etappe: 8 – Android-APK
+- Zuletzt aktualisiert: 2026-10-25 13:31
+- Nächster Schritt: Fertig-Kriterien der neuen Etappe als Checkliste übernehmen und mit der Umsetzung beginnen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Endgültiger App-Name und App-Icon (den Namen vorher beim Nutzer erfragen). Wird der Einstellungsordner `.meinapp/` umbenannt, werden bestehende Vaults automatisch übernommen.
-- [x] Ein Windows-Installer wird gebaut, die Version ist 1.0.0.
-- [x] Verständliche deutsche Fehlermeldungen statt Abstürzen (z. B. Datei nicht lesbar, Vault-Ordner fehlt).
-- [x] Keine Fehler bei `npx tsc --noEmit`, keine offenen TODOs aus früheren Etappen.
-- [x] Die `ANLEITUNG.md` ist auf dem aktuellen Stand.
+- (werden zu Beginn der Etappe eingetragen)
 
 ## Abgeschlossene Etappen
+- Etappe 7 – Version 1.0 für den PC (abgeschlossen am 2026-10-25). Nachweise: `npm test` 126 von 126 Tests grün (12 Testdateien), `cargo test` 18 von 18 grün (darunter `alter_einstellungsordner_meinapp_wird_uebernommen` und `verstaendliche_fehlermeldungen_auf_deutsch`), `npx tsc --noEmit` ohne Fehler, 0 TODOs im Quellcode, `npm run tauri build` ohne Fehler: EXE `src-tauri\target\release\localist.exe`, Installer `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe` und `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi` (beide deutsch). Hinweis: Die Uhrzeiten „Zuletzt aktualisiert“ der Etappen 2 bis 7 waren geschätzt; ab jetzt kommt die Zeit von der Systemuhr.
+  - [x] Endgültiger App-Name und App-Icon (den Namen vorher beim Nutzer erfragen). Wird der Einstellungsordner `.meinapp/` umbenannt, werden bestehende Vaults automatisch übernommen.
+  - [x] Ein Windows-Installer wird gebaut, die Version ist 1.0.0.
+  - [x] Verständliche deutsche Fehlermeldungen statt Abstürzen (z. B. Datei nicht lesbar, Vault-Ordner fehlt).
+  - [x] Keine Fehler bei `npx tsc --noEmit`, keine offenen TODOs aus früheren Etappen.
+  - [x] Die `ANLEITUNG.md` ist auf dem aktuellen Stand.
 - Etappe 6 – Komfort (abgeschlossen am 2026-10-25). Nachweise: `npm test` 123 von 123 Tests grün (12 Testdateien), `cargo test` 16 von 16 grün (darunter `index_liegt_im_cache_ordner_und_nicht_im_vault`), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Volltextsuche mit markiertem Treffer, „Verlinkt von“ unter „Ideen“.
   - [x] Volltextsuche über alle Seiten des Vaults.
   - [x] Schnellsuche mit Strg+P zum Öffnen von Seiten.
