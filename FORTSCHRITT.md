@@ -3,10 +3,14 @@
 ## Aktueller Stand
 - Etappe: 5 – Kalender
 - Zuletzt aktualisiert: 2026-10-25 13:33
-- Nächster Schritt: Fertig-Kriterien der neuen Etappe als Checkliste übernehmen und mit der Umsetzung beginnen.
+- Nächster Schritt: Datumslogik mit Tests, danach Kalenderansicht (Monat/Woche), Drag & Drop, neuer Eintrag per Klick, Liste „Ohne Datum“.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- (werden zu Beginn der Etappe eingetragen)
+- [ ] Kalenderansicht einer Datenbank mit Monats- und Wochenansicht, basierend auf einer Datums-Eigenschaft.
+- [ ] Einen Eintrag per Drag & Drop zu verschieben ändert das Datum in der Datei.
+- [ ] Ein Klick auf einen Tag legt einen neuen Eintrag mit diesem Datum an.
+- [ ] Einträge ohne Datum erscheinen in einer Liste „Ohne Datum“.
+- [ ] Tests für die Datumslogik (Format, Wochen- und Monatsgrenzen).
 
 ## Abgeschlossene Etappen
 - Etappe 4 – Kanban (abgeschlossen am 2026-10-25). Nachweise: `npm test` 99 von 99 Tests grün (10 Testdateien, dreimal hintereinander stabil), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Reiter Tabelle/Kanban, Spalten Geplant/In Arbeit/Erledigt/Ohne status mit Karten. Dabei behoben: Die Datenbank lud bei jedem Neuzeichnen alle Dateien neu, was eine gerade verschobene Karte zurücksetzen konnte.
