@@ -3,10 +3,16 @@
 ## Aktueller Stand
 - Etappe: 2 – Notion-Feeling
 - Zuletzt aktualisiert: 2026-10-25 12:03
-- Nächster Schritt: Fertig-Kriterien der Etappe 2 als Checkliste übernehmen und mit dem Slash-Menü beginnen.
+- Nächster Schritt: Callouts/Toggles und `[[Links]]` im Markdown-Konverter, danach Slash-Menü, Ziehgriff, Dunkelmodus, Icon und Cover.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- (werden zu Beginn der Etappe 2 eingetragen)
+- [ ] Slash-Menü (`/`) zum Einfügen von Blöcken.
+- [ ] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
+- [ ] Callouts und Toggles im Obsidian-Format (siehe Speicherformat).
+- [ ] Icon und Cover pro Seite, gespeichert im Frontmatter (`icon`, `cover`).
+- [ ] Hell- und Dunkelmodus: folgt dem System, manuell umschaltbar.
+- [ ] Links zwischen Seiten als `[[Seitenname]]` mit Vorschlägen beim Tippen, ein Klick öffnet die Seite. Beim Umbenennen einer Seite werden Links darauf im ganzen Vault angepasst.
+- [ ] Die Roundtrip-Tests decken zusätzlich Callouts, Toggles und `[[Links]]` ab.
 
 ## Abgeschlossene Etappen
 - Etappe 1 – Vault und Seiten (abgeschlossen am 2026-10-25). Nachweise: `npm test` 56 von 56 Tests grün (6 Testdateien), `cargo test --manifest-path src-tauri/Cargo.toml` 12 von 12 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zusätzlich in der Browser-Vorschau durchgeklickt: Vault öffnen und nach Neuladen automatisch wieder öffnen, Seite öffnen, Tippen und automatisch speichern, Änderung und Löschen von außen, Anlegen, Umbenennen, Löschen mit Rückfrage.
