@@ -1,27 +1,17 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 10 – HTML-Seiten: Grundlage und sichere Anzeige
-- Zuletzt aktualisiert: 2026-10-25 17:29
-- Nächster Schritt: `.html`-Dateien in Vault (Rust), Ordnerbaum, Strg+P und Suche; danach Anlegen, Umbenennen, Verschieben
+- Etappe: 10 – HTML-Seiten: Grundlage und sichere Anzeige ist abgeschlossen. Als Nächstes kommt Etappe 11 – HTML-Seiten: Code-Editor.
+- Zuletzt aktualisiert: 2026-10-25 18:14
+- Nächster Schritt: Etappe 11 beginnen (Fertig-Kriterien aus `CLAUDE.md` übernehmen; CodeMirror 6 einbinden, Ansichten „Lesen“, „Code“, „Geteilt“).
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] `.html`-Dateien erscheinen in Sidebar, Strg+P und Suche mit eigenem Symbol. Das „Neu“-Menü legt eine HTML-Seite nach dem Speicherformat an (mit `localist-id`). Vorlagen aus `Vorlagen/` funktionieren auch für HTML-Seiten (siehe Speicherformat).
-- [ ] Anlegen, Umbenennen und Löschen funktionieren für HTML-Seiten wie für Notizen. Ein neuer oder umbenannter Name darf pro Ordner über beide Typen nur einmal vorkommen. Beim Umbenennen wird `<title>` angepasst.
-- [ ] Neu für beide Typen und Ordner: **Verschieben** per Drag & Drop in der Sidebar und über „Verschieben nach…“. Dabei werden Links im Vault angepasst und bei HTML-Seiten die relativen Pfade (Bausteine, Bilder, Links) neu berechnet.
-- [ ] Das Schema `localist-seite` mit eigener CSP und Brücken-Skript ist umgesetzt (siehe „Sicherheit“). Bis Etappe 12 liefert es für `localist.js` und `localist.css` leere Platzhalter. Die Ansicht „Lesen“ zeigt die Seite darüber in der abgeschotteten Anzeige. Bilder aus dem Vault werden angezeigt, Icon und Cover aus den `<meta>`-Tags erscheinen im Seitenkopf wie bei Notizen. Die Tastenkürzel der App (z. B. Strg+P) wirken auch, wenn die Seite den Fokus hat.
-- [ ] Die App-weite CSP ist gesetzt, der Wert steht in `FORTSCHRITT.md`, und die gebaute `localist.exe` funktioniert damit (Notiz, Datenbank, HTML-Seite geöffnet).
-- [ ] Automatischer Sicherheitstest in der echten App: z. B. `localist.exe --sicherheitstest <vault>` öffnet eine Testseite in der abgeschotteten Anzeige, sammelt die Ergebnisse per `postMessage` und gibt sie als Tabelle auf der Konsole aus. Geprüft wird: `window.__TAURI__`, `window.__TAURI_INTERNALS__`, `parent.document`, `localStorage`, `fetch` ins Netzwerk, `fetch` an die Tauri-IPC (`http://ipc.localhost/…`), ein Bild von `https://…`, `location.href` nach außen und eine Datei außerhalb des Vaults (`../`, `%2e%2e`). Alles schlägt fehl. Die Konsolenausgabe steht im Chat und in `FORTSCHRITT.md`.
-- [ ] Links: Ein Klick auf einen Link zu einer Notiz oder HTML-Seite öffnet sie in der App, externe Links öffnen im Standardbrowser. Notizen können HTML-Seiten verlinken (`[[Name.html]]`, mit Vorschlägen beim Tippen). Backlinks und das Anpassen von Links beim Umbenennen und Verschieben gelten für beide Typen. Dafür werden `src/lib/links.ts`, `src-tauri/src/vault.rs`, der Suchindex und `src/lib/dev-backend.ts` auf beide Endungen erweitert.
-- [ ] Suche und Backlinks werten den sichtbaren Text von HTML-Seiten aus (ohne Tags, Skripte und Styles).
-- [ ] Wird eine HTML-Seite außerhalb der App geändert, lädt die Anzeige neu.
-- [ ] Die Browser-Vorschau zeigt HTML-Seiten über die Vite-Middleware (Arbeitsregel 8).
-- [ ] Tests für Anlegen, Umbenennen und Verschieben (Kopfbereich, relative Pfade), Pfadprüfung des Schemas, Textauszug für die Suche, Links in beide Richtungen und die Prüfung der `postMessage`-Nachrichten.
+- Etappe 11 ist noch nicht begonnen.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
 
-Stand: am 2026-10-25 mit dem Stand von Etappe 9 in der Browser-Vorschau (Port 1430) durchgeklickt, alle 12 Punkte bestanden. Die Kanban-Karte wurde mit echten Drag-Ereignissen per Skript gezogen, weil das Testwerkzeug keine Maus-Drags erzeugen kann (wie in Etappe 2).
+Stand: am 2026-10-25 mit dem Stand von Etappe 10 in der Browser-Vorschau (Port 1430) erneut durchgeklickt, alle 12 Punkte bestanden (Text, `> [!info]`-Callout, `[[Formatierung]]` mit Klick, Eigenschaft `kategorie: Lernen`, Zelle/Sortierung/Filter, Karte nach „Erledigt“ gezogen, Monat/Woche und neuer Eintrag am 27.10.2026, Volltextsuche „Wochenplanung“, Strg+P, Vorlage „Projekt“, Backlinks unter „Ideen“ jetzt mit „DNS“ und „Website-Relaunch“, Dunkel bleibt nach dem Neuladen). Die Kanban-Karte wurde wie in Etappe 2 mit echten Drag-Ereignissen per Skript gezogen.
 - [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
 - [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
 - [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
@@ -36,6 +26,64 @@ Stand: am 2026-10-25 mit dem Stand von Etappe 9 in der Browser-Vorschau (Port 14
 - [x] Hell/Dunkel: Umschalten wirkt sofort und bleibt nach dem Neuladen erhalten.
 
 ## Abgeschlossene Etappen
+- Etappe 10 – HTML-Seiten: Grundlage und sichere Anzeige (abgeschlossen am 2026-10-25). Nachweise: `npm test` 180 von 180 Tests grün (18 Testdateien, neu u. a. `src/lib/html.test.ts`, `src/lib/bridge.test.ts`, `src/lib/seiten-schema.test.ts`, HTML-Fälle in `links.test.ts`/`search.test.ts` und 9 Oberflächen-Tests „HTML-Seiten (Etappe 10)“), `cargo test` 33 von 33 grün (neu u. a. `pfade_der_anfragen_werden_geprueft`, `liefert_nur_dateien_aus_dem_vault_mit_csp_und_bruecke`, `ein_name_gilt_pro_ordner_fuer_beide_typen`, `seiten_und_ordner_lassen_sich_verschieben`, `html_seite_wird_nach_dem_speicherformat_angelegt`, `html_seiten_stehen_im_index`), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `…\bundle\nsis\Localist_1.0.0_x64-setup.exe`, `…\bundle\msi\Localist_1.0.0_x64_de-DE.msi`). Die App-weite CSP steht unter „Entscheidungen“. Screenshots:
+    - Vorschau (Edge, 1280 × 800): HTML-Seite [hell](docs/screenshots/etappe-10/html-seite-hell.png) / [dunkel](docs/screenshots/etappe-10/html-seite-dunkel.png), „Neu“-Menü mit „HTML-Seite“ [hell](docs/screenshots/etappe-10/neu-menue-hell.png) / [dunkel](docs/screenshots/etappe-10/neu-menue-dunkel.png), „Verschieben nach …“ [hell](docs/screenshots/etappe-10/verschieben-hell.png) / [dunkel](docs/screenshots/etappe-10/verschieben-dunkel.png)
+    - Vorschau Handy (360 × 740): HTML-Seite [hell](docs/screenshots/etappe-10/handy-html-seite-hell.png) / [dunkel](docs/screenshots/etappe-10/handy-html-seite-dunkel.png)
+    - Gebaute `localist.exe` mit CSP: [Notiz](docs/screenshots/etappe-10/app-notiz.png), [Datenbank](docs/screenshots/etappe-10/app-datenbank.png), [HTML-Seite](docs/screenshots/etappe-10/app-html-seite.png)
+  - Gebaute App geprüft mit `node scripts/app-pruefung.mjs <localist.exe> <Kopie von beispiel-vault> docs/screenshots/etappe-10`:
+    ```
+    App gestartet: http://tauri.localhost/, Vault „pruef-vault“
+    Notiz „Ideen“ geöffnet: docs\screenshots\etappe-10\app-notiz.png
+    Datenbank „Projekte“ geöffnet (2 Zeilen): docs\screenshots\etappe-10\app-datenbank.png
+    HTML-Seite „DNS“ geöffnet: src http://localist-seite.localhost/Notizen/DNS.html?v=1, sandbox="allow-scripts", Höhe von der Brücke 568px
+    Im iframe: Bild aus dem Vault geladen (1 px breit), __TAURI_INTERNALS__: object, window.ipc: object, Ursprung: null
+    Strg+P mit Fokus in der HTML-Seite öffnet die Schnellsuche der App: ja
+    Klick auf den Link „Ideen“ in der HTML-Seite öffnet die Notiz in der App: ja
+    Konsole: keine Fehler und keine CSP-Verstöße.
+    ```
+  - Sicherheitstest `localist.exe --sicherheitstest` (Exit-Code 0):
+    ```
+    Localist – Sicherheitstest der abgeschotteten Anzeige
+    Vault: C:\Users\emre\AppData\Local\Temp\localist-sicherheitstest-50093cf699bf498cbe5b2c0ce15c60bf\Vault
+    
+    Prüfung                                             | Erwartet  | Ergebnis   | OK   | Detail
+    ----------------------------------------------------+-----------+------------+------+-------------------------------
+    window.__TAURI__                                    | blockiert | blockiert  | ja   | nicht vorhanden
+    window.__TAURI_INTERNALS__ (Tauri-Befehl aufrufen)  | blockiert | blockiert  | ja   | Objekt sichtbar (WebView2), Aufruf über IPC-Abruf und postMessage scheitert: keine Antwort nach 4 s
+    parent.document (App-Oberfläche)                    | blockiert | blockiert  | ja   | SecurityError: Failed to read a named property 'document' from 'Window': Blocked a frame with origin "null" from accessing a cross-origin frame.
+    top.document (App-Oberfläche)                       | blockiert | blockiert  | ja   | SecurityError: Failed to read a named property 'document' from 'Window': Blocked a frame with origin "null" from accessing a cross-origin frame.
+    localStorage (Speicher der App)                     | blockiert | blockiert  | ja   | SecurityError: Failed to read the 'localStorage' property from 'Window': The document is sandboxed and lacks the 'allow-same-origin' flag.
+    document.cookie                                     | blockiert | blockiert  | ja   | SecurityError: Failed to set the 'cookie' property on 'Document': The document is sandboxed and lacks the 'allow-same-origin' flag.
+    fetch ins Netzwerk (https://example.com)            | blockiert | blockiert  | ja   | TypeError: Failed to fetch
+    fetch an die Tauri-IPC (http://ipc.localhost/…)     | blockiert | blockiert  | ja   | TypeError: Failed to fetch
+    fetch an die Tauri-IPC (ipc://localhost/…)          | blockiert | blockiert  | ja   | TypeError: Failed to fetch
+    fetch an das Asset-Protokoll (Dateien des Rechners) | blockiert | blockiert  | ja   | TypeError: Failed to fetch
+    fetch einer Datei im Vault                          | blockiert | blockiert  | ja   | TypeError: Failed to fetch
+    Kontrolle: Bild aus dem Vault wird angezeigt        | erlaubt   | erlaubt    | ja   | geladen (1×1)
+    Bild von https://…                                  | blockiert | blockiert  | ja   | nicht geladen
+    Datei außerhalb des Vaults (../)                    | blockiert | blockiert  | ja   | nicht geladen
+    Datei außerhalb des Vaults (%2e%2e/)                | blockiert | blockiert  | ja   | nicht geladen
+    Datei außerhalb des Vaults (..%2f)                  | blockiert | blockiert  | ja   | nicht geladen
+    Datei außerhalb des Vaults (..%5c)                  | blockiert | blockiert  | ja   | nicht geladen
+    Einstellungen des Vaults (.localist/settings.json)  | blockiert | blockiert  | ja   | nicht geladen
+    window.open nach außen (Popup)                      | blockiert | blockiert  | ja   | nicht vorhanden
+    location.href nach außen (https://example.com)      | blockiert | blockiert  | ja   | CSP der App (frame-src) hat https://example.com blockiert
+    Tauri-Befehl aus der Seite erreicht die App         | blockiert | blockiert  | ja   | Der Test-Befehl kam nie in der App an.
+    
+    Ergebnis: 21 von 21 Prüfungen bestanden – die Seite hat keinen Zugriff auf App, Dateien außerhalb des Vaults oder Netzwerk.
+    ```
+    Hinweis: Unter Windows fügt WebView2 die Start-Skripte von Tauri in alle Frames ein (laut Dokumentation von wry unabhängig von der Einstellung „nur Hauptframe“). `window.__TAURI_INTERNALS__` ist im iframe deshalb sichtbar und lässt sich nicht entfernen (Tauri legt es nicht löschbar an). Der Test prüft darum, ob damit ein Befehl die App erreicht: Der Aufruf scheitert (der IPC-Abruf an ipc.localhost wird von der CSP der Seite blockiert, der Ausweichweg über `window.ipc`/`chrome.webview.postMessage` wird von WebView2 aus iframes nicht zugestellt), und die App hat den Test-Befehl `sicherheitstest_probe` nie erhalten.
+  - [x] `.html`-Dateien erscheinen in Sidebar, Strg+P und Suche mit eigenem Symbol. Das „Neu“-Menü legt eine HTML-Seite nach dem Speicherformat an (mit `localist-id`). Vorlagen aus `Vorlagen/` funktionieren auch für HTML-Seiten (siehe Speicherformat).
+  - [x] Anlegen, Umbenennen und Löschen funktionieren für HTML-Seiten wie für Notizen. Ein neuer oder umbenannter Name darf pro Ordner über beide Typen nur einmal vorkommen. Beim Umbenennen wird `<title>` angepasst.
+  - [x] Neu für beide Typen und Ordner: **Verschieben** per Drag & Drop in der Sidebar und über „Verschieben nach…“. Dabei werden Links im Vault angepasst und bei HTML-Seiten die relativen Pfade (Bausteine, Bilder, Links) neu berechnet.
+  - [x] Das Schema `localist-seite` mit eigener CSP und Brücken-Skript ist umgesetzt (siehe „Sicherheit“). Bis Etappe 12 liefert es für `localist.js` und `localist.css` leere Platzhalter. Die Ansicht „Lesen“ zeigt die Seite darüber in der abgeschotteten Anzeige. Bilder aus dem Vault werden angezeigt, Icon und Cover aus den `<meta>`-Tags erscheinen im Seitenkopf wie bei Notizen. Die Tastenkürzel der App (z. B. Strg+P) wirken auch, wenn die Seite den Fokus hat.
+  - [x] Die App-weite CSP ist gesetzt, der Wert steht in `FORTSCHRITT.md`, und die gebaute `localist.exe` funktioniert damit (Notiz, Datenbank, HTML-Seite geöffnet).
+  - [x] Automatischer Sicherheitstest in der echten App: z. B. `localist.exe --sicherheitstest <vault>` öffnet eine Testseite in der abgeschotteten Anzeige, sammelt die Ergebnisse per `postMessage` und gibt sie als Tabelle auf der Konsole aus. Geprüft wird: `window.__TAURI__`, `window.__TAURI_INTERNALS__`, `parent.document`, `localStorage`, `fetch` ins Netzwerk, `fetch` an die Tauri-IPC (`http://ipc.localhost/…`), ein Bild von `https://…`, `location.href` nach außen und eine Datei außerhalb des Vaults (`../`, `%2e%2e`). Alles schlägt fehl. Die Konsolenausgabe steht im Chat und in `FORTSCHRITT.md`.
+  - [x] Links: Ein Klick auf einen Link zu einer Notiz oder HTML-Seite öffnet sie in der App, externe Links öffnen im Standardbrowser. Notizen können HTML-Seiten verlinken (`[[Name.html]]`, mit Vorschlägen beim Tippen). Backlinks und das Anpassen von Links beim Umbenennen und Verschieben gelten für beide Typen. Dafür werden `src/lib/links.ts`, `src-tauri/src/vault.rs`, der Suchindex und `src/lib/dev-backend.ts` auf beide Endungen erweitert.
+  - [x] Suche und Backlinks werten den sichtbaren Text von HTML-Seiten aus (ohne Tags, Skripte und Styles).
+  - [x] Wird eine HTML-Seite außerhalb der App geändert, lädt die Anzeige neu.
+  - [x] Die Browser-Vorschau zeigt HTML-Seiten über die Vite-Middleware (Arbeitsregel 8).
+  - [x] Tests für Anlegen, Umbenennen und Verschieben (Kopfbereich, relative Pfade), Pfadprüfung des Schemas, Textauszug für die Suche, Links in beide Richtungen und die Prüfung der `postMessage`-Nachrichten.
 - Etappe 9 – Neues Design (abgeschlossen am 2026-10-25). Nachweise: `npm test` 148 von 148 Tests grün (15 Testdateien, neu u. a. `src/styles/tokens.test.ts`, `src/lib/favorites.test.ts`, `src/lib/home.test.ts` und 7 Oberflächen-Tests „Neues Design“), `cargo test` 20 von 20 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe`, `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi`). Im gebauten CSS (`dist/assets/index-*.css`) stehen nur lokale Schriftdateien (`/assets/inter-*.woff2`), keine externen Adressen; in der Vorschau gingen alle 103 Anfragen an `localhost`. Klickliste „Version 1.0“ abgehakt (siehe oben). Screenshots entstehen mit `npm run screenshots -- http://localhost:1430 docs/screenshots/etappe-9` (`scripts/screenshots.mjs`, steuert Microsoft Edge im Hintergrund):
     - PC (1280 × 800) – Startseite: [hell](docs/screenshots/etappe-9/startseite-hell.png), [dunkel](docs/screenshots/etappe-9/startseite-dunkel.png)
     - PC (1280 × 800) – Notiz: [hell](docs/screenshots/etappe-9/notiz-hell.png), [dunkel](docs/screenshots/etappe-9/notiz-dunkel.png)
