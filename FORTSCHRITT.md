@@ -1,18 +1,20 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 8 – Android-APK
-- Zuletzt aktualisiert: 2026-10-25 14:07
-- Nächster Schritt: Abschluss der Etappe 8 (Nachweise und Abschluss-Commit).
+- Etappe: alle Etappen 0 bis 8 abgeschlossen (Localist 1.0.0 für Windows und Android)
+- Zuletzt aktualisiert: 2026-10-25 14:08
+- Nächster Schritt: keiner aus CLAUDE.md. Mögliche nächste Schritte stehen dort unter „Zukunft“ (Google-Kalender), sie werden erst auf ausdrücklichen Wunsch des Nutzers umgesetzt.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
-- [x] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
-- [x] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
-- [x] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
-- [x] Der Windows-Build funktioniert weiterhin.
+- keine offene Etappe
 
 ## Abgeschlossene Etappen
+- Etappe 8 – Android-APK (abgeschlossen am 2026-10-25). Nachweise: `npm test` 128 von 128 Tests grün (12 Testdateien), `cargo test` 20 von 20 grün (darunter `papierkorb_im_vault_fuer_android`, `ordnerauswahl_listet_unterordner_und_legt_neue_an`), `npx tsc --noEmit` ohne Fehler. Android: `npx tauri android build --debug --apk --target aarch64 --target x86_64` erzeugt `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk`. Im Emulator „Medium_Phone_API_37.0“ (Android 17) installiert und bedient: Ordnerauswahl → Interner Speicher → Documents → Beispiel-Vault (Kopie) → als Vault verwendet; Seite „Ideen“ über das ausklappbare Menü geöffnet (Inhalt und Backlinks sichtbar); Text über die Android-Tastatur ergänzt, danach stand in der Datei auf dem Gerät „- Lesezeichen für Artikel vom Handy bearbeitet“; nach Neuinstallation öffnete sich der zuletzt geöffnete Vault automatisch. Windows: `npm run tauri build` ohne Fehler (`localist.exe`, `Localist_1.0.0_x64-setup.exe`, `Localist_1.0.0_x64_de-DE.msi`).
+  - [x] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
+  - [x] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
+  - [x] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
+  - [x] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
+  - [x] Der Windows-Build funktioniert weiterhin.
 - Etappe 7 – Version 1.0 für den PC (abgeschlossen am 2026-10-25). Nachweise: `npm test` 126 von 126 Tests grün (12 Testdateien), `cargo test` 18 von 18 grün (darunter `alter_einstellungsordner_meinapp_wird_uebernommen` und `verstaendliche_fehlermeldungen_auf_deutsch`), `npx tsc --noEmit` ohne Fehler, 0 TODOs im Quellcode, `npm run tauri build` ohne Fehler: EXE `src-tauri\target\release\localist.exe`, Installer `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe` und `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi` (beide deutsch). Hinweis: Die Uhrzeiten „Zuletzt aktualisiert“ der Etappen 2 bis 7 waren geschätzt; ab jetzt kommt die Zeit von der Systemuhr.
   - [x] Endgültiger App-Name und App-Icon (den Namen vorher beim Nutzer erfragen). Wird der Einstellungsordner `.meinapp/` umbenannt, werden bestehende Vaults automatisch übernommen.
   - [x] Ein Windows-Installer wird gebaut, die Version ist 1.0.0.
@@ -65,7 +67,7 @@
 
 ## Offene Probleme
 - Gelöst am 2026-10-25: Umgebungsvariablen `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME` und die Rust-Ziele für Android wurden auf Wunsch des Nutzers aus der Sitzung eingerichtet (Android Studio, SDK und NDK 28.2 waren schon installiert). `npx tauri android init` hat das Projekt unter `src-tauri/gen/android` erzeugt (Gradle 9.6.1, funktioniert mit dem Java 25 aus Android Studio).
-- 2026-10-25: Der Android-Build bricht ab mit „Creation symbolic link is not allowed for this system“. Tauri legt beim Android-Build symbolische Verknüpfungen an, das erlaubt Windows nur im **Entwicklermodus**. Der Rust-Teil kompiliert für Android bereits fehlerfrei. Der Nutzer muss den Entwicklermodus selbst einschalten: Einstellungen → System → Für Entwickler → „Entwicklermodus“ an. Es ist eine Systemeinstellung, deshalb ändert die Sitzung sie nicht.
+- Gelöst am 2026-10-25 (Nutzer hat den Entwicklermodus eingeschaltet): Der Android-Build brach ab mit „Creation symbolic link is not allowed for this system“. Tauri legt beim Android-Build symbolische Verknüpfungen an, das erlaubt Windows nur im **Entwicklermodus**. Der Rust-Teil kompiliert für Android bereits fehlerfrei. Der Nutzer muss den Entwicklermodus selbst einschalten: Einstellungen → System → Für Entwickler → „Entwicklermodus“ an. Es ist eine Systemeinstellung, deshalb ändert die Sitzung sie nicht.
 - Gelöst am 2026-10-25: Der Nutzer hat den App-Namen festgelegt: **Localist**, Einstellungsordner `.localist/`.
 - Gelöst am 2026-10-25: Rust war nicht mehr installiert (`npm run tauri build` brach mit `cargo metadata … program not found` ab, `%USERPROFILE%\.cargo` und `%USERPROFILE%\.rustup` fehlten). Auf Wunsch des Nutzers per `winget install --id Rustlang.Rustup --exact` neu installiert (rustup 1.29.1, `cargo 1.99.1`, `rustc 1.99.1`, Toolchain `stable-x86_64-pc-windows-msvc`). Der Installer trägt `%USERPROFILE%\.cargo\bin` in den Benutzer-PATH ein. Ein Terminal, das schon vorher offen war, kennt den neuen Pfad erst nach einem Neustart.
 - Gelöst am 2026-10-25: Die Microsoft C++ Build Tools fehlten wieder (kein `vswhere.exe`, kein MSVC-Ordner). Auf Wunsch des Nutzers mit demselben winget-Befehl wie am 2026-10-24 neu installiert (Build Tools 2022, Version 17.14.37806.7, MSVC 14.44.35207).
