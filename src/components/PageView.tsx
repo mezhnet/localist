@@ -5,9 +5,11 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import type { VaultEditor } from "../editor/schema";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { pageTitle } from "../lib/tree";
-import { readPage, resolveAttachment, writePage } from "../lib/vault-api";
+import { importAttachment, pickImage, readPage, resolveAttachment, writePage } from "../lib/vault-api";
 import { parsePage, serializePage, type ParsedPage } from "../markdown";
+import { getFrontmatterField, setFrontmatterField } from "../markdown/frontmatter";
 import { BlockEditor } from "./BlockEditor";
+import { PageHeader } from "./PageHeader";
 
 interface Props {
   /** Aktueller Pfad der Seite. Ändert er sich (Umbenennen), bleibt der Editor offen. */
@@ -32,6 +34,10 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const formatRef = useRef<ParsedPage["format"] | null>(null);
+  const editorRef = useRef<VaultEditor | null>(null);
+  // Frontmatter für Icon und Cover; ändert sich beim Laden, Neuladen und beim Setzen der Felder.
+  const [frontmatter, setFrontmatter] = useState<string | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const pathRef = useRef(path);
   pathRef.current = path;
 
@@ -43,6 +49,7 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
         if (cancelled) return;
         const page = parsePage(text);
         formatRef.current = page.format;
+        setFrontmatter(page.format.frontmatter);
         saverRef.current = new AutoSaver(text, (content) => writePage(pathRef.current, content), onError);
         setLoaded({ page, version: 0 });
       },
@@ -67,6 +74,7 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
         if (cancelled || !saver || saver.isOwnWrite(text) || saver.dirty) return;
         const page = parsePage(text);
         formatRef.current = page.format;
+        setFrontmatter(page.format.frontmatter);
         saver.lastSaved = text;
         setLoaded((previous) => ({ page, version: (previous?.version ?? 0) + 1 }));
       },
@@ -89,11 +97,40 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
     [saverRef],
   );
 
-  const resolveFileUrl = useCallback(async (url: string) => {
-    if (/^(https?|data|blob|asset):/i.test(url)) return url;
-    const absolute = await resolveAttachment(pathRef.current, url).catch(() => null);
-    return absolute ? convertFileSrc(absolute) : url;
-  }, []);
+  const icon = getFrontmatterField(frontmatter, "icon");
+  const cover = getFrontmatterField(frontmatter, "cover");
+
+  useEffect(() => {
+    let cancelled = false;
+    setCoverUrl(null);
+    if (cover) void resolveFileUrlFor(pathRef.current, cover).then((url) => !cancelled && setCoverUrl(url));
+    return () => {
+      cancelled = true;
+    };
+  }, [cover]);
+
+  /** Ändert ein Feld im Frontmatter (icon, cover) und speichert sofort. */
+  const setField = (key: string, value: string | null) => {
+    const format = formatRef.current;
+    const saver = saverRef.current;
+    if (!format || !saver || !loaded) return;
+    format.frontmatter = setFrontmatterField(format.frontmatter, key, value);
+    setFrontmatter(format.frontmatter);
+    const blocks = loaded.page.blocks;
+    saver.schedule(() => serializePage(format, editorRef.current ? editorRef.current.document : blocks));
+    void saver.flush();
+  };
+
+  const pickCover = async () => {
+    try {
+      const source = await pickImage();
+      if (source) setField("cover", await importAttachment(source));
+    } catch (error) {
+      onError(errorMessage(error));
+    }
+  };
+
+  const resolveFileUrl = useCallback((url: string) => resolveFileUrlFor(pathRef.current, url), []);
 
   if (loadError) {
     return (
@@ -104,20 +141,40 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
   }
 
   return (
-    <div className="page">
-      <PageTitle title={pageTitle(path)} autoFocus={isNew} onRename={onRename} />
-      {loaded ? (
-        <BlockEditor
-          key={loaded.version}
-          initialBlocks={loaded.page.blocks}
-          onChange={handleChange}
-          resolveFileUrl={resolveFileUrl}
+    <div className="page-view">
+      {loaded && (
+        <PageHeader
+          icon={icon}
+          coverUrl={coverUrl}
+          hasCover={cover !== null}
+          onSetIcon={(value) => setField("icon", value)}
+          onPickCover={() => void pickCover()}
+          onRemoveCover={() => setField("cover", null)}
         />
-      ) : (
-        <p className="muted">Lädt …</p>
       )}
+      <div className="page">
+        <PageTitle title={pageTitle(path)} autoFocus={isNew} onRename={onRename} />
+        {loaded ? (
+          <BlockEditor
+            key={loaded.version}
+            initialBlocks={loaded.page.blocks}
+            onChange={handleChange}
+            onReady={(editor) => (editorRef.current = editor)}
+            resolveFileUrl={resolveFileUrl}
+          />
+        ) : (
+          <p className="muted">Lädt …</p>
+        )}
+      </div>
     </div>
   );
+}
+
+/** Bildadresse aus Markdown oder Frontmatter in eine anzeigbare Adresse umwandeln. */
+async function resolveFileUrlFor(page: string, url: string): Promise<string> {
+  if (/^(https?|data|blob|asset):/i.test(url)) return url;
+  const absolute = await resolveAttachment(page, url).catch(() => null);
+  return absolute ? convertFileSrc(absolute) : url;
 }
 
 /** Großer Seitentitel wie in Notion. Er ist der Dateiname: Ändern benennt die Datei um. */

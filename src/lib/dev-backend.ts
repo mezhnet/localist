@@ -152,7 +152,10 @@ export function installDevBackend(): void {
           return assets.get(join(dir, target)) ?? assets.get(target) ?? null;
         }
         case "plugin:dialog|open":
-          return ROOT;
+          // Ordnerwahl liefert den simulierten Vault, Bildwahl das Beispielbild.
+          return a.options?.directory ? ROOT : `${ROOT}/Anhänge/skizze.png`;
+        case "import_attachment":
+          return String(a.source).startsWith(`${ROOT}/`) ? String(a.source).slice(ROOT.length + 1) : "Anhänge/skizze.png";
         case "plugin:dialog|message": {
           // ask() übergibt die Knöpfe als { OkCancelCustom: [ok, abbrechen] } und vergleicht mit dem ok-Text.
           const [ok, cancel] = a.buttons?.OkCancelCustom ?? ["Yes", "No"];

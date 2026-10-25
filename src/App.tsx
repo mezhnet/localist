@@ -2,11 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Workspace } from "./components/Workspace";
 import { errorMessage } from "./lib/autosave";
+import { ThemeProvider } from "./lib/theme";
 import { getLastVault, openVault, pickVaultFolder, type VaultInfo } from "./lib/vault-api";
 
 type Phase = "starting" | "ready";
 
 function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
   const [phase, setPhase] = useState<Phase>("starting");
   const [vault, setVault] = useState<VaultInfo | null>(null);
   const [error, setError] = useState<string | null>(null);

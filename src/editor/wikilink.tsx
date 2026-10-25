@@ -8,11 +8,21 @@ export interface WikiLinkActions {
   resolve: (target: string) => string | null;
   /** Öffnet die Seite (und legt sie an, falls sie fehlt). */
   open: (target: string) => void;
+  /** Passende Seiten für die Vorschläge nach "[[". */
+  suggest: (query: string) => LinkSuggestion[];
+}
+
+export interface LinkSuggestion {
+  title: string;
+  folder: string;
+  /** Was zwischen [[ und ]] eingefügt wird. */
+  target: string;
 }
 
 export const WikiLinkContext = createContext<WikiLinkActions>({
   resolve: () => null,
   open: () => {},
+  suggest: () => [],
 });
 
 function WikiLinkView({ target, alias }: { target: string; alias: string }) {

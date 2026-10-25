@@ -81,6 +81,21 @@ export function resolveAttachment(page: string, target: string): Promise<string 
   return invoke<string | null>("resolve_attachment", { page, target });
 }
 
+/** Macht ein Bild im Vault verfügbar (kopiert es bei Bedarf nach "Anhänge/") und liefert den relativen Pfad. */
+export function importAttachment(source: string): Promise<string> {
+  return invoke<string>("import_attachment", { source });
+}
+
+/** Systemdialog zur Auswahl eines Bildes. null, wenn der Nutzer abbricht. */
+export async function pickImage(): Promise<string | null> {
+  const result = await open({
+    multiple: false,
+    title: "Bild auswählen",
+    filters: [{ name: "Bilder", extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "avif"] }],
+  });
+  return typeof result === "string" ? result : null;
+}
+
 /** Abonniert Änderungen im Vault (auch von außen). Liefert die Funktion zum Abbestellen. */
 export function onVaultChanged(handler: (change: VaultChange) => void): Promise<UnlistenFn> {
   return listen<VaultChange>(VAULT_CHANGED_EVENT, (event) => handler(event.payload));

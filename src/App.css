@@ -1,4 +1,4 @@
-/* Grundlayout im Stil von Notion. Hell- und Dunkelmodus folgen in Etappe 2. */
+/* Grundlayout im Stil von Notion. Farben als Variablen, damit der Dunkelmodus sie nur austauschen muss. */
 :root {
   --text: #37352f;
   --text-muted: #787774;
@@ -11,6 +11,10 @@
   --danger: #d44c47;
   --error-bg: #fdebec;
   --info-bg: #e7f3f8;
+  --link: #37352f;
+  --link-underline: rgba(55, 53, 47, 0.4);
+  --unresolved: #9b9a97;
+  --callout-bg: rgba(241, 241, 239, 1);
 
   font-family: "Inter", ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 14px;
@@ -20,6 +24,29 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Dunkelmodus: per Umschalter (data-theme) oder automatisch wie Windows */
+:root[data-theme="dark"] {
+  --text: rgba(255, 255, 255, 0.86);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --bg: #191919;
+  --sidebar-bg: #202020;
+  --hover: rgba(255, 255, 255, 0.06);
+  --active: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #529cca;
+  --danger: #ff7369;
+  --error-bg: #522e2a;
+  --info-bg: #143a4e;
+  --link: rgba(255, 255, 255, 0.86);
+  --link-underline: rgba(255, 255, 255, 0.4);
+  --unresolved: rgba(255, 255, 255, 0.4);
+  --callout-bg: rgba(255, 255, 255, 0.05);
+}
+
+.notice.error {
+  color: inherit;
 }
 
 * {
@@ -288,7 +315,159 @@ button {
 .page {
   max-width: 860px;
   margin: 0 auto;
-  padding: 72px 48px 120px;
+  padding: 0 48px 120px;
+}
+
+/* Seitenkopf: Cover, Icon und "hinzufügen"-Knöpfe */
+.page-header-inner {
+  position: relative;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 48px 4px 102px;
+}
+
+.with-cover .page-header-inner {
+  padding-top: 0;
+}
+
+.page-cover {
+  position: relative;
+  height: 200px;
+  background: var(--hover) center / cover no-repeat;
+}
+
+.page-cover-actions {
+  position: absolute;
+  right: 24px;
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.page-cover:hover .page-cover-actions,
+.page-cover-actions:focus-within {
+  opacity: 1;
+}
+
+.page-cover-actions button,
+.page-header-actions button {
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.page-cover-actions button {
+  background: rgba(255, 255, 255, 0.9);
+  color: #37352f;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 4px;
+  min-height: 28px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.page-view:hover .page-header-actions,
+.page-header-actions:focus-within {
+  opacity: 1;
+}
+
+.page-header-actions button {
+  background: none;
+  color: var(--text-muted);
+}
+
+.page-header-actions button:hover {
+  background: var(--hover);
+}
+
+.page-icon {
+  display: block;
+  border: none;
+  background: none;
+  font-size: 64px;
+  line-height: 1.1;
+  padding: 4px;
+  margin-left: -4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.with-cover .page-icon {
+  margin-top: -42px;
+}
+
+.page-icon:hover {
+  background: var(--hover);
+}
+
+.emoji-picker {
+  position: absolute;
+  z-index: 50;
+  top: 100%;
+  left: 102px;
+  width: 340px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 15, 15, 0.18);
+  padding: 8px;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+}
+
+.emoji-grid button {
+  border: none;
+  background: none;
+  font-size: 22px;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.emoji-grid button:hover {
+  background: var(--hover);
+}
+
+.emoji-own {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.emoji-own input {
+  flex: 1;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+.emoji-own button,
+.emoji-remove {
+  border: 1px solid var(--border);
+  background: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.emoji-remove {
+  margin-top: 8px;
+  width: 100%;
+  color: var(--danger);
 }
 
 .page-title {
@@ -338,7 +517,6 @@ button {
 
 .notice.error {
   background: var(--error-bg);
-  color: #5d1715;
 }
 
 .notice.info {
@@ -380,4 +558,142 @@ button {
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   font-size: 0.9em;
   color: var(--text-muted);
+}
+
+/* Sidebar unten: Hell/Dunkel */
+.tree {
+  flex: 1;
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sidebar-footer select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin-left: 4px;
+}
+
+.context-menu,
+.rename-input {
+  color: var(--text);
+}
+
+/* Callouts und Toggles im Obsidian-Format */
+.callout-frame {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  background: var(--callout-bg);
+  border-radius: 6px;
+  padding: 10px 12px 10px 10px;
+  margin: 2px 0;
+}
+
+.callout-frame[data-callout-type="warning"],
+.callout-frame[data-callout-type="danger"],
+.callout-frame[data-callout-type="bug"] {
+  background: color-mix(in srgb, #e9a23b 16%, var(--bg));
+}
+
+.callout-frame[data-callout-type="danger"],
+.callout-frame[data-callout-type="bug"] {
+  background: color-mix(in srgb, #e03e3e 14%, var(--bg));
+}
+
+.callout-frame[data-callout-type="info"],
+.callout-frame[data-callout-type="note"],
+.callout-frame[data-callout-type="abstract"],
+.callout-frame[data-callout-type="todo"] {
+  background: color-mix(in srgb, #2383e2 12%, var(--bg));
+}
+
+.callout-frame[data-callout-type="tip"],
+.callout-frame[data-callout-type="success"] {
+  background: color-mix(in srgb, #0f7b6c 14%, var(--bg));
+}
+
+.callout-icon {
+  position: relative;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-top: 1px;
+}
+
+.callout-icon:hover {
+  background: var(--hover);
+}
+
+.callout-icon select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.callout-slot,
+.callout-frame > .bn-toggle-frame {
+  flex: 1;
+  min-width: 0;
+}
+
+.callout-title {
+  font-weight: 600;
+}
+
+.callout-foldable .callout-title {
+  font-weight: 500;
+}
+
+/* Seitenlinks [[…]] */
+.wikilink {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: var(--link-underline);
+  text-underline-offset: 2px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.wikilink:hover {
+  text-decoration-color: currentColor;
+}
+
+.wikilink.unresolved {
+  color: var(--unresolved);
+  text-decoration-style: dashed;
+}
+
+/* Inhalt im Callout ohne Einrückung und ohne Verschachtelungslinie */
+.callout-slot > .bn-block-group,
+.callout-frame .bn-toggle-slot > .bn-block-group {
+  margin-left: 0 !important;
+}
+
+.callout-slot > .bn-block-group > .bn-block-outer::before,
+.callout-frame .bn-toggle-slot > .bn-block-group > .bn-block-outer::before {
+  /* BlockNote zeichnet diese Linie mit einer sehr spezifischen Regel. */
+  display: none !important;
+}
+
+/* Der Editor übernimmt den Seitenhintergrund (hell und dunkel). */
+.block-editor.bn-container.bn-root[data-color-scheme] {
+  --bn-colors-editor-background: var(--bg);
+  --bn-colors-editor-text: var(--text);
 }

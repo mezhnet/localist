@@ -34,6 +34,11 @@ export function calloutKind(type: string): CalloutKind {
 // Ohne eigene Wahl gilt das Faltzeichen: "+" offen, "-" zu.
 const openState = new Map<string, boolean>();
 
+/** Merkt einen Toggle als geöffnet, z. B. direkt nach dem Einfügen über das Slash-Menü. */
+export function markToggleOpen(blockId: string): void {
+  openState.set(blockId, true);
+}
+
 function isOpen(block: { id: string; props: { fold: string } }): boolean {
   return block.props.fold === "" || (openState.get(block.id) ?? block.props.fold === "+");
 }

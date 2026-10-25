@@ -265,6 +265,35 @@ pub fn delete_entry(root: &Path, rel: &str) -> Result<(), String> {
     trash::delete(&path).map_err(|e| format!("„{}“ konnte nicht in den Papierkorb verschoben werden: {e}", display_name(&path)))
 }
 
+/// Ordner für Bilder, die von außerhalb in den Vault übernommen werden.
+pub const ATTACHMENTS_DIR: &str = "Anhänge";
+
+/// Macht ein Bild im Vault verfügbar und liefert seinen relativen Pfad. Liegt es schon im Vault,
+/// bleibt es, wo es ist. Sonst wird es nach "Anhänge/" kopiert (bei Namensgleichheit mit Nummer).
+pub fn import_attachment(root: &Path, source: &Path) -> Result<String, String> {
+    if !source.is_file() {
+        return Err(format!("Die Datei „{}“ wurde nicht gefunden.", display_name(source)));
+    }
+    if let Some(rel) = to_rel(root, source).filter(|rel| !rel.is_empty()) {
+        return Ok(rel);
+    }
+    let dir = root.join(ATTACHMENTS_DIR);
+    fs::create_dir_all(&dir).map_err(|e| format!("Der Ordner „{ATTACHMENTS_DIR}“ konnte nicht angelegt werden: {e}"))?;
+    let name = display_name(source);
+    let (stem, ext) = match name.rsplit_once('.') {
+        Some((stem, ext)) if !stem.is_empty() => (stem.to_string(), format!(".{ext}")),
+        _ => (name.clone(), String::new()),
+    };
+    let mut target = dir.join(&name);
+    let mut number = 2;
+    while target.exists() {
+        target = dir.join(format!("{stem} {number}{ext}"));
+        number += 1;
+    }
+    fs::copy(source, &target).map_err(|e| format!("„{name}“ konnte nicht in den Vault kopiert werden: {e}"))?;
+    to_rel(root, &target).ok_or_else(|| "Ungültiger Pfad.".into())
+}
+
 /// Löst ein Bild aus einer Seite zu einem absoluten Pfad auf: erst relativ zur Seite,
 /// dann relativ zur Vault-Wurzel (so macht es Obsidian). None, wenn nichts gefunden wurde.
 pub fn resolve_attachment(root: &Path, page: &str, target: &str) -> Option<PathBuf> {
@@ -472,6 +501,23 @@ mod tests {
         assert_eq!(resolve_attachment(&vault.0, "Notizen/A.md", "../../aussen.png"), None);
         assert_eq!(resolve_attachment(&vault.0, "Notizen/A.md", "https://example.com/a.png"), None);
         assert_eq!(resolve_attachment(&vault.0, "Notizen/A.md", "fehlt.png"), None);
+    }
+
+    #[test]
+    fn bilder_von_aussen_werden_nach_anhaenge_kopiert() {
+        let vault = TestVault::new();
+        let outside = TestVault::new();
+        outside.file("Urlaub.jpg", "jpg");
+        vault.file("Anhänge/Urlaub.jpg", "alt");
+        vault.file("Bilder/drin.png", "png");
+
+        // Schon im Vault: nur der Pfad, keine Kopie.
+        assert_eq!(import_attachment(&vault.0, &vault.0.join("Bilder/drin.png")).unwrap(), "Bilder/drin.png");
+        // Von außen: Kopie mit freiem Namen, das vorhandene Bild bleibt unverändert.
+        assert_eq!(import_attachment(&vault.0, &outside.0.join("Urlaub.jpg")).unwrap(), "Anhänge/Urlaub 2.jpg");
+        assert_eq!(read_text(&vault.0.join("Anhänge/Urlaub 2.jpg")).unwrap(), "jpg");
+        assert_eq!(read_text(&vault.0.join("Anhänge/Urlaub.jpg")).unwrap(), "alt");
+        assert!(import_attachment(&vault.0, &outside.0.join("fehlt.png")).is_err());
     }
 
     #[test]

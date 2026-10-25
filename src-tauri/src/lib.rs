@@ -133,6 +133,12 @@ async fn resolve_attachment(state: State<'_, AppState>, page: String, target: St
     Ok(vault::resolve_attachment(&root, &page, &target).map(|path| path_to_string(&path)))
 }
 
+/// Macht ein Bild (z. B. für das Cover) im Vault verfügbar und liefert den relativen Pfad.
+#[tauri::command]
+async fn import_attachment(state: State<'_, AppState>, source: String) -> Result<String, String> {
+    vault::import_attachment(&state.root()?, Path::new(&source))
+}
+
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -153,7 +159,8 @@ pub fn run() {
             create_folder,
             rename_entry,
             delete_entry,
-            resolve_attachment
+            resolve_attachment,
+            import_attachment
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");

@@ -1,9 +1,11 @@
 // Arbeitsbereich eines geöffneten Vaults: Sidebar links, Seite rechts.
 // Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen) und die Meldungen des Dateiwächters.
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage } from "../lib/autosave";
-import { childrenOf, findNode, isInside, movePath, pageTitle, sortTree, uniqueName } from "../lib/tree";
+import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewriteLinks, type PageRef } from "../lib/links";
+import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
 import {
   confirmAction,
   createFolder,
@@ -11,7 +13,9 @@ import {
   deleteEntry,
   listTree,
   onVaultChanged,
+  readPage,
   renameEntry,
+  writePage,
   type TreeNode,
   type VaultInfo,
 } from "../lib/vault-api";
@@ -161,16 +165,87 @@ export function Workspace({ vault, onSwitchVault }: Props) {
 
   const rename = async (node: TreeNode, newName: string): Promise<boolean> => {
     try {
+      // Vorher speichern: Auch die offene Seite kann Links enthalten, die gleich angepasst werden.
+      await saverRef.current?.flush();
+      const oldPages = allPages(tree);
       const current = pageRef.current;
-      const affectsOpenPage = current !== null && isInside(current.path, node.path);
-      if (affectsOpenPage) await saverRef.current?.flush();
       const newPath = await renameEntry(node.path, newName);
-      if (affectsOpenPage && current) setPagePath(movePath(current.path, node.path, newPath));
+      if (current && isInside(current.path, node.path)) setPagePath(movePath(current.path, node.path, newPath));
+
+      const moved = new Map<string, string>();
+      for (const page of oldPages) {
+        if (isInside(page.path, node.path)) moved.set(page.path, movePath(page.path, node.path, newPath));
+      }
       await refreshTree();
+      const changed = await updateLinksAfterRename(oldPages, moved);
+      if (changed > 0) {
+        setNotice({ kind: "info", text: `Links in ${changed} ${changed === 1 ? "Seite" : "Seiten"} angepasst.` });
+      }
       return true;
     } catch (error) {
       showError(errorMessage(error));
       return false;
+    }
+  };
+
+  /** Schreibt in allen Seiten die Links auf umbenannte Seiten um. Liefert die Zahl geänderter Seiten. */
+  const updateLinksAfterRename = async (oldPages: PageRef[], moved: Map<string, string>): Promise<number> => {
+    if (moved.size === 0) return 0;
+    let changed = 0;
+    for (const page of oldPages) {
+      const path = moved.get(page.path) ?? page.path;
+      let text: string;
+      try {
+        text = await readPage(path);
+      } catch {
+        continue;
+      }
+      const updated = rewriteLinks(text, (name) => {
+        const target = resolveLink(oldPages, name, page.path);
+        const newTarget = target === null ? undefined : moved.get(target);
+        if (newTarget === undefined) return null;
+        const replacement = renamedTarget(name, newTarget);
+        return replacement === name ? null : replacement;
+      });
+      if (updated !== text) {
+        await writePage(path, updated);
+        changed++;
+      }
+    }
+    return changed;
+  };
+
+  // Für [[Links]] im Editor: auflösen, öffnen (fehlende Seiten anlegen) und Vorschläge.
+  const pages = useMemo(() => allPages(tree), [tree]);
+  const linkActions = useMemo<WikiLinkActions>(
+    () => ({
+      resolve: (target) => resolveLink(pages, target, pageRef.current?.path),
+      open: (target) => {
+        const path = resolveLink(pages, target, pageRef.current?.path);
+        if (path) void openPage(path);
+        else void createAndOpenLinkedPage(linkPageName(target));
+      },
+      suggest: (query) => {
+        const q = query.trim().toLowerCase();
+        return pages
+          .filter((page) => page.title.toLowerCase().includes(q))
+          .sort((a, b) => Number(!a.title.toLowerCase().startsWith(q)) - Number(!b.title.toLowerCase().startsWith(q)) || a.title.localeCompare(b.title, "de"))
+          .slice(0, 12)
+          .map((page) => ({ title: page.title, folder: parentDir(page.path), target: linkTargetFor(pages, page.path) }));
+      },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openPage nutzt nur Refs
+    [pages],
+  );
+
+  const createAndOpenLinkedPage = async (name: string) => {
+    try {
+      const title = name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name;
+      const path = await createPage("", title);
+      await refreshTree();
+      await openPage(path);
+    } catch (error) {
+      showError(errorMessage(error));
     }
   };
 
@@ -225,15 +300,17 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           </div>
         )}
         {page ? (
-          <PageView
-            key={page.key}
-            path={page.path}
-            isNew={page.isNew}
-            externalVersion={externalVersion}
-            saverRef={saverRef}
-            onRename={renameOpenPage}
-            onError={showError}
-          />
+          <WikiLinkContext.Provider value={linkActions}>
+            <PageView
+              key={page.key}
+              path={page.path}
+              isNew={page.isNew}
+              externalVersion={externalVersion}
+              saverRef={saverRef}
+              onRename={renameOpenPage}
+              onError={showError}
+            />
+          </WikiLinkContext.Provider>
         ) : (
           <div className="empty-state">
             <p>Wähle links eine Seite aus oder lege eine neue an.</p>

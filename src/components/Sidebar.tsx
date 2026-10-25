@@ -1,6 +1,7 @@
 // Sidebar mit dem Ordnerbaum des Vaults: Seiten öffnen, Ordner auf- und zuklappen,
 // Seiten und Ordner anlegen, umbenennen und löschen (per Rechtsklick, "⋯"-Knopf, F2 oder Entf).
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useTheme, type ThemePreference } from "../lib/theme";
 import { ancestorFolders } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
 
@@ -164,6 +165,7 @@ export function Sidebar(props: Props) {
       <ul className="tree" role="tree">
         {tree.length === 0 ? <li className="tree-empty">Noch keine Seiten</li> : renderNodes(tree, 0)}
       </ul>
+      <ThemeSwitch />
       {menu && (
         <ContextMenu
           menu={menu}
@@ -174,6 +176,23 @@ export function Sidebar(props: Props) {
         />
       )}
     </nav>
+  );
+}
+
+/** Umschalter für Hell- und Dunkelmodus am unteren Rand der Sidebar. */
+function ThemeSwitch() {
+  const { preference, setPreference } = useTheme();
+  return (
+    <div className="sidebar-footer">
+      <label>
+        Darstellung{" "}
+        <select value={preference} onChange={(event) => setPreference(event.target.value as ThemePreference)}>
+          <option value="system">Wie System</option>
+          <option value="light">Hell</option>
+          <option value="dark">Dunkel</option>
+        </select>
+      </label>
+    </div>
   );
 }
 

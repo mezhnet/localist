@@ -173,6 +173,51 @@ describe("Seiten im Editor", () => {
     expect(screen.queryByText("Hier sammle ich lose Gedanken.")).toBeNull();
   });
 
+  it("setzt Icon und Cover und speichert sie im Frontmatter, der Rest bleibt unverändert", async () => {
+    await openVaultFromStart();
+    await openPage("Notizen", "Ideen");
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    const before = vault().files.get("Notizen/Ideen.md")!;
+
+    fireEvent.click(screen.getByRole("button", { name: "🙂 Icon hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Icon 💡" }));
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toBe(`---\nicon: 💡\n---\n${before}`));
+    expect(screen.getByRole("button", { name: "Icon ändern" }).textContent).toBe("💡");
+
+    fireEvent.click(screen.getByRole("button", { name: "🖼️ Cover hinzufügen" }));
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toBe(`---\nicon: 💡\ncover: Anhänge/skizze.png\n---\n${before}`));
+
+    fireEvent.click(screen.getByRole("button", { name: "Icon ändern" }));
+    fireEvent.click(screen.getByRole("button", { name: "Icon entfernen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Entfernen" }));
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toBe(`---\n---\n${before}`));
+  });
+
+  it("zeigt [[Links]] an, öffnet sie per Klick und passt sie beim Umbenennen im ganzen Vault an", async () => {
+    await openVaultFromStart();
+    await openPage("Projekte", "Website-Relaunch");
+    const link = await screen.findByRole("link", { name: "Ideen" });
+    fireEvent.click(link);
+    expect(await screen.findByText("Hier sammle ich lose Gedanken.")).toBeTruthy();
+
+    const title = screen.getByRole("textbox", { name: "Seitentitel" });
+    fireEvent.change(title, { target: { value: "Gedanken" } });
+    fireEvent.blur(title);
+    await waitFor(() => expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("Siehe auch [[Gedanken]]."));
+    expect(await screen.findByText("Links in 1 Seite angepasst.")).toBeTruthy();
+  });
+
+  it("schaltet zwischen hell und dunkel um und merkt sich die Wahl", async () => {
+    await openVaultFromStart();
+    expect(document.documentElement.dataset.theme).toBe("light"); // System (Test) ist hell
+    fireEvent.change(screen.getByRole("combobox", { name: "Darstellung" }), { target: { value: "dark" } });
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(localStorage.getItem("theme")).toBe("dark");
+    fireEvent.change(screen.getByRole("combobox", { name: "Darstellung" }), { target: { value: "system" } });
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(localStorage.getItem("theme")).toBeNull();
+  });
+
   it("schließt die Seite und entfernt sie aus der Sidebar, wenn sie außerhalb gelöscht wird", async () => {
     await openVaultFromStart();
     await openPage("Notizen", "Ideen");
