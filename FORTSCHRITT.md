@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 1 – Vault und Seiten
-- Zuletzt aktualisiert: 2026-10-25 10:57
-- Nächster Schritt: Vault-Auswahl per Dialog und Merken des zuletzt geöffneten Vaults umsetzen (erstes Kriterium). Abhängigkeiten (BlockNote, remark, Tauri-Dialog-Plugin, notify), Beispiel-Vault `beispiel-vault/` und Schnittstellen (`src/lib/vault-api.ts`, `src/editor/schema.ts`, `src/markdown/index.ts`, bisher nur Signaturen) sind seit Commit `09838e1` vorhanden.
+- Zuletzt aktualisiert: 2026-10-25 11:37
+- Nächster Schritt: Rust-Kommandos für den Vault (öffnen, Ordnerbaum, lesen/schreiben, anlegen/umbenennen/löschen, Dateiwächter) und die Oberfläche mit Vault-Auswahl, Sidebar und Editor bauen. Der Markdown-Konverter (`src/markdown/`) ist fertig und getestet.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [ ] Der Vault-Ordner lässt sich per Dialog auswählen, der zuletzt geöffnete Vault öffnet sich beim nächsten Start automatisch.
@@ -11,7 +11,7 @@
 - [ ] Seiten und Ordner lassen sich anlegen, umbenennen und löschen (Löschen nur nach Bestätigung).
 - [ ] Eine Seite öffnet sich im Block-Editor und wird kurz nach der letzten Eingabe automatisch als Markdown gespeichert.
 - [ ] Wird eine Datei außerhalb der App geändert, lädt die App sie neu. Wird sie gelöscht, verschwindet sie aus der Sidebar.
-- [ ] Roundtrip-Tests: Markdown → Editor-Format → Markdown liefert für Überschriften, Absätze, fett/kursiv, Listen, Checklisten, Zitate, Code-Blöcke, Links und Bilder denselben Inhalt.
+- [x] Roundtrip-Tests: Markdown → Editor-Format → Markdown liefert für Überschriften, Absätze, fett/kursiv, Listen, Checklisten, Zitate, Code-Blöcke, Links und Bilder denselben Inhalt.
 - [ ] Frontmatter bleibt beim Bearbeiten im Editor unverändert erhalten (Test vorhanden).
 
 ## Abgeschlossene Etappen
@@ -25,6 +25,8 @@
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Eigener Markdown-Konverter (`src/markdown/`) auf Basis von remark (mdast) statt der eingebauten Markdown-Funktionen von BlockNote. Diese gehen über HTML und sind laut BlockNote selbst verlustbehaftet (`blocksToMarkdownLossy`). Der Konverter erzeugt beim Speichern zuerst unmaskiertes Markdown und liest es zur Kontrolle wieder ein. Nur wenn das Ergebnis abweicht, wird maskiert (z. B. `*`). So bleiben Obsidian-Schreibweisen wie `[[Seite]]` oder `> [!info]` unverändert. Markdown, für das es keinen Editor-Block gibt (Tabellen, HTML, Fußnoten), bleibt als Block `rawMarkdown` bzw. Formatierung `raw` wörtlich erhalten. BlockNote bleibt der Editor.
+- 2026-10-25: Das Editor-Schema (`src/editor/schema.ts`) enthält nur Blöcke und Formatierungen mit Markdown-Entsprechung. Unterstreichen wird als `<u>…</u>` gespeichert (wie in Obsidian). Textfarben, Ausrichtung, Tabellen, Audio/Video und Toggle-Überschriften sind nicht enthalten.
 - 2026-10-24: Projekt mit `create-tauri-app` (Vorlage `react-ts`, Paketmanager npm) erzeugt. Arbeitstitel und Paketname `localprojekt`, App-Identifier `de.localprojekt.desktop`. Der endgültige App-Name wird erst in Etappe 7 festgelegt.
 - 2026-10-24: Tests mit Vitest 5 in der jsdom-Umgebung, React-Komponenten werden mit `@testing-library/react` gerendert. Die Vitest-Einstellungen stehen in `vite.config.ts` (Import aus `vitest/config`), damit Vite und Vitest dieselbe Konfiguration nutzen. `src/test-setup.ts` ruft nach jedem Test `cleanup()` auf (über `test.setupFiles`), weil Vitest ohne `globals: true` kein globales `afterEach` bereitstellt und Testing Library sonst nicht aufräumt.
 - 2026-10-24: Node.js mindestens 22.22 (jsdom 30 nutzt `Promise.withResolvers`, das es erst ab Node 22 gibt), empfohlen wird die aktuelle LTS 24.
