@@ -10,7 +10,7 @@
 - [x] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
 - [x] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
 - [x] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
-- [ ] Der Windows-Build funktioniert weiterhin.
+- [x] Der Windows-Build funktioniert weiterhin.
 
 ## Abgeschlossene Etappen
 - Etappe 7 – Version 1.0 für den PC (abgeschlossen am 2026-10-25). Nachweise: `npm test` 126 von 126 Tests grün (12 Testdateien), `cargo test` 18 von 18 grün (darunter `alter_einstellungsordner_meinapp_wird_uebernommen` und `verstaendliche_fehlermeldungen_auf_deutsch`), `npx tsc --noEmit` ohne Fehler, 0 TODOs im Quellcode, `npm run tauri build` ohne Fehler: EXE `src-tauri\target\release\localist.exe`, Installer `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe` und `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi` (beide deutsch). Hinweis: Die Uhrzeiten „Zuletzt aktualisiert“ der Etappen 2 bis 7 waren geschätzt; ab jetzt kommt die Zeit von der Systemuhr.
