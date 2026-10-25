@@ -155,6 +155,13 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
 11. **Icon und Cover:** Beim Überfahren des Seitenkopfs erscheinen „Icon hinzufügen“ und „Cover hinzufügen“.
     Beides steht im Frontmatter (`icon`, `cover`). Bilder von außerhalb werden nach `Anhänge/` kopiert.
 12. **Hell/Dunkel:** unten in der Sidebar unter „Darstellung“. „Wie System“ folgt der Windows-Einstellung.
+13. **Eigenschaften:** Unter dem Seitentitel stehen die Eigenschaften der Seite (Text, Zahl, Auswahl, Mehrfachauswahl,
+    Status, Datum, Checkbox, URL). „+ Eigenschaft hinzufügen“ legt eine neue an, ein Klick auf den Namen ändert den Typ.
+    Gespeichert wird im Frontmatter, z. B. `fällig: 2026-11-15`. Andere Felder im Frontmatter bleiben unverändert.
+14. **Datenbanken:** Rechtsklick auf einen Ordner → „In Datenbank umwandeln“. Die App legt darin `_ansichten.yaml` an
+    (Eigenschaftstypen und Ansichten). Ein Klick auf die Datenbank (🗃️) zeigt die Tabelle: eine Zeile pro Seite, eine
+    Spalte pro Eigenschaft. Werte änderst du direkt in der Zelle, „Filter“ und „Sortieren“ bzw. ein Klick auf eine
+    Spaltenüberschrift stellen die Ansicht ein, „+ Neu“ legt eine neue Seite an.
 
 ## Häufige Probleme
 

@@ -1,19 +1,21 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 3 – Eigenschaften und Tabelle
-- Zuletzt aktualisiert: 2026-10-25 13:05
-- Nächster Schritt: Abschlussprüfung der Etappe 3 (npm test, tsc, tauri build) und Abschluss-Commit.
+- Etappe: 4 – Kanban
+- Zuletzt aktualisiert: 2026-10-25 13:08
+- Nächster Schritt: Fertig-Kriterien der neuen Etappe als Checkliste übernehmen und mit der Umsetzung beginnen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Oben auf jeder Seite gibt es eine Eigenschaften-Leiste mit den Typen Text, Zahl, Auswahl, Mehrfachauswahl, Status, Datum, Checkbox und URL, gespeichert im Frontmatter.
-- [x] Ein Ordner lässt sich in eine Datenbank umwandeln (legt `_ansichten.yaml` an, dort stehen auch die Eigenschaftstypen).
-- [x] Tabellenansicht: eine Zeile pro Seite, eine Spalte pro Eigenschaft, Werte direkt in der Zelle bearbeitbar.
-- [x] Sortieren und Filtern, die Einstellungen werden in `_ansichten.yaml` gespeichert.
-- [x] Eine neue Zeile legt eine neue `.md`-Datei mit `id` an.
-- [x] Tests für Frontmatter lesen und schreiben, inklusive Erhalt unbekannter Felder und Datumsformat.
+- (werden zu Beginn der Etappe eingetragen)
 
 ## Abgeschlossene Etappen
+- Etappe 3 – Eigenschaften und Tabelle (abgeschlossen am 2026-10-25). Nachweise: `npm test` 91 von 91 Tests grün (9 Testdateien), `cargo test` 13 von 13 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Datenbank „Projekte“ als Tabelle (sortiert nach fällig aus `_ansichten.yaml`), Eigenschaften-Leiste auf „Website-Relaunch“.
+  - [x] Oben auf jeder Seite gibt es eine Eigenschaften-Leiste mit den Typen Text, Zahl, Auswahl, Mehrfachauswahl, Status, Datum, Checkbox und URL, gespeichert im Frontmatter.
+  - [x] Ein Ordner lässt sich in eine Datenbank umwandeln (legt `_ansichten.yaml` an, dort stehen auch die Eigenschaftstypen).
+  - [x] Tabellenansicht: eine Zeile pro Seite, eine Spalte pro Eigenschaft, Werte direkt in der Zelle bearbeitbar.
+  - [x] Sortieren und Filtern, die Einstellungen werden in `_ansichten.yaml` gespeichert.
+  - [x] Eine neue Zeile legt eine neue `.md`-Datei mit `id` an.
+  - [x] Tests für Frontmatter lesen und schreiben, inklusive Erhalt unbekannter Felder und Datumsformat.
 - Etappe 2 – Notion-Feeling (abgeschlossen am 2026-10-25). Nachweise: `npm test` 73 von 73 Tests grün (7 Testdateien), `cargo test` 13 von 13 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Slash-Menü mit Callout und Toggle, Toggle wird als `> [!note]- Details` gespeichert, `[[`-Vorschläge, Klick auf Link öffnet die Seite, Umbenennen passt Links an, Dunkelmodus folgt dem System. Der Ziehgriff erscheint beim Überfahren eines Blocks; das Verschieben selbst ist die eingebaute Funktion von BlockNote und ließ sich im Testwerkzeug nicht automatisch ausführen (es erzeugt keine echten Drag-Ereignisse).
   - [x] Slash-Menü (`/`) zum Einfügen von Blöcken.
   - [x] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
