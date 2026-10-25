@@ -13,6 +13,9 @@ export default defineConfig(() => ({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
+    // CSS bleibt in Tests sonst leer. Der Inhalt wird nur gebraucht, wenn ein Test eine Datei mit ?raw liest
+    // (Prüfung des Design-Systems in src/styles/tokens.test.ts).
+    css: { include: [/\.css\?raw$/] },
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

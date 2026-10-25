@@ -1,0 +1,276 @@
+/* Design-System von Localist: Farben, Abstände, Schriften, Radien und Schatten.
+   Nur in dieser Datei stehen feste Werte. Alle anderen CSS-Dateien nutzen ausschließlich diese
+   Variablen (ein Test in src/styles/tokens.test.ts prüft, dass dort keine festen Farben stehen).
+   Hell ist der Standard. Dunkel gilt, wenn die App data-theme="dark" setzt oder – ohne App,
+   z. B. später in HTML-Seiten im Browser – wenn das System dunkel eingestellt ist. */
+
+:root {
+  color-scheme: light;
+
+  /* Flächen */
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f9f9f8;
+  --color-bg-muted: #f3f3f1;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-selected: #ffffff;
+  --color-backdrop: rgba(18, 18, 17, 0.32);
+
+  /* Text */
+  --color-text: #2b2a27;
+  --color-text-muted: #75746f;
+  --color-text-faint: #a8a7a2;
+  --color-text-on-accent: #ffffff;
+
+  /* Linien und Zustände */
+  --color-border: rgba(43, 42, 39, 0.1);
+  --color-border-strong: rgba(43, 42, 39, 0.18);
+  --color-hover: rgba(43, 42, 39, 0.05);
+  --color-active: rgba(43, 42, 39, 0.085);
+
+  /* Akzentfarbe (die einzige kräftige Farbe der Oberfläche) */
+  --color-accent: #2f6be0;
+  --color-accent-hover: #2459c4;
+  --color-accent-soft: rgba(47, 107, 224, 0.1);
+  --color-accent-softer: rgba(47, 107, 224, 0.06);
+  --color-focus-ring: rgba(47, 107, 224, 0.4);
+
+  /* Rückmeldungen, zurückhaltend eingesetzt */
+  --color-danger: #c9423a;
+  --color-danger-soft: rgba(201, 66, 58, 0.09);
+  --color-success: #2e8456;
+  --color-success-soft: rgba(46, 132, 86, 0.12);
+  --color-warning: #b26f08;
+  --color-warning-soft: rgba(210, 140, 20, 0.14);
+  --color-info: #2f6be0;
+  --color-info-soft: rgba(47, 107, 224, 0.09);
+  --color-neutral-soft: rgba(43, 42, 39, 0.07);
+
+  /* Inhalte */
+  --color-link-underline: rgba(43, 42, 39, 0.32);
+  --color-unresolved: #a8a7a2;
+  --color-highlight: rgba(255, 207, 51, 0.45);
+  --color-code-bg: rgba(135, 131, 120, 0.12);
+  --color-on-image: rgba(255, 255, 255, 0.92);
+  --color-on-image-text: #2b2a27;
+  --color-scrollbar: rgba(43, 42, 39, 0.16);
+
+  /* Schrift */
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 40px;
+  --font-size-icon: 64px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --letter-spacing-tight: -0.015em;
+
+  /* Abstände (4er-Raster) */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-30: 120px;
+
+  /* Größen */
+  --size-control-sm: 26px;
+  --size-control-md: 32px;
+  --size-control-lg: 40px;
+  --size-control-xl: 44px;
+  --size-control-touch: 44px;
+  --size-row: 28px;
+  --size-row-touch: 36px;
+  --size-table-row: 36px;
+  --size-badge: 18px;
+  --size-avatar: 22px;
+  --size-icon-xs: 12px;
+  --size-icon-sm: 14px;
+  --size-icon-md: 16px;
+  --size-icon-lg: 20px;
+  --size-icon-xl: 24px;
+  --size-card-icon: 26px;
+  --size-dot: 6px;
+  --border-width: 1px;
+  --border-width-strong: 2px;
+  --border-width-accent: 3px;
+  --sidebar-width: 264px;
+  --sidebar-drawer-width: 300px;
+  --tree-indent: 14px;
+  --content-width: 760px;
+  --editor-inset: 54px;
+  --wide-width: 1040px;
+  --search-width: 560px;
+  --dialog-width-sm: 420px;
+  --dialog-width: 620px;
+  --dialog-width-lg: 860px;
+  --menu-min-width: 200px;
+  --menu-max-width: 320px;
+  --popover-width: 340px;
+  --toast-width: 560px;
+  --cover-height: 240px;
+  --card-min-width: 180px;
+  --action-min-width: 200px;
+  --table-col-width: 150px;
+  --table-col-max: 320px;
+  --table-name-width: 260px;
+  --kanban-column-width: 272px;
+  --calendar-day-height: 108px;
+  --calendar-week-height: 320px;
+  --calendar-undated-width: 240px;
+  --property-name-width: 160px;
+
+  /* Radien */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 999px;
+
+  /* Schatten */
+  --shadow-xs: 0 1px 2px rgba(18, 18, 17, 0.05);
+  --shadow-sm: 0 1px 2px rgba(18, 18, 17, 0.06), 0 1px 1px rgba(18, 18, 17, 0.03);
+  --shadow-md: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 4px 12px rgba(18, 18, 17, 0.1);
+  --shadow-lg: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 12px 40px rgba(18, 18, 17, 0.18);
+  --shadow-drawer: 4px 0 24px rgba(18, 18, 17, 0.18);
+  --shadow-focus: 0 0 0 3px var(--color-focus-ring);
+
+  /* Bewegung und Ebenen */
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --z-sticky: 10;
+  --z-popover: 50;
+  --z-drawer: 60;
+  --z-menu: 100;
+  --z-dialog: 200;
+}
+
+/* Dunkelmodus (Werte doppelt, damit beide Wege dieselben Farben liefern) */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #1a1a19;
+  --color-bg-subtle: #202020;
+  --color-bg-muted: #262625;
+  --color-surface: #222221;
+  --color-surface-raised: #2a2a29;
+  --color-surface-selected: #3a3a38;
+  --color-backdrop: rgba(0, 0, 0, 0.55);
+
+  --color-text: #e8e7e3;
+  --color-text-muted: #9e9d98;
+  --color-text-faint: #6d6c68;
+  --color-text-on-accent: #ffffff;
+
+  --color-border: rgba(255, 255, 255, 0.085);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+  --color-hover: rgba(255, 255, 255, 0.05);
+  --color-active: rgba(255, 255, 255, 0.085);
+
+  --color-accent: #5b8ff0;
+  --color-accent-hover: #7aa5f3;
+  --color-accent-soft: rgba(91, 143, 240, 0.16);
+  --color-accent-softer: rgba(91, 143, 240, 0.09);
+  --color-focus-ring: rgba(91, 143, 240, 0.5);
+
+  --color-danger: #f0776d;
+  --color-danger-soft: rgba(240, 119, 109, 0.13);
+  --color-success: #5cc08a;
+  --color-success-soft: rgba(92, 192, 138, 0.14);
+  --color-warning: #e3a542;
+  --color-warning-soft: rgba(227, 165, 66, 0.15);
+  --color-info: #5b8ff0;
+  --color-info-soft: rgba(91, 143, 240, 0.14);
+  --color-neutral-soft: rgba(255, 255, 255, 0.08);
+
+  --color-link-underline: rgba(255, 255, 255, 0.35);
+  --color-unresolved: #6d6c68;
+  --color-highlight: rgba(255, 196, 0, 0.32);
+  --color-code-bg: rgba(255, 255, 255, 0.07);
+  --color-on-image: rgba(32, 32, 32, 0.88);
+  --color-on-image-text: #e8e7e3;
+  --color-scrollbar: rgba(255, 255, 255, 0.16);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --color-bg: #1a1a19;
+    --color-bg-subtle: #202020;
+    --color-bg-muted: #262625;
+    --color-surface: #222221;
+    --color-surface-raised: #2a2a29;
+    --color-surface-selected: #3a3a38;
+    --color-backdrop: rgba(0, 0, 0, 0.55);
+
+    --color-text: #e8e7e3;
+    --color-text-muted: #9e9d98;
+    --color-text-faint: #6d6c68;
+    --color-text-on-accent: #ffffff;
+
+    --color-border: rgba(255, 255, 255, 0.085);
+    --color-border-strong: rgba(255, 255, 255, 0.15);
+    --color-hover: rgba(255, 255, 255, 0.05);
+    --color-active: rgba(255, 255, 255, 0.085);
+
+    --color-accent: #5b8ff0;
+    --color-accent-hover: #7aa5f3;
+    --color-accent-soft: rgba(91, 143, 240, 0.16);
+    --color-accent-softer: rgba(91, 143, 240, 0.09);
+    --color-focus-ring: rgba(91, 143, 240, 0.5);
+
+    --color-danger: #f0776d;
+    --color-danger-soft: rgba(240, 119, 109, 0.13);
+    --color-success: #5cc08a;
+    --color-success-soft: rgba(92, 192, 138, 0.14);
+    --color-warning: #e3a542;
+    --color-warning-soft: rgba(227, 165, 66, 0.15);
+    --color-info: #5b8ff0;
+    --color-info-soft: rgba(91, 143, 240, 0.14);
+    --color-neutral-soft: rgba(255, 255, 255, 0.08);
+
+    --color-link-underline: rgba(255, 255, 255, 0.35);
+    --color-unresolved: #6d6c68;
+    --color-highlight: rgba(255, 196, 0, 0.32);
+    --color-code-bg: rgba(255, 255, 255, 0.07);
+    --color-on-image: rgba(32, 32, 32, 0.88);
+    --color-on-image-text: #e8e7e3;
+    --color-scrollbar: rgba(255, 255, 255, 0.16);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
+    --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+}

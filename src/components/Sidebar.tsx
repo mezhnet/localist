@@ -1,23 +1,46 @@
-// Sidebar mit dem Ordnerbaum des Vaults: Seiten öffnen, Ordner auf- und zuklappen,
-// Seiten und Ordner anlegen, umbenennen und löschen (per Rechtsklick, "⋯"-Knopf, F2 oder Entf).
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+// Sidebar: oben Startseite, Suche und das „Neu“-Menü, darunter die Favoriten und der Ordnerbaum des Vaults.
+// Seiten und Ordner lassen sich anlegen, umbenennen, anheften und löschen
+// (per Rechtsklick, "⋯"-Knopf, F2 oder Entf).
+import {
+  ChevronRight,
+  ChevronsUpDown,
+  Database,
+  FileText,
+  Folder,
+  FolderOpen,
+  House,
+  LayoutTemplate,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  Star,
+  StarOff,
+  TextSearch,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import packageInfo from "../../package.json";
-import { useTheme, type ThemePreference } from "../lib/theme";
-import { ancestorFolders } from "../lib/tree";
+import { ancestorFolders, findNode } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
+import { Button, cx, IconButton, Input, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, type MenuAnchor } from "./ui";
+
+export type CreateKind = "page" | "folder" | "database" | "template";
 
 export interface SidebarActions {
   onOpen: (path: string) => void;
-  onCreatePage: (dir: string) => void;
-  onCreateFolder: (dir: string) => void;
+  onOpenDatabase: (path: string) => void;
+  onOpenHome: () => void;
+  onCreate: (kind: CreateKind, dir: string) => void;
   onRename: (node: TreeNode, newName: string) => void;
   onDelete: (node: TreeNode) => void;
-  onSwitchVault: () => void;
-  onOpenDatabase: (path: string) => void;
   onConvertToDatabase: (path: string) => void;
+  onToggleFavorite: (path: string) => void;
   onQuickOpen: () => void;
   onSearch: () => void;
-  onCreateFromTemplate: (dir: string) => void;
+  onOpenSettings: () => void;
+  onSwitchVault: () => void;
 }
 
 interface Props extends SidebarActions {
@@ -26,20 +49,24 @@ interface Props extends SidebarActions {
   openPath: string | null;
   /** Geöffnete Datenbank (Ordnerpfad) oder null. */
   openDatabase: string | null;
+  /** Die Startseite ist zu sehen (keine Seite und keine Datenbank offen). */
+  homeActive: boolean;
+  /** Angeheftete Seiten und Datenbanken (Pfade). */
+  favorites: string[];
+  /** Emoji-Icons der Seiten (aus dem Frontmatter). */
+  icons: ReadonlyMap<string, string>;
   /** Eintrag, der gerade umbenannt werden soll (z. B. direkt nach dem Anlegen). */
   renamingPath: string | null;
   onRenamingDone: () => void;
 }
 
-interface MenuState {
-  x: number;
-  y: number;
-  /** null = Menü für die Vault-Wurzel. */
-  node: TreeNode | null;
-}
+type MenuState =
+  | { kind: "node"; anchor: MenuAnchor; node: TreeNode }
+  | { kind: "new"; anchor: MenuAnchor; dir: string }
+  | { kind: "vault"; anchor: MenuAnchor };
 
 export function Sidebar(props: Props) {
-  const { tree, openPath, renamingPath } = props;
+  const { tree, openPath, renamingPath, favorites, icons } = props;
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -63,10 +90,19 @@ export function Sidebar(props: Props) {
       return next;
     });
 
-  const openMenu = (event: ReactMouseEvent, node: TreeNode | null) => {
+  /** Menü öffnen; ein zweiter Klick auf denselben Knopf schließt es wieder. */
+  const openMenu = (next: MenuState) =>
+    setMenu((current) =>
+      current && "element" in current.anchor && "element" in next.anchor && current.anchor.element === next.anchor.element ? null : next,
+    );
+  const atPointer = (event: ReactMouseEvent): MenuAnchor => {
     event.preventDefault();
     event.stopPropagation();
-    setMenu({ x: event.clientX, y: event.clientY, node });
+    return { x: event.clientX, y: event.clientY };
+  };
+  const below = (event: ReactMouseEvent<HTMLElement>): MenuAnchor => {
+    event.stopPropagation();
+    return { element: event.currentTarget };
   };
 
   const finishRename = (node: TreeNode, newName: string | null) => {
@@ -75,38 +111,64 @@ export function Sidebar(props: Props) {
     if (newName !== null && newName.trim() !== "" && newName.trim() !== node.name) props.onRename(node, newName.trim());
   };
 
-  const createIn = (dir: string, kind: "page" | "folder") => {
+  const create = (kind: CreateKind, dir: string) => {
     if (dir) setExpanded((previous) => new Set([...previous, dir]));
-    if (kind === "page") props.onCreatePage(dir);
-    else props.onCreateFolder(dir);
+    props.onCreate(kind, dir);
+  };
+
+  const open = (node: TreeNode) => {
+    if (node.kind === "page") props.onOpen(node.path);
+    else if (node.database) {
+      // Eine Datenbank öffnet sich als Tabelle und klappt ihre Einträge auf.
+      setExpanded((previous) => new Set([...previous, node.path]));
+      props.onOpenDatabase(node.path);
+    } else toggle(node.path);
+  };
+
+  const isActive = (node: TreeNode) => node.path === openPath || node.path === props.openDatabase;
+
+  const nodeIcon = (node: TreeNode, isOpen: boolean) => {
+    if (node.kind === "page") {
+      const emoji = icons.get(node.path);
+      return emoji ? <span className="tree-emoji">{emoji}</span> : <FileText />;
+    }
+    if (node.database) return <Database />;
+    return isOpen ? <FolderOpen /> : <Folder />;
   };
 
   const renderNodes = (nodes: TreeNode[], depth: number) =>
     nodes.map((node) => {
       const isFolder = node.kind === "folder";
       const isOpen = expanded.has(node.path);
+      const indent = { "--depth": depth } as CSSProperties;
       return (
-        <li key={node.path} role="treeitem" aria-expanded={isFolder ? isOpen : undefined}>
+        <li key={node.path} role="treeitem" aria-expanded={isFolder ? isOpen : undefined} aria-selected={isActive(node)}>
           {renaming === node.path ? (
-            <RenameInput node={node} depth={depth} onDone={(name) => finishRename(node, name)} />
+            <RenameInput node={node} style={indent} onDone={(name) => finishRename(node, name)} />
           ) : (
             <div
-              className={`tree-row${node.path === openPath || node.path === props.openDatabase ? " active" : ""}`}
-              style={{ paddingLeft: 8 + depth * 14 }}
-              onContextMenu={(event) => openMenu(event, node)}
+              className={cx("tree-row", isActive(node) && "active")}
+              style={indent}
+              onContextMenu={(event) => setMenu({ kind: "node", anchor: atPointer(event), node })}
             >
+              {isFolder ? (
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className={cx("tree-toggle", isOpen && "is-open")}
+                  aria-label={isOpen ? `„${node.name}“ zuklappen` : `„${node.name}“ aufklappen`}
+                  onClick={() => toggle(node.path)}
+                >
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              ) : (
+                <span className="tree-toggle" aria-hidden="true" />
+              )}
               <button
                 type="button"
                 className="tree-label"
                 title={node.path}
-                onClick={() => {
-                  if (!isFolder) props.onOpen(node.path);
-                  else if (node.database) {
-                    // Eine Datenbank öffnet sich als Tabelle und klappt ihre Einträge auf.
-                    setExpanded((previous) => new Set([...previous, node.path]));
-                    props.onOpenDatabase(node.path);
-                  } else toggle(node.path);
-                }}
+                onClick={() => open(node)}
                 onKeyDown={(event) => {
                   if (event.key === "F2") {
                     event.preventDefault();
@@ -118,36 +180,35 @@ export function Sidebar(props: Props) {
                 }}
               >
                 <span className="tree-icon" aria-hidden="true">
-                  {node.database ? "🗃️" : isFolder ? (isOpen ? "▾" : "▸") : "📄"}
+                  {nodeIcon(node, isOpen)}
                 </span>
                 <span className="tree-name">{node.name}</span>
               </button>
               {isFolder && (
-                <button
-                  type="button"
+                <IconButton
+                  size="sm"
                   className="tree-action"
-                  title={`Neue Seite in „${node.name}“`}
-                  aria-label={`Neue Seite in „${node.name}“`}
-                  onClick={() => createIn(node.path, "page")}
+                  label={`Neu in „${node.name}“`}
+                  onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: node.path })}
                 >
-                  +
-                </button>
+                  <Plus />
+                </IconButton>
               )}
-              <button
-                type="button"
+              <IconButton
+                size="sm"
                 className="tree-action"
+                label={`Aktionen für „${node.name}“`}
                 title="Weitere Aktionen"
-                aria-label={`Aktionen für „${node.name}“`}
-                onClick={(event) => openMenu(event, node)}
+                onClick={(event) => openMenu({ kind: "node", anchor: below(event), node })}
               >
-                ⋯
-              </button>
+                <MoreHorizontal />
+              </IconButton>
             </div>
           )}
           {isFolder && isOpen && node.children && (
             <ul role="group">
               {node.children.length === 0 ? (
-                <li className="tree-empty" style={{ paddingLeft: 30 + depth * 14 }}>
+                <li className="tree-empty" style={{ "--depth": depth + 1 } as CSSProperties}>
                   Leer
                 </li>
               ) : (
@@ -159,75 +220,195 @@ export function Sidebar(props: Props) {
       );
     });
 
+  const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
+
   return (
-    <nav className="sidebar" aria-label="Seiten" onContextMenu={(event) => openMenu(event, null)}>
+    <nav className="sidebar" aria-label="Seiten" onContextMenu={(event) => setMenu({ kind: "new", anchor: atPointer(event), dir: "" })}>
       <div className="sidebar-header">
-        <span className="vault-name" title={props.vaultName}>
-          {props.vaultName}
-        </span>
-        <button type="button" className="link-button" onClick={props.onSwitchVault} title="Anderen Vault-Ordner öffnen">
-          Wechseln
+        <button
+          type="button"
+          className="vault-switcher"
+          title="Vault wechseln oder Einstellungen öffnen"
+          aria-haspopup="menu"
+          onClick={(event) => openMenu({ kind: "vault", anchor: below(event) })}
+        >
+          <span className="vault-avatar" aria-hidden="true">
+            {props.vaultName.trim().charAt(0).toUpperCase() || "V"}
+          </span>
+          <span className="vault-name">{props.vaultName}</span>
+          <ChevronsUpDown className="vault-switcher-chevron" aria-hidden="true" />
         </button>
       </div>
-      <div className="sidebar-actions">
-        <button type="button" onClick={props.onQuickOpen} title="Seite nach Titel öffnen">
-          ⌕ Schnellsuche <kbd>Strg+P</kbd>
-        </button>
-        <button type="button" onClick={props.onSearch} title="Text in allen Seiten suchen">
-          🔍 Volltextsuche <kbd>Strg+⇧+F</kbd>
-        </button>
-        <button type="button" onClick={() => createIn("", "page")}>
-          + Neue Seite
-        </button>
-        <button type="button" onClick={() => props.onCreateFromTemplate("")}>
-          + Seite aus Vorlage
-        </button>
-        <button type="button" onClick={() => createIn("", "folder")}>
-          + Neuer Ordner
-        </button>
+
+      <div className="sidebar-nav">
+        <Button variant="ghost" className={cx("sidebar-item", props.homeActive && "active")} icon={<House />} onClick={props.onOpenHome}>
+          Startseite
+        </Button>
+        <Button variant="ghost" className="sidebar-item" icon={<Search />} trailing={<Kbd>Strg+P</Kbd>} onClick={props.onQuickOpen} title="Seite nach Titel öffnen">
+          Suchen
+        </Button>
+        <Button
+          variant="ghost"
+          className="sidebar-item"
+          icon={<TextSearch />}
+          trailing={<Kbd>Strg+⇧+F</Kbd>}
+          onClick={props.onSearch}
+          title="Text in allen Seiten suchen"
+        >
+          Volltextsuche
+        </Button>
+        <Button
+          variant="ghost"
+          className="sidebar-item"
+          icon={<Plus />}
+          aria-haspopup="menu"
+          onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}
+        >
+          Neu
+        </Button>
       </div>
-      <ul className="tree" role="tree">
-        {tree.length === 0 ? <li className="tree-empty">Noch keine Seiten</li> : renderNodes(tree, 0)}
-      </ul>
-      <ThemeSwitch />
-      {menu && (
-        <ContextMenu
-          menu={menu}
-          onClose={() => setMenu(null)}
-          onCreate={(kind) => createIn(menu.node?.path ?? "", kind)}
-          onRename={() => menu.node && setRenaming(menu.node.path)}
-          onDelete={() => menu.node && props.onDelete(menu.node)}
-          onTemplate={() => props.onCreateFromTemplate(menu.node?.path ?? "")}
-          onDatabase={() => {
-            if (!menu.node) return;
-            if (menu.node.database) props.onOpenDatabase(menu.node.path);
-            else props.onConvertToDatabase(menu.node.path);
-          }}
-        />
+
+      <section className="sidebar-section" aria-label="Favoriten">
+        <h2 className="sidebar-section-title">Favoriten</h2>
+        {favoriteNodes.length === 0 ? (
+          <p className="sidebar-hint">Seiten über „⋯“ oder den Stern anheften.</p>
+        ) : (
+          <ul className="favorites">
+            {favoriteNodes.map((node) => (
+              <li key={node.path}>
+                <div className={cx("tree-row", isActive(node) && "active")} onContextMenu={(event) => setMenu({ kind: "node", anchor: atPointer(event), node })}>
+                  <button type="button" className="tree-label" title={node.path} onClick={() => open(node)}>
+                    <span className="tree-icon" aria-hidden="true">
+                      {nodeIcon(node, false)}
+                    </span>
+                    <span className="tree-name">{node.name}</span>
+                  </button>
+                  <IconButton size="sm" className="tree-action" label={`„${node.name}“ aus Favoriten lösen`} onClick={() => props.onToggleFavorite(node.path)}>
+                    <StarOff />
+                  </IconButton>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="sidebar-section sidebar-section--tree" aria-label="Alle Seiten">
+        <div className="sidebar-section-head">
+          <h2 className="sidebar-section-title">Alle Seiten</h2>
+          <IconButton size="sm" label="Neu im Vault" onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}>
+            <Plus />
+          </IconButton>
+        </div>
+        <ul className="tree" role="tree" aria-label="Ordner und Seiten">
+          {tree.length === 0 ? <li className="tree-empty">Noch keine Seiten</li> : renderNodes(tree, 0)}
+        </ul>
+      </section>
+
+      <div className="sidebar-footer">
+        <Button variant="ghost" size="sm" className="sidebar-item" icon={<Settings />} onClick={props.onOpenSettings}>
+          Einstellungen
+        </Button>
+        <span className="app-version">v{packageInfo.version}</span>
+      </div>
+
+      {menu?.kind === "new" && (
+        <Menu anchor={menu.anchor} label="Neu" onClose={() => setMenu(null)}>
+          <NewItems dir={menu.dir} tree={tree} onCreate={create} />
+        </Menu>
+      )}
+      {menu?.kind === "vault" && (
+        <Menu anchor={menu.anchor} label="Vault" onClose={() => setMenu(null)}>
+          <MenuItem icon={<FolderOpen />} onSelect={props.onSwitchVault}>
+            Anderen Vault öffnen …
+          </MenuItem>
+          <MenuItem icon={<Settings />} onSelect={props.onOpenSettings}>
+            Einstellungen
+          </MenuItem>
+        </Menu>
+      )}
+      {menu?.kind === "node" && (
+        <Menu anchor={menu.anchor} label={`Aktionen für „${menu.node.name}“`} onClose={() => setMenu(null)}>
+          <NodeItems
+            node={menu.node}
+            tree={tree}
+            favorite={favorites.includes(menu.node.path)}
+            onCreate={create}
+            onRename={() => setRenaming(menu.node.path)}
+            onDelete={() => props.onDelete(menu.node)}
+            onToggleFavorite={() => props.onToggleFavorite(menu.node.path)}
+            onDatabase={() => (menu.node.database ? props.onOpenDatabase(menu.node.path) : props.onConvertToDatabase(menu.node.path))}
+          />
+        </Menu>
       )}
     </nav>
   );
 }
 
-/** Umschalter für Hell- und Dunkelmodus am unteren Rand der Sidebar. */
-function ThemeSwitch() {
-  const { preference, setPreference } = useTheme();
+/** Einträge des „Neu“-Menüs: Notiz, Ordner, Datenbank und Notiz aus Vorlage. */
+function NewItems({ dir, tree, onCreate }: { dir: string; tree: TreeNode[]; onCreate: (kind: CreateKind, dir: string) => void }) {
+  const where = dir ? findNode(tree, dir)?.name ?? dir : null;
   return (
-    <div className="sidebar-footer">
-      <label>
-        Darstellung{" "}
-        <select value={preference} onChange={(event) => setPreference(event.target.value as ThemePreference)}>
-          <option value="system">Wie System</option>
-          <option value="light">Hell</option>
-          <option value="dark">Dunkel</option>
-        </select>
-      </label>
-      <span className="app-version">Localist {packageInfo.version}</span>
-    </div>
+    <>
+      {where && <MenuLabel>Neu in „{where}“</MenuLabel>}
+      <MenuItem icon={<FileText />} onSelect={() => onCreate("page", dir)}>
+        Notiz
+      </MenuItem>
+      <MenuItem icon={<Folder />} onSelect={() => onCreate("folder", dir)}>
+        Ordner
+      </MenuItem>
+      <MenuItem icon={<Database />} onSelect={() => onCreate("database", dir)}>
+        Datenbank
+      </MenuItem>
+      <MenuSeparator />
+      <MenuItem icon={<LayoutTemplate />} onSelect={() => onCreate("template", dir)}>
+        Notiz aus Vorlage …
+      </MenuItem>
+    </>
   );
 }
 
-function RenameInput({ node, depth, onDone }: { node: TreeNode; depth: number; onDone: (name: string | null) => void }) {
+interface NodeItemsProps {
+  node: TreeNode;
+  tree: TreeNode[];
+  favorite: boolean;
+  onCreate: (kind: CreateKind, dir: string) => void;
+  onRename: () => void;
+  onDelete: () => void;
+  onToggleFavorite: () => void;
+  onDatabase: () => void;
+}
+
+function NodeItems({ node, tree, favorite, onCreate, onRename, onDelete, onToggleFavorite, onDatabase }: NodeItemsProps) {
+  const isFolder = node.kind === "folder";
+  return (
+    <>
+      {isFolder && (
+        <>
+          <NewItems dir={node.path} tree={tree} onCreate={onCreate} />
+          <MenuSeparator />
+          <MenuItem icon={<Database />} onSelect={onDatabase}>
+            {node.database ? "Datenbank öffnen" : "In Datenbank umwandeln"}
+          </MenuItem>
+        </>
+      )}
+      {(!isFolder || node.database) && (
+        <MenuItem icon={favorite ? <StarOff /> : <Star />} onSelect={onToggleFavorite}>
+          {favorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+        </MenuItem>
+      )}
+      <MenuItem icon={<Pencil />} hint="F2" onSelect={onRename}>
+        Umbenennen
+      </MenuItem>
+      <MenuSeparator />
+      <MenuItem icon={<Trash2 />} hint="Entf" danger onSelect={onDelete}>
+        Löschen …
+      </MenuItem>
+    </>
+  );
+}
+
+function RenameInput({ node, style, onDone }: { node: TreeNode; style: CSSProperties; onDone: (name: string | null) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const done = useRef(false);
   useEffect(() => {
@@ -240,9 +421,10 @@ function RenameInput({ node, depth, onDone }: { node: TreeNode; depth: number; o
     onDone(name);
   };
   return (
-    <div className="tree-row renaming" style={{ paddingLeft: 8 + depth * 14 }}>
-      <input
+    <div className="tree-row renaming" style={style}>
+      <Input
         ref={input}
+        inputSize="sm"
         className="rename-input"
         aria-label={`Neuer Name für „${node.name}“`}
         defaultValue={node.name}
@@ -252,57 +434,6 @@ function RenameInput({ node, depth, onDone }: { node: TreeNode; depth: number; o
           if (event.key === "Escape") finish(null);
         }}
       />
-    </div>
-  );
-}
-
-interface ContextMenuProps {
-  menu: MenuState;
-  onClose: () => void;
-  onCreate: (kind: "page" | "folder") => void;
-  onRename: () => void;
-  onDelete: () => void;
-  onDatabase: () => void;
-  onTemplate: () => void;
-}
-
-function ContextMenu({ menu, onClose, onCreate, onRename, onDelete, onDatabase, onTemplate }: ContextMenuProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const close = (event: MouseEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent ? event.key === "Escape" : !ref.current?.contains(event.target as Node)) onClose();
-    };
-    window.addEventListener("mousedown", close);
-    window.addEventListener("keydown", close);
-    return () => {
-      window.removeEventListener("mousedown", close);
-      window.removeEventListener("keydown", close);
-    };
-  }, [onClose]);
-
-  const item = (label: string, action: () => void, danger = false) => (
-    <button
-      type="button"
-      role="menuitem"
-      className={danger ? "danger" : undefined}
-      onClick={() => {
-        onClose();
-        action();
-      }}
-    >
-      {label}
-    </button>
-  );
-
-  const canCreate = menu.node === null || menu.node.kind === "folder";
-  return (
-    <div ref={ref} className="context-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
-      {canCreate && item("Neue Seite", () => onCreate("page"))}
-      {canCreate && item("Neue Seite aus Vorlage …", onTemplate)}
-      {canCreate && item("Neuer Ordner", () => onCreate("folder"))}
-      {menu.node?.kind === "folder" && item(menu.node.database ? "Datenbank öffnen" : "In Datenbank umwandeln", onDatabase)}
-      {menu.node && item("Umbenennen", onRename)}
-      {menu.node && item("Löschen …", onDelete, true)}
     </div>
   );
 }

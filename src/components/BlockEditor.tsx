@@ -1,6 +1,5 @@
 // Der Block-Editor (BlockNote) für eine Seite. Er kennt keine Dateien: Er bekommt Blöcke
 // und meldet jede Änderung. Laden und Speichern übernimmt PageView.
-import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core";
 import { de } from "@blocknote/core/locales";

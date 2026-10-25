@@ -1,15 +1,19 @@
 // Kanban-Ansicht: eine Spalte pro Wert einer Status- oder Auswahl-Eigenschaft.
 // Karten lassen sich per Drag & Drop in eine andere Spalte ziehen; das ändert den Wert in der Datei.
+import { FileText, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 import type { DatabaseConfig, Row, ViewConfig } from "../lib/database";
 import { groupRows } from "../lib/kanban";
 import { formatValue, RESERVED_FIELDS } from "../lib/properties";
+import { Badge, Button } from "./ui";
 
 interface Props {
   rows: Row[];
   view: ViewConfig;
   config: DatabaseConfig;
   property: string;
+  /** Emoji-Icons der Seiten (aus dem Suchindex). */
+  icons: ReadonlyMap<string, string>;
   onOpen: (path: string) => void;
   /** Karte in die Spalte `value` verschieben (null = "Ohne …"). */
   onMove: (row: Row, value: string | null) => void;
@@ -17,7 +21,7 @@ interface Props {
   onCreate: (value: string | null) => void;
 }
 
-export function KanbanBoard({ rows, view, config, property, onOpen, onMove, onCreate }: Props) {
+export function KanbanBoard({ rows, view, config, property, icons, onOpen, onMove, onCreate }: Props) {
   const columns = groupRows(rows, view, config, property);
   const dragged = useRef<string | null>(null);
   const [over, setOver] = useState<string | null | undefined>(undefined);
@@ -53,7 +57,7 @@ export function KanbanBoard({ rows, view, config, property, onOpen, onMove, onCr
         >
           <header className="kanban-column-header">
             <span className={`kanban-label status-${(column.value ?? "ohne").toLowerCase().replace(/\s+/g, "-")}`}>{column.label}</span>
-            <span className="kanban-count">{column.rows.length}</span>
+            <Badge>{column.rows.length}</Badge>
           </header>
           {column.rows.map((row) => (
             <article
@@ -72,14 +76,17 @@ export function KanbanBoard({ rows, view, config, property, onOpen, onMove, onCr
               tabIndex={0}
             >
               <div className="kanban-card-title">
-                <span aria-hidden="true">{typeof row.values.icon === "string" ? row.values.icon : "📄"}</span> {row.title}
+                <span className="kanban-card-icon" aria-hidden="true">
+                  {typeof row.values.icon === "string" ? row.values.icon : (icons.get(row.path) ?? <FileText />)}
+                </span>
+                <span>{row.title}</span>
               </div>
               <CardDetails row={row} config={config} property={property} />
             </article>
           ))}
-          <button type="button" className="kanban-add" onClick={() => onCreate(column.value)}>
-            + Neu
-          </button>
+          <Button variant="ghost" size="sm" className="kanban-add" icon={<Plus />} onClick={() => onCreate(column.value)}>
+            Neu
+          </Button>
         </section>
       ))}
     </div>

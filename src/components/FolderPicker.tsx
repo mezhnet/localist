@@ -1,8 +1,10 @@
 // Ordnerauswahl für den Vault auf dem Handy. Android liefert im System-Dialog keine normalen
 // Dateipfade, deshalb blättert man hier selbst durch den Gerätespeicher.
+import { ChevronLeft, Folder, FolderPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { errorMessage } from "../lib/autosave";
 import { createFolderAt, listFolders, storageLocations, type FolderEntry } from "../lib/vault-api";
+import { Button, Dialog, IconButton, Input } from "./ui";
 
 interface Props {
   onPick: (path: string) => void;
@@ -44,47 +46,60 @@ export function FolderPicker({ onPick, onCancel }: Props) {
 
   const list = current ? folders : locations;
   return (
-    <div className="dialog-backdrop">
-      <div className="dialog folder-picker" role="dialog" aria-label="Vault-Ordner auswählen">
-        <div className="folder-picker-header">
-          <button type="button" aria-label="Zurück" disabled={!current} onClick={() => setTrail(trail.slice(0, -1))}>
-            ←
-          </button>
-          <strong>{current ? trail.map((step) => step.name).join(" / ") : "Speicherort wählen"}</strong>
-        </div>
-        {error && <p className="notice error">{error}</p>}
-        <ul className="dialog-list" aria-label="Ordner">
-          {list.length === 0 && !error && <li className="dialog-empty">{current ? "Keine Unterordner." : "Lädt …"}</li>}
-          {list.map((folder) => (
-            <li key={folder.path} role="option" aria-selected={false} onClick={() => setTrail([...trail, folder])}>
-              <span className="dialog-title">📁 {folder.name}</span>
-              {!current && <span className="dialog-sub">{folder.path}</span>}
-            </li>
-          ))}
-        </ul>
-        {current && (
-          <form
-            className="folder-picker-new"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void createFolder();
-            }}
-          >
-            <input aria-label="Name für neuen Ordner" placeholder="Neuer Ordner …" value={newName} onChange={(e) => setNewName(e.target.value)} />
-            <button type="submit" disabled={!newName.trim()}>
-              Anlegen
-            </button>
-          </form>
-        )}
-        <div className="folder-picker-actions">
-          <button type="button" onClick={onCancel}>
+    <Dialog
+      label="Vault-Ordner auswählen"
+      className="folder-picker"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCancel}>
             Abbrechen
-          </button>
-          <button type="button" className="primary" disabled={!current} onClick={() => current && onPick(current.path)}>
+          </Button>
+          <Button variant="primary" disabled={!current} onClick={() => current && onPick(current.path)}>
             Diesen Ordner als Vault verwenden
-          </button>
-        </div>
+          </Button>
+        </>
+      }
+    >
+      <div className="folder-picker-header">
+        <IconButton label="Zurück" disabled={!current} onClick={() => setTrail(trail.slice(0, -1))}>
+          <ChevronLeft />
+        </IconButton>
+        <strong>{current ? trail.map((step) => step.name).join(" / ") : "Speicherort wählen"}</strong>
       </div>
-    </div>
+      {error && <p className="notice error">{error}</p>}
+      <ul className="dialog-list" aria-label="Ordner">
+        {list.length === 0 && !error && <li className="dialog-empty">{current ? "Keine Unterordner." : "Lädt …"}</li>}
+        {list.map((folder) => (
+          <li key={folder.path} role="option" aria-selected={false} onClick={() => setTrail([...trail, folder])}>
+            <Folder className="dialog-item-icon" aria-hidden="true" />
+            <span className="dialog-item-text">
+              <span className="dialog-title">{folder.name}</span>
+              {!current && <span className="dialog-sub">{folder.path}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {current && (
+        <form
+          className="folder-picker-new"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void createFolder();
+          }}
+        >
+          <Input
+            icon={<FolderPlus />}
+            wrapClassName="folder-picker-new-input"
+            aria-label="Name für neuen Ordner"
+            placeholder="Neuer Ordner …"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <Button type="submit" disabled={!newName.trim()}>
+            Anlegen
+          </Button>
+        </form>
+      )}
+    </Dialog>
   );
 }

@@ -1,0 +1,9 @@
+/* Einstieg für alle Styles der App. Reihenfolge: Werte, Grundlagen, Bausteine, Bereiche. */
+@import "./tokens.css";
+@import "./base.css";
+@import "../components/ui/ui.css";
+@import "./layout.css";
+@import "./home.css";
+@import "./page.css";
+@import "./database.css";
+@import "./dialogs.css";

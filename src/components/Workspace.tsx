@@ -1,13 +1,18 @@
-// Arbeitsbereich eines geöffneten Vaults: Sidebar links, Seite rechts.
-// Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen) und die Meldungen des Dateiwächters.
+// Arbeitsbereich eines geöffneten Vaults: Sidebar links, rechts Startseite, Seite oder Datenbank.
+// Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen, anheften) und die Meldungen des Dateiwächters.
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { ChevronRight, Menu as MenuIcon, Search, Star, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewriteLinks, type PageRef } from "../lib/links";
 import { today } from "../lib/calendar";
-import { createDatabaseConfig, VIEWS_FILE } from "../lib/database";
-import { instantiateTemplate, TEMPLATES_DIR } from "../lib/search";
+import { createDatabaseConfig, VIEWS_FILE, type DatabaseConfig } from "../lib/database";
+import { readFavorites, removeFromFavorites, renameInFavorites, toggleFavorite, withFavorites } from "../lib/favorites";
+import { pageIcons } from "../lib/home";
+import { DEFAULT_STATUS_OPTIONS } from "../lib/properties";
+import { instantiateTemplate, TEMPLATES_DIR, type IndexEntry } from "../lib/search";
+import { useVaultSettings } from "../lib/settings";
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
 import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
 import { useSchemas } from "../lib/useSchemas";
@@ -27,9 +32,11 @@ import {
 } from "../lib/vault-api";
 import { Backlinks } from "./Backlinks";
 import { DatabaseView, loadRows } from "./DatabaseView";
-import { QuickSwitcher, SearchDialog, TemplatePicker } from "./Dialogs";
+import { QuickSwitcher, SearchDialog, SettingsDialog, TemplatePicker } from "./Dialogs";
+import { HomePage } from "./HomePage";
 import { PageView } from "./PageView";
-import { Sidebar } from "./Sidebar";
+import { Sidebar, type CreateKind } from "./Sidebar";
+import { Button, cx, IconButton } from "./ui";
 
 interface Props {
   vault: VaultInfo;
@@ -65,7 +72,11 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   const [vaultVersion, setVaultVersion] = useState(0);
   /** Auf dem Handy ist die Sidebar ein ausklappbares Menü. */
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dialog, setDialog] = useState<{ kind: "quick" } | { kind: "search" } | { kind: "template"; dir: string } | null>(null);
+  const [dialog, setDialog] = useState<
+    { kind: "quick" } | { kind: "search"; query?: string } | { kind: "template"; dir: string } | { kind: "settings" } | null
+  >(null);
+  /** Suchindex für Startseite und Icons in der Sidebar (wird bei Änderungen im Vault neu geladen). */
+  const [index, setIndex] = useState<IndexEntry[]>([]);
   const saverRef = useRef<AutoSaver | null>(null);
   const pageRef = useRef(page);
   pageRef.current = page;
@@ -73,7 +84,11 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   databaseRef.current = database;
 
   const showError = useCallback((text: string) => setNotice({ kind: "error", text }), []);
-  const schemas = useSchemas(tree, showError);
+  const vaultSettings = useVaultSettings(showError);
+  const schemas = useSchemas(tree, showError, vaultSettings);
+  const favorites = readFavorites(vaultSettings.settings);
+  const updateFavorites = (change: (favorites: string[]) => string[]) =>
+    vaultSettings.update((settings) => withFavorites(settings, change(readFavorites(settings))));
   const reloadConfigRef = useRef(schemas.reloadConfig);
   reloadConfigRef.current = schemas.reloadConfig;
 
@@ -190,6 +205,18 @@ export function Workspace({ vault, onSwitchVault }: Props) {
 
   const loadIndex = useCallback(() => vaultIndex(), []);
 
+  useEffect(() => {
+    let cancelled = false;
+    vaultIndex().then(
+      (entries) => !cancelled && setIndex(entries),
+      () => {},
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [vaultVersion]);
+  const icons = useMemo(() => pageIcons(index), [index]);
+
   // Vor dem Schließen des Fensters ungespeicherte Eingaben sichern.
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -219,6 +246,13 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     pageRef.current = null;
     setPage(null);
     setDatabase(folder);
+  };
+
+  const openHome = async () => {
+    await saverRef.current?.flush();
+    closePage();
+    setDatabase(null);
+    setMenuOpen(false);
   };
 
   /** Macht einen Ordner zur Datenbank: legt _ansichten.yaml mit den erkannten Eigenschaften an. */
@@ -286,6 +320,31 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     }
   };
 
+  /** Neue Datenbank: Ordner mit _ansichten.yaml, Status und Datum, damit Kanban und Kalender gleich gehen. */
+  const handleCreateDatabase = async (dir: string) => {
+    try {
+      const name = uniqueName(childrenOf(tree, dir), "Neue Datenbank");
+      const path = await createFolder(dir, name);
+      const config: DatabaseConfig = {
+        ...createDatabaseConfig([]),
+        eigenschaften: { status: { typ: "status", optionen: DEFAULT_STATUS_OPTIONS }, datum: { typ: "datum" } },
+      };
+      await schemas.saveConfig(path, config);
+      await refreshTree();
+      await openDatabase(path);
+      setRenamingPath(path);
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
+
+  const handleCreate = (kind: CreateKind, dir: string) => {
+    if (kind === "page") void handleCreatePage(dir);
+    else if (kind === "folder") void handleCreateFolder(dir);
+    else if (kind === "database") void handleCreateDatabase(dir);
+    else setDialog({ kind: "template", dir });
+  };
+
   const rename = async (node: TreeNode, newName: string): Promise<boolean> => {
     try {
       // Vorher speichern: Auch die offene Seite kann Links enthalten, die gleich angepasst werden.
@@ -301,6 +360,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       for (const page of oldPages) {
         if (isInside(page.path, node.path)) moved.set(page.path, movePath(page.path, node.path, newPath));
       }
+      await updateFavorites((list) => renameInFavorites(list, node.path, newPath));
       await refreshTree();
       const changed = await updateLinksAfterRename(oldPages, moved);
       if (changed > 0) {
@@ -385,6 +445,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       const current = pageRef.current;
       if (current && isInside(current.path, node.path)) closePage();
       await deleteEntry(node.path);
+      await updateFavorites((list) => removeFromFavorites(list, node.path));
       await refreshTree();
     } catch (error) {
       showError(errorMessage(error));
@@ -397,51 +458,86 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     return node ? rename(node, newTitle) : Promise.resolve(false);
   };
 
+  const current = page?.path ?? database;
+  const homeActive = !page && !database && !vaultMissing;
+  const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
+
   return (
     <div className="workspace">
-      <header className="mobile-bar">
-        <button type="button" className="menu-button" aria-label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
-          ☰
-        </button>
-        <span className="mobile-title">
-          {page ? pageTitle(page.path) : database ? pageTitle(database) : vault.name}
-        </span>
-        <button type="button" className="menu-button" aria-label="Seite suchen" onClick={() => setDialog({ kind: "quick" })}>
-          ⌕
-        </button>
-      </header>
       {menuOpen && <div className="drawer-backdrop" aria-hidden="true" onClick={() => setMenuOpen(false)} />}
-      <div className={`sidebar-shell${menuOpen ? " open" : ""}`}>
-      <Sidebar
-        vaultName={vault.name}
-        tree={tree}
-        openPath={page?.path ?? null}
-        renamingPath={renamingPath}
-        onRenamingDone={() => setRenamingPath(null)}
-        openDatabase={database}
-        onOpen={(path) => void openPage(path)}
-        onOpenDatabase={(path) => void openDatabase(path)}
-        onConvertToDatabase={(path) => void convertToDatabase(path)}
-        onQuickOpen={() => setDialog({ kind: "quick" })}
-        onSearch={() => setDialog({ kind: "search" })}
-        onCreateFromTemplate={(dir) => setDialog({ kind: "template", dir })}
-        onCreatePage={(dir) => void handleCreatePage(dir)}
-        onCreateFolder={(dir) => void handleCreateFolder(dir)}
-        onRename={(node, newName) => void rename(node, newName)}
-        onDelete={(node) => void handleDelete(node)}
-        onSwitchVault={async () => {
-          await saverRef.current?.flush();
-          onSwitchVault();
-        }}
-      />
+      <div className={cx("sidebar-shell", menuOpen && "open")}>
+        <Sidebar
+          vaultName={vault.name}
+          tree={tree}
+          openPath={page?.path ?? null}
+          openDatabase={database}
+          homeActive={homeActive}
+          favorites={favorites}
+          icons={icons}
+          renamingPath={renamingPath}
+          onRenamingDone={() => setRenamingPath(null)}
+          onOpen={(path) => void openPage(path)}
+          onOpenDatabase={(path) => void openDatabase(path)}
+          onOpenHome={() => void openHome()}
+          onConvertToDatabase={(path) => void convertToDatabase(path)}
+          onToggleFavorite={(path) => void updateFavorites((list) => toggleFavorite(list, path))}
+          onQuickOpen={() => setDialog({ kind: "quick" })}
+          onSearch={() => setDialog({ kind: "search" })}
+          onOpenSettings={() => setDialog({ kind: "settings" })}
+          onCreate={handleCreate}
+          onRename={(node, newName) => void rename(node, newName)}
+          onDelete={(node) => void handleDelete(node)}
+          onSwitchVault={async () => {
+            await saverRef.current?.flush();
+            onSwitchVault();
+          }}
+        />
       </div>
       <main className="main">
+        <header className="topbar">
+          <IconButton className="topbar-menu" label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+            <MenuIcon />
+          </IconButton>
+          <nav className="breadcrumb" aria-label="Pfad">
+            {current ? (
+              <>
+                {ancestorNames(current).map((name, i) => (
+                  <span key={i} className="breadcrumb-folder">
+                    <span className="breadcrumb-name">{name}</span>
+                    <ChevronRight className="breadcrumb-separator" aria-hidden="true" />
+                  </span>
+                ))}
+                <span className="topbar-title">
+                  {page && icons.get(page.path) && <span className="topbar-icon">{icons.get(page.path)}</span>}
+                  {pageTitle(current)}
+                </span>
+              </>
+            ) : (
+              <span className="topbar-title">{vaultMissing ? vault.name : "Startseite"}</span>
+            )}
+          </nav>
+          <div className="topbar-actions">
+            {current && (
+              <IconButton
+                label={favorites.includes(current) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+                active={favorites.includes(current)}
+                className="favorite-toggle"
+                onClick={() => void updateFavorites((list) => toggleFavorite(list, current))}
+              >
+                <Star />
+              </IconButton>
+            )}
+            <IconButton className="topbar-search" label="Seite suchen" onClick={() => setDialog({ kind: "quick" })}>
+              <Search />
+            </IconButton>
+          </div>
+        </header>
         {notice && (
-          <div className={`notice ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>
+          <div className={`notice toast ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>
             <span>{notice.text}</span>
-            <button type="button" aria-label="Meldung schließen" onClick={() => setNotice(null)}>
-              ×
-            </button>
+            <IconButton size="sm" label="Meldung schließen" onClick={() => setNotice(null)}>
+              <X />
+            </IconButton>
           </div>
         )}
         {vaultMissing ? (
@@ -452,9 +548,9 @@ export function Workspace({ vault, onSwitchVault }: Props) {
                 „{vault.root}“ wurde nicht gefunden. Vielleicht wurde er verschoben, umbenannt oder das Laufwerk ist nicht
                 angeschlossen. Sobald er wieder da ist, lädt die App ihn automatisch.
               </p>
-              <button type="button" className="primary" onClick={onSwitchVault}>
+              <Button variant="primary" onClick={onSwitchVault}>
                 Anderen Vault öffnen …
-              </button>
+              </Button>
             </div>
           </div>
         ) : database && schemas.configs[database] ? (
@@ -463,6 +559,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
             folder={database}
             config={schemas.configs[database]}
             pagePaths={(findNode(tree, database)?.children ?? []).filter((node) => node.kind === "page").map((node) => node.path)}
+            icons={icons}
             version={databaseVersion}
             onSaveConfig={(config) => void schemas.saveConfig(database, config)}
             onOpenPage={(path) => void openPage(path)}
@@ -489,13 +586,22 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               propertySchema={schemas.schemaForPage(page.path)}
               onPropertyType={(name, type) => void schemas.setTypeForPage(page.path, name, type)}
             >
-              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} onOpen={(path) => void openPage(path)} />
+              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path) => void openPage(path)} />
             </PageView>
           </WikiLinkContext.Provider>
-        ) : (
-          <div className="empty-state">
-            <p>Wähle eine Seite in der Seitenleiste aus oder lege eine neue an.</p>
-          </div>
+        ) : database ? null : (
+          <HomePage
+            vaultName={vault.name}
+            pages={pages}
+            index={index}
+            favorites={favoriteNodes}
+            icons={icons}
+            onOpen={(node) => void (node.kind === "folder" ? openDatabase(node.path) : openPage(node.path))}
+            onCreateNote={() => void handleCreatePage("")}
+            onCreateDatabase={() => void handleCreateDatabase("")}
+            onCreateFromTemplate={() => setDialog({ kind: "template", dir: "" })}
+            onSearch={(query) => setDialog({ kind: "search", query })}
+          />
         )}
       </main>
       {dialog?.kind === "quick" && (
@@ -511,6 +617,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       {dialog?.kind === "search" && (
         <SearchDialog
           loadIndex={loadIndex}
+          initialQuery={dialog.query}
           onClose={() => setDialog(null)}
           onOpen={(path) => {
             setDialog(null);
@@ -529,6 +636,23 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           }}
         />
       )}
+      {dialog?.kind === "settings" && (
+        <SettingsDialog
+          vaultName={vault.name}
+          vaultRoot={vault.root}
+          onClose={() => setDialog(null)}
+          onSwitchVault={async () => {
+            setDialog(null);
+            await saverRef.current?.flush();
+            onSwitchVault();
+          }}
+        />
+      )}
     </div>
   );
+}
+
+/** Ordnernamen auf dem Weg zu einer Seite, z. B. "Notizen/Ideen.md" → ["Notizen"]. */
+function ancestorNames(path: string): string[] {
+  return path.split("/").slice(0, -1);
 }

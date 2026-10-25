@@ -17,9 +17,20 @@ async function openVaultFromStart() {
   return screen.findByRole("tree");
 }
 
+/** Der Ordnerbaum der Sidebar. Seitennamen stehen auch auf der Startseite, in den Favoriten und oben im Pfad. */
+async function inTree() {
+  return within(await screen.findByRole("tree"));
+}
+
 async function openPage(folder: string, page: string) {
-  fireEvent.click(await screen.findByText(folder));
-  fireEvent.click(await screen.findByText(page));
+  fireEvent.click(await (await inTree()).findByText(folder));
+  fireEvent.click(await (await inTree()).findByText(page));
+}
+
+/** Öffnet das „Neu“-Menü der Sidebar und wählt einen Eintrag. */
+function createNew(item: "Notiz" | "Ordner" | "Datenbank" | "Notiz aus Vorlage …") {
+  fireEvent.click(screen.getByRole("button", { name: "Neu" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: item }));
 }
 
 beforeEach(() => {
@@ -78,20 +89,20 @@ describe("Sidebar", () => {
     expect(top).toEqual(["Anhänge", "Notizen", "Projekte", "Vorlagen"]);
     expect(screen.queryByText(".localist")).toBeNull();
 
-    fireEvent.click(screen.getByText("Anhänge"));
-    expect(await screen.findByText("Leer")).toBeTruthy(); // skizze.png ist keine Seite
-    fireEvent.click(screen.getByText("Notizen"));
-    expect(await screen.findByText("Formatierung")).toBeTruthy();
-    expect(screen.getByText("Ideen")).toBeTruthy();
+    fireEvent.click(within(tree).getByText("Anhänge"));
+    expect(await within(tree).findByText("Leer")).toBeTruthy(); // skizze.png ist keine Seite
+    fireEvent.click(within(tree).getByText("Notizen"));
+    expect(await within(tree).findByText("Formatierung")).toBeTruthy();
+    expect(within(tree).getByText("Ideen")).toBeTruthy();
   });
 
   it("legt Seiten mit id an und Ordner mit freiem Namen", async () => {
     await openVaultFromStart();
-    fireEvent.click(screen.getByRole("button", { name: "+ Neue Seite" }));
+    createNew("Notiz");
     await screen.findByDisplayValue("Unbenannt");
     expect(vault().files.get("Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\n---\n$/);
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Neuer Ordner" }));
+    createNew("Ordner");
     const input = await screen.findByRole("textbox", { name: "Neuer Name für „Neuer Ordner“" });
     fireEvent.change(input, { target: { value: "Archiv" } });
     fireEvent.keyDown(input, { key: "Enter" });
@@ -101,15 +112,15 @@ describe("Sidebar", () => {
 
   it("benennt Seiten in der Sidebar (F2) und über den Seitentitel um", async () => {
     await openVaultFromStart();
-    fireEvent.click(await screen.findByText("Notizen"));
-    fireEvent.keyDown(await screen.findByTitle("Notizen/Ideen.md"), { key: "F2" });
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.keyDown(await (await inTree()).findByTitle("Notizen/Ideen.md"), { key: "F2" });
     const input = await screen.findByRole("textbox", { name: "Neuer Name für „Ideen“" });
     fireEvent.change(input, { target: { value: "Gedanken" } });
     fireEvent.keyDown(input, { key: "Enter" });
     await waitFor(() => expect(vault().files.has("Notizen/Gedanken.md")).toBe(true));
     expect(vault().files.has("Notizen/Ideen.md")).toBe(false);
 
-    fireEvent.click(await screen.findByText("Gedanken"));
+    fireEvent.click(await (await inTree()).findByText("Gedanken"));
     const title = await screen.findByRole("textbox", { name: "Seitentitel" });
     fireEvent.change(title, { target: { value: "Neue Gedanken" } });
     fireEvent.keyDown(title, { key: "Enter" });
@@ -130,7 +141,7 @@ describe("Sidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Aktionen für „Vorlagen“" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Löschen …" }));
     await waitFor(() => expect(vault().folders.has("Vorlagen")).toBe(false));
-    await waitFor(() => expect(screen.queryByText("Vorlagen")).toBeNull());
+    await waitFor(() => expect(within(screen.getByRole("tree")).queryByText("Vorlagen")).toBeNull());
   });
 });
 
@@ -152,7 +163,7 @@ describe("Eigenschaften und Datenbanken", () => {
     await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toBe("---\nid: 42\nunbekannt: bleibt # Kommentar\nerledigt: true\n---\n# Ideen\n"));
 
     // Neue Eigenschaft vom Typ Datum: im Frontmatter als YYYY-MM-DD
-    fireEvent.click(screen.getByRole("button", { name: "+ Eigenschaft hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eigenschaft hinzufügen" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Name der Eigenschaft" }), { target: { value: "fällig" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Typ der neuen Eigenschaft" }), { target: { value: "datum" } });
     fireEvent.click(screen.getByRole("button", { name: "Hinzufügen" }));
@@ -162,7 +173,7 @@ describe("Eigenschaften und Datenbanken", () => {
     expect(vault().files.get(".localist/settings.json")).toContain('"fällig": "datum"');
 
     // Mehrfachauswahl als YAML-Liste
-    fireEvent.click(screen.getByRole("button", { name: "+ Eigenschaft hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eigenschaft hinzufügen" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Name der Eigenschaft" }), { target: { value: "tags" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Typ der neuen Eigenschaft" }), { target: { value: "mehrfachauswahl" } });
     fireEvent.click(screen.getByRole("button", { name: "Hinzufügen" }));
@@ -177,7 +188,7 @@ describe("Eigenschaften und Datenbanken", () => {
     vault().externalWrite("Notizen/Ideen.md", "---\nid: 1\nstatus: Offen\naufwand: 3\n---\n");
     vault().externalWrite("Notizen/Formatierung.md", "---\nid: 2\nstatus: Fertig\n---\n");
     await openVaultFromStart();
-    fireEvent.contextMenu(await screen.findByText("Notizen"));
+    fireEvent.contextMenu(await (await inTree()).findByText("Notizen"));
     fireEvent.click(screen.getByRole("menuitem", { name: "In Datenbank umwandeln" }));
     await waitFor(() => expect(vault().files.has("Notizen/_ansichten.yaml")).toBe(true));
     const yaml = vault().files.get("Notizen/_ansichten.yaml")!;
@@ -188,12 +199,12 @@ describe("Eigenschaften und Datenbanken", () => {
     const table = await screen.findByRole("table");
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(3); // Kopfzeile + 2 Seiten
-    expect(within(table).getAllByRole("columnheader").map((th) => th.textContent?.trim())).toEqual(["Aa Name", "◐ status", "# aufwand", "+"]);
+    expect(within(table).getAllByRole("columnheader").map((th) => th.textContent?.trim())).toEqual(["Aa Name", "◐ status", "# aufwand", ""]);
   });
 
   it("Tabelle: Zellen bearbeiten, sortieren und filtern (gespeichert in _ansichten.yaml), neue Zeile mit id", async () => {
     await openVaultFromStart();
-    fireEvent.click(await screen.findByText("Projekte"));
+    fireEvent.click(await (await inTree()).findByText("Projekte"));
     const table = await screen.findByRole("table");
     await within(table).findByDisplayValue("Website-Relaunch");
     // Sortierung aus der Datei: fällig aufsteigend → Website (2026) vor Umzug (2027)
@@ -206,20 +217,20 @@ describe("Eigenschaften und Datenbanken", () => {
 
     // Absteigend sortieren über das Spaltenmenü
     fireEvent.click(within(table).getByRole("button", { name: /fällig/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Absteigend sortieren" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Absteigend sortieren" }));
     await waitFor(() => expect(names()).toEqual(["Umzug", "Website-Relaunch"]));
     expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("sortierung:\n      - eigenschaft: fällig\n        richtung: absteigend\n");
 
     // Filter: status ist "In Arbeit"
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
-    fireEvent.click(screen.getByRole("button", { name: "+ Filter hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Filter hinzufügen" }));
     commitInput(await screen.findByRole("combobox", { name: "Filterwert" }), "In Arbeit");
     await waitFor(() => expect(names()).toEqual(["Website-Relaunch"]));
     expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("filter:\n      - eigenschaft: status\n        operator: ist\n        wert: In Arbeit\n");
 
     // Neue Zeile legt eine .md-Datei mit id an
     fireEvent.click(screen.getByRole("button", { name: "Filter (1)" }));
-    fireEvent.click(screen.getByRole("button", { name: "+ Neu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Neuer Eintrag" }));
     await waitFor(() => expect(vault().files.get("Projekte/Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\n---\n$/));
   });
 });
@@ -227,10 +238,10 @@ describe("Eigenschaften und Datenbanken", () => {
 describe("Kanban", () => {
   async function openKanban() {
     await openVaultFromStart();
-    fireEvent.click(await screen.findByText("Projekte"));
+    fireEvent.click(await (await inTree()).findByText("Projekte"));
     await screen.findByDisplayValue("Umzug"); // Einträge sind geladen
     fireEvent.click(screen.getByRole("button", { name: "Ansicht hinzufügen" }));
-    fireEvent.click(screen.getByRole("button", { name: "▥ Kanban" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Kanban" }));
     return screen.findByRole("list", { name: "Kanban nach status" });
   }
 
@@ -243,9 +254,9 @@ describe("Kanban", () => {
       expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("  - name: Kanban\n    typ: kanban\n    gruppierung: status\n"),
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "▦ Tabelle" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Tabelle" }));
     expect(await screen.findByRole("table")).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "▥ Kanban" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Kanban" }));
     expect(await screen.findByRole("list", { name: "Kanban nach status" })).toBeTruthy();
   });
 
@@ -266,7 +277,7 @@ describe("Kanban", () => {
   it("legt neue Karten direkt in einer Spalte an, ein Klick auf eine Karte öffnet die Seite", async () => {
     const board = await openKanban();
     const column = within(board).getByRole("listitem", { name: "Spalte In Arbeit" });
-    fireEvent.click(within(column).getByRole("button", { name: "+ Neu" }));
+    fireEvent.click(within(column).getByRole("button", { name: "Neu" }));
     await waitFor(() => expect(vault().files.get("Projekte/Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\nstatus: In Arbeit\n---\n$/));
     expect(await within(column).findByRole("article", { name: "Unbenannt" })).toBeTruthy();
 
@@ -293,10 +304,10 @@ describe("Kalender", () => {
     );
     vault().externalWrite("Projekte/Notiz.md", "---\nid: n1\nstatus: Geplant\n---\n");
     await openVaultFromStart();
-    fireEvent.click(await screen.findByText("Projekte"));
+    fireEvent.click(await (await inTree()).findByText("Projekte"));
     await screen.findByDisplayValue("Notiz");
     fireEvent.click(screen.getByRole("button", { name: "Ansicht hinzufügen" }));
-    fireEvent.click(screen.getByRole("button", { name: "📅 Kalender" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Kalender" }));
     return screen.findByRole("grid", { name: "Kalender nach fällig" });
   }
 
@@ -368,7 +379,7 @@ describe("Komfort: Suche, Strg+P, Vorlagen, Backlinks", () => {
 
   it("legt eine neue Seite aus einer Vorlage an (Eigenschaften und Inhalt, eigene id)", async () => {
     await openVaultFromStart();
-    fireEvent.click(screen.getByRole("button", { name: "+ Seite aus Vorlage" }));
+    createNew("Notiz aus Vorlage …");
     fireEvent.click(await screen.findByRole("option", { name: /Projekt/ }));
     await waitFor(() => expect(vault().files.get("Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\nstatus: Geplant\npriorität: mittel\n---\n# Ziel\n/));
     expect(vault().files.get("Unbenannt.md")).toContain("- [ ] Ersten Schritt eintragen\n");
@@ -417,7 +428,7 @@ describe("Verständliche Fehlermeldungen statt Abstürzen", () => {
     // Ist der Ordner wieder da, geht es normal weiter.
     act(() => vault().setMissing(false));
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
-    expect(screen.getByText("Notizen")).toBeTruthy();
+    expect(within(screen.getByRole("tree")).getByText("Notizen")).toBeTruthy();
   });
 
   it("ein unerwarteter Fehler in der Oberfläche zeigt eine Meldung mit „App neu laden“", async () => {
@@ -446,8 +457,8 @@ describe("Handy (Android)", () => {
     const picker = await screen.findByRole("dialog", { name: "Vault-Ordner auswählen" });
     expect(within(picker).getByRole("button", { name: "Diesen Ordner als Vault verwenden" })).toHaveProperty("disabled", true);
 
-    fireEvent.click(await within(picker).findByText("📁 Interner Speicher"));
-    fireEvent.click(await within(picker).findByText("📁 Documents"));
+    fireEvent.click(await within(picker).findByText("Interner Speicher"));
+    fireEvent.click(await within(picker).findByText("Documents"));
     fireEvent.change(within(picker).getByRole("textbox", { name: "Name für neuen Ordner" }), { target: { value: "Mein Vault" } });
     fireEvent.click(within(picker).getByRole("button", { name: "Anlegen" }));
     expect(await within(picker).findByText("Interner Speicher / Documents / Mein Vault")).toBeTruthy();
@@ -469,7 +480,7 @@ describe("Handy (Android)", () => {
     await openPage("Notizen", "Ideen");
     await screen.findByText("Hier sammle ich lose Gedanken.");
     await waitFor(() => expect(document.querySelector(".sidebar-shell.open")).toBeNull());
-    expect(document.querySelector(".mobile-title")?.textContent).toBe("Ideen");
+    expect(document.querySelector(".topbar-title")?.textContent).toBe("Ideen");
   });
 });
 
@@ -519,12 +530,12 @@ describe("Seiten im Editor", () => {
     await screen.findByText("Hier sammle ich lose Gedanken.");
     const before = vault().files.get("Notizen/Ideen.md")!;
 
-    fireEvent.click(screen.getByRole("button", { name: "🙂 Icon hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Icon hinzufügen" }));
     fireEvent.click(screen.getByRole("button", { name: "Icon 💡" }));
     await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toBe(`---\nicon: 💡\n---\n${before}`));
     expect(screen.getByRole("button", { name: "Icon ändern" }).textContent).toBe("💡");
 
-    fireEvent.click(screen.getByRole("button", { name: "🖼️ Cover hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cover hinzufügen" }));
     await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toBe(`---\nicon: 💡\ncover: Anhänge/skizze.png\n---\n${before}`));
 
     fireEvent.click(screen.getByRole("button", { name: "Icon ändern" }));
@@ -550,10 +561,13 @@ describe("Seiten im Editor", () => {
   it("schaltet zwischen hell und dunkel um und merkt sich die Wahl", async () => {
     await openVaultFromStart();
     expect(document.documentElement.dataset.theme).toBe("light"); // System (Test) ist hell
-    fireEvent.change(screen.getByRole("combobox", { name: "Darstellung" }), { target: { value: "dark" } });
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const theme = within(await screen.findByRole("group", { name: "Darstellung" }));
+    fireEvent.click(theme.getByRole("button", { name: "Dunkel" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(localStorage.getItem("theme")).toBe("dark");
-    fireEvent.change(screen.getByRole("combobox", { name: "Darstellung" }), { target: { value: "system" } });
+    expect(theme.getByRole("button", { name: "Dunkel" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(theme.getByRole("button", { name: "Wie System" }));
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(localStorage.getItem("theme")).toBeNull();
   });
@@ -566,5 +580,135 @@ describe("Seiten im Editor", () => {
     expect(await screen.findByText("„Ideen“ wurde außerhalb der App gelöscht oder verschoben.")).toBeTruthy();
     expect(screen.queryByTitle("Notizen/Ideen.md")).toBeNull();
     expect(screen.queryByText("Hier sammle ich lose Gedanken.")).toBeNull();
+  });
+});
+
+describe("Neues Design: Favoriten, Startseite, „Neu“-Menü und Einstellungen", () => {
+  const sidebarFavorites = () => within(screen.getByRole("navigation", { name: "Seiten" })).getByRole("region", { name: "Favoriten" });
+  const favoriteNames = () => [...sidebarFavorites().querySelectorAll(".tree-name")].map((el) => el.textContent);
+  const savedFavorites = () => JSON.parse(vault().files.get(".localist/settings.json")!).favoriten;
+
+  it("zeigt die Favoriten aus .localist/settings.json oben in der Sidebar und öffnet sie", async () => {
+    await openVaultFromStart();
+    await waitFor(() => expect(favoriteNames()).toEqual(["Ideen", "Projekte"]));
+    fireEvent.click(within(sidebarFavorites()).getByText("Ideen"));
+    expect(await screen.findByText("Hier sammle ich lose Gedanken.")).toBeTruthy();
+    fireEvent.click(within(sidebarFavorites()).getByText("Projekte"));
+    expect(await screen.findByRole("table")).toBeTruthy();
+  });
+
+  it("heftet Seiten an und löst sie wieder (Menü und Stern), gespeichert in .localist/settings.json", async () => {
+    await openVaultFromStart();
+    await waitFor(() => expect(favoriteNames()).toHaveLength(2));
+    // Anheften über das „⋯“-Menü im Ordnerbaum
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „Formatierung“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Zu Favoriten hinzufügen" }));
+    await waitFor(() => expect(savedFavorites()).toEqual(["Notizen/Ideen.md", "Projekte", "Notizen/Formatierung.md"]));
+    expect(favoriteNames()).toEqual(["Ideen", "Projekte", "Formatierung"]);
+    expect(vault().files.get(".localist/settings.json")).toMatch(/^\{\n {2}"version": 1,\n/);
+
+    // Lösen über den Stern oben rechts auf der geöffneten Seite („Notizen“ ist schon aufgeklappt)
+    fireEvent.click(await (await inTree()).findByText("Ideen"));
+    fireEvent.click(await screen.findByRole("button", { name: "Aus Favoriten entfernen" }));
+    await waitFor(() => expect(savedFavorites()).toEqual(["Projekte", "Notizen/Formatierung.md"]));
+    expect(await screen.findByRole("button", { name: "Zu Favoriten hinzufügen" })).toBeTruthy();
+    expect(favoriteNames()).toEqual(["Projekte", "Formatierung"]);
+  });
+
+  it("Favoriten folgen beim Umbenennen und verschwinden beim Löschen", async () => {
+    await openVaultFromStart();
+    await waitFor(() => expect(favoriteNames()).toHaveLength(2));
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.keyDown(await (await inTree()).findByTitle("Notizen/Ideen.md"), { key: "F2" });
+    const input = await screen.findByRole("textbox", { name: "Neuer Name für „Ideen“" });
+    fireEvent.change(input, { target: { value: "Gedanken" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(savedFavorites()).toEqual(["Notizen/Gedanken.md", "Projekte"]));
+
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "Aktionen für „Projekte“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Löschen …" }));
+    await waitFor(() => expect(savedFavorites()).toEqual(["Notizen/Gedanken.md"]));
+  });
+
+  it("Startseite: zuletzt bearbeitete Seiten, Favoriten, Schnellaktionen und Suchfeld", async () => {
+    await openVaultFromStart();
+    const home = within(await screen.findByRole("region", { name: "Startseite" }));
+    expect(home.getByRole("heading", { level: 1 }).textContent).toMatch(/^(Guten (Morgen|Tag|Abend)|Gute Nacht)$/);
+    const recentTitles = () =>
+      [...home.getByRole("region", { name: "Zuletzt bearbeitet" }).querySelectorAll(".home-card-title")].map((el) => el.textContent);
+
+    // Zuletzt bearbeitet: neueste zuerst, ohne Vorlagen
+    act(() => vault().externalWrite("Projekte/Umzug.md", "---\nid: 8c1d\nstatus: Geplant\n---\nKisten packen\n"));
+    await waitFor(() => expect(recentTitles()[0]).toBe("Umzug"));
+    expect(recentTitles()).toEqual(expect.arrayContaining(["Umzug", "Ideen", "Formatierung", "Website-Relaunch"]));
+    expect(recentTitles()).not.toContain("Projekt"); // Vorlage
+    expect(home.getByRole("region", { name: "Zuletzt bearbeitet" }).textContent).toContain("Projekte · gerade eben");
+
+    // Favoriten
+    const favorites = [...home.getByRole("region", { name: "Favoriten" }).querySelectorAll(".home-card-title")].map((el) => el.textContent);
+    expect(favorites).toEqual(["Ideen", "Projekte"]);
+
+    // Schnellaktionen
+    const actions = within(home.getByRole("region", { name: "Schnellaktionen" }));
+    expect(actions.getAllByRole("button").map((b) => b.querySelector(".home-action-title")?.textContent)).toEqual([
+      "Neue Notiz",
+      "Neue Datenbank",
+      "Aus Vorlage",
+      "Alle Seiten durchsuchen",
+    ]);
+
+    // Suchfeld: Titel finden, Enter öffnet die Seite
+    const search = home.getByRole("textbox", { name: "Seiten suchen" });
+    fireEvent.change(search, { target: { value: "relaunch" } });
+    expect(within(home.getByRole("listbox", { name: "Suchergebnisse" })).getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "Website-RelaunchProjekte",
+      "Im Text aller Seiten suchen: „relaunch“",
+    ]);
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(await screen.findByText("Domain prüfen")).toBeTruthy();
+
+    // „Startseite“ in der Sidebar führt zurück
+    fireEvent.click(screen.getByRole("button", { name: "Startseite" }));
+    expect(await screen.findByRole("region", { name: "Startseite" })).toBeTruthy();
+  });
+
+  it("Startseite: Suche im Text aller Seiten und „Neue Notiz“", async () => {
+    await openVaultFromStart();
+    const home = within(await screen.findByRole("region", { name: "Startseite" }));
+    fireEvent.change(home.getByRole("textbox", { name: "Seiten suchen" }), { target: { value: "wochenplanung" } });
+    fireEvent.click(home.getByRole("option", { name: /Im Text aller Seiten suchen/ }));
+    const input = await screen.findByRole("textbox", { name: "Volltextsuche" });
+    expect((input as HTMLInputElement).value).toBe("wochenplanung");
+    expect(await screen.findByRole("option", { name: /Ideen/ })).toBeTruthy();
+    fireEvent.keyDown(input, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(home.getByRole("button", { name: /Neue Notiz/ }));
+    await waitFor(() => expect(vault().files.get("Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\n---\n$/));
+    expect(await screen.findByDisplayValue("Unbenannt")).toBeTruthy();
+  });
+
+  it("„Neu“-Menü legt eine Datenbank an (mit _ansichten.yaml) und öffnet sie", async () => {
+    await openVaultFromStart();
+    createNew("Datenbank");
+    await waitFor(() => expect(vault().files.has("Neue Datenbank/_ansichten.yaml")).toBe(true));
+    const yaml = vault().files.get("Neue Datenbank/_ansichten.yaml")!;
+    expect(yaml).toContain("eigenschaften:\n  status:\n    typ: status\n");
+    expect(yaml).toContain("  datum:\n    typ: datum\n");
+    expect(await screen.findByRole("table")).toBeTruthy();
+    expect(await screen.findByRole("textbox", { name: "Neuer Name für „Neue Datenbank“" })).toBeTruthy();
+  });
+
+  it("Einstellungen zeigen Darstellung und Vault, der Dialog schließt mit Escape", async () => {
+    await openVaultFromStart();
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const dialog = await screen.findByRole("dialog", { name: "Einstellungen" });
+    expect(within(dialog).getByRole("group", { name: "Darstellung" })).toBeTruthy();
+    expect(dialog.querySelector(".settings-vault-name")?.textContent).toBe("Testvault");
+    expect(within(dialog).getByRole("button", { name: "Anderen Vault öffnen …" })).toBeTruthy();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

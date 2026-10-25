@@ -1,14 +1,13 @@
 // Eigenschaftstypen im Vault: für Datenbank-Ordner aus `_ansichten.yaml`, sonst aus
-// `.localist/settings.json` (Feld "eigenschaften"). Dieser Hook lädt und speichert beides.
-import { useCallback, useEffect, useRef, useState } from "react";
+// `.localist/settings.json` (Feld "eigenschaften", gelesen und geschrieben über useVaultSettings).
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PropertySchema } from "../components/PropertiesBar";
 import { errorMessage } from "./autosave";
 import { parseDatabaseConfig, serializeDatabaseConfig, VIEWS_FILE, type DatabaseConfig } from "./database";
 import { DEFAULT_STATUS_OPTIONS, isPropertyType, type PropertyType } from "./properties";
 import { findNode, parentDir } from "./tree";
+import type { VaultSettingsState } from "./settings";
 import { readPage, writePage, type TreeNode } from "./vault-api";
-
-export const SETTINGS_FILE = ".localist/settings.json";
 
 /** Alle Datenbank-Ordner im Baum. */
 export function databaseFolders(nodes: readonly TreeNode[]): string[] {
@@ -18,10 +17,8 @@ export function databaseFolders(nodes: readonly TreeNode[]): string[] {
   ]);
 }
 
-export function useSchemas(tree: TreeNode[], onError: (message: string) => void) {
+export function useSchemas(tree: TreeNode[], onError: (message: string) => void, vaultSettings: VaultSettingsState) {
   const [configs, setConfigs] = useState<Record<string, DatabaseConfig>>({});
-  const [vaultTypes, setVaultTypes] = useState<Record<string, PropertyType>>({});
-  const settingsRef = useRef<Record<string, unknown>>({});
 
   const reloadConfig = useCallback(async (folder: string) => {
     try {
@@ -42,25 +39,14 @@ export function useSchemas(tree: TreeNode[], onError: (message: string) => void)
     for (const folder of folders ? folders.split("\n") : []) void reloadConfig(folder);
   }, [folders, reloadConfig]);
 
-  // Vault-Einstellungen (Typen außerhalb von Datenbanken).
-  useEffect(() => {
-    readPage(SETTINGS_FILE).then(
-      (text) => {
-        try {
-          const settings = JSON.parse(text) as Record<string, unknown>;
-          settingsRef.current = settings;
-          const types: Record<string, PropertyType> = {};
-          for (const [name, type] of Object.entries((settings.eigenschaften ?? {}) as Record<string, unknown>)) {
-            if (isPropertyType(type)) types[name] = type;
-          }
-          setVaultTypes(types);
-        } catch {
-          // Unlesbare Einstellungen: mit Standardwerten weiterarbeiten, Datei nicht überschreiben.
-        }
-      },
-      () => {},
-    );
-  }, []);
+  // Typen außerhalb von Datenbanken stehen in den Vault-Einstellungen.
+  const vaultTypes = useMemo(() => {
+    const types: Record<string, PropertyType> = {};
+    for (const [name, type] of Object.entries((vaultSettings.settings.eigenschaften ?? {}) as Record<string, unknown>)) {
+      if (isPropertyType(type)) types[name] = type;
+    }
+    return types;
+  }, [vaultSettings.settings]);
 
   const saveConfig = useCallback(
     async (folder: string, config: DatabaseConfig) => {
@@ -102,14 +88,7 @@ export function useSchemas(tree: TreeNode[], onError: (message: string) => void)
       await saveConfig(folder, { ...config, eigenschaften: { ...config.eigenschaften, [name]: { typ: type, ...(optionen ? { optionen } : {}) } } });
       return;
     }
-    const types = { ...vaultTypes, [name]: type };
-    setVaultTypes(types);
-    settingsRef.current = { version: 1, ...settingsRef.current, eigenschaften: types };
-    try {
-      await writePage(SETTINGS_FILE, `${JSON.stringify(settingsRef.current, null, 2)}\n`);
-    } catch (error) {
-      onError(`Die Vault-Einstellungen konnten nicht gespeichert werden: ${errorMessage(error)}`);
-    }
+    await vaultSettings.update((settings) => ({ ...settings, eigenschaften: { ...vaultTypes, [name]: type } }));
   };
 
   return { configs, reloadConfig, saveConfig, schemaForPage, setTypeForPage };

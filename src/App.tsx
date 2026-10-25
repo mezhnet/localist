@@ -1,7 +1,9 @@
+import { FileText, FolderOpen, Lock, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import "./App.css";
+import "./styles/index.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FolderPicker } from "./components/FolderPicker";
+import { Button } from "./components/ui";
 import { Workspace } from "./components/Workspace";
 import { errorMessage } from "./lib/autosave";
 import { ThemeProvider } from "./lib/theme";
@@ -84,27 +86,44 @@ function AppContent() {
   );
 
   if (phase === "starting") {
-    return <div className="splash">Lädt …</div>;
+    return (
+      <div className="splash" role="status">
+        Lädt …
+      </div>
+    );
   }
 
   if (!vault) {
     return (
       <main className="welcome">
-        <img className="welcome-logo" src="/localist.svg" alt="" width={72} height={72} />
-        <h1>Hallo Vault</h1>
-        <p className="welcome-app">Willkommen bei Localist</p>
-        <p>
-          Wähle einen Ordner als Vault. Alle Seiten werden dort als normale Markdown-Dateien gespeichert und bleiben auch
-          ohne diese App lesbar.
-        </p>
-        {error && (
-          <p className="notice error" role="alert">
-            {error}
+        <div className="welcome-card">
+          <img className="welcome-logo" src="/localist.svg" alt="" width={56} height={56} />
+          <p className="welcome-app">Willkommen bei Localist</p>
+          <h1>Hallo Vault</h1>
+          <p className="welcome-text">
+            Wähle einen Ordner als Vault. Alle Seiten werden dort als normale Markdown-Dateien gespeichert und bleiben auch
+            ohne diese App lesbar.
           </p>
-        )}
-        <button type="button" className="primary" onClick={() => void chooseVault()}>
-          Vault-Ordner öffnen …
-        </button>
+          {error && (
+            <p className="notice error" role="alert">
+              {error}
+            </p>
+          )}
+          <Button variant="primary" className="welcome-button" icon={<FolderOpen />} onClick={() => void chooseVault()}>
+            Vault-Ordner öffnen …
+          </Button>
+          <ul className="welcome-points">
+            <li>
+              <FileText aria-hidden="true" /> Normale Dateien in deinem Ordner
+            </li>
+            <li>
+              <WifiOff aria-hidden="true" /> Funktioniert komplett offline
+            </li>
+            <li>
+              <Lock aria-hidden="true" /> Keine Konten, keine Telemetrie
+            </li>
+          </ul>
+        </div>
         {picker}
       </main>
     );

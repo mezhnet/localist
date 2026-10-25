@@ -1,6 +1,7 @@
 // Kalenderansicht einer Datenbank (Monat oder Woche) nach einer Datums-Eigenschaft.
 // Einträge lassen sich auf andere Tage ziehen, ein Klick auf einen Tag legt einen Eintrag an,
 // Einträge ohne Datum stehen in der Liste "Ohne Datum".
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useRef, useState, type DragEvent } from "react";
 import {
   addDays,
@@ -16,12 +17,15 @@ import {
   weekTitle,
 } from "../lib/calendar";
 import type { DatabaseConfig, Row, ViewConfig } from "../lib/database";
+import { Badge, Button, cx, IconButton, Segmented } from "./ui";
 
 interface Props {
   rows: Row[];
   view: ViewConfig;
   config: DatabaseConfig;
   property: string;
+  /** Emoji-Icons der Seiten (aus dem Suchindex). */
+  icons: ReadonlyMap<string, string>;
   onOpen: (path: string) => void;
   /** Neues Datum für einen Eintrag (null = Datum entfernen). */
   onMove: (row: Row, value: string | null) => void;
@@ -33,7 +37,7 @@ function formatDay(day: string): string {
   return `${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}`;
 }
 
-export function CalendarView({ rows, view, config, property, onOpen, onMove, onCreate, onSaveView }: Props) {
+export function CalendarView({ rows, view, config, property, icons, onOpen, onMove, onCreate, onSaveView }: Props) {
   const mode = view.modus === "woche" ? "woche" : "monat";
   const [anchor, setAnchor] = useState(today);
   const [over, setOver] = useState<string | null>(null);
@@ -76,6 +80,7 @@ export function CalendarView({ rows, view, config, property, onOpen, onMove, onC
 
   const entry = (row: Row) => {
     const time = timeOf(row.values[property]);
+    const icon = typeof row.values.icon === "string" ? row.values.icon : icons.get(row.path);
     return (
       <button
         key={row.path}
@@ -90,7 +95,7 @@ export function CalendarView({ rows, view, config, property, onOpen, onMove, onC
         }}
       >
         {time && <span className="calendar-time">{time}</span>}
-        {typeof row.values.icon === "string" ? `${row.values.icon} ` : ""}
+        {icon ? `${icon} ` : ""}
         {row.title}
       </button>
     );
@@ -101,24 +106,28 @@ export function CalendarView({ rows, view, config, property, onOpen, onMove, onC
     <div className="calendar-layout">
       <div className="calendar">
         <div className="calendar-toolbar">
-          <button type="button" aria-label={mode === "monat" ? "Vorheriger Monat" : "Vorherige Woche"} onClick={() => step(-1)}>
-            ‹
-          </button>
-          <button type="button" onClick={() => setAnchor(today())}>
-            Heute
-          </button>
-          <button type="button" aria-label={mode === "monat" ? "Nächster Monat" : "Nächste Woche"} onClick={() => step(1)}>
-            ›
-          </button>
           <h2 className="calendar-title">{mode === "monat" ? monthTitle(year, month) : weekTitle(anchor)}</h2>
-          <div className="calendar-mode" role="group" aria-label="Zeitraum">
-            <button type="button" aria-pressed={mode === "monat"} onClick={() => onSaveView({ modus: "monat" })}>
-              Monat
-            </button>
-            <button type="button" aria-pressed={mode === "woche"} onClick={() => onSaveView({ modus: "woche" })}>
-              Woche
-            </button>
+          <div className="calendar-nav">
+            <IconButton size="sm" label={mode === "monat" ? "Vorheriger Monat" : "Vorherige Woche"} onClick={() => step(-1)}>
+              <ChevronLeft />
+            </IconButton>
+            <Button size="sm" variant="ghost" onClick={() => setAnchor(today())}>
+              Heute
+            </Button>
+            <IconButton size="sm" label={mode === "monat" ? "Nächster Monat" : "Nächste Woche"} onClick={() => step(1)}>
+              <ChevronRight />
+            </IconButton>
           </div>
+          <Segmented
+            size="sm"
+            label="Zeitraum"
+            value={mode}
+            onChange={(modus) => onSaveView({ modus })}
+            options={[
+              { value: "monat", label: "Monat" },
+              { value: "woche", label: "Woche" },
+            ]}
+          />
         </div>
         <div className={`calendar-grid ${mode}`} role="grid" aria-label={`Kalender nach ${property}`}>
           <div className="calendar-row calendar-head" role="row">
@@ -135,12 +144,12 @@ export function CalendarView({ rows, view, config, property, onOpen, onMove, onC
                   key={day}
                   role="gridcell"
                   aria-label={formatDay(day)}
-                  className={[
+                  className={cx(
                     "calendar-day",
-                    mode === "monat" && Number(day.slice(5, 7)) !== month ? "outside" : "",
-                    day === now ? "today" : "",
-                    over === day ? "drop-target" : "",
-                  ].join(" ")}
+                    mode === "monat" && Number(day.slice(5, 7)) !== month && "outside",
+                    day === now && "today",
+                    over === day && "drop-target",
+                  )}
                   title="Klicken legt einen Eintrag an diesem Tag an"
                   onClick={() => onCreate(day)}
                   {...dropProps(day)}
@@ -148,7 +157,7 @@ export function CalendarView({ rows, view, config, property, onOpen, onMove, onC
                   <span className="calendar-day-number">{mode === "woche" ? `${WEEKDAYS[weekDays(day).indexOf(day)]} ${day.slice(8, 10)}.` : Number(day.slice(8, 10))}</span>
                   {(byDay.get(day) ?? []).map(entry)}
                   <span className="calendar-add" aria-hidden="true">
-                    +
+                    <Plus />
                   </span>
                 </div>
               ))}
@@ -158,7 +167,7 @@ export function CalendarView({ rows, view, config, property, onOpen, onMove, onC
       </div>
       <aside className={`calendar-undated${over === "ohne" ? " drop-target" : ""}`} aria-label="Ohne Datum" {...dropProps("ohne")}>
         <h3>
-          Ohne Datum <span className="kanban-count">{undated.length}</span>
+          Ohne Datum <Badge>{undated.length}</Badge>
         </h3>
         {undated.length === 0 ? <p className="muted-small">Alle Einträge haben ein Datum.</p> : undated.map(entry)}
       </aside>

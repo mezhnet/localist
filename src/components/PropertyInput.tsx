@@ -1,8 +1,10 @@
 // Eingabefeld für einen Eigenschaftswert, passend zum Typ. Wird in der Eigenschaften-Leiste
 // einer Seite und in den Zellen der Tabellenansicht verwendet.
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { Clock, ExternalLink, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { asList, normalizeValue, type PropertyType, type PropertyValue } from "../lib/properties";
+import { cx, IconButton, Input } from "./ui";
 
 interface Props {
   type: PropertyType;
@@ -56,9 +58,9 @@ export function PropertyInput({ type, value, options = [], label, onChange }: Pr
             </datalist>
           )}
           {type === "url" && typeof value === "string" && value !== "" && (
-            <button type="button" className="prop-open" title="Im Browser öffnen" onClick={() => void openLink(value)}>
-              ↗
-            </button>
+            <IconButton size="sm" className="prop-open" label="Im Browser öffnen" onClick={() => void openLink(value)}>
+              <ExternalLink />
+            </IconButton>
           )}
         </span>
       );
@@ -86,7 +88,8 @@ function TextInput(props: {
   const [draft, setDraft] = useState(props.value);
   useEffect(() => setDraft(props.value), [props.value]);
   return (
-    <input
+    <Input
+      variant="inline"
       type={props.inputType}
       className={props.className}
       aria-label={props.label}
@@ -116,26 +119,27 @@ function DateInput({ label, value, onCommit }: { label: string; value: string; o
   const shown = withTime ? (value.includes("T") ? value : value ? `${value}T09:00` : "") : value.slice(0, 10);
   return (
     <span className="prop-date">
-      <input
+      <Input
+        variant="inline"
         type={withTime ? "datetime-local" : "date"}
         className="prop-input"
         aria-label={label}
         value={shown}
         onChange={(event) => onCommit(event.target.value)}
       />
-      <button
-        type="button"
-        className={`prop-time-toggle${withTime ? " active" : ""}`}
-        title={withTime ? "Uhrzeit entfernen" : "Uhrzeit hinzufügen"}
-        aria-label={withTime ? "Uhrzeit entfernen" : "Uhrzeit hinzufügen"}
+      <IconButton
+        size="sm"
+        className={cx("prop-time-toggle", withTime && "active")}
+        active={withTime}
+        label={withTime ? "Uhrzeit entfernen" : "Uhrzeit hinzufügen"}
         onClick={() => {
           const next = !withTime;
           setWithTime(next);
           if (value) onCommit(next ? (value.includes("T") ? value : `${value}T09:00`) : value.slice(0, 10));
         }}
       >
-        🕒
-      </button>
+        <Clock />
+      </IconButton>
     </span>
   );
 }
@@ -154,11 +158,12 @@ function MultiSelect({ label, values, options, onCommit }: { label: string; valu
         <span key={item} className="prop-chip">
           {item}
           <button type="button" aria-label={`„${item}“ entfernen`} onClick={() => onCommit(values.filter((v) => v !== item))}>
-            ×
+            <X aria-hidden="true" />
           </button>
         </span>
       ))}
-      <input
+      <Input
+        variant="inline"
         className="prop-input prop-multi-input"
         aria-label={label}
         placeholder={values.length === 0 ? "Leer" : "+"}

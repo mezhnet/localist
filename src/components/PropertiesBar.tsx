@@ -1,5 +1,6 @@
 // Eigenschaften-Leiste oben auf einer Seite (wie bei Notion). Werte stehen im Frontmatter;
 // die Typen kommen aus der Datenbank des Ordners oder aus den Vault-Einstellungen.
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
   inferType,
@@ -10,6 +11,7 @@ import {
   type PropertyValue,
 } from "../lib/properties";
 import { PropertyInput } from "./PropertyInput";
+import { Button, Input, Menu, MenuItem, MenuLabel, MenuSeparator, Select, type MenuAnchor } from "./ui";
 
 export interface PropertySchema {
   /** Typen bekannter Eigenschaften (Datenbank oder Vault-Einstellungen). */
@@ -30,7 +32,7 @@ interface Props {
 
 export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove }: Props) {
   const [adding, setAdding] = useState(false);
-  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ name: string; anchor: MenuAnchor } | null>(null);
 
   const names = [...new Set([...schema.always, ...Object.keys(values)])].filter(
     (name) => !RESERVED_FIELDS.has(name) && !isNested(values[name]),
@@ -46,8 +48,12 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
             <button
               type="button"
               className="property-name"
+              aria-haspopup="menu"
               title={`${typeInfo(type).label} – klicken für Optionen`}
-              onClick={() => setMenuFor(menuFor === name ? null : name)}
+              onClick={(event) => {
+                const element = event.currentTarget;
+                setMenu((current) => (current?.name === name ? null : { name, anchor: { element } }));
+              }}
             >
               <span className="property-icon" aria-hidden="true">
                 {typeInfo(type).icon}
@@ -63,36 +69,24 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
                 onChange={(value) => onSetValue(name, value)}
               />
             </div>
-            {menuFor === name && (
-              <div className="property-menu" role="menu">
-                <label>
-                  Typ{" "}
-                  <select
-                    aria-label={`Typ von „${name}“`}
-                    value={type}
-                    onChange={(event) => {
-                      onSetType(name, event.target.value as PropertyType);
-                      setMenuFor(null);
-                    }}
+            {menu?.name === name && (
+              <Menu anchor={menu.anchor} label={`Eigenschaft „${name}“`} onClose={() => setMenu(null)}>
+                <MenuLabel>Typ</MenuLabel>
+                {PROPERTY_TYPES.map((info) => (
+                  <MenuItem
+                    key={info.type}
+                    icon={<span className="column-type">{info.icon}</span>}
+                    checked={type === info.type}
+                    onSelect={() => onSetType(name, info.type)}
                   >
-                    {PROPERTY_TYPES.map((info) => (
-                      <option key={info.type} value={info.type}>
-                        {info.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="danger"
-                  onClick={() => {
-                    setMenuFor(null);
-                    onRemove(name);
-                  }}
-                >
+                    {info.label}
+                  </MenuItem>
+                ))}
+                <MenuSeparator />
+                <MenuItem icon={<Trash2 />} danger onSelect={() => onRemove(name)}>
                   Eigenschaft entfernen
-                </button>
-              </div>
+                </MenuItem>
+              </Menu>
             )}
           </div>
         );
@@ -107,9 +101,9 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
           onCancel={() => setAdding(false)}
         />
       ) : (
-        <button type="button" className="property-add" onClick={() => setAdding(true)}>
-          + Eigenschaft hinzufügen
-        </button>
+        <Button variant="ghost" size="sm" className="property-add" icon={<Plus />} onClick={() => setAdding(true)}>
+          Eigenschaft hinzufügen
+        </Button>
       )}
     </div>
   );
@@ -147,20 +141,20 @@ export function AddPropertyForm({
         if (trimmed && !error) onAdd(trimmed, type);
       }}
     >
-      <input autoFocus aria-label="Name der Eigenschaft" placeholder="Name" value={name} onChange={(event) => setName(event.target.value)} />
-      <select aria-label="Typ der neuen Eigenschaft" value={type} onChange={(event) => setType(event.target.value as PropertyType)}>
+      <Input autoFocus inputSize="sm" aria-label="Name der Eigenschaft" placeholder="Name" value={name} onChange={(event) => setName(event.target.value)} />
+      <Select inputSize="sm" aria-label="Typ der neuen Eigenschaft" value={type} onChange={(event) => setType(event.target.value as PropertyType)}>
         {PROPERTY_TYPES.map((info) => (
           <option key={info.type} value={info.type}>
             {info.label}
           </option>
         ))}
-      </select>
-      <button type="submit" disabled={!trimmed || !!error}>
+      </Select>
+      <Button type="submit" variant="primary" size="sm" disabled={!trimmed || !!error}>
         Hinzufügen
-      </button>
-      <button type="button" onClick={onCancel}>
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onCancel}>
         Abbrechen
-      </button>
+      </Button>
       {error && <span className="form-error">{error}</span>}
     </form>
   );

@@ -1,6 +1,8 @@
 // Kopf einer Seite wie bei Notion: Cover-Bild, Icon (Emoji) und Knöpfe zum Hinzufügen.
 // Beides steht im Frontmatter der Seite (icon, cover); PageView übernimmt das Speichern.
+import { Image, Smile, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Button, Input } from "./ui";
 
 const EMOJIS = [
   "📄", "📝", "📌", "📎", "📁", "🗂️", "📅", "🗓️", "✅", "☑️", "💡", "🔥",
@@ -26,12 +28,12 @@ export function PageHeader({ icon, coverUrl, hasCover, onSetIcon, onPickCover, o
       {hasCover && (
         <div className="page-cover" style={coverUrl ? { backgroundImage: `url("${coverUrl}")` } : undefined}>
           <div className="page-cover-actions">
-            <button type="button" onClick={onPickCover}>
+            <Button size="sm" variant="secondary" onClick={onPickCover}>
               Cover ändern
-            </button>
-            <button type="button" onClick={onRemoveCover}>
+            </Button>
+            <Button size="sm" variant="secondary" onClick={onRemoveCover}>
               Entfernen
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -43,14 +45,14 @@ export function PageHeader({ icon, coverUrl, hasCover, onSetIcon, onPickCover, o
         )}
         <div className="page-header-actions">
           {!icon && (
-            <button type="button" onClick={() => setPickerOpen(true)}>
-              🙂 Icon hinzufügen
-            </button>
+            <Button variant="ghost" size="sm" icon={<Smile />} onClick={() => setPickerOpen(true)}>
+              Icon hinzufügen
+            </Button>
           )}
           {!hasCover && (
-            <button type="button" onClick={onPickCover}>
-              🖼️ Cover hinzufügen
-            </button>
+            <Button variant="ghost" size="sm" icon={<Image />} onClick={onPickCover}>
+              Cover hinzufügen
+            </Button>
           )}
         </div>
         {pickerOpen && (
@@ -107,19 +109,22 @@ function EmojiPicker({ onPick, onRemove, onClose }: { onPick: (emoji: string) =>
           if (own.trim()) onPick(own.trim());
         }}
       >
-        <input
+        <Input
+          inputSize="sm"
           aria-label="Eigenes Emoji"
           placeholder="Eigenes Emoji einfügen (Win + .)"
           value={own}
           maxLength={16}
           onChange={(event) => setOwn(event.target.value)}
         />
-        <button type="submit">Übernehmen</button>
+        <Button type="submit" size="sm">
+          Übernehmen
+        </Button>
       </form>
       {onRemove && (
-        <button type="button" className="emoji-remove" onClick={onRemove}>
+        <Button variant="ghost" size="sm" className="emoji-remove" icon={<Trash2 />} onClick={onRemove}>
           Icon entfernen
-        </button>
+        </Button>
       )}
     </div>
   );

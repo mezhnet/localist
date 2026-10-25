@@ -1,0 +1,195 @@
+/* Inhalte der Dialoge: Such-Listen (Strg+P, Volltextsuche, Vorlagen), Einstellungen und Ordnerauswahl. */
+
+.list-dialog-search {
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.list-dialog-search .ui-input-wrap__icon {
+  left: var(--space-4);
+}
+
+.list-dialog-search .ui-input {
+  padding-left: calc(var(--size-icon-lg) + var(--space-3));
+}
+
+.dialog-list {
+  margin: 0;
+  padding: var(--space-1-5);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.dialog-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.dialog-list li.selected {
+  background: var(--color-hover);
+}
+
+.dialog-list li:hover {
+  background: var(--color-hover);
+}
+
+.dialog-list .dialog-empty {
+  justify-content: center;
+  padding: var(--space-6) var(--space-3);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.dialog-list .dialog-empty:hover {
+  background: none;
+}
+
+.dialog-item-icon {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  color: var(--color-text-faint);
+}
+
+.dialog-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--border-width);
+  min-width: 0;
+}
+
+.dialog-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+}
+
+.dialog-sub {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.dialog-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.dialog-snippet mark {
+  padding: 0 var(--border-width);
+  border-radius: var(--radius-xs);
+  background: var(--color-highlight);
+  color: inherit;
+}
+
+.dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.dialog-footer .ui-kbd {
+  margin-right: var(--space-0-5);
+}
+
+/* ---------- Einstellungen ---------- */
+.settings-section {
+  padding: var(--space-4) var(--space-6);
+}
+
+.settings-section + .settings-section {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.settings-section:last-child {
+  padding-bottom: var(--space-6);
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+}
+
+.settings-text {
+  min-width: 0;
+}
+
+.settings-text h3 {
+  margin: 0 0 var(--space-0-5);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.settings-text p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.settings-text .settings-vault-name {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.settings-text .settings-path {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Ordnerauswahl (Handy) ---------- */
+.folder-picker-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.folder-picker .dialog-list {
+  min-height: var(--space-30);
+}
+
+.folder-picker .notice {
+  margin: var(--space-2) var(--space-4) 0;
+}
+
+.folder-picker-new {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.folder-picker-new-input {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .settings-section {
+    padding: var(--space-4);
+  }
+
+  .dialog-footer {
+    display: none;
+  }
+}

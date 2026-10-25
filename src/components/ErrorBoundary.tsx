@@ -2,6 +2,7 @@
 // deutsche Meldung statt einer leeren Seite. Die Dateien im Vault sind davon nicht betroffen.
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { errorMessage } from "../lib/autosave";
+import { Button } from "./ui";
 
 interface Props {
   children: ReactNode;
@@ -32,9 +33,9 @@ export class ErrorBoundary extends Component<Props, State> {
           war, liegt unverändert im Vault.
         </p>
         <p className="notice error">{errorMessage(this.state.error)}</p>
-        <button type="button" className="primary" onClick={() => window.location.reload()}>
+        <Button variant="primary" onClick={() => window.location.reload()}>
           App neu laden
-        </button>
+        </Button>
       </main>
     );
   }

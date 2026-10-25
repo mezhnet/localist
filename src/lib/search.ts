@@ -8,6 +8,8 @@ export interface IndexEntry {
   path: string;
   title: string;
   content: string;
+  /** Änderungszeit der Datei in Millisekunden seit 1970 (für „Zuletzt bearbeitet“). */
+  modified?: number;
 }
 
 export interface SearchHit {

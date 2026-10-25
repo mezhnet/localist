@@ -9,7 +9,7 @@ import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-ap
 const ROOT = "beispiel-vault (Browser-Vorschau)";
 const PREFIX = "../../beispiel-vault/";
 
-const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispiel-vault/**/*.yaml"], {
+const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispiel-vault/**/*.yaml", "../../beispiel-vault/.localist/settings.json"], {
   query: "?raw",
   import: "default",
   eager: true,
@@ -37,16 +37,21 @@ export function installDevBackend(): void {
   const files = new Map<string, string>();
   const folders = new Set<string>();
   const assets = new Map<string, string>();
+  /** Änderungszeit je Datei (für „Zuletzt bearbeitet“ auf der Startseite). */
+  const modified = new Map<string, number>();
+  const touch = (path: string) => modified.set(path, Date.now());
 
   const addParents = (path: string) => {
     const parts = path.split("/");
     for (let i = 1; i < parts.length; i++) folders.add(parts.slice(0, i).join("/"));
   };
-  for (const [key, text] of Object.entries(pageSeed)) {
+  // Beispielseiten bekommen gestaffelte Änderungszeiten, damit die Startseite eine Reihenfolge zeigt.
+  Object.entries(pageSeed).forEach(([key, text], index) => {
     const rel = key.slice(PREFIX.length);
     files.set(rel, text as string);
+    modified.set(rel, Date.now() - (index + 1) * 47 * 60_000);
     addParents(rel);
-  }
+  });
   for (const [key, url] of Object.entries(assetSeed)) {
     const rel = key.slice(PREFIX.length);
     assets.set(rel, url as string);
@@ -90,6 +95,8 @@ export function installDevBackend(): void {
       if (path === from || path.startsWith(`${from}/`)) {
         files.delete(path);
         files.set(to + path.slice(from.length), text);
+        modified.set(to + path.slice(from.length), modified.get(path) ?? Date.now());
+        modified.delete(path);
       }
     }
     for (const folder of [...folders]) {
@@ -136,12 +143,14 @@ export function installDevBackend(): void {
         }
         case "write_page":
           files.set(a.path, a.content);
+          touch(a.path);
           setTimeout(() => notify({ kind: "modified", path: a.path }), 250);
           return null;
         case "create_page": {
           const path = join(a.dir, `${validate(a.title)}.md`);
           if (exists(path)) throw `Hier gibt es schon eine Seite „${a.title}“.`;
           files.set(path, `---\nid: ${crypto.randomUUID()}\n---\n`);
+          touch(path);
           notify({ kind: "created", path });
           return path;
         }
@@ -189,7 +198,7 @@ export function installDevBackend(): void {
         case "vault_index":
           return [...files]
             .filter(([path]) => /\.md$/i.test(path) && !hidden(path))
-            .map(([path, content]) => ({ path, title: nameOf(path).replace(/\.md$/i, ""), content }));
+            .map(([path, content]) => ({ path, title: nameOf(path).replace(/\.md$/i, ""), content, modified: modified.get(path) ?? 0 }));
         case "resolve_attachment": {
           const dir = parentOf(a.page);
           const target = decodeURIComponent(a.target);
@@ -223,6 +232,7 @@ export function installDevBackend(): void {
     externalWrite(path, content) {
       const isNew = !files.has(path);
       files.set(path, content);
+      touch(path);
       addParents(path);
       notify({ kind: isNew ? "created" : "modified", path });
     },

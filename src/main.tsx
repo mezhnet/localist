@@ -1,3 +1,5 @@
+// Schrift Inter, mit der App gebündelt (OFL-Lizenz) – es wird nichts aus dem Internet geladen.
+import "@fontsource-variable/inter";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import React from "react";
 import ReactDOM from "react-dom/client";

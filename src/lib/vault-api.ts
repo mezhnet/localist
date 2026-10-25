@@ -98,8 +98,8 @@ export async function pickImage(): Promise<string | null> {
   return typeof result === "string" ? result : null;
 }
 
-/** Suchindex aller Seiten (Titel und Inhalt). Die Rust-Seite hält ihn im Cache-Ordner der App aktuell. */
-export function vaultIndex(): Promise<{ path: string; title: string; content: string }[]> {
+/** Suchindex aller Seiten (Titel, Inhalt, Änderungszeit). Die Rust-Seite hält ihn im Cache-Ordner der App aktuell. */
+export function vaultIndex(): Promise<{ path: string; title: string; content: string; modified?: number }[]> {
   return invoke("vault_index");
 }
 

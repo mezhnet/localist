@@ -1,0 +1,623 @@
+/* Datenbank: Kopf mit Ansichten-Reitern und Werkzeugleiste, Tabelle, Kanban und Kalender. */
+
+.database {
+  flex: 1;
+  width: 100%;
+  padding: var(--space-8) var(--space-12) var(--space-30);
+}
+
+.database-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.database-header h1 {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.database-icon {
+  display: grid;
+  place-items: center;
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-softer);
+  color: var(--color-accent);
+}
+
+.database-icon svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+.database-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-1);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.view-tabs {
+  flex: 1 1 auto;
+  /* Platz für den Unterstrich des gewählten Reiters */
+  padding-bottom: 0;
+  overflow: visible;
+}
+
+.view-tab-input.ui-input {
+  width: var(--table-col-width);
+}
+
+.database-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.group-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  margin-right: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.database-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  max-width: var(--dialog-width-lg);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  animation: ui-pop var(--duration-fast) var(--ease-out);
+}
+
+.panel-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.panel-value {
+  min-width: var(--table-col-width);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.database-count {
+  margin-top: var(--space-3);
+}
+
+/* ---------- Tabelle ---------- */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.database-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-md);
+}
+
+.database-table th,
+.database-table td {
+  height: var(--size-table-row);
+  min-width: var(--table-col-width);
+  max-width: var(--table-col-max);
+  padding: 0 var(--space-1);
+  border-bottom: var(--border-width) solid var(--color-border);
+  border-right: var(--border-width) solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.database-table th:last-child,
+.database-table td:last-child {
+  min-width: var(--size-control-xl);
+  border-right: none;
+}
+
+.database-table th {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+}
+
+.database-table .col-name {
+  min-width: var(--table-name-width);
+}
+
+.database-table tbody tr:hover td {
+  background: var(--color-hover);
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  height: var(--size-control-md);
+  padding: 0 var(--space-1-5);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+button.column-header:hover {
+  background: var(--color-hover);
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.name-cell-icon {
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-icon-lg);
+  flex-shrink: 0;
+  color: var(--color-text-faint);
+}
+
+.name-cell-icon svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+.name-input.ui-input {
+  font-weight: var(--font-weight-medium);
+}
+
+.open-button.ui-button {
+  flex-shrink: 0;
+  opacity: 0;
+  color: var(--color-text-muted);
+}
+
+.database-table tr:hover .open-button,
+.open-button:focus-visible {
+  opacity: 1;
+}
+
+.table-empty {
+  padding: var(--space-6) var(--space-3) !important;
+  color: var(--color-text-muted);
+  text-align: center !important;
+}
+
+.table-add-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  width: 100%;
+  height: var(--size-table-row);
+  padding: 0 var(--space-2);
+  border: none;
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: none;
+  color: var(--color-text-faint);
+  font-size: var(--font-size-sm);
+}
+
+.table-add-row:hover {
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+}
+
+.table-add-row svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+/* ---------- Status-Farben (Kanban-Spalten) ---------- */
+.kanban-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-neutral-soft);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.kanban-label::before {
+  content: "";
+  width: var(--size-dot);
+  height: var(--size-dot);
+  border-radius: var(--radius-full);
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.kanban-label.status-in-arbeit {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.kanban-label.status-erledigt,
+.kanban-label.status-fertig {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.kanban-label.status-ohne {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Kanban ---------- */
+.kanban {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding: var(--space-1) 0 var(--space-4);
+}
+
+.kanban-column {
+  flex: 0 0 var(--kanban-column-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: var(--space-30);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.kanban-column.drop-target {
+  background: var(--color-accent-softer);
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-accent);
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-0-5) var(--space-1) var(--space-1);
+}
+
+.kanban-card {
+  padding: var(--space-2-5) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.kanban-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.kanban-card:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-focus-ring);
+}
+
+.kanban-card-title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1-5);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+.kanban-card-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-faint);
+}
+
+.kanban-card-icon svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  margin-top: var(--space-0-5);
+}
+
+.kanban-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.kanban-card-details span {
+  padding: 0 var(--space-1-5);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--size-badge);
+}
+
+.kanban-add.ui-button {
+  width: 100%;
+  justify-content: flex-start;
+  color: var(--color-text-faint);
+}
+
+/* ---------- Kalender ---------- */
+.calendar-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.calendar {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.calendar-title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+
+.calendar-grid {
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.calendar-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-row + .calendar-row {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.calendar-head > div {
+  padding: var(--space-1-5) var(--space-2);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.calendar-head > div + div,
+.calendar-day + .calendar-day {
+  border-left: var(--border-width) solid var(--color-border);
+}
+
+.calendar-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-height: var(--calendar-day-height);
+  padding: var(--space-1);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.calendar-grid.woche .calendar-day {
+  min-height: var(--calendar-week-height);
+}
+
+.calendar-day:hover {
+  background: var(--color-hover);
+}
+
+.calendar-day.outside {
+  background: var(--color-bg-subtle);
+}
+
+.calendar-day.outside .calendar-day-number {
+  color: var(--color-text-faint);
+}
+
+.calendar-day.drop-target {
+  background: var(--color-accent-soft);
+}
+
+.calendar-day-number {
+  align-self: flex-end;
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--size-avatar);
+  height: var(--size-avatar);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-day.today .calendar-day-number {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.calendar-entry {
+  display: block;
+  width: 100%;
+  padding: var(--space-0-5) var(--space-1-5);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  text-align: left;
+  /* In schmalen Tageszellen darf der Titel umbrechen statt abgeschnitten zu werden (möglichst zwischen Wörtern). */
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  cursor: grab;
+}
+
+.calendar-entry:hover {
+  border-color: var(--color-border-strong);
+}
+
+.calendar-time {
+  margin-right: var(--space-1);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.calendar-add {
+  position: absolute;
+  top: var(--space-1-5);
+  left: var(--space-1-5);
+  display: inline-flex;
+  color: var(--color-text-faint);
+  opacity: 0;
+}
+
+.calendar-add svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.calendar-day:hover .calendar-add {
+  opacity: 1;
+}
+
+.calendar-undated {
+  flex: 0 0 var(--calendar-undated-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: var(--space-30);
+  padding: var(--space-3);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+}
+
+.calendar-undated.drop-target {
+  border-color: var(--color-accent);
+  background: var(--color-accent-softer);
+}
+
+.calendar-undated h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 768px) {
+  .database {
+    padding: var(--space-5) var(--space-3) var(--space-16);
+  }
+
+  .database-header {
+    margin-bottom: var(--space-3);
+  }
+
+  .database-header h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .database-icon {
+    width: var(--size-control-md);
+    height: var(--size-control-md);
+  }
+
+  .database-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-tabs {
+    overflow-x: auto;
+  }
+
+  .group-select > span {
+    display: none;
+  }
+
+  .open-button.ui-button {
+    opacity: 1;
+  }
+
+  .database-table .col-name {
+    min-width: calc(var(--table-name-width) * 0.8);
+  }
+
+  .kanban-column {
+    flex-basis: calc(var(--kanban-column-width) - var(--space-8));
+  }
+
+  .calendar-layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendar-undated {
+    flex-basis: auto;
+  }
+
+  .calendar-day {
+    min-height: var(--space-16);
+    padding: var(--space-0-5);
+  }
+
+  .calendar-head > div {
+    padding: var(--space-1);
+  }
+
+  .calendar-entry {
+    padding: var(--border-width) var(--space-0-5);
+    font-size: var(--font-size-2xs);
+  }
+}
