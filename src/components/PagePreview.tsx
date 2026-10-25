@@ -21,6 +21,8 @@ interface Props {
 
 /** So lange darf eine neue Fassung zum Laden brauchen, bevor sie trotzdem gezeigt wird. */
 const SWAP_TIMEOUT_MS = 2000;
+/** So lange wartet eine geladene Fassung höchstens auf die Bestätigung ihrer Scrollposition. */
+const SCROLL_CONFIRM_MS = 500;
 
 interface Frame {
   version: number;
@@ -61,14 +63,18 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
       if (message.typ === "bereit") {
         element.contentWindow?.postMessage(themeMessage(actions.current.resolved), "*");
         if (waiting && !actions.current.fitContent) {
-          element.contentWindow?.postMessage(scrollMessage(scrollY.current), "*");
-          window.setTimeout(() => show(frameVersion), 60);
+          // Erst an die alte Stelle scrollen, dann zeigen (sobald die Seite die Position bestätigt).
+          if (scrollY.current > 0) {
+            element.contentWindow?.postMessage(scrollMessage(scrollY.current), "*");
+            window.setTimeout(() => show(frameVersion), SCROLL_CONFIRM_MS);
+          } else window.setTimeout(() => show(frameVersion), 30);
         }
       } else if (message.typ === "groesse") {
         if (isVisible || waiting) setHeight(message.hoehe);
         if (waiting && actions.current.fitContent) show(frameVersion);
       } else if (message.typ === "position") {
         if (isVisible) scrollY.current = message.y;
+        else if (waiting && !actions.current.fitContent && Math.abs(message.y - scrollY.current) <= 2) show(frameVersion);
       } else if (isVisible && message.typ === "link") actions.current.onOpenLink(message.pfad);
       else if (isVisible && message.typ === "extern") actions.current.onOpenExternal(message.url);
       else if (isVisible && message.typ === "taste") {

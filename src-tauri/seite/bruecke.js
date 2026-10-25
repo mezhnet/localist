@@ -54,7 +54,10 @@
   // Von der App: Hell/Dunkel und die Scrollposition nach dem Neuladen (damit die Vorschau nicht springt).
   var gewuenscht = -1;
   var scrollen = function () {
-    if (gewuenscht >= 0) window.scrollTo(0, gewuenscht);
+    if (gewuenscht < 0) return;
+    window.scrollTo(0, gewuenscht);
+    // Sofort bestätigen, wo die Seite jetzt steht (die App zeigt sie erst dann).
+    senden({ typ: "position", y: Math.round(window.scrollY) });
   };
   window.addEventListener("message", function (event) {
     if (event.source !== window.parent) return;
@@ -67,6 +70,8 @@
     } else if (daten.typ === "scrollen" && typeof daten.y === "number" && daten.y >= 0) {
       gewuenscht = daten.y;
       scrollen();
+      // Nach dem ersten Zeichnen noch einmal, falls die Seite vorher noch nicht hoch genug war.
+      requestAnimationFrame(scrollen);
     }
   });
   window.addEventListener("load", scrollen);

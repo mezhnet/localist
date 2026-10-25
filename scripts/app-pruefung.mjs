@@ -116,8 +116,8 @@ try {
 
   // HTML-Seite
   await evaluate(`document.querySelector('.tree [title="Notizen/DNS.html"]').click()`);
-  await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('iframe.html-frame').style.height`, "HTML-Seite mit gemeldeter Höhe");
-  const frameInfo = await evaluate(`(() => { const f = document.querySelector('iframe.html-frame'); const r = f.getBoundingClientRect(); return { src: f.src, sandbox: f.getAttribute('sandbox'), hoehe: f.style.height, x: r.x, y: r.y }; })()`);
+  await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('.html-preview').style.height`, "HTML-Seite mit gemeldeter Höhe");
+  const frameInfo = await evaluate(`(() => { const f = document.querySelector('iframe.html-frame'); const r = f.getBoundingClientRect(); return { src: f.src, sandbox: f.getAttribute('sandbox'), hoehe: document.querySelector('.html-preview').style.height, x: r.x, y: r.y }; })()`);
   report.push(`HTML-Seite „DNS“ geöffnet: src ${frameInfo.src}, sandbox="${frameInfo.sandbox}", Höhe von der Brücke ${frameInfo.hoehe}`);
   // Im iframe nachsehen (eigener Ausführungskontext): Bild aus dem Vault geladen? Kein Tauri?
   await sleep(500);
@@ -161,6 +161,20 @@ try {
     report.push(`Klick auf den Link „Ideen“ in der HTML-Seite öffnet die Notiz in der App: ${opened ? "ja" : "NEIN"}`);
   } else {
     report.push("Das iframe wurde in der Zielliste nicht gefunden.");
+  }
+
+  // Code-Editor (Etappe 11): „Code“ und „Geteilt“ unter der CSP der App
+  const pickMode = (name) => evaluate(`[...document.querySelectorAll('[aria-label="Ansicht (Strg+E)"] button')].find((b) => b.textContent === "${name}")?.click()`);
+  {
+    await evaluate(`document.querySelector('.tree [title="Notizen/DNS.html"]').click()`);
+    await waitFor(`document.querySelector('[aria-label="Ansicht (Strg+E)"]')`, "HTML-Seite");
+    await pickMode("Code");
+    const code = await waitFor(`document.querySelector('.cm-editor .cm-line') && document.querySelector('.cm-lineNumbers')`, "Code-Editor").catch(() => false);
+    report.push(`Ansicht „Code“: CodeMirror mit Zeilennummern ${code ? "läuft" : "läuft NICHT"}: ${await shot("app-code")}`);
+    await pickMode("Geteilt");
+    const split = await waitFor(`document.querySelector('.html-workspace.is-geteilt .cm-editor') && document.querySelector('.html-workspace.is-geteilt iframe.html-frame')`, "Geteilt").catch(() => false);
+    report.push(`Ansicht „Geteilt“: Editor und Vorschau ${split ? "nebeneinander" : "NICHT da"}: ${await shot("app-geteilt")}`);
+    await pickMode("Lesen");
   }
 
   report.push(problems.length === 0 ? "Konsole: keine Fehler und keine CSP-Verstöße." : `Konsole: ${problems.length} Meldungen:\n  ${problems.join("\n  ")}`);

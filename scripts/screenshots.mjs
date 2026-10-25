@@ -1,20 +1,21 @@
 // Screenshots der Browser-Vorschau für docs/screenshots/<etappe>/, jeweils hell und dunkel, am PC (1280 × 800)
 // und auf dem Handy (360 × 740). Szenen "etappe9": Startseite, Notiz, Tabelle, Kanban, Kalender.
 // Szenen "etappe10": HTML-Seite in der abgeschotteten Anzeige, „Neu“-Menü und „Verschieben nach …“.
+// Szenen "etappe11": Code-Editor in „Code“ und „Geteilt“, Suchen und Ersetzen, Autovervollständigung.
 // Nutzt das installierte Microsoft Edge unsichtbar im Hintergrund über das DevTools-Protokoll, ohne zusätzliche Pakete.
 // Damit Kanban und Kalender etwas zeigen, legt das Skript einige Beispiel-Einträge an – nur im Arbeitsspeicher
 // der Vorschau (dev-backend.ts), echte Dateien ändern sich nicht.
 //
 // Aufruf, während die Vorschau läuft (z. B. `npm run dev -- --port 1430`):
-//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9 [etappe9|etappe10]
-import { spawn } from "node:child_process";
+//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9 [etappe9|etappe10|etappe11]
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const [base = "http://localhost:1430", outDir = "docs/screenshots/etappe-9", scenes = "etappe9"] = process.argv.slice(2);
 const EDGE = process.env.EDGE_PATH ?? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
-const PORT = 9333;
+const PORT = 9400 + Math.floor(Math.random() * 500);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const profile = mkdtempSync(join(tmpdir(), "localist-screenshots-"));
@@ -139,6 +140,40 @@ async function runHtml(theme, device) {
   await shot(`verschieben-${theme}`);
 }
 
+const key = async (keyName, code, keyCode, modifiers = 0) => {
+  await send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: keyName, code, windowsVirtualKeyCode: keyCode, modifiers });
+  await send("Input.dispatchKeyEvent", { type: "keyUp", key: keyName, code, windowsVirtualKeyCode: keyCode, modifiers });
+};
+
+async function runEditor(theme, device) {
+  const prefix = await openVault(theme, device);
+  await evaluate(`localStorage.setItem("html-ansicht", "geteilt"); true`);
+  await click('.tree [title="Notizen"]');
+  await waitFor(`document.querySelector('.tree [title="Notizen/DNS.html"]')`, "DNS.html im Ordnerbaum");
+  await click('.tree [title="Notizen/DNS.html"]');
+  await waitFor(`document.querySelector('.cm-editor') && document.querySelector('iframe.html-frame')`, "Geteilt mit Editor und Vorschau");
+  await sleep(1500);
+  await shot(`${prefix}geteilt-${theme}`);
+  if (prefix) return;
+  await evaluate(`[...document.querySelectorAll('[aria-label="Ansicht (Strg+E)"] button')].find((b) => b.textContent === "Code").click()`);
+  await waitFor(`!document.querySelector('iframe.html-frame') && document.querySelector('.cm-editor')`, "Code-Ansicht");
+  await shot(`code-${theme}`);
+  if (theme !== "hell") return;
+  // Suchen und Ersetzen
+  await evaluate(`document.querySelector('.cm-content').focus()`);
+  await key("f", "KeyF", 70, 2);
+  await waitFor(`document.querySelector('.cm-search')`, "Suchfeld");
+  await send("Input.insertText", { text: "Port" });
+  await key("Enter", "Enter", 13);
+  await shot("code-suchen-hell");
+  await key("Escape", "Escape", 27);
+  // Autovervollständigung am Anfang von <main>
+  await evaluate(`(() => { const view = document.querySelector('.cm-content'); view.focus(); const sel = window.getSelection(); sel.collapse(view.querySelector('.cm-line'), 0); })()`);
+  await send("Input.insertText", { text: "<det" });
+  await waitFor(`document.querySelector('.cm-tooltip-autocomplete')`, "Vorschläge");
+  await shot("code-vorschlaege-hell");
+}
+
 async function run(theme, device) {
   const mobile = device === "handy";
   await send("Emulation.setDeviceMetricsOverride", mobile ? { width: 360, height: 740, deviceScaleFactor: 2, mobile: true } : { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
@@ -187,12 +222,14 @@ try {
     for (const theme of ["hell", "dunkel"]) {
       console.log(`${device === "pc" ? "PC" : "Handy"}, ${theme}:`);
       if (scenes === "etappe10") await runHtml(theme, device);
+      else if (scenes === "etappe11") await runEditor(theme, device);
       else await run(theme, device);
     }
   }
 } finally {
   socket.close();
-  edge.kill();
+  // Edge samt aller Unterprozesse beenden, sonst bleibt der Port belegt und der nächste Lauf spricht mit diesem Browser.
+  spawnSync("taskkill", ["/PID", String(edge.pid), "/T", "/F"], { stdio: "ignore" });
   await sleep(500);
   rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
