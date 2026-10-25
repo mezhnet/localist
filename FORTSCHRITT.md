@@ -7,7 +7,7 @@
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Volltextsuche über alle Seiten des Vaults.
-- [ ] Schnellsuche mit Strg+P zum Öffnen von Seiten.
+- [x] Schnellsuche mit Strg+P zum Öffnen von Seiten.
 - [ ] Vorlagen: Seiten aus dem Ordner `Vorlagen/` lassen sich als Grundlage für neue Seiten nutzen.
 - [ ] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
 - [ ] Der Suchindex liegt im App-Datenordner, nicht im Vault.
