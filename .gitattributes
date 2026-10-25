@@ -10,3 +10,7 @@
 *.gif binary
 *.woff binary
 *.woff2 binary
+
+# Shell-Skripte des Android-Projekts brauchen Unix-Zeilenenden
+*.sh text eol=lf
+src-tauri/gen/android/gradlew text eol=lf

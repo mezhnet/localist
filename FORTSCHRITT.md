@@ -2,14 +2,14 @@
 
 ## Aktueller Stand
 - Etappe: 8 – Android-APK
-- Zuletzt aktualisiert: 2026-10-25 13:32
-- Nächster Schritt: Warten, bis der Nutzer die Android-Einrichtung bestätigt (Umgebungsvariablen JAVA_HOME, ANDROID_HOME, NDK_HOME und Rust-Ziele für Android, siehe „Offene Probleme“). Danach `npx tauri android init` und den ersten APK-Build.
+- Zuletzt aktualisiert: 2026-10-25 13:42
+- Nächster Schritt: Warten, bis der Nutzer den Windows-Entwicklermodus eingeschaltet hat (siehe „Offene Probleme“). Danach APK bauen (`npx tauri android build --debug --apk --target aarch64 --target x86_64`), im Emulator „Medium_Phone_API_37.0“ testen und den Windows-Build erneut prüfen.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [ ] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
 - [ ] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
 - [ ] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
-- [ ] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
+- [x] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
 - [ ] Der Windows-Build funktioniert weiterhin.
 
 ## Abgeschlossene Etappen
@@ -64,7 +64,8 @@
 - Etappe 0 – Fundament (abgeschlossen am 2026-10-24). Am 2026-10-25 auf dem Stand `09838e1` erneut nachgeprüft: `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zweite Nachprüfung am 2026-10-25 um 10:57 bestanden, nachdem drei Probleme gelöst waren (siehe „Offene Probleme“): `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (Rust-Teil in 1 min 56 s, EXE und beide Installer neu erzeugt, Pfade wie oben), „Hallo Vault“ in `src/App.tsx` und im Build `dist/assets/`, `git status` sauber, `CLAUDE.md` unverändert (Hash `f4a432f…` gleich in Arbeitskopie und Commit).
 
 ## Offene Probleme
-- 2026-10-25: Etappe 8 wartet auf den Nutzer. Schon vorhanden: Android Studio (mit Java im Ordner `jbr`, OpenJDK 25), Android-SDK unter `%LOCALAPPDATA%\Android\Sdk` mit Plattformen 34–37, Build-Tools 35/36, Platform-Tools, Command-line Tools und NDK 28.2.13676358. Es fehlen: die Benutzer-Umgebungsvariablen `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME` und die Rust-Ziele für Android (`rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`). Anleitung dazu im Chat vom 2026-10-25; nach Bestätigung des Nutzers weiter.
+- Gelöst am 2026-10-25: Umgebungsvariablen `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME` und die Rust-Ziele für Android wurden auf Wunsch des Nutzers aus der Sitzung eingerichtet (Android Studio, SDK und NDK 28.2 waren schon installiert). `npx tauri android init` hat das Projekt unter `src-tauri/gen/android` erzeugt (Gradle 9.6.1, funktioniert mit dem Java 25 aus Android Studio).
+- 2026-10-25: Der Android-Build bricht ab mit „Creation symbolic link is not allowed for this system“. Tauri legt beim Android-Build symbolische Verknüpfungen an, das erlaubt Windows nur im **Entwicklermodus**. Der Rust-Teil kompiliert für Android bereits fehlerfrei. Der Nutzer muss den Entwicklermodus selbst einschalten: Einstellungen → System → Für Entwickler → „Entwicklermodus“ an. Es ist eine Systemeinstellung, deshalb ändert die Sitzung sie nicht.
 - Gelöst am 2026-10-25: Der Nutzer hat den App-Namen festgelegt: **Localist**, Einstellungsordner `.localist/`.
 - Gelöst am 2026-10-25: Rust war nicht mehr installiert (`npm run tauri build` brach mit `cargo metadata … program not found` ab, `%USERPROFILE%\.cargo` und `%USERPROFILE%\.rustup` fehlten). Auf Wunsch des Nutzers per `winget install --id Rustlang.Rustup --exact` neu installiert (rustup 1.29.1, `cargo 1.99.1`, `rustc 1.99.1`, Toolchain `stable-x86_64-pc-windows-msvc`). Der Installer trägt `%USERPROFILE%\.cargo\bin` in den Benutzer-PATH ein. Ein Terminal, das schon vorher offen war, kennt den neuen Pfad erst nach einem Neustart.
 - Gelöst am 2026-10-25: Die Microsoft C++ Build Tools fehlten wieder (kein `vswhere.exe`, kein MSVC-Ordner). Auf Wunsch des Nutzers mit demselben winget-Befehl wie am 2026-10-24 neu installiert (Build Tools 2022, Version 17.14.37806.7, MSVC 14.44.35207).
@@ -72,6 +73,7 @@
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Android: Der System-Ordnerdialog liefert dort nur `content://`-Adressen, mit denen die Rust-Seite nicht arbeiten kann. Localist hat deshalb eine eigene Ordnerauswahl (`src/components/FolderPicker.tsx`, Rust-Befehle `storage_locations`, `list_folders`, `create_folder_at`) und fragt beim ersten Start einmal nach „Zugriff auf alle Dateien“ (`MainActivity.kt`, Berechtigung `MANAGE_EXTERNAL_STORAGE`, wie Obsidian). Ohne Erlaubnis bleibt ein Vault im App-Speicher möglich. Löschen verschiebt auf Android nach `<Vault>/.localist/Papierkorb/`, weil es dort keinen System-Papierkorb gibt (`trash` nur für Windows/macOS/Linux). Unter 768 px Breite wird die Sidebar zum ausklappbaren Menü.
 - 2026-10-25: Endgültiger Name **Localist** (Wahl des Nutzers). Programmdatei `localist.exe`, App-Kennung `de.localist.desktop`, Version 1.0.0, Installer auf Deutsch. Der Einstellungsordner im Vault heißt `.localist/`; ein vorhandener `.meinapp/` wird beim Öffnen automatisch umbenannt. Der gemerkte zuletzt geöffnete Vault wird aus dem alten Datenordner `de.localprojekt.desktop` übernommen. Das App-Icon entsteht aus `app-icon.svg` mit `npx tauri icon app-icon.svg`. `CLAUDE.md` nennt weiterhin `.meinapp/` als Arbeitstitel und wurde nicht geändert.
 - 2026-10-25: Der Suchindex (`src-tauri/src/search_index.rs`) enthält Titel, Inhalt und Änderungszeit jeder Seite und liegt als JSON im Cache-Ordner der App (`%LOCALAPPDATA%\de.localprojekt.desktop\suchindex\<Hash des Vault-Pfads>.json`), nie im Vault. Bei jedem Abruf werden nur geänderte Dateien neu gelesen. Gelöscht oder beschädigt wird er einfach neu aufgebaut. Suche, Strg+P und Backlinks werten den Index in TypeScript aus (`src/lib/search.ts`). Vorlagen unterstützen die Obsidian-Platzhalter `{{title}}`, `{{date}}`, `{{time}}`.
 - 2026-10-25: Die Kalenderansicht rechnet nur mit Kalendertagen in UTC (`src/lib/calendar.ts`), nie mit lokaler Uhrzeit, damit Sommer-/Winterzeit keinen Tag verschiebt. Wochen beginnen am Montag, Kalenderwochen nach ISO 8601. Beim Verschieben bleibt eine Uhrzeit (`YYYY-MM-DDTHH:MM`) erhalten. In `_ansichten.yaml` hat eine Kalender-Ansicht `typ: kalender`, `datum: <Eigenschaft>` und `modus: monat|woche`.
