@@ -2,13 +2,64 @@
 
 ## Aktueller Stand
 - Etappe: 15 – Version 2.0
-- Zuletzt aktualisiert: 2026-10-25 21:54
-- Nächster Schritt: Android-APK mit Version 2.0.0 bauen und im Emulator mit `adb` prüfen (HTML-Seiten, Notizbuch, Karteikarten und Quiz per Fingertipp, Code-Ansicht mit scrollbarer Werkzeugleiste).
+- Zuletzt aktualisiert: 2026-10-25 22:03
+- Nächster Schritt: Klickliste „Version 2.0“ anlegen und in der Browser-Vorschau abhaken, danach Klickliste „Version 1.0“, `tsc`, TODO/FIXME-Prüfung, Build und Abschluss.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Version 2.0.0 in `package.json`, `tauri.conf.json` und `Cargo.toml`. Die Windows-Installer werden gebaut, die Pfade sind genannt.
   - `npm run tauri build` (EXIT=0): `src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,64 MiB). Die Bausteine tragen jetzt `2.0.0+55327b46`, die Sidebar zeigt „v2.0.0“ (aus `package.json`).
-- [ ] Android: Die APK wird gebaut. Im Emulator geprüft und mit `adb`-Befehlen samt Ausgabe belegt (Installation, Screenshots per `adb exec-out screencap`): HTML-Seiten und Notizbücher lassen sich lesen, Karteikarten und Quiz per Fingertipp bedienen, die Code-Ansicht ist nutzbar (Werkzeugleiste scrollbar).
+- [x] Android: Die APK wird gebaut. Im Emulator geprüft und mit `adb`-Befehlen samt Ausgabe belegt (Installation, Screenshots per `adb exec-out screencap`): HTML-Seiten und Notizbücher lassen sich lesen, Karteikarten und Quiz per Fingertipp bedienen, die Code-Ansicht ist nutzbar (Werkzeugleiste scrollbar).
+  - APK: `npx tauri android build --debug --apk --target aarch64 --target x86_64` (EXIT=0) → `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk` (versionName 2.0.0, versionCode 2000000).
+  - Emulator „Medium_Phone_API_37.0“ (Android 17, 1080 × 2400, ohne Fenster gestartet). Geprüft mit `node scripts/android-pruefung.mjs <adb.exe> <apk> beispiel-vault docs/screenshots/etappe-15/android`: Navigation über die WebView-Entwicklerschnittstelle der Debug-APK, bedient wird per Fingertipp (`adb shell input tap/swipe`). Im ersten Lauf wurde die Vault-Kopie über die Ordnerauswahl geöffnet (`Ordnerauswahl, Speicherorte: ["Interner Speicher/storage/emulated/0","App-Speicher/data/user/0/de.localist.desktop/Vaults"]`); dabei fiel ein Fehler beim Einfügen eines Bausteins am Dokumentanfang auf (`RangeError: Invalid change range 1 to 0`), behoben in `src/lib/bausteine.ts` mit neuem Test „Cursor ganz am Anfang, der Inhalt beginnt mit einem Zeilenumbruch (wie meist in <main>)“. Ausgabe des zweiten Laufs mit der korrigierten APK:
+    ```
+    > adb devices
+          List of devices attached
+          emulator-5554	device
+    > adb install -r src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+          Performing Streamed Install
+          Success
+    > adb shell dumpsys package de.localist.desktop | grep versionName
+          versionName=2.0.0
+    > adb push C:\Users\emre\AppData\Local\Temp\localist-android-…\Localist-Pruefung /sdcard/Documents/Localist-Pruefung
+          C:\Users\emre\AppData\Local\Temp\localist-android-…\Localist-Pruefung\: 17 files pushed, 0 skipped. 0.3 MB/s (137605 bytes in 0.434s)
+    > adb shell appops set de.localist.desktop MANAGE_EXTERNAL_STORAGE allow
+          
+    > adb shell am start -n de.localist.desktop/.MainActivity
+          Starting: Intent { cmp=de.localist.desktop/.MainActivity }
+    Bildschirm 1080×2400 px, WebView 411×914 CSS-Pixel, devicePixelRatio 2.625, WebView beginnt bei y=1 px
+    Vault geöffnet: Localist-Pruefung, Version in der Sidebar: v2.0.0
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\01-vault.png
+    HTML-Seite „DNS“ in „Lesen“: {"titel":"DNS","callout":"Tipp","bausteine":"2.0.0+55327b46","bild":1}
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\02-html-seite.png
+    Notizbuch: {"titel":"Lernen für die Prüfung","inhalt":["1Subnetting","2Bausteine"],"seite":{"adresse":"/Lernen/Subnetting.md","callout":"tipp","tabelle":4}}
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\03-notizbuch.png
+    > adb shell input tap 811 2191   („Weiter“ im Notizbuch)
+    Nach dem Fingertipp auf „Weiter“: Seite „Bausteine“
+    > adb shell input tap 347 1201   (Karteikarte)
+    Karteikarte nach Fingertipp umgedreht: ja
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\04-karteikarte.png
+    > adb shell input tap 391 1200   (oberste Karte im Kartenstapel)
+    > adb shell input tap 673 1573   („Gewusst“)
+    Kartenstapel nach Umdrehen und „Gewusst“: „1 von 3 gewusst“
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\05-kartenstapel.png
+    > adb shell input tap 391 1200   (Antwort im Quiz)
+    Quiz nach Fingertipp: „Richtig!“, „Punkte: 1 von 2“
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\06-quiz.png
+    > adb shell input tap 821 673   (Ansicht „Code“)
+    Werkzeugleiste: sichtbar 386 px, Inhalt 1506 px breit, overflow-x: auto
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\07-code.png
+    > adb shell input swipe 968 809 112 809 400   (Werkzeugleiste nach links wischen)
+    Werkzeugleiste nach dem Wischen: scrollLeft 449.9047546386719 px (vorher 0)
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\08-code-werkzeugleiste-gewischt.png
+    > adb shell input tap 153 808   („Callout“ in der Werkzeugleiste)
+    > adb shell grep -c "<l-callout" /sdcard/Documents/Localist-Pruefung/Notizen/DNS.html
+          2
+    Callouts in /sdcard/Documents/Localist-Pruefung/Notizen/DNS.html: vorher 1, nach dem Fingertipp 2 (automatisch gespeichert)
+    > adb exec-out screencap -p > docs\screenshots\etappe-15\android\09-code-eingefuegt.png
+    Konsole: keine Fehler.
+    Screenshots in docs/screenshots/etappe-15/android (android).
+    ```
+  - Screenshots per `adb exec-out screencap`: [01-vault](docs/screenshots/etappe-15/android/01-vault.png), [02-html-seite](docs/screenshots/etappe-15/android/02-html-seite.png), [03-notizbuch](docs/screenshots/etappe-15/android/03-notizbuch.png), [04-karteikarte](docs/screenshots/etappe-15/android/04-karteikarte.png), [05-kartenstapel](docs/screenshots/etappe-15/android/05-kartenstapel.png), [06-quiz](docs/screenshots/etappe-15/android/06-quiz.png), [07-code](docs/screenshots/etappe-15/android/07-code.png), [08-code-werkzeugleiste-gewischt](docs/screenshots/etappe-15/android/08-code-werkzeugleiste-gewischt.png), [09-code-eingefuegt](docs/screenshots/etappe-15/android/09-code-eingefuegt.png)
 - [ ] Die Klickliste „Version 1.0“ und eine Klickliste „Version 2.0“ (HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein, Notizbuch, Umwandeln, Export) sind in `FORTSCHRITT.md` abgehakt.
 - [ ] Keine Fehler bei `npx tsc --noEmit`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
 - [x] `README.md` und `ANLEITUNG.md` sind aktualisiert, mit einem Abschnitt „Neu in Version 2.0“ und einer kurzen Einführung in HTML-Seiten und Bausteine für Einsteiger.
