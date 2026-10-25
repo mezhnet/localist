@@ -199,6 +199,74 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
     werden dabei ersetzt.
 19. **Backlinks:** Unten auf jeder Seite steht unter „Verlinkt von“, welche Seiten mit `[[…]]` auf sie verweisen.
 
+## 9. Android-App (APK)
+
+Localist läuft auch auf Android-Handys und -Tablets. Die Oberfläche passt sich an: Die Seitenleiste ist dort ein
+ausklappbares Menü (☰ oben links).
+
+### Einmalige Einrichtung am PC
+
+1. **Android Studio** installieren (<https://developer.android.com/studio>) und einmal starten. Im SDK Manager
+   (More Actions → SDK Manager) unter „SDK Tools“ zusätzlich **NDK (Side by side)** und
+   **Android SDK Command-line Tools** ankreuzen und installieren.
+2. **Umgebungsvariablen** setzen (PowerShell, kein Administrator nötig; die NDK-Versionsnummer an den Ordner unter
+   `%LOCALAPPDATA%\Android\Sdk\ndk` anpassen):
+
+   ```
+   [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Android\Android Studio\jbr", "User")
+   [System.Environment]::SetEnvironmentVariable("ANDROID_HOME", "$env:LOCALAPPDATA\Android\Sdk", "User")
+   [System.Environment]::SetEnvironmentVariable("NDK_HOME", "$env:LOCALAPPDATA\Android\Sdk\ndk\28.2.13676358", "User")
+   ```
+3. **Rust für Android:**
+
+   ```
+   rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+   ```
+4. **Windows-Entwicklermodus** einschalten: Einstellungen → System → Für Entwickler → „Entwicklermodus“ an.
+   Tauri legt beim Android-Build symbolische Verknüpfungen an, das erlaubt Windows nur in diesem Modus.
+5. Terminal (und VS Code bzw. Claude Code) neu starten.
+
+Das Android-Projekt selbst liegt schon im Repository (`src-tauri/gen/android`), `npx tauri android init` ist nicht
+mehr nötig.
+
+### APK bauen
+
+```
+npx tauri android build --debug --apk --target aarch64 --target x86_64
+```
+
+Ergebnis: `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk`
+(für echte Handys mit ARM-Prozessor und für den Emulator am PC). Der erste Build lädt Gradle und Bibliotheken
+herunter und dauert einige Minuten.
+
+Die Debug-APK ist automatisch signiert und lässt sich direkt installieren. Für eine Veröffentlichung, etwa im Play
+Store, bräuchte es eine Release-APK mit eigenem Signaturschlüssel. Für die eigene Nutzung ist das nicht nötig.
+
+### Auf das Handy bringen
+
+- **Per Datei:** Die APK aufs Handy kopieren (USB, Cloud, E-Mail) und dort antippen. Android fragt einmal, ob
+  Installationen aus dieser Quelle erlaubt sind.
+- **Per USB-Kabel:** Auf dem Handy die Entwickleroptionen und „USB-Debugging“ einschalten, dann am PC:
+
+  ```
+  adb install -r src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk
+  ```
+- **Im Emulator** (ohne Handy): In Android Studio unter „Device Manager“ ein virtuelles Gerät starten und die APK
+  per Drag & Drop auf das Emulatorfenster ziehen.
+
+### Erster Start auf dem Handy
+
+1. Localist öffnet einmal die Android-Einstellung **„Zugriff auf alle Dateien“**. Erlaube sie, damit Localist mit
+   normalen Ordnern im Gerätespeicher arbeiten kann (z. B. `Documents/Mein Vault`). Ohne diese Erlaubnis
+   kannst du einen Vault im „App-Speicher“ anlegen. Der wird aber beim Deinstallieren gelöscht.
+2. „Vault-Ordner öffnen …“ zeigt die Ordnerauswahl von Localist: Speicherort wählen, in den Ordner tippen (oder mit
+   „Anlegen“ einen neuen erstellen), dann „Diesen Ordner als Vault verwenden“.
+3. Den Vault mit dem PC abgleichen kannst du z. B. mit Syncthing oder einem Cloud-Ordner. Localist lädt Seiten neu,
+   wenn sie von außen geändert werden.
+
+Auf Android gibt es keinen System-Papierkorb: Gelöschte Seiten landen in `<Vault>/.localist/Papierkorb/`. Von dort
+holst du sie mit jedem Dateimanager zurück.
+
 ## Was Localist wo speichert
 
 | Was | Wo |
@@ -208,6 +276,7 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
 | Zuletzt geöffneter Vault | `%APPDATA%\de.localist.desktop\zustand.json` |
 | Suchindex (jederzeit löschbar) | `%LOCALAPPDATA%\de.localist.desktop\suchindex\` |
 | Hell/Dunkel, zuletzt gewählte Ansicht einer Datenbank | im Browser-Speicher der App (WebView2) |
+| Gelöschte Seiten | Windows: Papierkorb des Systems; Android: `<Vault>\.localist\Papierkorb\` |
 
 Vaults aus der Vorabversion mit dem Einstellungsordner `.meinapp` werden beim ersten Öffnen automatisch übernommen:
 Localist benennt den Ordner in `.localist` um. Auch der zuletzt geöffnete Vault wird aus der Vorabversion übernommen.
