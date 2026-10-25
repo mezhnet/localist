@@ -6,13 +6,14 @@ import { emit } from "@tauri-apps/api/event";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import bundledCss from "../../src-tauri/seite/localist.css?raw";
 import bundledJs from "../../src-tauri/seite/localist.js?raw";
+import { EIGENE_DIR, eigenerBausteinDatei, eigenerBausteinLesen, eigenerBausteinName } from "./eigene-bausteine";
 import { newHtmlPage } from "./html";
 import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-api";
 
 const ROOT = "beispiel-vault (Browser-Vorschau)";
 const PREFIX = "../../beispiel-vault/";
 
-const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispiel-vault/**/*.html", "../../beispiel-vault/**/*.yaml", "../../beispiel-vault/.localist/settings.json"], {
+const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispiel-vault/**/*.html", "../../beispiel-vault/**/*.yaml", "../../beispiel-vault/.localist/settings.json", "../../beispiel-vault/.localist/bausteine/eigene/*.html"], {
   query: "?raw",
   import: "default",
   eager: true,
@@ -144,6 +145,13 @@ export function installDevBackend(): void {
     for (const folder of [...folders]) if (folder === path || folder.startsWith(`${path}/`)) folders.delete(folder);
   };
 
+  /** Eigene Bausteine aus `.localist/bausteine/eigene/`, nach Namen sortiert. */
+  const eigeneListe = () =>
+    [...files]
+      .filter(([pfad]) => pfad.startsWith(`${EIGENE_DIR}/`) && pfad.endsWith(".html"))
+      .map(([pfad, inhalt]) => ({ name: pfad.slice(EIGENE_DIR.length + 1, -".html".length), ...eigenerBausteinLesen(inhalt) }))
+      .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+
   let missing = false;
   // Simulierter Gerätespeicher für die Ordnerauswahl auf Android (localStorage "dev-platform" = "android").
   const deviceFolders = new Map<string, string[]>([
@@ -237,6 +245,32 @@ export function installDevBackend(): void {
           remove(a.path);
           notify({ kind: "removed", path: a.path });
           return null;
+        // Eigene Bausteine (wie src-tauri/src/eigene.rs)
+        case "eigene_bausteine":
+          return eigeneListe();
+        case "eigenen_baustein_speichern": {
+          const name = eigenerBausteinName(a.name);
+          const alt = a.alterName ? eigenerBausteinName(a.alterName) : null;
+          if (eigeneListe().some((b) => b.name.toLowerCase() === name.toLowerCase() && b.name.toLowerCase() !== alt?.toLowerCase())) {
+            throw `Es gibt schon einen eigenen Baustein „${name}“.`;
+          }
+          if (alt !== null) {
+            if (!files.has(`${EIGENE_DIR}/${alt}.html`)) throw `Den eigenen Baustein „${alt}“ gibt es nicht mehr.`;
+            files.delete(`${EIGENE_DIR}/${alt}.html`);
+            syncPreview(`${EIGENE_DIR}/${alt}.html`, null);
+          }
+          const inhalt = eigenerBausteinDatei(a.beschreibung, a.code);
+          files.set(`${EIGENE_DIR}/${name}.html`, inhalt);
+          syncPreview(`${EIGENE_DIR}/${name}.html`, inhalt);
+          return name;
+        }
+        case "eigenen_baustein_loeschen": {
+          const pfad = `${EIGENE_DIR}/${eigenerBausteinName(a.name)}.html`;
+          if (!files.has(pfad)) throw `Den eigenen Baustein „${a.name}“ gibt es nicht mehr.`;
+          files.delete(pfad);
+          syncPreview(pfad, null);
+          return null;
+        }
         case "sicherheitstest_info":
           return null;
         case "app_platform":

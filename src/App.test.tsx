@@ -1085,6 +1085,9 @@ describe("Bausteine (Etappe 12)", () => {
       "Kartenstapel",
       "Quiz",
       "Diagramm",
+      // seit Etappe 13: eigene Bausteine des Vaults und „Als Baustein speichern“
+      "Lernziel-Box",
+      "Als Baustein speichern",
     ]);
     cursorAt("</l-callout>");
     fireEvent.click(toolbar().getByRole("button", { name: "Checkliste" }));
@@ -1119,7 +1122,7 @@ describe("Bausteine (Etappe 12)", () => {
     await openInCode("Notizen", "DNS");
     cursorAt("</l-callout>\n");
     type("/");
-    await waitFor(() => expect(completions()).toEqual(["Callout", "Toggle", "Tabelle", "Checkliste", "Spalten", "Bild", "Trennlinie", "Code-Block", "Seitenlink", "Karteikarte", "Kartenstapel", "Quiz", "Diagramm"]));
+    await waitFor(() => expect(completions()).toEqual(["Callout", "Toggle", "Tabelle", "Checkliste", "Spalten", "Bild", "Trennlinie", "Code-Block", "Seitenlink", "Karteikarte", "Kartenstapel", "Quiz", "Diagramm", "Lernziel-Box"]));
     type("tab");
     await waitFor(() => expect(completions()).toEqual(["Tabelle"]));
     act(() => {
@@ -1345,5 +1348,113 @@ describe("Lern-Bausteine und Diagramme bearbeiten (Etappe 13)", () => {
           .replace("<tr><td>Video</td><td>58</td></tr>", "<tr><td>Video</td><td>60</td></tr>"),
       ),
     );
+  });
+});
+
+describe("Eigene Bausteine, Bibliothek und Hilfe (Etappe 13)", () => {
+  const editorView = () => EditorView.findFromDOM(document.querySelector(".cm-editor") as HTMLElement)!;
+  const toolbar = () => within(screen.getByRole("toolbar", { name: "Baustein einfügen" }));
+  const eigeneDatei = (name: string) => vault().files.get(`.localist/bausteine/eigene/${name}.html`);
+
+  async function openDnsCode() {
+    localStorage.setItem("html-ansicht", "code");
+    await openVaultFromStart();
+    await openPage("Notizen", "DNS");
+    await waitFor(() => expect(document.querySelector(".cm-editor")).toBeTruthy());
+  }
+
+  it("markierten Code als eigenen Baustein speichern; er erscheint in Werkzeugleiste und „/“-Menü", async () => {
+    await openDnsCode();
+    // Ohne Markierung: Hinweis statt Dialog
+    fireEvent.click(toolbar().getByRole("button", { name: "Als Baustein speichern" }));
+    expect(await screen.findByText(/Markiere zuerst den Code/)).toBeTruthy();
+
+    const code = '<l-callout typ="tipp">DNS übersetzt Namen wie example.com in IP-Adressen.</l-callout>';
+    act(() => {
+      const view = editorView();
+      const from = view.state.doc.toString().indexOf(code);
+      view.dispatch({ selection: { anchor: from, head: from + code.length } });
+    });
+    fireEvent.click(toolbar().getByRole("button", { name: "Als Baustein speichern" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Als eigenen Baustein speichern" }));
+    expect((dialog.getByRole("textbox", { name: "Code" }) as HTMLTextAreaElement).value).toBe(code);
+    fireEvent.change(dialog.getByRole("textbox", { name: "Name" }), { target: { value: "DNS-Tipp" } });
+    fireEvent.change(dialog.getByRole("textbox", { name: "Beschreibung" }), { target: { value: "Merksatz zu DNS" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() => expect(eigeneDatei("DNS-Tipp")).toBe(`<!-- beschreibung: Merksatz zu DNS -->\n${code}\n`));
+
+    // Werkzeugleiste: der neue Baustein (und der aus dem Beispiel-Vault) – ein Klick fügt ihn ein
+    const knopf = await waitFor(() => toolbar().getByRole("button", { name: "DNS-Tipp" }));
+    expect(toolbar().getByRole("button", { name: "Lernziel-Box" })).toBeTruthy();
+    act(() => editorView().dispatch({ selection: { anchor: editorView().state.doc.toString().indexOf("</h1>") + 5 } }));
+    fireEvent.click(toolbar().getByRole("button", { name: "Lernziel-Box" }));
+    expect(editorView().state.sliceDoc()).toContain('</h1>\n<l-callout typ="tipp">\n  <strong>Lernziel:</strong> Nach dieser Seite kannst du …\n</l-callout>\n');
+    expect(knopf).toBeTruthy();
+
+    // „/“-Menü kennt die eigenen Bausteine
+    act(() => {
+      const view = editorView();
+      const at = view.state.doc.toString().indexOf("<l-kartenstapel>");
+      view.dispatch({ changes: { from: at, insert: "\n" }, selection: { anchor: at } });
+      view.dispatch({ changes: { from: at, insert: "/dns" }, selection: { anchor: at + 4 }, userEvent: "input.type" });
+    });
+    await waitFor(() => expect(currentCompletions(editorView().state).map((option) => option.label)).toContain("DNS-Tipp"));
+  });
+
+  it("Bereich „Bausteine“: Bibliothek mit Vorschau, eigene Bausteine bearbeiten, umbenennen und löschen", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await openVaultFromStart();
+    fireEvent.click(screen.getByRole("button", { name: "Bausteine" }));
+    const liste = within(await screen.findByRole("navigation", { name: "Bausteine" }));
+    for (const name of ["Callout", "Toggle", "Tabelle", "Checkliste", "Spalten", "Bild", "Trennlinie", "Code-Block", "Seitenlink", "Karteikarte", "Kartenstapel", "Quiz", "Diagramm"]) {
+      expect(liste.getByText(name)).toBeTruthy();
+    }
+    const vorschau = screen.getByTitle("Vorschau der Bausteine") as HTMLIFrameElement;
+    expect(vorschau.getAttribute("sandbox")).toBe("allow-scripts");
+    expect(vorschau.getAttribute("src")).toContain(".localist/bausteine/bibliothek.html");
+    const eigene = within(liste.getByRole("list", { name: "Eigene Bausteine" }));
+    expect(eigene.getByText("Lernziel-Box")).toBeTruthy();
+    expect(eigene.getByText("Box für Lernziele")).toBeTruthy();
+
+    // Bearbeiten
+    fireEvent.click(eigene.getByRole("button", { name: "„Lernziel-Box“ bearbeiten" }));
+    let dialog = within(await screen.findByRole("dialog", { name: "„Lernziel-Box“ bearbeiten" }));
+    fireEvent.change(dialog.getByRole("textbox", { name: "Beschreibung" }), { target: { value: "Ziel der Lerneinheit" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() => expect(eigeneDatei("Lernziel-Box")).toMatch(/^<!-- beschreibung: Ziel der Lerneinheit -->\n<l-callout typ="tipp">/));
+    // Die Vorschau lädt die geänderte Bibliothek neu
+    await waitFor(() => expect((screen.getByTitle("Vorschau der Bausteine") as HTMLIFrameElement).getAttribute("src")).toMatch(/\?v=2$/));
+
+    // Umbenennen
+    fireEvent.click(await screen.findByRole("button", { name: "„Lernziel-Box“ umbenennen" }));
+    dialog = within(await screen.findByRole("dialog", { name: "„Lernziel-Box“ umbenennen" }));
+    expect(dialog.queryByRole("textbox", { name: "Code" })).toBeNull();
+    fireEvent.change(dialog.getByRole("textbox", { name: "Name" }), { target: { value: "Lernziel" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() => expect(eigeneDatei("Lernziel")).toMatch(/^<!-- beschreibung: Ziel der Lerneinheit -->/));
+    expect(eigeneDatei("Lernziel-Box")).toBeUndefined();
+
+    // Löschen (mit Rückfrage)
+    fireEvent.click(await screen.findByRole("button", { name: "„Lernziel“ löschen" }));
+    await waitFor(() => expect(eigeneDatei("Lernziel")).toBeUndefined());
+    expect(window.confirm).toHaveBeenCalledWith("Den eigenen Baustein „Lernziel“ in den Papierkorb verschieben?");
+    expect(await screen.findByText(/Markiere im Code-Editor einen Abschnitt/)).toBeTruthy();
+  });
+
+  it("Hilfe: alle eingebauten Bausteine mit Erklärung und Beispielcode zum Kopieren", async () => {
+    const kopiert: string[] = [];
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: (text: string) => (kopiert.push(text), Promise.resolve()) } });
+    await openVaultFromStart();
+    fireEvent.click(screen.getByRole("button", { name: "Bausteine" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Hilfe" }));
+    for (const name of ["Callout", "Toggle", "Tabelle", "Checkliste", "Spalten", "Bild", "Trennlinie", "Code-Block", "Seitenlink", "Karteikarte", "Kartenstapel", "Quiz", "Diagramm"]) {
+      expect(screen.getByRole("region", { name }), name).toBeTruthy();
+    }
+    const quiz = within(screen.getByRole("region", { name: "Quiz" }));
+    expect(quiz.getByText(/data-richtig/, { selector: "p" })).toBeTruthy();
+    fireEvent.click(quiz.getByRole("button", { name: "Beispielcode „Quiz“ kopieren" }));
+    await waitFor(() => expect(kopiert).toHaveLength(1));
+    expect(kopiert[0]).toMatch(/^<l-quiz>\n  <l-quizfrage>[\s\S]*<li data-richtig>8<\/li>[\s\S]*<\/l-quiz>$/);
+    expect(await quiz.findByText("Kopiert")).toBeTruthy();
   });
 });

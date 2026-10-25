@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 13 – Lernen, Diagramme und eigene Bausteine
-- Zuletzt aktualisiert: 2026-10-25 21:05
-- Nächster Schritt: Eigene Bausteine („Code-Speicher“) mit Rust-Befehlen, Bibliothek in der Sidebar mit Vorschau, Hilfe-Ansicht.
+- Zuletzt aktualisiert: 2026-10-25 21:20
+- Nächster Schritt: Screenshots, gebaute App prüfen, Klickliste, Abschluss von Etappe 13.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Karteikarte: umdrehen per Klick, Fingertipp oder Leertaste.
@@ -11,10 +11,10 @@
 - [x] Quiz: Multiple-Choice-Fragen mit sofortiger Rückmeldung und Punktzahl.
 - [x] Diagramm: liest die Daten aus der enthaltenen `<table>`, wird als SVG gezeichnet, passt sich an hell und dunkel an und braucht keine Online-Bibliothek. Das Formular enthält einen Daten-Editor.
 - [x] Alle vier nutzen das Markup aus der Tabelle im Speicherformat und haben Formulare zum Bearbeiten ohne Code.
-- [ ] Eigene Bausteine („Code-Speicher“): Markierten Code als eigenen Baustein speichern (Name und Beschreibung), siehe Speicherformat. Eigene Bausteine erscheinen in Werkzeugleiste und „/“-Menü. Ein Bereich „Bausteine“ in der Sidebar zeigt die ganze Bibliothek (eingebaute und eigene) mit Vorschau. Eigene Bausteine lassen sich bearbeiten, umbenennen und löschen.
-- [ ] Hilfe-Ansicht in der App: alle eingebauten Bausteine mit kurzer Erklärung und Beispielcode zum Kopieren.
-- [ ] Die Beispielseite `Bausteine.html` enthält auch die neuen Bausteine.
-- [ ] Tests für die Lernlogik (Reihenfolge, Wiederholung, Auswertung), die Diagramm-Daten aus Tabellen und das Speichern und Laden eigener Bausteine.
+- [x] Eigene Bausteine („Code-Speicher“): Markierten Code als eigenen Baustein speichern (Name und Beschreibung), siehe Speicherformat. Eigene Bausteine erscheinen in Werkzeugleiste und „/“-Menü. Ein Bereich „Bausteine“ in der Sidebar zeigt die ganze Bibliothek (eingebaute und eigene) mit Vorschau. Eigene Bausteine lassen sich bearbeiten, umbenennen und löschen.
+- [x] Hilfe-Ansicht in der App: alle eingebauten Bausteine mit kurzer Erklärung und Beispielcode zum Kopieren.
+- [x] Die Beispielseite `Bausteine.html` enthält auch die neuen Bausteine.
+- [x] Tests für die Lernlogik (Reihenfolge, Wiederholung, Auswertung), die Diagramm-Daten aus Tabellen und das Speichern und Laden eigener Bausteine.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.

@@ -35,6 +35,10 @@ export interface BausteinInfo {
   auswahl?: string;
   /** Vor dem Einfügen ein Bild bzw. eine Seite auswählen. */
   ziel?: "bild" | "seite";
+  /** Kurze Erklärung für die Hilfe-Ansicht. */
+  hilfe: string;
+  /** Beispielcode für Hilfe und Bibliothek. */
+  beispiel: string[];
 }
 
 const attr = (text: string) => text.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
@@ -43,6 +47,8 @@ const text = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;
 export const BAUSTEINE: readonly BausteinInfo[] = [
   {
     art: "callout",
+    hilfe: "Hebt einen Hinweis farbig hervor. Mit typ wählst du die Art: info (blau), tipp (grün), warnung (gelb) oder fehler (rot).",
+    beispiel: ["<l-callout typ=\"tipp\">Speichere regelmäßig eine Sicherung deiner Arbeit.</l-callout>"],
     name: "Callout",
     beschreibung: "Farbige Box für Hinweise, Tipps und Warnungen",
     vorlage: () => ['<l-callout typ="info">Text</l-callout>'],
@@ -50,6 +56,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "toggle",
+    hilfe: "Ein Abschnitt zum Auf- und Zuklappen. Der Titel steht in <summary>, alles danach ist der Inhalt. Mit dem Attribut open ist er anfangs aufgeklappt.",
+    beispiel: ["<details>", "  <summary>Mehr erfahren</summary>", "  <p>Dieser Text erscheint erst nach einem Klick auf den Titel.</p>", "</details>"],
     name: "Toggle",
     beschreibung: "Aufklappbarer Abschnitt mit Titel",
     vorlage: () => ["<details>", "  <summary>Titel</summary>", "  <p>Inhalt</p>", "</details>"],
@@ -57,6 +65,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "tabelle",
+    hilfe: "Eine normale HTML-Tabelle: <tr> ist eine Zeile, <th> eine Überschrift, <td> eine Zelle. Ohne Code bearbeitest du sie mit dem Tabellen-Editor (Stift-Symbol).",
+    beispiel: ["<table>", "  <tr><th>Protokoll</th><th>Port</th></tr>", "  <tr><td>HTTP</td><td>80</td></tr>", "  <tr><td>HTTPS</td><td>443</td></tr>", "</table>"],
     name: "Tabelle",
     beschreibung: "Tabelle mit Überschriftenzeile",
     vorlage: () => ["<table>", "  <tr><th>Spalte 1</th><th>Spalte 2</th></tr>", "  <tr><td>Wert</td><td>Wert</td></tr>", "</table>"],
@@ -64,6 +74,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "checkliste",
+    hilfe: "Eine Liste zum Abhaken. checked bedeutet erledigt. In der Ansicht „Lesen“ werden Häkchen direkt in der Datei gespeichert.",
+    beispiel: ["<ul class=\"l-checkliste\">", "  <li><input type=\"checkbox\" checked> Vokabeln wiederholen</li>", "  <li><input type=\"checkbox\"> Übungsblatt lösen</li>", "</ul>"],
     name: "Checkliste",
     beschreibung: "Liste zum Abhaken",
     vorlage: () => ['<ul class="l-checkliste">', '  <li><input type="checkbox"> Erster Punkt</li>', '  <li><input type="checkbox"> Zweiter Punkt</li>', "</ul>"],
@@ -71,6 +83,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "spalten",
+    hilfe: "Stellt Inhalte nebeneinander. Jede <l-spalte> ist eine Spalte; auf schmalen Bildschirmen stehen sie untereinander.",
+    beispiel: ["<l-spalten>", "  <l-spalte>", "    <p><strong>Vorteile:</strong> schnell und günstig</p>", "  </l-spalte>", "  <l-spalte>", "    <p><strong>Nachteile:</strong> weniger sicher</p>", "  </l-spalte>", "</l-spalten>"],
     name: "Spalten",
     beschreibung: "Zwei Spalten nebeneinander",
     vorlage: () => ["<l-spalten>", "  <l-spalte>", "    <p>Linke Spalte</p>", "  </l-spalte>", "  <l-spalte>", "    <p>Rechte Spalte</p>", "  </l-spalte>", "</l-spalten>"],
@@ -78,6 +92,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "bild",
+    hilfe: "Ein Bild mit Bildunterschrift. src ist der Pfad relativ zur Seite, alt beschreibt das Bild für Menschen, die es nicht sehen können.",
+    beispiel: ["<figure>", "  <img src=\"../Anhänge/bild.png\" alt=\"Skizze eines kleinen Netzwerks\">", "  <figcaption>Ein kleines Netzwerk</figcaption>", "</figure>"],
     name: "Bild",
     beschreibung: "Bild aus dem Vault mit Bildunterschrift",
     vorlage: ({ src = "" }) => ["<figure>", `  <img src="${attr(src)}" alt="Beschreibung">`, "  <figcaption>Bildunterschrift</figcaption>", "</figure>"],
@@ -86,12 +102,16 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "trennlinie",
+    hilfe: "Eine waagerechte Linie zwischen zwei Abschnitten.",
+    beispiel: ["<p>Erster Abschnitt</p>", "<hr>", "<p>Zweiter Abschnitt</p>"],
     name: "Trennlinie",
     beschreibung: "Waagerechte Linie zwischen Abschnitten",
     vorlage: () => ["<hr>"],
   },
   {
     art: "code",
+    hilfe: "Programmcode in Festbreitenschrift. Die Sprache steht in class=\"language-…\". Zeichen wie < und & schreibst du als &lt; und &amp;.",
+    beispiel: ["<pre><code class=\"language-js\">const gruss = \"Hallo\";", "console.log(gruss);</code></pre>"],
     name: "Code-Block",
     beschreibung: "Programmcode in Festbreitenschrift",
     vorlage: () => ['<pre><code class="language-text">Code</code></pre>'],
@@ -99,6 +119,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "seitenlink",
+    hilfe: "Verweist auf eine andere Seite im Vault. href ist der Pfad relativ zu dieser Seite; ein Klick öffnet sie in Localist.",
+    beispiel: ["<p>Weiter geht es mit <a class=\"l-seitenlink\" href=\"../Notizen/Ideen.md\">Ideen</a>.</p>"],
     name: "Seitenlink",
     beschreibung: "Verweis auf eine andere Seite im Vault",
     vorlage: ({ href = "", titel = "" }) => [`<a class="l-seitenlink" href="${attr(href)}">${text(titel)}</a>`],
@@ -106,6 +128,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "karteikarte",
+    hilfe: "Vorne steht die Frage, hinten die Antwort. Umdrehen per Klick, Fingertipp oder Leertaste.",
+    beispiel: ["<l-karteikarte>", "  <l-frage>Welchen Port nutzt DNS?</l-frage>", "  <l-antwort>Port 53</l-antwort>", "</l-karteikarte>"],
     name: "Karteikarte",
     beschreibung: "Frage vorne, Antwort hinten – zum Umdrehen",
     vorlage: () => ["<l-karteikarte>", "  <l-frage>Frage</l-frage>", "  <l-antwort>Antwort</l-antwort>", "</l-karteikarte>"],
@@ -113,6 +137,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "kartenstapel",
+    hilfe: "Mehrere Karteikarten zum Lernen: eine Karte nach der anderen, mit „Gewusst“ und „Nochmal“. Nicht gewusste Karten kommen erneut dran, am Ende gibt es eine Auswertung.",
+    beispiel: ["<l-kartenstapel>", "  <l-karteikarte>", "    <l-frage>Hauptstadt von Frankreich?</l-frage>", "    <l-antwort>Paris</l-antwort>", "  </l-karteikarte>", "  <l-karteikarte>", "    <l-frage>Hauptstadt von Italien?</l-frage>", "    <l-antwort>Rom</l-antwort>", "  </l-karteikarte>", "</l-kartenstapel>"],
     name: "Kartenstapel",
     beschreibung: "Mehrere Karteikarten mit Lernmodus",
     vorlage: () => [
@@ -131,6 +157,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "quiz",
+    hilfe: "Multiple-Choice-Fragen. Die richtige Antwort bekommt das Attribut data-richtig. Wer antwortet, sieht sofort, ob es stimmt, und unten die Punktzahl.",
+    beispiel: ["<l-quiz>", "  <l-quizfrage>", "    <l-frage>Wie viele Bit hat ein Byte?</l-frage>", "    <ul>", "      <li>4</li>", "      <li data-richtig>8</li>", "      <li>16</li>", "    </ul>", "  </l-quizfrage>", "</l-quiz>"],
     name: "Quiz",
     beschreibung: "Multiple-Choice-Fragen mit Punktzahl",
     vorlage: () => [
@@ -148,6 +176,8 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
   },
   {
     art: "diagramm",
+    hilfe: "Zeichnet die Tabelle darin als Balken-, Linien- oder Kreisdiagramm (typ). Erste Spalte: Beschriftung, weitere Spalten: Werte; die erste Zeile nennt die Reihen.",
+    beispiel: ["<l-diagramm typ=\"balken\" titel=\"Lernzeit pro Tag\">", "  <table>", "    <tr><th>Tag</th><th>Minuten</th></tr>", "    <tr><td>Mo</td><td>30</td></tr>", "    <tr><td>Di</td><td>45</td></tr>", "    <tr><td>Mi</td><td>20</td></tr>", "  </table>", "</l-diagramm>"],
     name: "Diagramm",
     beschreibung: "Balken-, Linien- oder Kreisdiagramm aus einer Tabelle",
     vorlage: () => [

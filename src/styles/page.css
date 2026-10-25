@@ -731,3 +731,196 @@
     padding-inline: var(--space-1);
   }
 }
+
+.baustein-leiste__trenner {
+  flex: none;
+  align-self: stretch;
+  width: var(--border-width);
+  margin: var(--space-1) var(--space-1);
+  background: var(--color-border-strong);
+}
+
+.baustein-leiste__eigen .ui-button__icon {
+  color: var(--color-accent);
+}
+
+/* ---------- Bereich „Bausteine“: Bibliothek mit Vorschau und Hilfe ---------- */
+.bibliothek-titel {
+  margin: var(--space-6) 0 var(--space-3);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.bibliothek {
+  display: grid;
+  grid-template-columns: minmax(0, var(--popover-width)) minmax(0, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.bibliothek-liste {
+  max-height: var(--code-pane-height);
+  overflow-y: auto;
+}
+
+.bibliothek-liste h2 {
+  margin: var(--space-3) 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bibliothek-liste ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bibliothek-eintrag {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1-5) var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bibliothek-eintrag:hover {
+  background: var(--color-hover);
+}
+
+.bibliothek-eintrag.active {
+  background: var(--color-active);
+}
+
+.bibliothek-eintrag svg {
+  flex: none;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  margin-top: var(--space-0-5);
+  color: var(--color-text-muted);
+}
+
+.bibliothek-name {
+  display: block;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.bibliothek-beschreibung {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.bibliothek-eigen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.bibliothek-eigen .bibliothek-eintrag {
+  flex: 1;
+  min-width: 0;
+}
+
+.bibliothek-aktionen {
+  display: flex;
+  flex: none;
+}
+
+.bibliothek-leer {
+  margin: var(--space-1) var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.bibliothek-vorschau {
+  height: var(--code-pane-height);
+  min-height: var(--code-pane-min-height);
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+
+.bibliothek-vorschau .html-frame {
+  padding: 0;
+}
+
+.hilfe {
+  max-width: var(--content-width);
+  margin-top: var(--space-4);
+}
+
+.hilfe-einleitung {
+  color: var(--color-text-muted);
+}
+
+.hilfe-eintrag {
+  padding: var(--space-4) 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.hilfe-eintrag h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-xl);
+}
+
+.hilfe-eintrag h2 svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  color: var(--color-text-muted);
+}
+
+.hilfe-eintrag p {
+  margin: 0 0 var(--space-2);
+}
+
+.hilfe-code {
+  position: relative;
+}
+
+.hilfe-code pre {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  padding-right: calc(var(--space-24) + var(--space-4));
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  border: var(--border-width) solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.hilfe-code .ui-button {
+  position: absolute;
+  top: var(--space-1-5);
+  right: var(--space-1-5);
+}
+
+@media (max-width: 767px) {
+  .bibliothek {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bibliothek-liste {
+    max-height: none;
+  }
+
+  .bibliothek-vorschau {
+    height: calc(var(--code-pane-height) * 0.8);
+  }
+}

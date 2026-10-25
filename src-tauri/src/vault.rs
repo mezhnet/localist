@@ -403,12 +403,12 @@ pub fn delete_entry(root: &Path, rel: &str) -> Result<(), String> {
 }
 
 #[cfg(not(target_os = "android"))]
-fn move_to_trash(_root: &Path, path: &Path) -> Result<(), String> {
+pub(crate) fn move_to_trash(_root: &Path, path: &Path) -> Result<(), String> {
     trash::delete(path).map_err(|e| format!("„{}“ konnte nicht in den Papierkorb verschoben werden: {e}", display_name(path)))
 }
 
 #[cfg(target_os = "android")]
-fn move_to_trash(root: &Path, path: &Path) -> Result<(), String> {
+pub(crate) fn move_to_trash(root: &Path, path: &Path) -> Result<(), String> {
     vault_trash(root, path).map(|_| ())
 }
 

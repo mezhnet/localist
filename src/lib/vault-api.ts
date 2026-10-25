@@ -2,6 +2,7 @@
 // Alle Pfade außer dem Vault-Wurzelpfad sind relativ zum Vault und verwenden "/" als Trenner.
 // Fehler kommen aus Rust als deutsche Meldungen (string) und werden als Promise-Rejection geliefert.
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import type { EigenerBaustein } from "./eigene-bausteine";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { ask, open } from "@tauri-apps/plugin-dialog";
 
@@ -118,6 +119,21 @@ export function createFolder(dir: string, name: string): Promise<string> {
 /** Benennt um (Seiten: neuer Titel ohne ".md"). Liefert den neuen relativen Pfad. */
 export function renameEntry(path: string, newName: string): Promise<string> {
   return invoke<string>("rename_entry", { path, newName });
+}
+
+/** Eigene Bausteine des Vaults („Code-Speicher“ in `.localist/bausteine/eigene/`), nach Namen sortiert. */
+export function listEigeneBausteine(): Promise<EigenerBaustein[]> {
+  return invoke<EigenerBaustein[]>("eigene_bausteine");
+}
+
+/** Speichert einen eigenen Baustein; mit `alterName` wird ein vorhandener geändert (und ggf. umbenannt). */
+export function saveEigenerBaustein(alterName: string | null, name: string, beschreibung: string, code: string): Promise<string> {
+  return invoke<string>("eigenen_baustein_speichern", { alterName, name, beschreibung, code });
+}
+
+/** Verschiebt einen eigenen Baustein in den Papierkorb. */
+export function deleteEigenerBaustein(name: string): Promise<void> {
+  return invoke<void>("eigenen_baustein_loeschen", { name });
 }
 
 /** Verschiebt in den Papierkorb des Systems. Die Bestätigung holt vorher die Oberfläche ein. */

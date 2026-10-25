@@ -2,6 +2,7 @@
 // Seiten und Ordner lassen sich anlegen, umbenennen, anheften, verschieben (auch per Drag & Drop) und löschen
 // (per Rechtsklick, "⋯"-Knopf, F2 oder Entf). Notizen und HTML-Seiten haben verschiedene Symbole.
 import {
+  Blocks,
   ChevronRight,
   ChevronsUpDown,
   Database,
@@ -34,6 +35,8 @@ export interface SidebarActions {
   onOpen: (path: string) => void;
   onOpenDatabase: (path: string) => void;
   onOpenHome: () => void;
+  /** Bereich „Bausteine“ (Bibliothek und Hilfe) öffnen. */
+  onOpenLibrary: () => void;
   onCreate: (kind: CreateKind, dir: string) => void;
   onRename: (node: TreeNode, newName: string) => void;
   /** Per Drag & Drop in einen Ordner gezogen ("" = Vault-Wurzel). */
@@ -57,6 +60,8 @@ interface Props extends SidebarActions {
   openDatabase: string | null;
   /** Die Startseite ist zu sehen (keine Seite und keine Datenbank offen). */
   homeActive: boolean;
+  /** Der Bereich „Bausteine“ ist offen. */
+  libraryActive?: boolean;
   /** Angeheftete Seiten und Datenbanken (Pfade). */
   favorites: string[];
   /** Emoji-Icons der Seiten (aus dem Frontmatter). */
@@ -323,6 +328,15 @@ export function Sidebar(props: Props) {
           onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}
         >
           Neu
+        </Button>
+        <Button
+          variant="ghost"
+          className={cx("sidebar-item", props.libraryActive && "active")}
+          icon={<Blocks />}
+          onClick={props.onOpenLibrary}
+          title="Alle Bausteine mit Vorschau, eigene Bausteine und Hilfe"
+        >
+          Bausteine
         </Button>
       </div>
 

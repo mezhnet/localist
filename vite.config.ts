@@ -6,6 +6,8 @@ import process from "node:process";
 // @ts-expect-error type error without @types/node package
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { bausteineBauen } from "./src/bausteine/bauen.ts";
+import { BIBLIOTHEK_PFAD, bibliothekSeite, bibliothekVorlage } from "./src/lib/bibliothek.ts";
+import { EIGENE_DIR, eigenerBausteinLesen } from "./src/lib/eigene-bausteine.ts";
 import { bundledBaustein, contentType, injectBridge, requestToRel, schemeHeaders } from "./src/lib/seiten-schema.ts";
 const host = process.env.TAURI_DEV_HOST;
 
@@ -37,6 +39,9 @@ function localistBausteine(): Plugin {
         lizenz: readFileSync(`${INTER}/LICENSE`, "utf8"),
       },
     });
+    // Vorlage der Bibliotheksseite (eingebaute Bausteine mit Beispiel), nur für das Schema der App
+    const vorlage = bibliothekVorlage();
+    if (!existsSync(`${SEITE}/bibliothek.html`) || readFileSync(`${SEITE}/bibliothek.html`, "utf8") !== vorlage) writeFileSync(`${SEITE}/bibliothek.html`, vorlage);
     for (const dir of [SEITE, "beispiel-vault/.localist/bausteine"]) {
       mkdirSync(dir, { recursive: true });
       for (const [name, text] of [
@@ -55,7 +60,7 @@ function localistBausteine(): Plugin {
     configureServer(server) {
       server.watcher.add(["src/bausteine", "src/styles/tokens.css"]);
       const onChange = (file: string) => {
-        if (/src[\\/](bausteine[\\/][^\\/]+\.(css|js)|styles[\\/]tokens\.css)$/.test(file)) erzeugen();
+        if (/src[\\/](bausteine[\\/][^\\/]+\.(css|js)|styles[\\/]tokens\.css|lib[\\/](bausteine|bibliothek)\.ts)$/.test(file)) erzeugen();
       };
       server.watcher.on("change", onChange);
       server.watcher.on("add", onChange);
@@ -85,7 +90,10 @@ function localistSeite(): Plugin {
         };
 
         if (url.pathname === "/__localist-dev/datei") {
-          const rel = requestToRel(`/${url.searchParams.get("pfad") ?? ""}`);
+          const pfad = url.searchParams.get("pfad") ?? "";
+          // Eigene Bausteine liegen in einem versteckten Ordner; nur für die Bibliotheksseite angenommen.
+          const eigener = new RegExp(`^${EIGENE_DIR.replace(/\./g, "\\.")}/[^/\\\\]+\\.html$`).test(pfad);
+          const rel = eigener ? pfad : requestToRel(`/${pfad}`);
           if (rel === null) return send(400, "text/plain; charset=utf-8", "Ungültiger Pfad.");
           if (req.method === "DELETE") {
             overlay.set(rel, null);
@@ -107,6 +115,19 @@ function localistSeite(): Plugin {
         if (rel === null) return send(403, "text/plain; charset=utf-8", "Zugriff verweigert.", headers);
         const bundled = bundledBaustein(rel);
         if (bundled) return send(200, contentType(rel), readFileSync(`${SEITE}/localist.${bundled}`), headers);
+        if (rel === BIBLIOTHEK_PFAD) {
+          // Wie page_scheme.rs: Vorlage + eigene Bausteine (aus dem Beispiel-Vault, überlagert von Änderungen der Vorschau)
+          const dateien = new Map<string, string | null>();
+          const ordner = `beispiel-vault/${EIGENE_DIR}`;
+          if (existsSync(ordner)) for (const name of readdirSync(ordner) as string[]) if (name.endsWith(".html")) dateien.set(`${EIGENE_DIR}/${name}`, readFileSync(`${ordner}/${name}`, "utf8"));
+          for (const [pfad, inhalt] of overlay) if (pfad.startsWith(`${EIGENE_DIR}/`)) dateien.set(pfad, inhalt);
+          const eigene = [...dateien]
+            .filter((eintrag): eintrag is [string, string] => eintrag[1] !== null)
+            .map(([pfad, inhalt]) => ({ name: pfad.slice(EIGENE_DIR.length + 1, -".html".length), ...eigenerBausteinLesen(inhalt) }))
+            .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+          const seite = bibliothekSeite(readFileSync(`${SEITE}/bibliothek.html`, "utf8"), eigene);
+          return send(200, contentType(rel), injectBridge(seite, readFileSync(`${SEITE}/bruecke.js`, "utf8"), PAGE_PREFIX), headers);
+        }
         let body: string | Uint8Array | null = null;
         if (overlay.has(rel)) body = overlay.get(rel) ?? null;
         else {

@@ -29,12 +29,21 @@ import {
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { BAUSTEIN_KLASSEN, BAUSTEIN_TAGS, BAUSTEINE, planInsert, type BausteinArt } from "../lib/bausteine";
+import { BAUSTEIN_KLASSEN, BAUSTEIN_TAGS, planInsert } from "../lib/bausteine";
 
 /** Was die Seite mit dem Editor machen kann (Werkzeugleiste). */
 export interface CodeEditorApi {
   /** Fügt eine Vorlage eingerückt an der Cursorposition ein und markiert `auswahl`. */
   insert: (vorlage: readonly string[], auswahl?: string) => void;
+  /** Der markierte Text (mit dem Zeilenende "\n"), leer ohne Markierung. */
+  markierung: () => string;
+}
+
+/** Eintrag im „/“-Menü: eingebauter Baustein (id = Art) oder eigener (id = "eigen:<Name>"). */
+export interface SlashEintrag {
+  id: string;
+  name: string;
+  beschreibung: string;
 }
 
 interface Props {
@@ -48,8 +57,10 @@ interface Props {
   onChange: (value: string) => void;
   /** Hier legt der Editor seine Schnittstelle ab. */
   apiRef?: MutableRefObject<CodeEditorApi | null>;
+  /** Einträge des „/“-Menüs. */
+  slashEintraege?: SlashEintrag[];
   /** Ein Baustein wurde im „/“-Menü gewählt (das „/…“ ist schon entfernt, der Cursor steht an seiner Stelle). */
-  onSlash?: (art: BausteinArt) => void;
+  onSlash?: (id: string) => void;
 }
 
 /** Hier darf „/“ das Bausteinmenü öffnen: nicht in Tags, Attributen, Kommentaren, Skripten und Styles. */
@@ -59,9 +70,9 @@ const NO_SLASH_MENU = new Set(["OpenTag", "CloseTag", "SelfClosingTag", "Attribu
  * „/“-Menü: „/“ am Zeilenanfang (oder direkt nach einem Tag) zeigt alle Bausteine, weitere Buchstaben filtern.
  * Die Auswahl löscht „/…“ und übergibt den Baustein an `onSlash`.
  */
-function slashMenu(onSlash: MutableRefObject<((art: BausteinArt) => void) | undefined>) {
+function slashMenu(eintraege: MutableRefObject<SlashEintrag[]>, onSlash: MutableRefObject<((id: string) => void) | undefined>) {
   return (context: CompletionContext): CompletionResult | null => {
-    if (!onSlash.current) return null;
+    if (!onSlash.current || eintraege.current.length === 0) return null;
     const match = context.matchBefore(/\/[\p{L}\d-]*$/u);
     if (!match) return null;
     const line = context.state.doc.lineAt(match.from);
@@ -74,14 +85,14 @@ function slashMenu(onSlash: MutableRefObject<((art: BausteinArt) => void) | unde
     return {
       from: match.from + 1,
       validFor: /^[\p{L}\d-]*$/u,
-      options: BAUSTEINE.map((info, index) => ({
-        label: info.name,
-        detail: info.beschreibung,
-        type: "class",
+      options: eintraege.current.map((eintrag, index) => ({
+        label: eintrag.name,
+        detail: eintrag.beschreibung,
+        type: eintrag.id.startsWith("eigen:") ? "variable" : "class",
         boost: -index,
         apply: (view: EditorView, _completion: unknown, from: number, to: number) => {
           view.dispatch({ changes: { from: from - 1, to, insert: "" } });
-          onSlash.current?.(info.art);
+          onSlash.current?.(eintrag.id);
         },
       })),
     };
@@ -178,7 +189,7 @@ const editorTheme = (dark: boolean) =>
     { dark },
   );
 
-export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange, apiRef, onSlash }: Props) {
+export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange, apiRef, slashEintraege = [], onSlash }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const themeSlot = useRef(new Compartment());
@@ -186,6 +197,8 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
   onChangeRef.current = onChange;
   const onSlashRef = useRef(onSlash);
   onSlashRef.current = onSlash;
+  const slashRef = useRef(slashEintraege);
+  slashRef.current = slashEintraege;
   // Während der Inhalt von außen ersetzt wird, keine Änderung melden.
   const replacing = useRef(false);
 
@@ -215,7 +228,7 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
         search({ top: true }),
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap, indentWithTab]),
         html({ autoCloseTags: true, selfClosingTags: false, extraTags: BAUSTEIN_TAGS, extraGlobalAttributes: { class: BAUSTEIN_KLASSEN } }),
-        htmlLanguage.data.of({ autocomplete: slashMenu(onSlashRef) }),
+        htmlLanguage.data.of({ autocomplete: slashMenu(slashRef, onSlashRef) }),
         syntaxHighlighting(highlightStyle),
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({ "aria-label": label }),
@@ -243,6 +256,10 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
             userEvent: "input",
           });
           editor.focus();
+        },
+        markierung: () => {
+          const { from, to } = editor.state.selection.main;
+          return editor.state.doc.sliceString(from, to);
         },
       };
     }

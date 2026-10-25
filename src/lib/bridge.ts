@@ -118,6 +118,11 @@ export function scrollMessage(y: number) {
   return { localist: 1, typ: "scrollen", y: Math.max(0, Math.round(y)) } as const;
 }
 
+/** Zu einem Abschnitt der Seite scrollen (Bibliothek). Nur einfache ids. */
+export function ankerMessage(id: string) {
+  return { localist: 1, typ: "anker", id: /^[\w-]{1,100}$/.test(id) ? id : "" } as const;
+}
+
 /** Stift-Symbole und Häkchen-Meldungen in der Seite an- oder ausschalten. */
 export function editMessage(an: boolean) {
   return { localist: 1, typ: "stifte", an } as const;

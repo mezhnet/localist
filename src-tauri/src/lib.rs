@@ -2,6 +2,7 @@
 //! der Dateiwächter in `watcher.rs`. Fehler gehen als deutsche Meldungen an die Oberfläche.
 
 mod bausteine;
+mod eigene;
 mod page_scheme;
 mod search_index;
 mod security_test;
@@ -130,6 +131,24 @@ async fn open_vault(app: AppHandle, state: State<'_, AppState>, path: String) ->
     }
     let name = root.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(path.clone());
     Ok(VaultInfo { root: path, name })
+}
+
+/// Eigene Bausteine des Vaults („Code-Speicher“), nach Namen sortiert.
+#[tauri::command]
+async fn eigene_bausteine(state: State<'_, AppState>) -> Result<Vec<eigene::EigenerBaustein>, String> {
+    eigene::liste(&state.root()?)
+}
+
+/// Speichert einen eigenen Baustein (mit `alter_name`: ändert und benennt ggf. um). Liefert den Namen.
+#[tauri::command]
+async fn eigenen_baustein_speichern(state: State<'_, AppState>, alter_name: Option<String>, name: String, beschreibung: String, code: String) -> Result<String, String> {
+    eigene::speichern(&state.root()?, alter_name.as_deref(), &name, &beschreibung, &code)
+}
+
+/// Verschiebt einen eigenen Baustein in den Papierkorb.
+#[tauri::command]
+async fn eigenen_baustein_loeschen(state: State<'_, AppState>, name: String) -> Result<(), String> {
+    eigene::loeschen(&state.root()?, &name)
 }
 
 #[tauri::command]
@@ -348,7 +367,10 @@ pub fn run() {
             sicherheitstest_info,
             sicherheitstest_probe,
             sicherheitstest_probe_status,
-            sicherheitstest_bericht
+            sicherheitstest_bericht,
+            eigene_bausteine,
+            eigenen_baustein_speichern,
+            eigenen_baustein_loeschen
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");

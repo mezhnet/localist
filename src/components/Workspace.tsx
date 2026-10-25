@@ -18,11 +18,13 @@ import { useVaultSettings } from "../lib/settings";
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
 import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
 import { useSchemas } from "../lib/useSchemas";
+import type { EigenerBaustein } from "../lib/eigene-bausteine";
 import {
   confirmAction,
   createFolder,
   createPage,
   deleteEntry,
+  listEigeneBausteine,
   listTree,
   onVaultChanged,
   readPage,
@@ -37,6 +39,7 @@ import { Backlinks } from "./Backlinks";
 import { DatabaseView, loadRows } from "./DatabaseView";
 import { MoveDialog, QuickSwitcher, SearchDialog, SettingsDialog, TemplatePicker } from "./Dialogs";
 import { HomePage } from "./HomePage";
+import { BausteinBibliothek } from "./BausteinBibliothek";
 import { HtmlPageView } from "./HtmlPageView";
 import { PageView } from "./PageView";
 import { Sidebar, type CreateKind } from "./Sidebar";
@@ -71,6 +74,14 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   const [vaultMissing, setVaultMissing] = useState(false);
   /** Geöffnete Datenbank (Ordnerpfad); dann ist keine Seite offen. */
   const [database, setDatabase] = useState<string | null>(null);
+  /** Bereich „Bausteine“ (Bibliothek und Hilfe) ist offen. */
+  const [library, setLibrary] = useState(false);
+  /** Eigene Bausteine des Vaults („Code-Speicher“). */
+  const [eigene, setEigene] = useState<EigenerBaustein[]>([]);
+  const loadEigene = useCallback(() => {
+    listEigeneBausteine().then(setEigene, () => setEigene([]));
+  }, []);
+  useEffect(loadEigene, [loadEigene]);
   const [databaseVersion, setDatabaseVersion] = useState(0);
   /** Wird bei jeder Änderung im Vault erhöht (z. B. damit Backlinks neu berechnet werden). */
   const [vaultVersion, setVaultVersion] = useState(0);
@@ -250,6 +261,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     pageRef.current = { key: nextPageKey++, path, isNew };
     setPage(pageRef.current);
     setDatabase(null);
+    setLibrary(false);
   };
 
   const openDatabase = async (folder: string) => {
@@ -257,12 +269,22 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     pageRef.current = null;
     setPage(null);
     setDatabase(folder);
+    setLibrary(false);
   };
 
   const openHome = async () => {
     await saverRef.current?.flush();
     closePage();
     setDatabase(null);
+    setLibrary(false);
+    setMenuOpen(false);
+  };
+
+  const openLibrary = async () => {
+    await saverRef.current?.flush();
+    closePage();
+    setDatabase(null);
+    setLibrary(true);
     setMenuOpen(false);
   };
 
@@ -510,7 +532,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   };
 
   const current = page?.path ?? database;
-  const homeActive = !page && !database && !vaultMissing;
+  const homeActive = !page && !database && !library && !vaultMissing;
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
 
   return (
@@ -530,6 +552,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           onOpen={(path) => void openPage(path)}
           onOpenDatabase={(path) => void openDatabase(path)}
           onOpenHome={() => void openHome()}
+          libraryActive={library}
+          onOpenLibrary={() => void openLibrary()}
           onConvertToDatabase={(path) => void convertToDatabase(path)}
           onToggleFavorite={(path) => void updateFavorites((list) => toggleFavorite(list, path))}
           onQuickOpen={() => setDialog({ kind: "quick" })}
@@ -566,7 +590,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
                 </span>
               </>
             ) : (
-              <span className="topbar-title">{vaultMissing ? vault.name : "Startseite"}</span>
+              <span className="topbar-title">{vaultMissing ? vault.name : library ? "Bausteine" : "Startseite"}</span>
             )}
           </nav>
           <div className="topbar-actions">
@@ -606,6 +630,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               </Button>
             </div>
           </div>
+        ) : library ? (
+          <BausteinBibliothek eigene={eigene} onEigeneChanged={loadEigene} onError={showError} />
         ) : database && schemas.configs[database] ? (
           <DatabaseView
             key={database}
@@ -639,6 +665,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               onOpenLink={openFromHtmlPage}
               onOpenExternal={(url) => void openExternal(url)}
               pages={pages}
+              eigene={eigene}
+              onEigeneChanged={loadEigene}
             >
               <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path) => void openPage(path)} />
             </HtmlPageView>

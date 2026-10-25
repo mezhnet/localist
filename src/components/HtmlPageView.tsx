@@ -9,7 +9,8 @@ import { FileCode } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { bausteinAnzahl, bausteinEntfernen, bausteinLesen, bausteinSchreiben, haekchenSetzen, type BausteinWerte } from "../lib/baustein-formulare";
-import { bausteinInfo, type BausteinArt } from "../lib/bausteine";
+import { BAUSTEINE, bausteinInfo, type BausteinArt } from "../lib/bausteine";
+import { eigenerBausteinZeilen, type EigenerBaustein } from "../lib/eigene-bausteine";
 import { encodePath, readHead, relativePath, setMeta } from "../lib/html";
 import {
   HTML_VIEW_MODES,
@@ -27,7 +28,8 @@ import { pageTitle, parentDir } from "../lib/tree";
 import { confirmAction, importAttachment, pickImage, readPage, writePage } from "../lib/vault-api";
 import { BausteinDialog } from "./BausteinDialog";
 import { BausteinLeiste } from "./BausteinLeiste";
-import { CodeEditor, type CodeEditorApi } from "./CodeEditor";
+import { CodeEditor, type CodeEditorApi, type SlashEintrag } from "./CodeEditor";
+import { EigenerBausteinDialog } from "./EigenerBausteinDialog";
 import { PagePicker } from "./Dialogs";
 import { PageHeader } from "./PageHeader";
 import { PagePreview } from "./PagePreview";
@@ -50,11 +52,28 @@ interface Props {
   onOpenExternal: (url: string) => void;
   /** Alle Seiten des Vaults (Ziele für Seitenlinks). */
   pages: PageRef[];
+  /** Eigene Bausteine des Vaults (Werkzeugleiste und „/“-Menü). */
+  eigene?: EigenerBaustein[];
+  /** Ein eigener Baustein wurde gespeichert: Liste neu laden. */
+  onEigeneChanged?: () => void;
   /** Wird unter der Seite angezeigt (Backlinks). */
   children?: ReactNode;
 }
 
-export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, onRename, onError, onOpenLink, onOpenExternal, pages, children }: Props) {
+export function HtmlPageView({
+  path,
+  isNew = false,
+  externalVersion,
+  saverRef,
+  onRename,
+  onError,
+  onOpenLink,
+  onOpenExternal,
+  pages,
+  eigene = [],
+  onEigeneChanged,
+  children,
+}: Props) {
   const [mode, setModeState] = useState<HtmlViewMode>(() => (isNew ? "geteilt" : storedViewMode()));
   const [wholeFile, setWholeFile] = useState(false);
   /** Dateiinhalt zuletzt geladen oder gespeichert (für Kopf und Neuladen). */
@@ -84,6 +103,8 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
   const [pickingPage, setPickingPage] = useState(false);
   /** Baustein, der gerade im Formular bearbeitet wird (Nummer wie im iframe gezählt). */
   const [formular, setFormular] = useState<{ index: number; werte: BausteinWerte } | null>(null);
+  /** Markierter Code, der als eigener Baustein gespeichert werden soll. */
+  const [speichernCode, setSpeichernCode] = useState<string | null>(null);
   /** Änderungen aus Formular und Häkchen nacheinander schreiben, damit keine eine andere überholt. */
   const changes = useRef<Promise<void>>(Promise.resolve());
 
@@ -178,6 +199,25 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
     },
     [saverRef],
   );
+
+  const insertEigen = (name: string) => {
+    const baustein = eigene.find((candidate) => candidate.name === name);
+    if (baustein) editorApi.current?.insert(eigenerBausteinZeilen(baustein.code));
+  };
+
+  /** Markierten Code als eigenen Baustein speichern (öffnet den Dialog für Name und Beschreibung). */
+  const saveSelection = () => {
+    const code = editorApi.current?.markierung() ?? "";
+    if (!code.trim()) onError("Markiere zuerst den Code, den du als eigenen Baustein speichern möchtest.");
+    else setSpeichernCode(code);
+  };
+
+  /** Einträge des „/“-Menüs: eingebaute Bausteine, dann die eigenen. */
+  const slashEintraege: SlashEintrag[] = [
+    ...BAUSTEINE.map((info) => ({ id: info.art, name: info.name, beschreibung: info.beschreibung })),
+    ...eigene.map((baustein) => ({ id: `eigen:${baustein.name}`, name: baustein.name, beschreibung: baustein.beschreibung || "Eigener Baustein" })),
+  ];
+  const onSlash = (id: string) => (id.startsWith("eigen:") ? insertEigen(id.slice("eigen:".length)) : void insertBaustein(id as BausteinArt));
 
   /** Baustein aus Werkzeugleiste oder „/“-Menü einfügen. Bild und Seitenlink fragen vorher nach dem Ziel. */
   const insertBaustein = async (art: BausteinArt) => {
@@ -375,7 +415,7 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
           <div className={cx("html-workspace", `is-${mode}`)}>
             {editing && (
               <div className="html-code-pane">
-                <BausteinLeiste onPick={(art) => void insertBaustein(art)} />
+                <BausteinLeiste onPick={(art) => void insertBaustein(art)} eigene={eigene} onPickEigen={insertEigen} onSave={saveSelection} />
                 <CodeEditor
                   value={splitRef.current?.body ?? split.body}
                   docVersion={editorVersion}
@@ -384,7 +424,8 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
                   label={`HTML-Code von „${title}“`}
                   onChange={onEditorChange}
                   apiRef={editorApi}
-                  onSlash={(art) => void insertBaustein(art)}
+                  slashEintraege={slashEintraege}
+                  onSlash={onSlash}
                 />
               </div>
             )}
@@ -416,6 +457,17 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
           onRemove={() => void removeBaustein()}
           onClose={() => setFormular(null)}
           onError={onError}
+        />
+      )}
+      {speichernCode !== null && (
+        <EigenerBausteinDialog
+          baustein={null}
+          code={speichernCode}
+          onClose={() => setSpeichernCode(null)}
+          onSaved={() => {
+            setSpeichernCode(null);
+            onEigeneChanged?.();
+          }}
         />
       )}
       {pickingPage && (

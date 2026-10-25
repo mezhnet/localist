@@ -8,6 +8,7 @@
 //! (nie in die Datei) kommt das Brücken-Skript.
 
 use crate::bausteine::{self, DIR as BAUSTEINE_DIR};
+use crate::eigene;
 use crate::vault::{is_hidden, read_text, resolve};
 use std::fs;
 use std::path::Path;
@@ -151,6 +152,12 @@ pub fn answer(root: Option<&Path>, request_path: &str, basis: &str, extra: impl 
     if lower == format!("{BAUSTEINE_DIR}/localist.js") {
         return Answer { status: 200, content_type: content_type(&rel), body: bausteine::JS.as_bytes().to_vec() };
     }
+    if lower == format!("{BAUSTEINE_DIR}/bibliothek.html") {
+        // Bibliothek: eingebaute Bausteine (Vorlage aus dem Build) plus die eigenen Bausteine dieses Vaults
+        let eigene = root.map(|root| eigene::liste(root).unwrap_or_default()).unwrap_or_default();
+        let seite = eigene::bibliothek_seite(eigene::BIBLIOTHEK, &eigene);
+        return Answer { status: 200, content_type: content_type(&rel), body: inject_bridge(&seite, basis).into_bytes() };
+    }
     if let Some((body, content_type)) = extra(&rel) {
         let body = if content_type.starts_with("text/html") { inject_bridge(&String::from_utf8_lossy(&body), basis).into_bytes() } else { body };
         return Answer { status: 200, content_type, body };
@@ -247,6 +254,17 @@ mod tests {
         assert_eq!(css.body, bausteine::CSS.as_bytes());
         assert_eq!(css.content_type, "text/css; charset=utf-8");
         assert_eq!(answer(Some(&vault), "/.localist/bausteine/localist.js", "/", none).body, bausteine::JS.as_bytes());
+
+        // Bibliothek: virtuelle Seite mit den eingebauten und den eigenen Bausteinen des Vaults (mit Brücke)
+        eigene::speichern(&vault, None, "Lernziel-Box", "Box für Lernziele", "<l-callout>Ziel</l-callout>").unwrap();
+        let bibliothek = String::from_utf8(answer(Some(&vault), "/.localist/bausteine/bibliothek.html", "/", none).body).unwrap();
+        assert!(bibliothek.contains("id=\"baustein-karteikarte\""));
+        assert!(bibliothek.contains("<h2>Lernziel-Box</h2>
+<p class=\"beschreibung\">Box für Lernziele</p>
+<l-callout>Ziel</l-callout>"));
+        assert!(bibliothek.contains("var BASIS = \"/\";"));
+        // Die Dateien der eigenen Bausteine selbst liefert das Schema nicht aus.
+        assert_eq!(answer(Some(&vault), "/.localist/bausteine/eigene/Lernziel-Box.html", "/", none).status, 403);
 
         let _ = fs::remove_dir_all(&vault);
         let _ = fs::remove_file(vault.parent().unwrap().join("localist-schema-geheim.txt"));

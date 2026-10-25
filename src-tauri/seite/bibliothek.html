@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bausteine</title>
+<link rel="stylesheet" href="localist.css">
+<script src="localist.js" defer></script>
+<style>
+.eintrag { padding: var(--space-4) 0 var(--space-6); border-bottom: var(--border-width) solid var(--color-border); scroll-margin-top: var(--space-4); }
+.eintrag > h2 { margin: 0; font-size: var(--font-size-xl); }
+.beschreibung { margin: var(--space-1) 0 var(--space-3); color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.gruppe { margin: var(--space-8) 0 0; color: var(--color-text-muted); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); letter-spacing: 0.04em; text-transform: uppercase; }
+.gruppe:first-child { margin-top: 0; }
+.leer { color: var(--color-text-muted); }
+</style>
+</head>
+<body>
+<main>
+<h1 class="gruppe" id="eingebaut">Eingebaute Bausteine</h1>
+<section class="eintrag" id="baustein-callout">
+<h2>Callout</h2>
+<p class="beschreibung">Farbige Box für Hinweise, Tipps und Warnungen</p>
+<l-callout typ="tipp">Speichere regelmäßig eine Sicherung deiner Arbeit.</l-callout>
+</section>
+<section class="eintrag" id="baustein-toggle">
+<h2>Toggle</h2>
+<p class="beschreibung">Aufklappbarer Abschnitt mit Titel</p>
+<details>
+  <summary>Mehr erfahren</summary>
+  <p>Dieser Text erscheint erst nach einem Klick auf den Titel.</p>
+</details>
+</section>
+<section class="eintrag" id="baustein-tabelle">
+<h2>Tabelle</h2>
+<p class="beschreibung">Tabelle mit Überschriftenzeile</p>
+<table>
+  <tr><th>Protokoll</th><th>Port</th></tr>
+  <tr><td>HTTP</td><td>80</td></tr>
+  <tr><td>HTTPS</td><td>443</td></tr>
+</table>
+</section>
+<section class="eintrag" id="baustein-checkliste">
+<h2>Checkliste</h2>
+<p class="beschreibung">Liste zum Abhaken</p>
+<ul class="l-checkliste">
+  <li><input type="checkbox" checked> Vokabeln wiederholen</li>
+  <li><input type="checkbox"> Übungsblatt lösen</li>
+</ul>
+</section>
+<section class="eintrag" id="baustein-spalten">
+<h2>Spalten</h2>
+<p class="beschreibung">Zwei Spalten nebeneinander</p>
+<l-spalten>
+  <l-spalte>
+    <p><strong>Vorteile:</strong> schnell und günstig</p>
+  </l-spalte>
+  <l-spalte>
+    <p><strong>Nachteile:</strong> weniger sicher</p>
+  </l-spalte>
+</l-spalten>
+</section>
+<section class="eintrag" id="baustein-bild">
+<h2>Bild</h2>
+<p class="beschreibung">Bild aus dem Vault mit Bildunterschrift</p>
+<figure>
+  <img src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22320%22%20height%3D%22120%22%20viewBox%3D%220%200%20320%20120%22%3E%3Crect%20width%3D%22320%22%20height%3D%22120%22%20rx%3D%2210%22%20fill%3D%22%23e8eefc%22%2F%3E%3Ccircle%20cx%3D%2270%22%20cy%3D%2260%22%20r%3D%2228%22%20fill%3D%22%232f6be0%22%2F%3E%3Crect%20x%3D%22120%22%20y%3D%2240%22%20width%3D%22160%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%239db8ef%22%2F%3E%3Crect%20x%3D%22120%22%20y%3D%2266%22%20width%3D%22110%22%20height%3D%2212%22%20rx%3D%226%22%20fill%3D%22%23c5d6f6%22%2F%3E%3C%2Fsvg%3E" alt="Skizze eines kleinen Netzwerks">
+  <figcaption>Ein kleines Netzwerk</figcaption>
+</figure>
+</section>
+<section class="eintrag" id="baustein-trennlinie">
+<h2>Trennlinie</h2>
+<p class="beschreibung">Waagerechte Linie zwischen Abschnitten</p>
+<p>Erster Abschnitt</p>
+<hr>
+<p>Zweiter Abschnitt</p>
+</section>
+<section class="eintrag" id="baustein-code">
+<h2>Code-Block</h2>
+<p class="beschreibung">Programmcode in Festbreitenschrift</p>
+<pre><code class="language-js">const gruss = "Hallo";
+console.log(gruss);</code></pre>
+</section>
+<section class="eintrag" id="baustein-seitenlink">
+<h2>Seitenlink</h2>
+<p class="beschreibung">Verweis auf eine andere Seite im Vault</p>
+<p>Weiter geht es mit <a class="l-seitenlink" href="#">Ideen</a>.</p>
+</section>
+<section class="eintrag" id="baustein-karteikarte">
+<h2>Karteikarte</h2>
+<p class="beschreibung">Frage vorne, Antwort hinten – zum Umdrehen</p>
+<l-karteikarte>
+  <l-frage>Welchen Port nutzt DNS?</l-frage>
+  <l-antwort>Port 53</l-antwort>
+</l-karteikarte>
+</section>
+<section class="eintrag" id="baustein-kartenstapel">
+<h2>Kartenstapel</h2>
+<p class="beschreibung">Mehrere Karteikarten mit Lernmodus</p>
+<l-kartenstapel>
+  <l-karteikarte>
+    <l-frage>Hauptstadt von Frankreich?</l-frage>
+    <l-antwort>Paris</l-antwort>
+  </l-karteikarte>
+  <l-karteikarte>
+    <l-frage>Hauptstadt von Italien?</l-frage>
+    <l-antwort>Rom</l-antwort>
+  </l-karteikarte>
+</l-kartenstapel>
+</section>
+<section class="eintrag" id="baustein-quiz">
+<h2>Quiz</h2>
+<p class="beschreibung">Multiple-Choice-Fragen mit Punktzahl</p>
+<l-quiz>
+  <l-quizfrage>
+    <l-frage>Wie viele Bit hat ein Byte?</l-frage>
+    <ul>
+      <li>4</li>
+      <li data-richtig>8</li>
+      <li>16</li>
+    </ul>
+  </l-quizfrage>
+</l-quiz>
+</section>
+<section class="eintrag" id="baustein-diagramm">
+<h2>Diagramm</h2>
+<p class="beschreibung">Balken-, Linien- oder Kreisdiagramm aus einer Tabelle</p>
+<l-diagramm typ="balken" titel="Lernzeit pro Tag">
+  <table>
+    <tr><th>Tag</th><th>Minuten</th></tr>
+    <tr><td>Mo</td><td>30</td></tr>
+    <tr><td>Di</td><td>45</td></tr>
+    <tr><td>Mi</td><td>20</td></tr>
+  </table>
+</l-diagramm>
+</section>
+<h1 class="gruppe" id="eigene">Eigene Bausteine</h1>
+<!-- eigene-bausteine -->
+</main>
+</body>
+</html>

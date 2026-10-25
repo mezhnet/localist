@@ -189,6 +189,9 @@
       var dunkel = daten.wert === "dunkel";
       document.documentElement.setAttribute("data-theme", dunkel ? "dark" : "light");
       document.documentElement.style.colorScheme = dunkel ? "dark" : "light";
+    } else if (daten.typ === "anker" && typeof daten.id === "string" && /^[\w-]{1,100}$/.test(daten.id)) {
+      var ziel = document.getElementById(daten.id);
+      if (ziel) ziel.scrollIntoView({ block: "start", behavior: "smooth" });
     } else if (daten.typ === "stifte" && typeof daten.an === "boolean") {
       bearbeitbar = daten.an;
       if (bearbeitbar && !werkzeug) werkzeugBauen();
