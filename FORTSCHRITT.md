@@ -1,20 +1,22 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 1 – Vault und Seiten
-- Zuletzt aktualisiert: 2026-10-25 11:52
-- Nächster Schritt: Restliche Kriterien der Etappe 1 abhaken und nachweisen, danach Abschlussprüfung (npm test, tsc, tauri build).
+- Etappe: 2 – Notion-Feeling
+- Zuletzt aktualisiert: 2026-10-25 12:03
+- Nächster Schritt: Fertig-Kriterien der Etappe 2 als Checkliste übernehmen und mit dem Slash-Menü beginnen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Der Vault-Ordner lässt sich per Dialog auswählen, der zuletzt geöffnete Vault öffnet sich beim nächsten Start automatisch.
-- [x] Die Sidebar zeigt den Ordnerbaum mit Ordnern und `.md`-Dateien, versteckte Ordner sind ausgeblendet.
-- [x] Seiten und Ordner lassen sich anlegen, umbenennen und löschen (Löschen nur nach Bestätigung).
-- [x] Eine Seite öffnet sich im Block-Editor und wird kurz nach der letzten Eingabe automatisch als Markdown gespeichert.
-- [x] Wird eine Datei außerhalb der App geändert, lädt die App sie neu. Wird sie gelöscht, verschwindet sie aus der Sidebar.
-- [x] Roundtrip-Tests: Markdown → Editor-Format → Markdown liefert für Überschriften, Absätze, fett/kursiv, Listen, Checklisten, Zitate, Code-Blöcke, Links und Bilder denselben Inhalt.
-- [x] Frontmatter bleibt beim Bearbeiten im Editor unverändert erhalten (Test vorhanden).
+- (werden zu Beginn der Etappe 2 eingetragen)
 
 ## Abgeschlossene Etappen
+- Etappe 1 – Vault und Seiten (abgeschlossen am 2026-10-25). Nachweise: `npm test` 56 von 56 Tests grün (6 Testdateien), `cargo test --manifest-path src-tauri/Cargo.toml` 12 von 12 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zusätzlich in der Browser-Vorschau durchgeklickt: Vault öffnen und nach Neuladen automatisch wieder öffnen, Seite öffnen, Tippen und automatisch speichern, Änderung und Löschen von außen, Anlegen, Umbenennen, Löschen mit Rückfrage.
+  - [x] Der Vault-Ordner lässt sich per Dialog auswählen, der zuletzt geöffnete Vault öffnet sich beim nächsten Start automatisch.
+  - [x] Die Sidebar zeigt den Ordnerbaum mit Ordnern und `.md`-Dateien, versteckte Ordner sind ausgeblendet.
+  - [x] Seiten und Ordner lassen sich anlegen, umbenennen und löschen (Löschen nur nach Bestätigung).
+  - [x] Eine Seite öffnet sich im Block-Editor und wird kurz nach der letzten Eingabe automatisch als Markdown gespeichert.
+  - [x] Wird eine Datei außerhalb der App geändert, lädt die App sie neu. Wird sie gelöscht, verschwindet sie aus der Sidebar.
+  - [x] Roundtrip-Tests: Markdown → Editor-Format → Markdown liefert für Überschriften, Absätze, fett/kursiv, Listen, Checklisten, Zitate, Code-Blöcke, Links und Bilder denselben Inhalt.
+  - [x] Frontmatter bleibt beim Bearbeiten im Editor unverändert erhalten (Test vorhanden).
 - Etappe 0 – Fundament (abgeschlossen am 2026-10-24). Am 2026-10-25 auf dem Stand `09838e1` erneut nachgeprüft: `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zweite Nachprüfung am 2026-10-25 um 10:57 bestanden, nachdem drei Probleme gelöst waren (siehe „Offene Probleme“): `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (Rust-Teil in 1 min 56 s, EXE und beide Installer neu erzeugt, Pfade wie oben), „Hallo Vault“ in `src/App.tsx` und im Build `dist/assets/`, `git status` sauber, `CLAUDE.md` unverändert (Hash `f4a432f…` gleich in Arbeitskopie und Commit).
 
 ## Offene Probleme
