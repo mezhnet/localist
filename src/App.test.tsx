@@ -1458,3 +1458,124 @@ describe("Eigene Bausteine, Bibliothek und Hilfe (Etappe 13)", () => {
     expect(await quiz.findByText("Kopiert")).toBeTruthy();
   });
 });
+
+describe("Notizbücher, Umwandeln und Export (Etappe 14)", () => {
+  const ordnerMenue = async (name: string) => fireEvent.click(await screen.findByRole("button", { name: `Aktionen für „${name}“` }));
+  const inhalt = () => within(screen.getByRole("navigation", { name: "Inhaltsverzeichnis" }));
+  const eintraege = () => inhalt().getAllByRole("button").map((button) => button.textContent);
+  const vorschau = () => document.querySelector<HTMLIFrameElement>(".notizbuch-inhaltsseite iframe");
+
+  it("ein Ordner wird zum Notizbuch; Datenbank und Notizbuch schließen sich aus", async () => {
+    await openVaultFromStart();
+    await ordnerMenue("Projekte");
+    expect(screen.getByRole("menuitem", { name: "Datenbank öffnen" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "In Notizbuch umwandeln" })).toBeNull();
+    await ordnerMenue("Lernen");
+    expect(screen.getByRole("menuitem", { name: "Notizbuch öffnen" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "In Datenbank umwandeln" })).toBeNull();
+
+    await ordnerMenue("Notizen");
+    fireEvent.click(screen.getByRole("menuitem", { name: "In Notizbuch umwandeln" }));
+    await waitFor(() => expect(vault().files.get("Notizen/_notizbuch.yaml")).toBe("titel: Notizen\nseiten:\n  - DNS.html\n  - Formatierung.md\n  - Ideen.md\n"));
+    expect(await screen.findByRole("heading", { name: "Notizen", level: 1 })).toBeTruthy();
+    expect(eintraege()).toEqual(["1DNS", "2Formatierung", "3Ideen"]);
+    expect(await screen.findByText("„Notizen“ ist jetzt ein Notizbuch.")).toBeTruthy();
+  });
+
+  it("Notizbuch-Ansicht: Inhaltsverzeichnis, Notizen fertig dargestellt, Zurück/Weiter und Bearbeiten", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Lernen"));
+    expect(await screen.findByRole("heading", { name: "Lernen für die Prüfung", level: 1 })).toBeTruthy();
+    expect(eintraege()).toEqual(["1Subnetting", "2Bausteine"]);
+    // Die Notiz erscheint umgewandelt in der abgeschotteten Anzeige
+    await waitFor(() => expect(vorschau()?.getAttribute("src")).toMatch(/Lernen\/Subnetting\.md\?v=1$/));
+    expect(vorschau()!.getAttribute("sandbox")).toBe("allow-scripts");
+    const darstellung = vault().darstellungen.get("Lernen/Subnetting.md")!;
+    expect(darstellung).toContain('<l-callout typ="tipp">');
+    expect(darstellung).toContain("<summary>Lösungsweg</summary>");
+    expect(darstellung).toContain('<a href="Bausteine.html">Bausteinen</a>');
+    expect(screen.getByRole("button", { name: "Zurück" })).toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByRole("button", { name: "Weiter: Bausteine" }));
+    await waitFor(() => expect(vorschau()?.getAttribute("src")).toMatch(/Lernen\/Bausteine\.html\?v=1$/));
+    expect(screen.getByRole("button", { name: "Weiter" })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("button", { name: "Zurück: Subnetting" })).toBeTruthy();
+    // Bearbeiten öffnet die Seite im passenden Editor
+    fireEvent.click(screen.getByRole("button", { name: "Bearbeiten" }));
+    expect(await screen.findByRole("group", { name: "Ansicht (Strg+E)" })).toBeTruthy();
+  });
+
+  it("Reihenfolge per Drag & Drop (und Alt+↓) ändern; neue Seiten erscheinen am Ende", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Lernen"));
+    await screen.findByRole("heading", { name: "Lernen für die Prüfung", level: 1 });
+    const eintrag = (name: string) => inhalt().getByText(name).closest("li")!;
+    fireEvent.dragStart(eintrag("Bausteine"));
+    fireEvent.dragOver(eintrag("Subnetting"), { clientY: -100 });
+    fireEvent.drop(eintrag("Subnetting"));
+    await waitFor(() => expect(vault().files.get("Lernen/_notizbuch.yaml")).toBe("titel: Lernen für die Prüfung\nseiten:\n  - Bausteine.html\n  - Subnetting.md\n"));
+    expect(eintraege()).toEqual(["1Bausteine", "2Subnetting"]);
+    fireEvent.keyDown(inhalt().getByText("Bausteine").closest("button")!, { key: "ArrowDown", altKey: true });
+    await waitFor(() => expect(vault().files.get("Lernen/_notizbuch.yaml")).toContain("seiten:\n  - Subnetting.md\n  - Bausteine.html\n"));
+    act(() => vault().externalWrite("Lernen/Adressen.md", "# Adressen\n"));
+    await waitFor(() => expect(eintraege()).toEqual(["1Subnetting", "2Bausteine", "3Adressen"]));
+  });
+
+  it("„In HTML-Seite umwandeln“: neue Seite, Notiz im Papierkorb, Links und Notizbuch angepasst", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „Ideen“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "In HTML-Seite umwandeln …" }));
+    await waitFor(() => expect(vault().files.has("Notizen/Ideen.html")).toBe(true));
+    expect(confirm.mock.calls[0][0]).toMatch(/^„Ideen“ in eine HTML-Seite umwandeln\? Die Notiz kommt in den Papierkorb/);
+    const seite = vault().files.get("Notizen/Ideen.html")!;
+    expect(seite).toMatch(/<title>Ideen<\/title>\n<meta name="localist-id" content="[0-9a-f-]{36}">/);
+    expect(seite).toContain("<p>Hier sammle ich lose Gedanken.</p>");
+    expect(seite).toContain("<li>Wochenplanung als Kanban</li>");
+    await waitFor(() => expect(vault().files.has("Notizen/Ideen.md")).toBe(false));
+    // Links im Vault zeigen auf die neue Seite
+    await waitFor(() => expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("[[Ideen.html]]"));
+    expect(vault().files.get("Notizen/DNS.html")).toContain('<a href="Ideen.html">Ideen</a>');
+    expect(vault().files.get("Lernen/Bausteine.html")).toContain('<a class="l-seitenlink" href="../Notizen/Ideen.html">Ideen</a>');
+    expect(await screen.findByText("„Ideen“ ist jetzt eine HTML-Seite. Links in 3 Seiten angepasst.")).toBeTruthy();
+    expect(await screen.findByRole("group", { name: "Ansicht (Strg+E)" })).toBeTruthy();
+
+    // In einem Notizbuch wandert der Eintrag mit
+    fireEvent.click(await (await inTree()).findByText("Lernen"));
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „Subnetting“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "In HTML-Seite umwandeln …" }));
+    await waitFor(() => expect(vault().files.get("Lernen/_notizbuch.yaml")).toContain("  - Subnetting.html\n"));
+    expect(vault().files.get("Lernen/Subnetting.html")).toContain('<meta name="localist-prop-thema" content="Netzwerke">');
+    expect(vault().files.get("Lernen/Subnetting.html")).toContain('<meta name="localist-id" content="5e7c2a91-');
+  });
+
+  it("eine Notiz in einer Datenbank wird nur nach Hinweis umgewandelt", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Projekte"));
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „Umzug“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "In HTML-Seite umwandeln …" }));
+    await waitFor(() => expect(confirm).toHaveBeenCalled());
+    expect(confirm.mock.calls[0][0]).toContain("Sie liegt in einer Datenbank und erscheint danach nicht mehr in Tabelle, Kanban und Kalender.");
+    expect(vault().files.has("Projekte/Umzug.md")).toBe(true);
+    expect(vault().files.has("Projekte/Umzug.html")).toBe(false);
+  });
+
+  it("„Als HTML-Datei exportieren“: Speichern-Dialog, CSS und Skript eingebettet, keine Verweise in den Vault", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „DNS“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Als HTML-Datei exportieren …" }));
+    await waitFor(() => expect(vault().exporte.has("C:/Export/DNS.html")).toBe(true));
+    const datei = vault().exporte.get("C:/Export/DNS.html")!;
+    expect(datei).toMatch(/<style>\n\/\*! Localist-Bausteine /);
+    expect(datei).toMatch(/<\/main>\n<script>\n\/\*! Localist-Bausteine [\s\S]*<\/script>\n<\/body>/);
+    expect(datei).not.toContain(".localist/");
+    expect(await screen.findByText("„DNS“ wurde als eigenständige HTML-Datei gespeichert: C:/Export/DNS.html")).toBeTruthy();
+    // Notizen werden dabei umgewandelt, die Notiz selbst bleibt
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „Formatierung“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Als HTML-Datei exportieren …" }));
+    await waitFor(() => expect(vault().exporte.get("C:/Export/Formatierung.html")).toContain("<h1>Alle Formatierungen</h1>"));
+    expect(vault().files.has("Notizen/Formatierung.md")).toBe(true);
+  });
+});

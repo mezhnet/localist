@@ -616,6 +616,21 @@ mod tests {
     }
 
     #[test]
+    fn ordner_mit_notizbuch_datei_ist_ein_notizbuch() {
+        let vault = TestVault::new();
+        vault.file("Lernen/_notizbuch.yaml", "titel: Lernen\nseiten:\n  - DNS.html\n");
+        vault.file("Lernen/DNS.html", "<!doctype html>");
+        vault.file("Lernen/Subnetting.md", "# Subnetting");
+
+        let tree = list_tree(&vault.0).unwrap();
+        assert!(tree[0].notebook && !tree[0].database);
+        // _notizbuch.yaml ist keine Seite und erscheint nicht im Baum
+        let seiten: Vec<_> = tree[0].children.as_ref().unwrap().iter().map(|n| n.path.as_str()).collect();
+        assert_eq!(seiten, vec!["Lernen/DNS.html", "Lernen/Subnetting.md"]);
+        assert!(serde_json::to_string(&tree[0]).unwrap().contains("\"notebook\":true"));
+    }
+
+    #[test]
     fn pfade_duerfen_den_vault_nicht_verlassen() {
         let root = Path::new("C:/vault");
         assert!(resolve(root, "../geheim.md").is_err());

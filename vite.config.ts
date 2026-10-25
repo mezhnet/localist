@@ -174,6 +174,9 @@ export default defineConfig(() => ({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
+    // Oberflächen-Tests mit mehreren Wartezeiten (je bis 5 s) können unter paralleler Last länger als die
+    // üblichen 5 s brauchen; ein Test gilt erst nach 15 s als hängengeblieben.
+    testTimeout: 15000,
     // CSS bleibt in Tests sonst leer. Der Inhalt wird nur gebraucht, wenn ein Test eine Datei mit ?raw liest
     // (Prüfung des Design-Systems in src/styles/tokens.test.ts).
     css: { include: [/\.css\?raw$/] },

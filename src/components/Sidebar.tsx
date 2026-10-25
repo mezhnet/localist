@@ -3,6 +3,9 @@
 // (per Rechtsklick, "⋯"-Knopf, F2 oder Entf). Notizen und HTML-Seiten haben verschiedene Symbole.
 import {
   Blocks,
+  BookOpen,
+  FileDown,
+  Repeat2,
   ChevronRight,
   ChevronsUpDown,
   Database,
@@ -45,6 +48,13 @@ export interface SidebarActions {
   onRequestMove: (node: TreeNode) => void;
   onDelete: (node: TreeNode) => void;
   onConvertToDatabase: (path: string) => void;
+  /** Notizbuch (Ordner mit _notizbuch.yaml) öffnen bzw. einen Ordner dazu machen. */
+  onOpenNotebook: (path: string) => void;
+  onConvertToNotebook: (path: string) => void;
+  /** Notiz in eine HTML-Seite umwandeln (fragt vorher nach). */
+  onConvertToHtml: (node: TreeNode) => void;
+  /** Seite als eigenständige HTML-Datei exportieren. */
+  onExport: (node: TreeNode) => void;
   onToggleFavorite: (path: string) => void;
   onQuickOpen: () => void;
   onSearch: () => void;
@@ -58,6 +68,8 @@ interface Props extends SidebarActions {
   openPath: string | null;
   /** Geöffnete Datenbank (Ordnerpfad) oder null. */
   openDatabase: string | null;
+  /** Geöffnetes Notizbuch (Ordnerpfad) oder null. */
+  openNotebook?: string | null;
   /** Die Startseite ist zu sehen (keine Seite und keine Datenbank offen). */
   homeActive: boolean;
   /** Der Bereich „Bausteine“ ist offen. */
@@ -136,10 +148,14 @@ export function Sidebar(props: Props) {
       // Eine Datenbank öffnet sich als Tabelle und klappt ihre Einträge auf.
       setExpanded((previous) => new Set([...previous, node.path]));
       props.onOpenDatabase(node.path);
+    } else if (node.notebook) {
+      // Ein Notizbuch öffnet sich wie eine kleine Website.
+      setExpanded((previous) => new Set([...previous, node.path]));
+      props.onOpenNotebook(node.path);
     } else toggle(node.path);
   };
 
-  const isActive = (node: TreeNode) => node.path === openPath || node.path === props.openDatabase;
+  const isActive = (node: TreeNode) => node.path === openPath || node.path === props.openDatabase || node.path === props.openNotebook;
 
   /** Darf `node` nach `targetDir` gezogen werden? Nicht dorthin, wo er schon liegt, und kein Ordner in sich selbst. */
   const canDrop = (node: TreeNode | null, targetDir: string) =>
@@ -174,6 +190,7 @@ export function Sidebar(props: Props) {
       return node.html ? <FileCode /> : <FileText />;
     }
     if (node.database) return <Database />;
+    if (node.notebook) return <BookOpen />;
     return isOpen ? <FolderOpen /> : <Folder />;
   };
 
@@ -411,6 +428,9 @@ export function Sidebar(props: Props) {
             onDelete={() => props.onDelete(menu.node)}
             onToggleFavorite={() => props.onToggleFavorite(menu.node.path)}
             onDatabase={() => (menu.node.database ? props.onOpenDatabase(menu.node.path) : props.onConvertToDatabase(menu.node.path))}
+            onNotebook={() => (menu.node.notebook ? props.onOpenNotebook(menu.node.path) : props.onConvertToNotebook(menu.node.path))}
+            onConvertToHtml={() => props.onConvertToHtml(menu.node)}
+            onExport={() => props.onExport(menu.node)}
           />
         </Menu>
       )}
@@ -454,22 +474,47 @@ interface NodeItemsProps {
   onDelete: () => void;
   onToggleFavorite: () => void;
   onDatabase: () => void;
+  onNotebook: () => void;
+  onConvertToHtml: () => void;
+  onExport: () => void;
 }
 
-function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase }: NodeItemsProps) {
+function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase, onNotebook, onConvertToHtml, onExport }: NodeItemsProps) {
   const isFolder = node.kind === "folder";
+  // Ein Ordner ist entweder Datenbank oder Notizbuch (liegen beide Dateien darin, gilt er als Datenbank).
+  const notebook = node.notebook && !node.database;
   return (
     <>
       {isFolder && (
         <>
           <NewItems dir={node.path} tree={tree} onCreate={onCreate} />
           <MenuSeparator />
-          <MenuItem icon={<Database />} onSelect={onDatabase}>
-            {node.database ? "Datenbank öffnen" : "In Datenbank umwandeln"}
-          </MenuItem>
+          {!notebook && (
+            <MenuItem icon={<Database />} onSelect={onDatabase}>
+              {node.database ? "Datenbank öffnen" : "In Datenbank umwandeln"}
+            </MenuItem>
+          )}
+          {!node.database && (
+            <MenuItem icon={<BookOpen />} onSelect={onNotebook}>
+              {notebook ? "Notizbuch öffnen" : "In Notizbuch umwandeln"}
+            </MenuItem>
+          )}
         </>
       )}
-      {(!isFolder || node.database) && (
+      {!isFolder && (
+        <>
+          {!node.html && (
+            <MenuItem icon={<Repeat2 />} onSelect={onConvertToHtml}>
+              In HTML-Seite umwandeln …
+            </MenuItem>
+          )}
+          <MenuItem icon={<FileDown />} onSelect={onExport}>
+            Als HTML-Datei exportieren …
+          </MenuItem>
+          <MenuSeparator />
+        </>
+      )}
+      {(!isFolder || node.database || notebook) && (
         <MenuItem icon={favorite ? <StarOff /> : <Star />} onSelect={onToggleFavorite}>
           {favorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
         </MenuItem>

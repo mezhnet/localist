@@ -19,12 +19,19 @@ import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
 import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
 import { useSchemas } from "../lib/useSchemas";
 import type { EigenerBaustein } from "../lib/eigene-bausteine";
+import { eigenstaendigesHtml } from "../lib/export";
+import { LOCALIST_CSS, LOCALIST_JS } from "../lib/gebuendelt";
+import { seiteAlsHtml } from "../lib/notiz-darstellung";
+import { NOTIZBUCH_DATEI, notizbuchNeu, notizbuchReihenfolge, notizbuchUmbenennen } from "../lib/notizbuch";
 import {
   confirmAction,
   createFolder,
   createPage,
+  dateiBase64,
   deleteEntry,
+  exportSchreiben,
   listEigeneBausteine,
+  pickExportTarget,
   listTree,
   onVaultChanged,
   readPage,
@@ -41,6 +48,7 @@ import { MoveDialog, QuickSwitcher, SearchDialog, SettingsDialog, TemplatePicker
 import { HomePage } from "./HomePage";
 import { BausteinBibliothek } from "./BausteinBibliothek";
 import { HtmlPageView } from "./HtmlPageView";
+import { NotizbuchView } from "./NotizbuchView";
 import { PageView } from "./PageView";
 import { Sidebar, type CreateKind } from "./Sidebar";
 import { Button, cx, IconButton } from "./ui";
@@ -74,6 +82,10 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   const [vaultMissing, setVaultMissing] = useState(false);
   /** Geöffnete Datenbank (Ordnerpfad); dann ist keine Seite offen. */
   const [database, setDatabase] = useState<string | null>(null);
+  /** Geöffnetes Notizbuch (Ordnerpfad) oder null. */
+  const [notebook, setNotebook] = useState<string | null>(null);
+  const notebookRef = useRef(notebook);
+  notebookRef.current = notebook;
   /** Bereich „Bausteine“ (Bibliothek und Hilfe) ist offen. */
   const [library, setLibrary] = useState(false);
   /** Eigene Bausteine des Vaults („Code-Speicher“). */
@@ -145,6 +157,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       }
       const db = databaseRef.current;
       if (db && !findNode(next, db)?.database) setDatabase(null);
+      const nb = notebookRef.current;
+      if (nb && !findNode(next, nb)?.notebook) setNotebook(null);
     } catch (error) {
       const message = errorMessage(error);
       if (/Vault-Ordner .* wurde nicht gefunden/.test(message)) setVaultMissing(true);
@@ -261,6 +275,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     pageRef.current = { key: nextPageKey++, path, isNew };
     setPage(pageRef.current);
     setDatabase(null);
+    setNotebook(null);
     setLibrary(false);
   };
 
@@ -269,13 +284,28 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     pageRef.current = null;
     setPage(null);
     setDatabase(folder);
+    setNotebook(null);
     setLibrary(false);
+    // Liegen in einem Ordner beide Dateien, gilt er als Datenbank.
+    if (findNode(treeRef.current, folder)?.notebook) {
+      setNotice({ kind: "info", text: `„${pageTitle(folder)}“ hat auch eine ${NOTIZBUCH_DATEI}. Ein Ordner ist entweder Datenbank oder Notizbuch – er wird als Datenbank angezeigt.` });
+    }
+  };
+
+  const openNotebook = async (folder: string) => {
+    await saverRef.current?.flush();
+    closePage();
+    setDatabase(null);
+    setLibrary(false);
+    setNotebook(folder);
+    setMenuOpen(false);
   };
 
   const openHome = async () => {
     await saverRef.current?.flush();
     closePage();
     setDatabase(null);
+    setNotebook(null);
     setLibrary(false);
     setMenuOpen(false);
   };
@@ -284,12 +314,17 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     await saverRef.current?.flush();
     closePage();
     setDatabase(null);
+    setNotebook(null);
     setLibrary(true);
     setMenuOpen(false);
   };
 
   /** Macht einen Ordner zur Datenbank: legt _ansichten.yaml mit den erkannten Eigenschaften an. */
   const convertToDatabase = async (folder: string) => {
+    if (findNode(tree, folder)?.notebook) {
+      showError(`„${pageTitle(folder)}“ ist ein Notizbuch und kann keine Datenbank werden.`);
+      return;
+    }
     try {
       const pages = (findNode(tree, folder)?.children ?? []).filter((node) => node.kind === "page" && !node.html).map((node) => node.path);
       const config = createDatabaseConfig(await loadRows(pages));
@@ -298,6 +333,91 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       await openDatabase(folder);
       const count = Object.keys(config.eigenschaften).length;
       setNotice({ kind: "info", text: `„${pageTitle(folder)}“ ist jetzt eine Datenbank mit ${count} ${count === 1 ? "Eigenschaft" : "Eigenschaften"}.` });
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
+
+  /** Macht einen Ordner zum Notizbuch: legt _notizbuch.yaml mit den Seiten in der jetzigen Reihenfolge an. */
+  const convertToNotebook = async (folder: string) => {
+    const node = findNode(tree, folder);
+    if (node?.database) {
+      showError(`„${pageTitle(folder)}“ ist eine Datenbank und kann kein Notizbuch werden.`);
+      return;
+    }
+    try {
+      const dateien = (node?.children ?? []).filter((kind) => kind.kind === "page").map((kind) => kind.path.slice(folder.length + 1));
+      await writePage(`${folder}/${NOTIZBUCH_DATEI}`, notizbuchNeu(pageTitle(folder), notizbuchReihenfolge({ titel: null, seiten: [] }, dateien)));
+      await refreshTree();
+      await openNotebook(folder);
+      setNotice({ kind: "info", text: `„${pageTitle(folder)}“ ist jetzt ein Notizbuch.` });
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
+
+  /** Liegt eine Seite in einem Notizbuch, wandert ihr Eintrag in _notizbuch.yaml mit (verlässt sie den Ordner, fällt er weg). */
+  const updateNotebookEntry = async (oldPath: string, newPath: string) => {
+    const folder = parentDir(oldPath);
+    if (!folder || !findNode(treeRef.current, folder)?.notebook) return;
+    const file = `${folder}/${NOTIZBUCH_DATEI}`;
+    try {
+      const text = await readPage(file);
+      const updated = notizbuchUmbenennen(text, oldPath.slice(folder.length + 1), parentDir(newPath) === folder ? newPath.slice(folder.length + 1) : null);
+      if (updated !== text) await writePage(file, updated);
+    } catch {
+      // ohne lesbare _notizbuch.yaml gibt es nichts anzupassen
+    }
+  };
+
+  /**
+   * Notiz → HTML-Seite (nach Rückfrage): auf Basis des mdast, id/Icon/Cover und Eigenschaften werden übernommen.
+   * Die Notiz kommt in den Papierkorb, Links im Vault und der Eintrag im Notizbuch zeigen danach auf die neue Seite.
+   */
+  const convertToHtml = async (node: TreeNode) => {
+    if (node.kind !== "page" || node.html) return;
+    const dir = parentDir(node.path);
+    const htmlPath = node.path.replace(/\.md$/i, ".html");
+    if (findNode(tree, htmlPath)) {
+      showError(`Hier gibt es schon eine HTML-Seite „${node.name}“.`);
+      return;
+    }
+    const inDatabase = findNode(tree, dir)?.database ?? false;
+    const frage = inDatabase
+      ? `„${node.name}“ in eine HTML-Seite umwandeln? Sie liegt in einer Datenbank und erscheint danach nicht mehr in Tabelle, Kanban und Kalender. Die Notiz kommt in den Papierkorb, Links im Vault werden angepasst.`
+      : `„${node.name}“ in eine HTML-Seite umwandeln? Die Notiz kommt in den Papierkorb, Links im Vault werden angepasst.`;
+    if (!(await confirmAction(frage, "In HTML-Seite umwandeln"))) return;
+    try {
+      await saverRef.current?.flush();
+      const oldPages = allPages(tree);
+      const html = await seiteAlsHtml(node.path, htmlPath, oldPages, crypto.randomUUID());
+      await writePage(htmlPath, html);
+      if (pageRef.current?.path === node.path) closePage();
+      await deleteEntry(node.path);
+      await updateFavorites((list) => renameInFavorites(list, node.path, htmlPath));
+      await updateNotebookEntry(node.path, htmlPath);
+      await refreshTree();
+      const changed = await updateLinksAfterRelocate(oldPages, pathMapper(node.path, htmlPath));
+      await openPage(htmlPath);
+      const links = changed > 0 ? ` Links in ${changed} ${changed === 1 ? "Seite" : "Seiten"} angepasst.` : "";
+      setNotice({ kind: "info", text: `„${node.name}“ ist jetzt eine HTML-Seite.${links}` });
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
+
+  /** Seite als eigenständige HTML-Datei exportieren: CSS, Skript und Bilder eingebettet, funktioniert ohne Vault. */
+  const exportPage = async (node: TreeNode) => {
+    if (node.kind !== "page") return;
+    try {
+      await saverRef.current?.flush();
+      const ziel = await pickExportTarget(node.name);
+      if (!ziel) return;
+      const htmlPath = node.path.replace(/\.md$/i, ".html");
+      const html = await seiteAlsHtml(node.path, htmlPath, allPages(tree));
+      const datei = await eigenstaendigesHtml(html, htmlPath, { css: LOCALIST_CSS, js: LOCALIST_JS, laden: (pfad) => dateiBase64(pfad).catch(() => null) });
+      await exportSchreiben(ziel, datei);
+      setNotice({ kind: "info", text: `„${node.name}“ wurde als eigenständige HTML-Datei gespeichert: ${ziel}` });
     } catch (error) {
       showError(errorMessage(error));
     }
@@ -405,7 +525,10 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       if (current && isInside(current.path, node.path)) setPagePath(movePath(current.path, node.path, newPath));
       const db = databaseRef.current;
       if (db && isInside(db, node.path)) setDatabase(movePath(db, node.path, newPath));
+      const nb = notebookRef.current;
+      if (nb && isInside(nb, node.path)) setNotebook(movePath(nb, node.path, newPath));
       await updateFavorites((list) => renameInFavorites(list, node.path, newPath));
+      if (node.kind === "page") await updateNotebookEntry(node.path, newPath);
       if (renamed && node.kind === "page" && isHtmlPath(newPath)) {
         const text = await readPage(newPath);
         const updated = setTitle(text, pageTitle(newPath));
@@ -461,6 +584,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     const node = findNode(treeRef.current, path);
     if (node?.kind === "page") void openPage(path);
     else if (node?.database) void openDatabase(path);
+    else if (node?.notebook) void openNotebook(path);
     else showError(`„${path}“ wurde im Vault nicht gefunden.`);
   };
 
@@ -531,8 +655,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     return node ? rename(node, newTitle) : Promise.resolve(false);
   };
 
-  const current = page?.path ?? database;
-  const homeActive = !page && !database && !library && !vaultMissing;
+  const current = page?.path ?? database ?? notebook;
+  const homeActive = !page && !database && !notebook && !library && !vaultMissing;
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
 
   return (
@@ -544,6 +668,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           tree={tree}
           openPath={page?.path ?? null}
           openDatabase={database}
+          openNotebook={notebook}
           homeActive={homeActive}
           favorites={favorites}
           icons={icons}
@@ -555,6 +680,10 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           libraryActive={library}
           onOpenLibrary={() => void openLibrary()}
           onConvertToDatabase={(path) => void convertToDatabase(path)}
+          onOpenNotebook={(path) => void openNotebook(path)}
+          onConvertToNotebook={(path) => void convertToNotebook(path)}
+          onConvertToHtml={(node) => void convertToHtml(node)}
+          onExport={(node) => void exportPage(node)}
           onToggleFavorite={(path) => void updateFavorites((list) => toggleFavorite(list, path))}
           onQuickOpen={() => setDialog({ kind: "quick" })}
           onSearch={() => setDialog({ kind: "search" })}
@@ -632,6 +761,17 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           </div>
         ) : library ? (
           <BausteinBibliothek eigene={eigene} onEigeneChanged={loadEigene} onError={showError} />
+        ) : notebook ? (
+          <NotizbuchView
+            folder={notebook}
+            node={findNode(tree, notebook)}
+            pages={pages}
+            version={vaultVersion}
+            onEdit={(path) => void openPage(path)}
+            onOpenLink={openFromHtmlPage}
+            onOpenExternal={(url) => void openExternal(url)}
+            onError={showError}
+          />
         ) : database && schemas.configs[database] ? (
           <DatabaseView
             key={database}

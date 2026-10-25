@@ -924,3 +924,157 @@
     height: calc(var(--code-pane-height) * 0.8);
   }
 }
+
+/* ---------- Notizbuch: Inhaltsverzeichnis links, Seite rechts, Zurück/Weiter unten ---------- */
+.notizbuch-kopf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 var(--space-4);
+}
+
+.notizbuch-kopf svg {
+  width: var(--size-icon-xl);
+  height: var(--size-icon-xl);
+  color: var(--color-accent);
+}
+
+.notizbuch-kopf h1 {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.notizbuch {
+  display: grid;
+  grid-template-columns: minmax(0, var(--sidebar-width)) minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.notizbuch-inhalt {
+  position: sticky;
+  top: var(--space-4);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+}
+
+.notizbuch-inhalt ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notizbuch-inhalt li {
+  border-radius: var(--radius-md);
+}
+
+.notizbuch-inhalt li.is-dragging {
+  opacity: 0.4;
+}
+
+.notizbuch-inhalt li.drop-before {
+  box-shadow: inset 0 var(--border-width-strong) 0 var(--color-accent);
+}
+
+.notizbuch-inhalt li.drop-after {
+  box-shadow: inset 0 calc(-1 * var(--border-width-strong)) 0 var(--color-accent);
+}
+
+.notizbuch-eintrag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  width: 100%;
+  padding: var(--space-1-5) var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.notizbuch-eintrag:hover {
+  background: var(--color-hover);
+}
+
+.notizbuch-eintrag.active {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.notizbuch-eintrag svg {
+  flex: none;
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  color: var(--color-text-muted);
+}
+
+.notizbuch-eintrag .notizbuch-griff {
+  color: var(--color-text-faint);
+  cursor: grab;
+}
+
+.notizbuch-nummer {
+  min-width: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-align: right;
+}
+
+.notizbuch-titel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notizbuch-leiste {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.notizbuch-leiste h2 {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.notizbuch-blaettern {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+@media (max-width: 767px) {
+  .notizbuch {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .notizbuch-inhalt {
+    position: static;
+  }
+
+  .notizbuch-blaettern .ui-button__label {
+    max-width: 40vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

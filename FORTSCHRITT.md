@@ -2,16 +2,16 @@
 
 ## Aktueller Stand
 - Etappe: 14 – Notizbücher, Umwandeln und Export
-- Zuletzt aktualisiert: 2026-10-25 21:50
-- Nächster Schritt: `_notizbuch.yaml` lesen/schreiben (Rust und TS), Ordner in Notizbuch umwandeln, Notizbuch-Ansicht.
+- Zuletzt aktualisiert: 2026-10-25 23:10
+- Nächster Schritt: Notizbuch-Ansicht und Export im Browser prüfen (Screenshots `docs/screenshots/etappe-14/`, exportierte Datei per `file://` in Edge), danach echte App, Build und Abschluss.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Ein Ordner lässt sich in ein Notizbuch umwandeln (legt `_notizbuch.yaml` an). Ein Ordner, der schon Datenbank ist, kann kein Notizbuch werden und umgekehrt.
+- [x] Ein Ordner lässt sich in ein Notizbuch umwandeln (legt `_notizbuch.yaml` an). Ein Ordner, der schon Datenbank ist, kann kein Notizbuch werden und umgekehrt.
 - [ ] Die Notizbuch-Ansicht wirkt wie eine kleine Website: Inhaltsverzeichnis links, Seite rechts, „Zurück“ und „Weiter“ unten. Notizen erscheinen dort fertig dargestellt, wie HTML-Seiten in der abgeschotteten Anzeige. „Bearbeiten“ öffnet die Seite im passenden Editor.
-- [ ] Die Reihenfolge lässt sich im Inhaltsverzeichnis per Drag & Drop ändern und wird in `_notizbuch.yaml` gespeichert. Neue Seiten erscheinen automatisch am Ende.
-- [ ] „In HTML-Seite umwandeln“ (nach Rückfrage): wandelt eine Notiz um, auf Basis des mdast aus `src/markdown/` (nicht über das verlustbehaftete HTML von BlockNote). Überschriften, Absätze, Formatierungen, Listen, Checklisten, Zitate, Code, Bilder, Tabellen, Callouts (→ `<l-callout>`), Toggles (→ `<details>`) und `[[Links]]` (→ `<a>`) werden übernommen. `id`, Icon und Cover werden übernommen, alle weiteren Frontmatter-Felder werden zu `<meta name="localist-prop-<name>">`. Die `.md` kommt in den Papierkorb, Links im Vault werden auf die neue Datei angepasst. Eine Notiz in einem Datenbank-Ordner lässt sich nur nach Hinweis umwandeln, dass sie dann aus Tabelle, Kanban und Kalender verschwindet.
+- [x] Die Reihenfolge lässt sich im Inhaltsverzeichnis per Drag & Drop ändern und wird in `_notizbuch.yaml` gespeichert. Neue Seiten erscheinen automatisch am Ende.
+- [x] „In HTML-Seite umwandeln“ (nach Rückfrage): wandelt eine Notiz um, auf Basis des mdast aus `src/markdown/` (nicht über das verlustbehaftete HTML von BlockNote). Überschriften, Absätze, Formatierungen, Listen, Checklisten, Zitate, Code, Bilder, Tabellen, Callouts (→ `<l-callout>`), Toggles (→ `<details>`) und `[[Links]]` (→ `<a>`) werden übernommen. `id`, Icon und Cover werden übernommen, alle weiteren Frontmatter-Felder werden zu `<meta name="localist-prop-<name>">`. Die `.md` kommt in den Papierkorb, Links im Vault werden auf die neue Datei angepasst. Eine Notiz in einem Datenbank-Ordner lässt sich nur nach Hinweis umwandeln, dass sie dann aus Tabelle, Kanban und Kalender verschwindet.
 - [ ] „Als eigenständige HTML-Datei exportieren“: Speichern-Dialog. Die exportierte Datei enthält CSS, Skript und Bilder eingebettet und funktioniert ohne Vault.
-- [ ] Tests für `_notizbuch.yaml`, die Umwandlung (je Element) und den Export.
+- [x] Tests für `_notizbuch.yaml`, die Umwandlung (je Element) und den Export.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
