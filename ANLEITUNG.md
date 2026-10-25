@@ -1,16 +1,35 @@
-# Anleitung für Localist 1.0.0
+# Anleitung für Localist 2.0.0
 
 Localist ist ein Notiz- und Projektmanager im Stil von Notion, der alle Seiten als Markdown-Dateien in einem Ordner
-deiner Wahl speichert. Diese Anleitung erklärt, wie du Localist installierst, im Entwicklungsmodus startest, testest
+deiner Wahl speichert. Neben Notizen gibt es interaktive HTML-Seiten mit Bausteinen wie Karteikarten, Quiz und
+Diagrammen. Diese Anleitung erklärt, wie du Localist installierst, benutzt, im Entwicklungsmodus startest, testest
 und selbst baust.
+
+## Neu in Version 2.0
+
+- **Neues Design:** ruhiger, aufgeräumter Look in Hell und Dunkel, Favoriten oben in der Sidebar, ein „Neu“-Menü für
+  alles, eine Startseite mit zuletzt bearbeiteten Seiten und Schnellaktionen. Bedienbar ab 360 px Breite (Handy).
+- **HTML-Seiten:** ein zweiter Seitentyp neben Notizen (`.html`). Gedacht für Lernseiten, Übersichten und alles
+  Interaktive. Drei Ansichten: „Lesen“, „Code“ und „Geteilt“ (Code links, Vorschau rechts), umschalten mit `Strg+E`.
+- **Bausteine:** Callout, Toggle, Tabelle, Checkliste, Spalten, Bild, Trennlinie, Code-Block, Seitenlink sowie
+  Karteikarte, Kartenstapel mit Lernmodus, Quiz und Diagramm. Einfügen per Werkzeugleiste oder `/` im Code-Editor,
+  bearbeiten ohne Code über das Stift-Symbol.
+- **Eigene Bausteine („Code-Speicher“):** markierten Code als eigenen Baustein speichern und immer wieder einfügen.
+  Der Bereich „Bausteine“ in der Sidebar zeigt die ganze Bibliothek mit Vorschau und eine Hilfe mit Beispielcode.
+- **Notizbücher:** Ein Ordner wird zu einer kleinen Website mit Inhaltsverzeichnis, „Zurück“ und „Weiter“.
+- **Umwandeln und Export:** eine Notiz in eine HTML-Seite umwandeln, jede Seite als eigenständige HTML-Datei
+  exportieren (zum Weitergeben, funktioniert ohne Localist).
+- **Verschieben** von Seiten und Ordnern per Drag & Drop oder „Verschieben nach …“. Links im Vault werden angepasst.
+- **Sicherheit:** HTML-Seiten laufen in einer abgeschotteten Anzeige ohne Internet und ohne Zugriff auf deine Dateien
+  oder die App. Ein eingebauter Selbsttest prüft das (`localist.exe --sicherheitstest`).
 
 ## 0. Localist einfach nur benutzen
 
 Wer nur die fertige App möchte, braucht keine der Entwicklerwerkzeuge unten:
 
-1. `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe` doppelklicken (oder die MSI-Datei daneben).
+1. `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` doppelklicken (oder die MSI-Datei daneben).
 2. Den Schritten des deutschen Installationsassistenten folgen. Danach steht **Localist** im Startmenü.
-3. Beim ersten Start einen Vault-Ordner wählen (siehe Abschnitt 8).
+3. Beim ersten Start einen Vault-Ordner wählen (siehe Abschnitt 8, für HTML-Seiten Abschnitt 9).
 
 Deinstallieren geht wie bei jedem Programm über Windows-Einstellungen → Apps. Deine Vault-Ordner bleiben dabei
 unangetastet.
@@ -101,8 +120,8 @@ Der Befehl prüft zuerst die TypeScript-Typen, baut dann die Oberfläche und kom
 Rust-Hülle im Release-Modus. Ergebnis (Pfade relativ zum Projektordner):
 
 - Programm zum direkten Starten: `src-tauri\target\release\localist.exe`
-- Installer (MSI, deutsch): `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi`
-- Installer (Setup-EXE, deutsch): `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe`
+- Installer (MSI, deutsch): `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi`
+- Installer (Setup-EXE, deutsch): `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe`
 
 Beim allerersten Build lädt Tauri die Installer-Werkzeuge (WiX und NSIS) einmalig herunter, dafür ist eine
 Internetverbindung nötig.
@@ -130,6 +149,14 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 Sie legen nur temporäre Ordner im Temp-Verzeichnis von Windows an und löschen sie danach wieder.
 
+Weitere Prüfungen (optional, die gebaute App und Microsoft Edge müssen vorhanden sein):
+
+- `src-tauri\target\release\localist.exe --sicherheitstest` prüft, dass HTML-Seiten keinen Zugriff auf App,
+  Dateien außerhalb des Vaults oder Internet haben, und gibt eine Tabelle aus (Exit-Code 0 = bestanden).
+- `node scripts/klickliste.mjs http://localhost:1420 "Test"` klickt bei laufendem `npm run dev` die wichtigsten
+  Funktionen der Version 1.0 in einem unsichtbaren Edge-Fenster durch.
+- `npm run screenshots -- http://localhost:1420 <Ordner> <etappe9|…|etappe14>` speichert Screenshots der Oberfläche.
+
 ## 6. TypeScript-Typen prüfen
 
 ```
@@ -148,6 +175,8 @@ Startet nur den Vite-Entwicklungsserver unter <http://localhost:1420>. Praktisch
 Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Oberfläche mit einem
 **simulierten Vault** im Arbeitsspeicher, der mit dem Inhalt von `beispiel-vault/` gefüllt ist
 (`src/lib/dev-backend.ts`). Änderungen dort sind nach dem Neuladen der Seite weg, echte Dateien bleiben unberührt.
+HTML-Seiten liefert dabei eine kleine Erweiterung von Vite aus `beispiel-vault/` aus, mit denselben Regeln wie in
+der App (abgeschottete Anzeige, kein Internet).
 
 ## 8. Erste Schritte in der App
 
@@ -155,10 +184,14 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
    **Kopie** von `beispiel-vault/` (nicht den Ordner im Projekt selbst, damit die Testdaten unverändert bleiben).
    Die App merkt sich den Ordner und öffnet ihn beim nächsten Start automatisch. „Wechseln“ oben in der Sidebar
    öffnet einen anderen Ordner.
-2. **Sidebar:** Ein Klick auf einen Ordner klappt ihn auf, ein Klick auf eine Seite öffnet sie. Versteckte Ordner wie
-   `.localist` und Dateien, die keine `.md`-Dateien sind, werden nicht angezeigt.
-3. **Anlegen:** „+ Neue Seite“ bzw. „+ Neuer Ordner“ oben, das „+“ neben einem Ordner oder ein Rechtsklick. Eine neue
-   Seite bekommt sofort eine eindeutige `id` im Frontmatter. Den Titel tippst du gleich oben auf der Seite ein.
+2. **Sidebar:** Oben stehen „Startseite“, „Suchen“, „Volltextsuche“, „Neu“, „Bausteine“ und deine **Favoriten** (über „⋯“ →
+   „Zu Favoriten hinzufügen“ anheften), darunter alle Seiten. Ein Klick auf einen Ordner klappt ihn auf, ein Klick auf
+   eine Seite öffnet sie. Notizen (`.md`) und HTML-Seiten (`.html`) haben verschiedene Symbole. Versteckte Ordner wie
+   `.localist` und andere Dateien werden nicht angezeigt.
+3. **Anlegen:** „Neu“ in der Sidebar (Notiz, HTML-Seite, Ordner, Datenbank, Notiz aus Vorlage), das „+“ neben einem
+   Ordner oder ein Rechtsklick. Eine neue Seite bekommt sofort eine eindeutige `id`. Den Titel tippst du gleich oben
+   auf der Seite ein. **Verschieben:** Seiten und Ordner in der Sidebar auf einen anderen Ordner ziehen oder „⋯“ →
+   „Verschieben nach …“; Links im Vault werden dabei angepasst.
 4. **Umbenennen:** großen Seitentitel ändern, in der Sidebar `F2` drücken oder Rechtsklick → „Umbenennen“.
 5. **Löschen:** Rechtsklick bzw. „⋯“ → „Löschen …“ oder `Entf`. Nach einer Rückfrage landet der Eintrag im
    **Papierkorb** von Windows und lässt sich dort wiederherstellen.
@@ -174,7 +207,7 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
     Seite. Fehlt sie noch, wird sie angelegt. Benennst du eine Seite um, passt die App alle Links darauf im Vault an.
 11. **Icon und Cover:** Beim Überfahren des Seitenkopfs erscheinen „Icon hinzufügen“ und „Cover hinzufügen“.
     Beides steht im Frontmatter (`icon`, `cover`). Bilder von außerhalb werden nach `Anhänge/` kopiert.
-12. **Hell/Dunkel:** unten in der Sidebar unter „Darstellung“. „Wie System“ folgt der Windows-Einstellung.
+12. **Hell/Dunkel:** „Einstellungen“ unten in der Sidebar → „Darstellung“. „Wie System“ folgt der Windows-Einstellung.
 13. **Eigenschaften:** Unter dem Seitentitel stehen die Eigenschaften der Seite (Text, Zahl, Auswahl, Mehrfachauswahl,
     Status, Datum, Checkbox, URL). „+ Eigenschaft hinzufügen“ legt eine neue an, ein Klick auf den Namen ändert den Typ.
     Gespeichert wird im Frontmatter, z. B. `fällig: 2026-11-15`. Andere Felder im Frontmatter bleiben unverändert.
@@ -194,12 +227,93 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
     `Strg+Umschalt+F` durchsucht den Text aller Seiten. Mit ↑/↓ auswählen, Enter öffnet, Esc schließt.
     Der Suchindex liegt im Cache-Ordner der App (`%LOCALAPPDATA%\de.localist.desktop\suchindex\`), nicht im Vault.
     Du kannst ihn jederzeit löschen, er wird automatisch neu aufgebaut.
-18. **Vorlagen:** Jede Seite im Ordner `Vorlagen/` ist eine Vorlage. „+ Seite aus Vorlage“ (oder Rechtsklick auf einen
-    Ordner) legt eine neue Seite mit Eigenschaften und Inhalt der Vorlage an. `{{title}}`, `{{date}}` und `{{time}}`
-    werden dabei ersetzt.
+18. **Vorlagen:** Jede Seite im Ordner `Vorlagen/` ist eine Vorlage, auch HTML-Seiten. „Neu“ → „Notiz aus Vorlage …“
+    (oder Rechtsklick auf einen Ordner) legt eine neue Seite mit Eigenschaften und Inhalt der Vorlage an.
+    `{{title}}`, `{{date}}` und `{{time}}` werden dabei ersetzt.
 19. **Backlinks:** Unten auf jeder Seite steht unter „Verlinkt von“, welche Seiten mit `[[…]]` auf sie verweisen.
 
-## 9. Android-App (APK)
+## 9. HTML-Seiten, Bausteine und Notizbücher – kurze Einführung
+
+Notizen (`.md`) sind für schnelles Schreiben gedacht. **HTML-Seiten** (`.html`) sind für Seiten, die mehr können
+sollen: Karteikarten zum Lernen, ein Quiz, Diagramme, Spalten. Du brauchst dafür keine Vorkenntnisse – die meisten
+Dinge gehen per Klick. Wer mag, lernt nebenbei ein bisschen HTML.
+
+**Was ist HTML?** HTML ist die Sprache, in der Webseiten geschrieben sind. Text steht zwischen *Tags* in spitzen
+Klammern: `<h2>Überschrift</h2>`, `<p>Ein Absatz</p>`. Ein Tag wird geöffnet (`<p>`) und mit Schrägstrich wieder
+geschlossen (`</p>`). Alles, was du schreibst, steht in der Datei zwischen `<main>` und `</main>`; den Rest der Datei
+(Kopfbereich mit Titel, Icon und Verweisen) verwaltet Localist.
+
+**Eine HTML-Seite anlegen:** „Neu“ in der Sidebar → **HTML-Seite**. Die Seite öffnet sich in der Ansicht **„Geteilt“**:
+links der Code, rechts die fertige Seite. Die Vorschau aktualisiert sich kurz nach dem Tippen. Mit den Knöpfen oben
+rechts oder `Strg+E` wechselst du zwischen **Lesen**, **Code** und **Geteilt**. Der Code-Editor zeigt nur den Inhalt
+von `<main>`; der Schalter **„Ganze Datei“** zeigt alles. Gespeichert wird automatisch, und Localist ändert nur die
+Stelle, die du bearbeitet hast – Einrückungen und Zeilenumbrüche bleiben, wie du sie geschrieben hast.
+
+**Bausteine einfügen:** Über dem Code-Editor steht eine Werkzeugleiste (auf dem Handy seitlich scrollbar). Ein Klick
+auf einen Baustein fügt ihn sauber eingerückt an der Cursorposition ein. Im Code-Editor öffnet `/` am Zeilenanfang
+dasselbe Menü zum Tippen. Bausteine sind ganz normale HTML-Tags, die mit `l-` beginnen:
+
+| Baustein | So sieht er im Code aus | Was er macht |
+|---|---|---|
+| Callout | `<l-callout typ="tipp">Text</l-callout>` | farbiger Hinweis (`info`, `tipp`, `warnung`, `fehler`) |
+| Toggle | `<details><summary>Titel</summary>…</details>` | Inhalt zum Auf- und Zuklappen |
+| Tabelle | `<table>` mit `<tr>`, `<th>`, `<td>` | Tabelle, auch Grundlage für Diagramme |
+| Checkliste | `<ul class="l-checkliste"><li><input type="checkbox"> Aufgabe</li></ul>` | Häkchen lassen sich in „Lesen“ setzen und werden gespeichert |
+| Spalten | `<l-spalten><l-spalte>…</l-spalte><l-spalte>…</l-spalte></l-spalten>` | Inhalt nebeneinander (auf dem Handy untereinander) |
+| Bild | `<figure><img src="../Anhänge/bild.png" alt="…"><figcaption>…</figcaption></figure>` | Bild mit Bildunterschrift |
+| Karteikarte | `<l-karteikarte><l-frage>…</l-frage><l-antwort>…</l-antwort></l-karteikarte>` | Klick, Fingertipp oder Leertaste dreht sie um |
+| Kartenstapel | `<l-kartenstapel>` mit mehreren Karteikarten | Lernmodus mit „Gewusst“ und „Nochmal“, am Ende eine Auswertung |
+| Quiz | `<l-quiz><l-quizfrage><l-frage>…</l-frage><ul><li>falsch</li><li data-richtig>richtig</li></ul></l-quizfrage></l-quiz>` | Multiple Choice mit sofortiger Rückmeldung und Punktzahl |
+| Diagramm | `<l-diagramm typ="balken" titel="…"><table>…</table></l-diagramm>` | zeichnet Balken, Linie oder Kreis aus der Tabelle darin |
+
+Dazu kommen Trennlinie (`<hr>`), Code-Block (`<pre><code>`) und Seitenlink (`<a class="l-seitenlink" href="…">`).
+Eine kleine Lernseite sieht zum Beispiel so aus:
+
+```html
+<h2>DNS</h2>
+<l-callout typ="tipp">DNS übersetzt Namen wie example.com in IP-Adressen.</l-callout>
+<l-karteikarte>
+  <l-frage>Welchen Port nutzt DNS?</l-frage>
+  <l-antwort>Port 53</l-antwort>
+</l-karteikarte>
+```
+
+**Bearbeiten ohne Code:** In „Lesen“ und „Geteilt“ erscheint beim Überfahren eines Bausteins ein **Stift-Symbol**.
+Es öffnet ein Formular (bei Tabellen und Diagrammen einen Tabellen-Editor zum Hinzufügen und Entfernen von Zeilen und
+Spalten). „Speichern“ ändert nur diesen einen Baustein im Code.
+
+**Hilfe und eigene Bausteine:** Der Bereich **„Bausteine“** in der Sidebar zeigt unter „Bibliothek“ alle Bausteine mit
+Vorschau und unter „Hilfe“ eine kurze Erklärung mit Beispielcode zum Kopieren. Hast du dir etwas gebaut, das du öfter
+brauchst, markiere den Code und wähle in der Werkzeugleiste **„Als Baustein speichern“**. Er landet in
+`<Vault>/.localist/bausteine/eigene/` und erscheint danach in Werkzeugleiste und `/`-Menü.
+
+**Links:** In HTML-Seiten verlinkst du mit `<a href="../Notizen/Ideen.md">Ideen</a>` (Pfad relativ zur Seite,
+Leerzeichen als `%20`). In Notizen verlinkst du eine HTML-Seite mit `[[Name.html]]`. Ein Klick öffnet die Seite in
+Localist, Links ins Internet (`https://…`) öffnen im Standardbrowser.
+
+**Sicher und offline:** HTML-Seiten werden in einer abgeschotteten Anzeige gezeigt. Eigene `<script>`- und
+`<style>`-Abschnitte sind erlaubt, haben dort aber keinen Zugriff aufs Internet, auf deine Dateien oder auf Localist.
+
+**Auch ohne Localist lesbar:** Eine HTML-Seite aus dem Vault kannst du im Explorer doppelklicken. Sie öffnet sich in
+Edge oder Chrome, sieht aus wie in „Lesen“ und ist interaktiv (Karteikarten, Quiz, Diagramme).
+
+**Notizbücher:** „⋯“ an einem Ordner (oder Rechtsklick darauf) → **„In Notizbuch umwandeln“**. Localist legt darin
+`_notizbuch.yaml` an. Ein Klick auf das Notizbuch zeigt es wie eine kleine Website: links das Inhaltsverzeichnis,
+rechts die Seite, unten „Zurück“ und „Weiter“. Notizen erscheinen dort fertig dargestellt. „Bearbeiten“ öffnet die
+Seite im passenden Editor. Die Reihenfolge änderst du, indem du Einträge im Inhaltsverzeichnis ziehst (oder mit
+`Alt+↑`/`Alt+↓`); neue Seiten erscheinen automatisch am Ende. Ein Ordner ist entweder Datenbank oder Notizbuch.
+
+**Notiz in HTML-Seite umwandeln:** „⋯“ an einer Notiz → **„In HTML-Seite umwandeln …“**. Nach einer Rückfrage
+entsteht eine HTML-Seite mit demselben Inhalt (Überschriften, Listen, Checklisten, Tabellen, Callouts, Toggles, Links
+…), dieselbe `id`, Icon und Cover; weitere Eigenschaften stehen danach im Kopfbereich. Die Notiz kommt in den
+Papierkorb, Links im Vault zeigen auf die neue Seite. Liegt die Notiz in einer Datenbank, verschwindet sie danach aus
+Tabelle, Kanban und Kalender – darauf weist die Rückfrage hin.
+
+**Als HTML-Datei exportieren:** „⋯“ an einer Seite → **„Als HTML-Datei exportieren …“** und einen Speicherort
+wählen. Die Datei enthält Aussehen, Funktion und Bilder und funktioniert allein, z. B. als E-Mail-Anhang. Links auf
+andere Seiten deines Vaults funktionieren in der exportierten Datei nicht.
+
+## 10. Android-App (APK)
 
 Localist läuft auch auf Android-Handys und -Tablets. Die Oberfläche passt sich an: Die Seitenleiste ist dort ein
 ausklappbares Menü (☰ oben links).
@@ -271,11 +385,13 @@ holst du sie mit jedem Dateimanager zurück.
 
 | Was | Wo |
 |---|---|
-| Deine Seiten, Eigenschaften, Datenbanken (`_ansichten.yaml`) | im Vault-Ordner, als normale Dateien |
-| Einstellungen des Vaults (z. B. Eigenschaftstypen) | `<Vault>\.localist\settings.json` |
+| Deine Seiten (`.md` und `.html`), Eigenschaften, Datenbanken (`_ansichten.yaml`), Notizbücher (`_notizbuch.yaml`) | im Vault-Ordner, als normale Dateien |
+| Einstellungen des Vaults (z. B. Eigenschaftstypen, Favoriten) | `<Vault>\.localist\settings.json` |
+| Aussehen und Funktion der Bausteine (verwaltet Localist, nicht von Hand ändern) | `<Vault>\.localist\bausteine\localist.css` und `localist.js` |
+| Deine eigenen Bausteine | `<Vault>\.localist\bausteine\eigene\` (eine `.html`-Datei pro Baustein) |
 | Zuletzt geöffneter Vault | `%APPDATA%\de.localist.desktop\zustand.json` |
 | Suchindex (jederzeit löschbar) | `%LOCALAPPDATA%\de.localist.desktop\suchindex\` |
-| Hell/Dunkel, zuletzt gewählte Ansicht einer Datenbank | im Browser-Speicher der App (WebView2) |
+| Hell/Dunkel, zuletzt gewählte Ansicht einer Datenbank oder HTML-Seite | im Browser-Speicher der App (WebView2) |
 | Gelöschte Seiten | Windows: Papierkorb des Systems; Android: `<Vault>\.localist\Papierkorb\` |
 
 Vaults aus der Vorabversion mit dem Einstellungsordner `.meinapp` werden beim ersten Öffnen automatisch übernommen:

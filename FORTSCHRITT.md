@@ -11,7 +11,8 @@
 - [ ] Android: Die APK wird gebaut. Im Emulator geprüft und mit `adb`-Befehlen samt Ausgabe belegt (Installation, Screenshots per `adb exec-out screencap`): HTML-Seiten und Notizbücher lassen sich lesen, Karteikarten und Quiz per Fingertipp bedienen, die Code-Ansicht ist nutzbar (Werkzeugleiste scrollbar).
 - [ ] Die Klickliste „Version 1.0“ und eine Klickliste „Version 2.0“ (HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein, Notizbuch, Umwandeln, Export) sind in `FORTSCHRITT.md` abgehakt.
 - [ ] Keine Fehler bei `npx tsc --noEmit`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
-- [ ] `README.md` und `ANLEITUNG.md` sind aktualisiert, mit einem Abschnitt „Neu in Version 2.0“ und einer kurzen Einführung in HTML-Seiten und Bausteine für Einsteiger.
+- [x] `README.md` und `ANLEITUNG.md` sind aktualisiert, mit einem Abschnitt „Neu in Version 2.0“ und einer kurzen Einführung in HTML-Seiten und Bausteine für Einsteiger.
+  - `README.md`: Abschnitte „Neu in Version 2.0“ und „HTML-Seiten in einer Minute“. `ANLEITUNG.md`: „Neu in Version 2.0“, neuer Abschnitt „9. HTML-Seiten, Bausteine und Notizbücher – kurze Einführung“ (Was ist HTML, Ansichten, Bausteine mit Markup-Tabelle und Beispiel, Bearbeiten ohne Code, eigene Bausteine, Links, Sicherheit, Notizbücher, Umwandeln, Export), Versionsnummern 2.0.0, „Erste Schritte“ an das neue Design angepasst (Sidebar, „Neu“-Menü, Verschieben, Einstellungen), Speicherorte um HTML-Seiten, Notizbücher und Bausteine ergänzt.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
