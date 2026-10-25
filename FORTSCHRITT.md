@@ -2,11 +2,13 @@
 
 ## Aktueller Stand
 - Etappe: 15 – Version 2.0
-- Zuletzt aktualisiert: 2026-10-25 23:59
-- Nächster Schritt: Version 2.0.0 in `package.json`, `tauri.conf.json` und `Cargo.toml` setzen, Windows-Installer bauen.
+- Zuletzt aktualisiert: 2026-10-25 21:54
+- Nächster Schritt: Android-APK mit Version 2.0.0 bauen und im Emulator mit `adb` prüfen (HTML-Seiten, Notizbuch, Karteikarten und Quiz per Fingertipp, Code-Ansicht mit scrollbarer Werkzeugleiste).
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Version 2.0.0 in `package.json`, `tauri.conf.json` und `Cargo.toml`. Die Windows-Installer werden gebaut, die Pfade sind genannt.
+- [x] Version 2.0.0 in `package.json`, `tauri.conf.json` und `Cargo.toml`. Die Windows-Installer werden gebaut, die Pfade sind genannt.
+  - `npm run tauri build` (EXIT=0): `src-tauri	argetelease\localist.exe`, `src-tauri	argeteleaseundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri	argeteleaseundle
+sis\Localist_2.0.0_x64-setup.exe` (2,64 MiB). Die Bausteine tragen jetzt `2.0.0+55327b46`, die Sidebar zeigt „v2.0.0“ (aus `package.json`).
 - [ ] Android: Die APK wird gebaut. Im Emulator geprüft und mit `adb`-Befehlen samt Ausgabe belegt (Installation, Screenshots per `adb exec-out screencap`): HTML-Seiten und Notizbücher lassen sich lesen, Karteikarten und Quiz per Fingertipp bedienen, die Code-Ansicht ist nutzbar (Werkzeugleiste scrollbar).
 - [ ] Die Klickliste „Version 1.0“ und eine Klickliste „Version 2.0“ (HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein, Notizbuch, Umwandeln, Export) sind in `FORTSCHRITT.md` abgehakt.
 - [ ] Keine Fehler bei `npx tsc --noEmit`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
