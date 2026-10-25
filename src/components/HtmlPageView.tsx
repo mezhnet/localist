@@ -1,23 +1,39 @@
-// Eine HTML-Seite in der Ansicht „Lesen“: oben der Seitenkopf wie bei Notizen (Icon und Cover aus den
-// <meta>-Tags, Titel = Dateiname), darunter die Seite in der abgeschotteten Anzeige. Das iframe hat
-// sandbox="allow-scripts" ohne allow-same-origin: Die Seite hat keinen Zugriff auf App, Dateien oder Netzwerk
-// und spricht mit der App nur über postMessage (siehe src/lib/bridge.ts und src-tauri/seite/bruecke.js).
+// Eine HTML-Seite: oben der Seitenkopf wie bei Notizen (Icon und Cover aus den <meta>-Tags, Titel = Dateiname),
+// darunter eine von drei Ansichten: „Lesen“ (abgeschottete Anzeige), „Code“ (CodeMirror) und „Geteilt“
+// (Code links, Vorschau rechts). Umschalten per Schaltflächen oder Strg+E.
+// Der Editor zeigt nur den Inhalt von <main> (Schalter „Ganze Datei“ zeigt alles). Gespeichert wird automatisch:
+// unveränderter Anfang + Editor-Text + unveränderter Rest (siehe src/lib/html-editor.ts).
 import { FileCode } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { errorMessage } from "../lib/autosave";
-import { parseBridgeMessage, themeMessage } from "../lib/bridge";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import { AutoSaver, errorMessage } from "../lib/autosave";
 import { readHead, relativePath, setMeta } from "../lib/html";
+import {
+  HTML_VIEW_MODES,
+  joinFromEditor,
+  nextViewMode,
+  splitForEditor,
+  storedViewMode,
+  storeViewMode,
+  type EditorSplit,
+  type HtmlViewMode,
+} from "../lib/html-editor";
 import { useTheme } from "../lib/theme";
 import { pageTitle, parentDir } from "../lib/tree";
-import { importAttachment, pageUrl, pickImage, readPage, writePage } from "../lib/vault-api";
+import { importAttachment, pickImage, readPage, writePage } from "../lib/vault-api";
+import { CodeEditor } from "./CodeEditor";
 import { PageHeader } from "./PageHeader";
+import { PagePreview } from "./PagePreview";
 import { PageTitle, resolveFileUrlFor } from "./PageView";
+import { Button, cx, Segmented } from "./ui";
 
 interface Props {
   path: string;
+  /** Neu angelegte Seite: öffnet in „Geteilt“, Titel zum Eintippen markiert. */
   isNew?: boolean;
   /** Wird erhöht, wenn der Dateiwächter eine Änderung an dieser Seite meldet. */
   externalVersion: number;
+  /** Hier legt die Seite ihren AutoSaver ab, damit vor Seitenwechsel oder Schließen gespeichert werden kann. */
+  saverRef: MutableRefObject<AutoSaver | null>;
   onRename: (newTitle: string) => Promise<boolean>;
   onError: (message: string) => void;
   /** Ein Link in der Seite zeigt auf eine Datei im Vault (Pfad ist geprüft). */
@@ -28,39 +44,133 @@ interface Props {
   children?: ReactNode;
 }
 
-export function HtmlPageView({ path, isNew = false, externalVersion, onRename, onError, onOpenLink, onOpenExternal, children }: Props) {
+export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, onRename, onError, onOpenLink, onOpenExternal, children }: Props) {
+  const [mode, setModeState] = useState<HtmlViewMode>(() => (isNew ? "geteilt" : storedViewMode()));
+  const [wholeFile, setWholeFile] = useState(false);
+  /** Dateiinhalt zuletzt geladen oder gespeichert (für Kopf und Neuladen). */
   const [text, setText] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  /** Zählt Neuladungen der Anzeige (nach Änderungen an der Datei). */
-  const [frameVersion, setFrameVersion] = useState(1);
-  const [height, setHeight] = useState<number | null>(null);
+  const [split, setSplit] = useState<EditorSplit | null>(null);
+  /** Zählt, wie oft der Editor-Inhalt von außen ersetzt wurde. */
+  const [editorVersion, setEditorVersion] = useState(0);
+  /** Zählt Neuladungen der Vorschau (nach Speichern oder Änderungen von außen). */
+  const [previewVersion, setPreviewVersion] = useState(1);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  const frame = useRef<HTMLIFrameElement>(null);
-  const textRef = useRef<string | null>(null);
+  const { resolved } = useTheme();
+  /** Aktueller Inhalt inklusive noch nicht gespeicherter Eingaben. */
+  const current = useRef<string | null>(null);
+  /** Aktueller Ausschnitt inklusive der letzten Eingaben (für einen neu aufgebauten Editor nach Ansichtswechsel). */
+  const splitRef = useRef<EditorSplit | null>(null);
+  const applySplit = (next: EditorSplit) => {
+    splitRef.current = next;
+    setSplit(next);
+  };
+  const wholeFileRef = useRef(wholeFile);
+  wholeFileRef.current = wholeFile;
   const pathRef = useRef(path);
   pathRef.current = path;
-  const { resolved } = useTheme();
-  const actions = useRef({ onOpenLink, onOpenExternal });
-  actions.current = { onOpenLink, onOpenExternal };
 
-  // Laden und bei Änderungen von außen neu laden (eigene Änderungen nicht doppelt).
+  const setMode = useCallback((next: HtmlViewMode) => {
+    setModeState(next);
+    storeViewMode(next);
+  }, []);
+
+  /** Übernimmt einen Dateiinhalt in Editor, Kopf und Vorschau. */
+  const adopt = (content: string, reloadPreview: boolean) => {
+    current.current = content;
+    setText(content);
+    applySplit(splitForEditor(content, wholeFileRef.current));
+    setEditorVersion((version) => version + 1);
+    if (reloadPreview) setPreviewVersion((version) => version + 1);
+  };
+
+  // Seite einmal laden. Für eine andere Seite baut Workspace eine neue Ansicht (key).
   useEffect(() => {
     let cancelled = false;
     readPage(pathRef.current).then(
       (loaded) => {
-        if (cancelled || loaded === textRef.current) return;
-        const first = textRef.current === null;
-        textRef.current = loaded;
-        setText(loaded);
-        setLoadError(null);
-        if (!first) setFrameVersion((version) => version + 1);
+        if (cancelled) return;
+        saverRef.current = new AutoSaver(
+          loaded,
+          async (content) => {
+            await writePage(pathRef.current, content);
+            // Nach dem Speichern: Kopf aktualisieren und die Vorschau neu laden.
+            setText(content);
+            setPreviewVersion((version) => version + 1);
+          },
+          onError,
+        );
+        adopt(loaded, false);
       },
-      (error) => !cancelled && textRef.current === null && setLoadError(errorMessage(error)),
+      (error) => !cancelled && setLoadError(errorMessage(error)),
+    );
+    return () => {
+      cancelled = true;
+      // Beim Verlassen der Seite nichts verlieren.
+      void saverRef.current?.flush();
+      saverRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur beim Öffnen laden
+  }, []);
+
+  // Änderung von außen (oder Umbenennen): neu laden, außer es ist die eigene Speicherung oder es gibt ungespeicherte Eingaben.
+  useEffect(() => {
+    if (externalVersion === 0 && current.current === null) return;
+    let cancelled = false;
+    readPage(pathRef.current).then(
+      (loaded) => {
+        const saver = saverRef.current;
+        if (cancelled || !saver || loaded === current.current) return;
+        if (saver.isOwnWrite(loaded) || saver.dirty) return;
+        saver.lastSaved = loaded;
+        adopt(loaded, true);
+      },
+      () => {
+        // Datei ist weg oder gerade nicht lesbar: Die Sidebar kümmert sich ums Schließen.
+      },
     );
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur auf neue Meldungen reagieren
   }, [externalVersion, path]);
+
+  // Strg+E: Lesen → Code → Geteilt (auch aus der Seite heraus, die Brücke reicht die Taste weiter).
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== "e") return;
+      event.preventDefault();
+      setModeState((previous) => {
+        const next = nextViewMode(previous);
+        storeViewMode(next);
+        return next;
+      });
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
+
+  /** Eingabe im Editor: Datei = unveränderter Anfang + Editor-Text + unveränderter Rest, automatisch gespeichert. */
+  const onEditorChange = useCallback(
+    (body: string) => {
+      const parts = splitRef.current;
+      if (!parts) return;
+      splitRef.current = { ...parts, body };
+      current.current = joinFromEditor(parts, body);
+      saverRef.current?.schedule(() => current.current ?? "");
+    },
+    [saverRef],
+  );
+
+  const toggleWholeFile = () => {
+    const next = !wholeFile;
+    setWholeFile(next);
+    wholeFileRef.current = next;
+    if (current.current !== null) {
+      applySplit(splitForEditor(current.current, next));
+      setEditorVersion((version) => version + 1);
+    }
+  };
 
   const head = text === null ? null : readHead(text);
   const cover = head?.cover ?? null;
@@ -74,40 +184,18 @@ export function HtmlPageView({ path, isNew = false, externalVersion, onRename, o
     };
   }, [cover]);
 
-  // Nachrichten nur aus genau diesem iframe annehmen, dann Typ und Felder prüfen.
-  useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      if (!frame.current || event.source !== frame.current.contentWindow) return;
-      const message = parseBridgeMessage(event.data);
-      if (!message) return;
-      if (message.typ === "bereit") frame.current.contentWindow?.postMessage(themeMessage(resolved), "*");
-      else if (message.typ === "groesse") setHeight(message.hoehe);
-      else if (message.typ === "link") actions.current.onOpenLink(message.pfad);
-      else if (message.typ === "extern") actions.current.onOpenExternal(message.url);
-      else if (message.typ === "taste") {
-        // Tastenkürzel der App: wie ein Tastendruck im App-Fenster behandeln.
-        window.dispatchEvent(new KeyboardEvent("keydown", { key: message.taste, ctrlKey: true, shiftKey: message.umschalt, bubbles: true }));
-      }
-    };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [resolved]);
-
-  // Hell/Dunkel an die Seite weitergeben (nur das Farbschema, keine anderen Daten).
-  useEffect(() => {
-    frame.current?.contentWindow?.postMessage(themeMessage(resolved), "*");
-  }, [resolved]);
-
   /** Ändert eine Angabe im Kopfbereich (Icon, Cover) an genau dieser Stelle und speichert sofort. */
   const updateMeta = async (name: string, value: string | null) => {
-    const current = textRef.current;
-    if (current === null) return;
-    const updated = setMeta(current, name, value);
-    if (updated === current) return;
+    const saver = saverRef.current;
+    await saver?.flush();
+    const content = current.current;
+    if (content === null || !saver) return;
+    const updated = setMeta(content, name, value);
+    if (updated === content) return;
     try {
       await writePage(pathRef.current, updated);
-      textRef.current = updated;
-      setText(updated);
+      saver.lastSaved = updated;
+      adopt(updated, true);
     } catch (error) {
       onError(errorMessage(error));
     }
@@ -134,8 +222,9 @@ export function HtmlPageView({ path, isNew = false, externalVersion, onRename, o
   }
 
   const title = pageTitle(path);
+  const editing = mode !== "lesen";
   return (
-    <div className="page-view html-page-view">
+    <div className={cx("page-view html-page-view", `is-${mode}`)}>
       {head && (
         <PageHeader
           icon={head.icon}
@@ -146,27 +235,59 @@ export function HtmlPageView({ path, isNew = false, externalVersion, onRename, o
           onRemoveCover={() => void updateMeta("localist-cover", null)}
         />
       )}
-      <div className="page">
+      <div className={cx("page", editing && "is-wide")}>
         <PageTitle title={title} autoFocus={isNew} onRename={onRename} />
         <div className="html-page-bar">
           <span className="html-page-type">
             <FileCode aria-hidden="true" /> HTML-Seite
           </span>
-          <span className="html-page-mode">Lesen</span>
+          <div className="html-page-controls">
+            {editing && split && (
+              <Button
+                variant="ghost"
+                size="sm"
+                active={!split.mainOnly}
+                aria-pressed={!split.mainOnly}
+                disabled={!wholeFile && !split.mainOnly}
+                title={!wholeFile && !split.mainOnly ? "Die Seite hat kein <main>: Der Editor zeigt die ganze Datei." : "Ganze Datei statt nur den Inhalt von <main> zeigen"}
+                onClick={toggleWholeFile}
+              >
+                Ganze Datei
+              </Button>
+            )}
+            <Segmented<HtmlViewMode> size="sm" label="Ansicht (Strg+E)" options={HTML_VIEW_MODES} value={mode} onChange={setMode} />
+          </div>
         </div>
-        {text === null ? (
+        {text === null || split === null ? (
           <p className="muted">Lädt …</p>
         ) : (
-          <iframe
-            ref={frame}
-            key={path}
-            className="html-frame"
-            title={`HTML-Seite „${title}“`}
-            sandbox="allow-scripts"
-            referrerPolicy="no-referrer"
-            src={pageUrl(path, frameVersion)}
-            style={height !== null ? { height: Math.max(height, 120) } : undefined}
-          />
+          <div className={cx("html-workspace", `is-${mode}`)}>
+            {editing && (
+              <div className="html-code-pane">
+                <CodeEditor
+                  value={splitRef.current?.body ?? split.body}
+                  docVersion={editorVersion}
+                  lineBreak={split.lineBreak}
+                  dark={resolved === "dark"}
+                  label={`HTML-Code von „${title}“`}
+                  onChange={onEditorChange}
+                />
+              </div>
+            )}
+            {mode !== "code" && (
+              <div className="html-preview-pane">
+                <PagePreview
+                  key={path}
+                  path={path}
+                  version={previewVersion}
+                  fitContent={mode === "lesen"}
+                  title={title}
+                  onOpenLink={onOpenLink}
+                  onOpenExternal={onOpenExternal}
+                />
+              </div>
+            )}
+          </div>
         )}
         {text !== null && children}
       </div>

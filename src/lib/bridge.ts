@@ -17,7 +17,8 @@ export type BridgeMessage =
   | { typ: "groesse"; hoehe: number }
   | { typ: "link"; pfad: string; anker: string }
   | { typ: "extern"; url: string }
-  | { typ: "taste"; taste: "p" | "f"; umschalt: boolean }
+  | { typ: "taste"; taste: "p" | "f" | "e"; umschalt: boolean }
+  | { typ: "position"; y: number }
   | { typ: "sicherheitstest"; ergebnisse: SecurityCheck[] };
 
 const MAX_TEXT = 2000;
@@ -46,8 +47,12 @@ export function parseBridgeMessage(data: unknown): BridgeMessage | null {
     }
     case "extern":
       return isText(message.url) && isExternalUrl(message.url) ? { typ: "extern", url: message.url } : null;
+    case "position":
+      return typeof message.y === "number" && Number.isFinite(message.y) && message.y >= 0
+        ? { typ: "position", y: Math.min(Math.round(message.y), 10_000_000) }
+        : null;
     case "taste":
-      if ((message.taste === "p" || message.taste === "f") && typeof message.umschalt === "boolean") {
+      if ((message.taste === "p" || message.taste === "f" || message.taste === "e") && typeof message.umschalt === "boolean") {
         return { typ: "taste", taste: message.taste, umschalt: message.umschalt };
       }
       return null;
@@ -88,7 +93,11 @@ export function isExternalUrl(url: string): boolean {
   }
 }
 
-/** Nachricht an die Seite (nur das Farbschema, nie vertrauliche Daten). */
+/** Nachrichten an die Seite: nur das Farbschema und die Scrollposition, nie vertrauliche Daten. */
 export function themeMessage(theme: "light" | "dark") {
   return { localist: 1, typ: "thema", wert: theme === "dark" ? "dunkel" : "hell" } as const;
+}
+
+export function scrollMessage(y: number) {
+  return { localist: 1, typ: "scrollen", y: Math.max(0, Math.round(y)) } as const;
 }

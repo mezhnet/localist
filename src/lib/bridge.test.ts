@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isExternalUrl, normalizeVaultPath, parseBridgeMessage, themeMessage } from "./bridge";
+import { isExternalUrl, normalizeVaultPath, parseBridgeMessage, scrollMessage, themeMessage } from "./bridge";
 
 describe("Nachrichten der HTML-Seiten (postMessage)", () => {
   it("nimmt nur bekannte Nachrichtentypen mit richtigen Feldern an", () => {
@@ -12,6 +12,8 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
     });
     expect(parseBridgeMessage({ localist: 1, typ: "extern", url: "https://example.com/" })).toEqual({ typ: "extern", url: "https://example.com/" });
     expect(parseBridgeMessage({ localist: 1, typ: "taste", taste: "p", umschalt: false })).toEqual({ typ: "taste", taste: "p", umschalt: false });
+    expect(parseBridgeMessage({ localist: 1, typ: "taste", taste: "e", umschalt: false })).toEqual({ typ: "taste", taste: "e", umschalt: false });
+    expect(parseBridgeMessage({ localist: 1, typ: "position", y: 420.6 })).toEqual({ typ: "position", y: 421 });
 
     for (const bad of [
       null,
@@ -30,6 +32,8 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
       { localist: 1, typ: "extern", url: "file:///C:/Windows/win.ini" },
       { localist: 1, typ: "extern", url: "ipc://localhost/plugin" },
       { localist: 1, typ: "taste", taste: "w", umschalt: false },
+      { localist: 1, typ: "position", y: -5 },
+      { localist: 1, typ: "position", y: "10" },
       { localist: 1, typ: "sicherheitstest", ergebnisse: [{ pruefung: "x" }] },
     ]) {
       expect(parseBridgeMessage(bad), JSON.stringify(bad)).toBeNull();
@@ -50,8 +54,9 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
     expect(isExternalUrl("kein url")).toBe(false);
   });
 
-  it("schickt der Seite nur das Farbschema", () => {
+  it("schickt der Seite nur Farbschema und Scrollposition", () => {
     expect(themeMessage("dark")).toEqual({ localist: 1, typ: "thema", wert: "dunkel" });
     expect(Object.keys(themeMessage("light"))).toEqual(["localist", "typ", "wert"]);
+    expect(scrollMessage(310.4)).toEqual({ localist: 1, typ: "scrollen", y: 310 });
   });
 });

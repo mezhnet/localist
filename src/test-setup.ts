@@ -6,9 +6,10 @@ import { cleanup, configure } from "@testing-library/react";
 
 afterEach(cleanup);
 
-// findBy… und waitFor warten bis zu 3 Sekunden (Standard: 1). Die Oberfläche ist seit Etappe 9 größer
-// (Startseite, Favoriten), Abfragen nach Rollen dauern in jsdom auf langsamen Rechnern länger.
-configure({ asyncUtilTimeout: 3000 });
+// findBy… und waitFor warten bis zu 5 Sekunden (Standard: 1). Die Oberfläche ist seit Etappe 9 größer
+// (Startseite, Favoriten, seit Etappe 11 der Code-Editor); wenn alle Testdateien parallel laufen,
+// dauern Abfragen in jsdom auf einem ausgelasteten Rechner länger.
+configure({ asyncUtilTimeout: 5000 });
 
 // jsdom kennt matchMedia nicht; die Editor-Oberfläche (Mantine) fragt damit das Farbschema ab.
 if (typeof window !== "undefined" && !window.matchMedia) {

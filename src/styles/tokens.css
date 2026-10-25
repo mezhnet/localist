@@ -55,6 +55,16 @@
   --color-on-image-text: #2b2a27;
   --color-scrollbar: rgba(43, 42, 39, 0.16);
 
+  /* Code-Editor (Syntaxhervorhebung) */
+  --color-code-tag: #b42d5c;
+  --color-code-attribute: #8a5a00;
+  --color-code-string: #1d7a4a;
+  --color-code-comment: #8b8a85;
+  --color-code-keyword: #6b46c1;
+  --color-code-number: #1c63c4;
+  --color-code-gutter: #b0afaa;
+  --color-code-selection: rgba(47, 107, 224, 0.18);
+
   /* Schrift */
   --font-sans: "Inter Variable", "Inter", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Cascadia Mono", Consolas, monospace;
@@ -140,6 +150,8 @@
   --calendar-week-height: 320px;
   --calendar-undated-width: 240px;
   --property-name-width: 160px;
+  --code-pane-height: 72vh;
+  --code-pane-min-height: 320px;
 
   /* Radien */
   --radius-xs: 3px;
@@ -214,6 +226,15 @@
   --color-on-image-text: #e8e7e3;
   --color-scrollbar: rgba(255, 255, 255, 0.16);
 
+  --color-code-tag: #f08dab;
+  --color-code-attribute: #e2b96a;
+  --color-code-string: #86cf9f;
+  --color-code-comment: #7f7e7a;
+  --color-code-keyword: #c3a6f4;
+  --color-code-number: #7db8ff;
+  --color-code-gutter: #6a6965;
+  --color-code-selection: rgba(91, 143, 240, 0.3);
+
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
@@ -266,6 +287,15 @@
     --color-on-image: rgba(32, 32, 32, 0.88);
     --color-on-image-text: #e8e7e3;
     --color-scrollbar: rgba(255, 255, 255, 0.16);
+
+    --color-code-tag: #f08dab;
+    --color-code-attribute: #e2b96a;
+    --color-code-string: #86cf9f;
+    --color-code-comment: #7f7e7a;
+    --color-code-keyword: #c3a6f4;
+    --color-code-number: #7db8ff;
+    --color-code-gutter: #6a6965;
+    --color-code-selection: rgba(91, 143, 240, 0.3);
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);

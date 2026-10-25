@@ -37,13 +37,13 @@
     }
   });
 
-  // Tastenkürzel der App (Strg+P, Strg+Umschalt+F) wirken auch, wenn die Seite den Fokus hat.
+  // Tastenkürzel der App (Strg+P, Strg+Umschalt+F, Strg+E) wirken auch, wenn die Seite den Fokus hat.
   document.addEventListener(
     "keydown",
     function (event) {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
       var taste = (event.key || "").toLowerCase();
-      if ((taste === "p" && !event.shiftKey) || (taste === "f" && event.shiftKey)) {
+      if ((taste === "p" && !event.shiftKey) || (taste === "f" && event.shiftKey) || (taste === "e" && !event.shiftKey)) {
         event.preventDefault();
         senden({ typ: "taste", taste: taste, umschalt: event.shiftKey });
       }
@@ -51,15 +51,37 @@
     true,
   );
 
-  // Hell/Dunkel kommt von der App.
+  // Von der App: Hell/Dunkel und die Scrollposition nach dem Neuladen (damit die Vorschau nicht springt).
+  var gewuenscht = -1;
+  var scrollen = function () {
+    if (gewuenscht >= 0) window.scrollTo(0, gewuenscht);
+  };
   window.addEventListener("message", function (event) {
     if (event.source !== window.parent) return;
     var daten = event.data;
-    if (!daten || daten.localist !== 1 || daten.typ !== "thema") return;
-    if (daten.wert !== "hell" && daten.wert !== "dunkel") return;
-    var dunkel = daten.wert === "dunkel";
-    document.documentElement.setAttribute("data-theme", dunkel ? "dark" : "light");
-    document.documentElement.style.colorScheme = dunkel ? "dark" : "light";
+    if (!daten || daten.localist !== 1) return;
+    if (daten.typ === "thema" && (daten.wert === "hell" || daten.wert === "dunkel")) {
+      var dunkel = daten.wert === "dunkel";
+      document.documentElement.setAttribute("data-theme", dunkel ? "dark" : "light");
+      document.documentElement.style.colorScheme = dunkel ? "dark" : "light";
+    } else if (daten.typ === "scrollen" && typeof daten.y === "number" && daten.y >= 0) {
+      gewuenscht = daten.y;
+      scrollen();
+    }
+  });
+  window.addEventListener("load", scrollen);
+
+  // Scrollposition melden (seltener als jedes Ereignis).
+  var positionGeplant = false;
+  window.addEventListener("scroll", function () {
+    if (positionGeplant) return;
+    positionGeplant = true;
+    setTimeout(function () {
+      positionGeplant = false;
+      // Hat der Nutzer selbst gescrollt, gilt die gewünschte Position nicht mehr (sonst springt "load" zurück).
+      if (Math.abs(window.scrollY - gewuenscht) > 2) gewuenscht = -1;
+      senden({ typ: "position", y: Math.round(window.scrollY) });
+    }, 100);
   });
 
   // Höhe melden, damit die App die Seite ohne zweite Bildlaufleiste anzeigt.

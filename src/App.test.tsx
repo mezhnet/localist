@@ -1,6 +1,7 @@
 // Oberflächen-Tests der ganzen App. Statt der Rust-Seite antwortet die Vault-Simulation aus
 // dev-backend.ts (Inhalt wie beispiel-vault/, nur im Arbeitsspeicher).
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -197,8 +198,8 @@ describe("Eigenschaften und Datenbanken", () => {
     expect(yaml).toContain("ansichten:\n  - name: Tabelle\n    typ: tabelle\n");
 
     const table = await screen.findByRole("table");
-    const rows = within(table).getAllByRole("row");
-    expect(rows).toHaveLength(3); // Kopfzeile + 2 Seiten
+    // Die Einträge laden nach der Tabelle (unter Last etwas später): darauf warten.
+    await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(3)); // Kopfzeile + 2 Seiten
     expect(within(table).getAllByRole("columnheader").map((th) => th.textContent?.trim())).toEqual(["Aa Name", "◐ status", "# aufwand", ""]);
   });
 
@@ -834,7 +835,8 @@ describe("HTML-Seiten (Etappe 10)", () => {
     fireEvent.keyDown(await screen.findByRole("textbox", { name: "Schnellsuche" }), { key: "Escape" });
     // Höhe übernehmen
     fromFrame({ localist: 1, typ: "groesse", hoehe: 640 });
-    expect(frame().style.height).toBe("640px");
+    // Seit Etappe 11 gilt die Höhe für den Behälter der Vorschau (darin kann eine neue Fassung über der alten laden).
+    expect((document.querySelector(".html-preview") as HTMLElement).style.height).toBe("640px");
     // Gültiger Link aus dem eigenen iframe: öffnet die Notiz in der App
     fromFrame({ localist: 1, typ: "link", pfad: "Notizen/Ideen.md", anker: "" });
     expect(await screen.findByText("Hier sammle ich lose Gedanken.")).toBeTruthy();
@@ -883,5 +885,142 @@ describe("HTML-Seiten (Etappe 10)", () => {
     expect(html).toContain('<link rel="stylesheet" href=".localist/bausteine/localist.css">');
     expect(html).toMatch(/<p>Angelegt am \d{4}-\d{2}-\d{2} um \d{2}:\d{2}\.<\/p>/);
     expect(vault().files.get("Vorlagen/Lernseite.html")).toContain("<title>{{title}}</title>");
+  });
+});
+
+describe("HTML-Seiten: Code-Editor (Etappe 11)", () => {
+  const modeButton = (name: "Lesen" | "Code" | "Geteilt") => within(screen.getByRole("group", { name: "Ansicht (Strg+E)" })).getByRole("button", { name });
+  const editorView = () => EditorView.findFromDOM(document.querySelector(".cm-editor") as HTMLElement)!;
+  const editorText = () => editorView().state.sliceDoc();
+  /** Ersetzt im Editor `from` durch `to` (wie Tippen). */
+  const typeInEditor = (from: string, to: string) =>
+    act(() => {
+      const view = editorView();
+      const at = view.state.sliceDoc().indexOf(from);
+      expect(at).toBeGreaterThanOrEqual(0);
+      // Positionen im Editor zählen ein Zeilenende als ein Zeichen.
+      const pos = view.state.sliceDoc().slice(0, at).replace(/\r\n/g, "\n").length;
+      view.dispatch({ changes: { from: pos, to: pos + from.replace(/\r\n/g, "\n").length, insert: to } });
+    });
+
+  async function openDns() {
+    await openVaultFromStart();
+    await openPage("Notizen", "DNS");
+    await waitFor(() => expect(document.querySelector(".html-workspace")).toBeTruthy());
+  }
+
+  it("drei Ansichten: Lesen, Code, Geteilt – per Schaltfläche und Strg+E, die Wahl wird gemerkt", async () => {
+    await openDns();
+    expect(modeButton("Lesen").getAttribute("aria-pressed")).toBe("true");
+    expect(document.querySelector(".cm-editor")).toBeNull();
+
+    fireEvent.click(modeButton("Code"));
+    await waitFor(() => expect(document.querySelector(".cm-editor")).toBeTruthy());
+    expect(document.querySelector("iframe.html-frame")).toBeNull();
+    expect(localStorage.getItem("html-ansicht")).toBe("code");
+
+    fireEvent.keyDown(window, { key: "e", ctrlKey: true });
+    await waitFor(() => expect(modeButton("Geteilt").getAttribute("aria-pressed")).toBe("true"));
+    expect(document.querySelector(".html-workspace.is-geteilt .html-code-pane .cm-editor")).toBeTruthy();
+    expect(document.querySelector(".html-workspace.is-geteilt .html-preview-pane iframe")).toBeTruthy();
+
+    // Strg+E aus der Seite heraus (die Brücke reicht die Taste weiter)
+    const frame = document.querySelector("iframe.html-frame") as HTMLIFrameElement;
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, typ: "taste", taste: "e", umschalt: false }, source: frame.contentWindow }));
+    });
+    await waitFor(() => expect(modeButton("Lesen").getAttribute("aria-pressed")).toBe("true"));
+    expect(localStorage.getItem("html-ansicht")).toBe("lesen");
+
+    // Gemerkt: Beim nächsten Öffnen erscheint die zuletzt gewählte Ansicht.
+    fireEvent.click(modeButton("Code"));
+    fireEvent.click(await (await inTree()).findByText("Ideen"));
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    fireEvent.click(await (await inTree()).findByText("DNS"));
+    await waitFor(() => expect(modeButton("Code").getAttribute("aria-pressed")).toBe("true"));
+  });
+
+  it("eine neue HTML-Seite öffnet in „Geteilt“", async () => {
+    localStorage.setItem("html-ansicht", "lesen");
+    await openVaultFromStart();
+    createNew("HTML-Seite");
+    await waitFor(() => expect(modeButton("Geteilt").getAttribute("aria-pressed")).toBe("true"));
+    await waitFor(() => expect(document.querySelector(".html-workspace.is-geteilt .cm-editor")).toBeTruthy());
+  });
+
+  it("vereinfachte Ansicht: nur der Inhalt von <main>, „Ganze Datei“ zeigt alles", async () => {
+    localStorage.setItem("html-ansicht", "code");
+    await openDns();
+    await waitFor(() => expect(document.querySelector(".cm-editor")).toBeTruthy());
+    expect(editorText().startsWith("\n<h1>Namensauflösung mit DNS</h1>")).toBe(true);
+    expect(editorText()).not.toContain("<title>");
+    expect(editorText()).not.toContain("</main>");
+    const whole = screen.getByRole("button", { name: "Ganze Datei" });
+    expect(whole.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(whole);
+    await waitFor(() => expect(editorText()).toBe(vault().files.get("Notizen/DNS.html")));
+    expect(screen.getByRole("button", { name: "Ganze Datei" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("speichert automatisch und ändert nur die bearbeitete Stelle – auch mit CRLF und BOM", async () => {
+    const original = `﻿${vault().files.get("Notizen/DNS.html")!.replace(/\n/g, "\r\n")}`;
+    vault().externalWrite("Notizen/DNS.html", original);
+    localStorage.setItem("html-ansicht", "code");
+    await openDns();
+    await waitFor(() => expect(editorText()).toContain("Port 53"));
+    expect(editorText()).toContain("\r\n"); // Zeilenenden der Datei bleiben im Editor erhalten
+    typeInEditor("Port 53 (UDP und TCP)", "Port 53 (UDP, TCP und DoT)");
+    typeInEditor("<l-callout", "<p>Neu getippt</p>\r\n<l-callout");
+    // Noch nicht gespeichert (Wartezeit nach der letzten Eingabe) …
+    expect(vault().files.get("Notizen/DNS.html")).toBe(original);
+    // … dann genau diese Änderungen, alles andere Zeichen für Zeichen gleich.
+    await waitFor(() => expect(vault().files.get("Notizen/DNS.html")).not.toBe(original), { timeout: 3000 });
+    expect(vault().files.get("Notizen/DNS.html")).toBe(
+      original.replace("Port 53 (UDP und TCP)", "Port 53 (UDP, TCP und DoT)").replace("<l-callout", "<p>Neu getippt</p>\r\n<l-callout"),
+    );
+  });
+
+  it("fehlerhaftes HTML geht nie verloren: ohne </main> zeigt der Editor die ganze Datei und speichert sie wörtlich", async () => {
+    const broken = "<!doctype html>\n<title>Kaputt</title>\n<main>\n<p>offen <div>auch offen\n<span>noch einer";
+    vault().externalWrite("Notizen/Kaputt.html", broken);
+    localStorage.setItem("html-ansicht", "geteilt");
+    await openVaultFromStart();
+    await openPage("Notizen", "Kaputt");
+    await waitFor(() => expect(document.querySelector(".cm-editor")).toBeTruthy());
+    expect(editorText()).toBe(broken);
+    expect(screen.getByRole("button", { name: "Ganze Datei" })).toHaveProperty("disabled", true);
+    typeInEditor("<span>noch einer", "<span>noch einer <b>fett");
+    await waitFor(() => expect(vault().files.get("Notizen/Kaputt.html")).toBe(`${broken} <b>fett`), { timeout: 3000 });
+    // Die Vorschau zeigt, was der Browser daraus macht: Sie lädt die gespeicherte Fassung neu.
+    await waitFor(() => expect([...document.querySelectorAll("iframe.html-frame")].some((f) => /\?v=[2-9]/.test(f.getAttribute("src")!))).toBe(true));
+  });
+
+  it("„Geteilt“: Die Vorschau lädt nach dem Speichern neu, die neue Fassung liegt erst unsichtbar über der alten", async () => {
+    localStorage.setItem("html-ansicht", "geteilt");
+    await openDns();
+    await waitFor(() => expect(document.querySelector(".cm-editor")).toBeTruthy());
+    const first = document.querySelector("iframe.html-frame") as HTMLIFrameElement;
+    const firstSrc = first.getAttribute("src")!;
+    // Die Seite meldet ihre Scrollposition.
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, typ: "position", y: 480 }, source: first.contentWindow }));
+    });
+    typeInEditor("Mehr zu Resolvern", "Mehr zu Resolvern und Caches");
+    await waitFor(() => expect(document.querySelectorAll("iframe.html-frame")).toHaveLength(2), { timeout: 3000 });
+    const [old, next] = document.querySelectorAll("iframe.html-frame");
+    expect(old.getAttribute("src")).toBe(firstSrc);
+    expect(next.classList.contains("is-loading")).toBe(true);
+    expect(next.getAttribute("aria-hidden")).toBe("true");
+    // Die neue Fassung bekommt beim Start die alte Scrollposition …
+    const posted: unknown[] = [];
+    (next as HTMLIFrameElement).contentWindow!.postMessage = ((data: unknown) => posted.push(data)) as typeof window.postMessage;
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, typ: "bereit" }, source: (next as HTMLIFrameElement).contentWindow }));
+    });
+    expect(posted).toContainEqual({ localist: 1, typ: "scrollen", y: 480 });
+    // … und ersetzt danach die alte.
+    await waitFor(() => expect(document.querySelectorAll("iframe.html-frame")).toHaveLength(1));
+    expect(document.querySelector("iframe.html-frame")!.classList.contains("is-loading")).toBe(false);
+    expect(document.querySelector("iframe.html-frame")!.getAttribute("src")).not.toBe(firstSrc);
   });
 });

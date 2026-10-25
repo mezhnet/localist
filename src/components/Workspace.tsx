@@ -633,6 +633,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               path={page.path}
               isNew={page.isNew}
               externalVersion={externalVersion}
+              saverRef={saverRef}
               onRename={renameOpenPage}
               onError={showError}
               onOpenLink={openFromHtmlPage}

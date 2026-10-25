@@ -500,15 +500,76 @@
   font-weight: var(--font-weight-medium);
 }
 
-/* Die abgeschottete Anzeige: so hoch wie ihr Inhalt (meldet die Brücke), ohne Rahmen. */
+.html-page-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* In „Code“ und „Geteilt“ nutzt die Seite die ganze Breite. */
+.page.is-wide {
+  max-width: none;
+  padding: 0 var(--space-8) var(--space-16);
+}
+
+.html-workspace {
+  margin-left: var(--editor-inset);
+}
+
+.page.is-wide .html-workspace,
+.page.is-wide .html-page-bar,
+.page.is-wide .page-title {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.html-workspace.is-geteilt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.html-code-pane,
+.html-workspace.is-geteilt .html-preview-pane {
+  height: var(--code-pane-height);
+  min-height: var(--code-pane-min-height);
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+
+.code-editor {
+  height: 100%;
+}
+
+/* Abgeschottete Anzeige. In „Lesen“ so hoch wie ihr Inhalt (meldet die Brücke), in „Geteilt“ mit eigenem
+   Bildlauf. Eine neue Fassung lädt unsichtbar darüber und ersetzt die alte erst, wenn sie fertig ist. */
+.html-preview {
+  position: relative;
+  min-height: var(--space-30);
+}
+
+.html-preview.is-fixed {
+  height: 100%;
+}
+
 .html-frame {
   display: block;
-  width: calc(100% - var(--editor-inset));
-  min-height: var(--space-30);
-  margin-left: var(--editor-inset);
+  width: 100%;
+  height: 100%;
   border: none;
   background: transparent;
   color-scheme: normal;
+}
+
+.html-frame.is-loading {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ---------- Backlinks ---------- */
@@ -601,13 +662,27 @@
   .properties,
   .backlinks,
   .html-page-bar,
-  .html-frame {
+  .html-workspace {
     padding-left: 0;
     margin-left: 0;
   }
 
-  .html-frame {
-    width: 100%;
+  .page.is-wide {
+    padding: 0 var(--space-3) var(--space-16);
+  }
+
+  .html-page-bar {
+    flex-wrap: wrap;
+  }
+
+  /* Geteilt auf schmalen Bildschirmen: Code oben, Vorschau darunter */
+  .html-workspace.is-geteilt {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .html-code-pane,
+  .html-workspace.is-geteilt .html-preview-pane {
+    height: calc(var(--code-pane-height) * 0.6);
   }
 
   .backlink {
