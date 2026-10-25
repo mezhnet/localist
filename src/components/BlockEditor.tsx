@@ -23,6 +23,7 @@ import {
   useCreateBlockNote,
   type DefaultReactSuggestionItem,
 } from "@blocknote/react";
+import { FileCode, FileText } from "lucide-react";
 import { useContext, useEffect } from "react";
 import { markToggleOpen } from "../editor/callout";
 import { schema, type VaultEditor, type VaultPartialBlock } from "../editor/schema";
@@ -104,7 +105,7 @@ function linkMenuItems(editor: VaultEditor, links: WikiLinkActions, query: strin
   const items: DefaultReactSuggestionItem[] = links.suggest(query).map((page) => ({
     title: page.title,
     subtext: page.folder || "Vault",
-    icon: <span aria-hidden="true">📄</span>,
+    icon: page.html ? <FileCode aria-hidden="true" size={18} /> : <FileText aria-hidden="true" size={18} />,
     onItemClick: insert(page.target),
   }));
   const name = query.trim();

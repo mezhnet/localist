@@ -1,6 +1,7 @@
 //! Tauri-Kommandos für die Oberfläche. Die eigentliche Dateiarbeit steckt in `vault.rs`,
 //! der Dateiwächter in `watcher.rs`. Fehler gehen als deutsche Meldungen an die Oberfläche.
 
+mod page_scheme;
 mod search_index;
 mod vault;
 mod watcher;
@@ -125,9 +126,10 @@ async fn write_page(state: State<'_, AppState>, path: String, content: String) -
     vault::write_atomic(&vault::resolve(&state.root()?, &path)?, content.as_bytes())
 }
 
+/// Legt eine Notiz (`kind` fehlt oder "notiz") oder eine HTML-Seite (`kind` = "html") an.
 #[tauri::command]
-async fn create_page(state: State<'_, AppState>, dir: String, title: String) -> Result<String, String> {
-    vault::create_page(&state.root()?, &dir, &title)
+async fn create_page(state: State<'_, AppState>, dir: String, title: String, kind: Option<String>) -> Result<String, String> {
+    vault::create_page(&state.root()?, &dir, &title, vault::PageType::parse(kind.as_deref())?)
 }
 
 #[tauri::command]
@@ -138,6 +140,12 @@ async fn create_folder(state: State<'_, AppState>, dir: String, name: String) ->
 #[tauri::command]
 async fn rename_entry(state: State<'_, AppState>, path: String, new_name: String) -> Result<String, String> {
     vault::rename_entry(&state.root()?, &path, &new_name)
+}
+
+/// Verschiebt eine Seite oder einen Ordner in einen anderen Ordner ("" = Vault-Wurzel).
+#[tauri::command]
+async fn move_entry(state: State<'_, AppState>, path: String, target_dir: String) -> Result<String, String> {
+    vault::move_entry(&state.root()?, &path, &target_dir)
 }
 
 #[tauri::command]
@@ -213,6 +221,23 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
+        // HTML-Seiten für die abgeschottete Anzeige (siehe page_scheme.rs).
+        .register_asynchronous_uri_scheme_protocol(page_scheme::SCHEME, |ctx, request, responder| {
+            let app = ctx.app_handle().clone();
+            let path = request.uri().path().to_string();
+            std::thread::spawn(move || {
+                let root = lock(&app.state::<AppState>().root).clone();
+                let answer = page_scheme::answer(root.as_deref(), &path, "/", |_| None);
+                let mut response = tauri::http::Response::builder().status(answer.status).header("Content-Type", answer.content_type);
+                for (name, value) in page_scheme::headers() {
+                    response = response.header(name, value);
+                }
+                match response.body(answer.body) {
+                    Ok(response) => responder.respond(response),
+                    Err(_) => responder.respond(tauri::http::Response::new(Vec::new())),
+                }
+            });
+        })
         .invoke_handler(tauri::generate_handler![
             get_last_vault,
             open_vault,
@@ -222,6 +247,7 @@ pub fn run() {
             create_page,
             create_folder,
             rename_entry,
+            move_entry,
             delete_entry,
             resolve_attachment,
             import_attachment,

@@ -169,6 +169,21 @@ mod tests {
     }
 
     #[test]
+    fn html_seiten_stehen_im_index() {
+        let vault = temp_dir("vault");
+        let cache = temp_dir("cache");
+        fs::write(vault.join("DNS.html"), "<title>DNS</title><main><p>Port 53</p></main>").unwrap();
+        fs::write(vault.join("Ideen.md"), "# Ideen").unwrap();
+        fs::write(vault.join("alt.htm"), "nicht dabei").unwrap();
+        let entries = update_index(&vault, &index_file_for(&cache, &vault)).unwrap();
+        assert_eq!(entries.iter().map(|e| (e.path.as_str(), e.title.as_str())).collect::<Vec<_>>(), vec![("DNS.html", "DNS"), ("Ideen.md", "Ideen")]);
+        // Der Text wird in der Oberfläche aus dem HTML gelesen (ohne Tags, Skripte und Styles).
+        assert!(entries[0].content.contains("<p>Port 53</p>"));
+        let _ = fs::remove_dir_all(&vault);
+        let _ = fs::remove_dir_all(&cache);
+    }
+
+    #[test]
     fn verschiedene_vaults_haben_eigene_indexdateien() {
         let cache = Path::new("C:/cache");
         assert_ne!(index_file_for(cache, Path::new("C:/A")), index_file_for(cache, Path::new("C:/B")));

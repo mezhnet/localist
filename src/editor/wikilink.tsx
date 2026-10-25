@@ -2,6 +2,7 @@
 // Wohin ein Link führt und was ein Klick tut, entscheidet die App über den WikiLinkContext.
 import { createReactInlineContentSpec } from "@blocknote/react";
 import { createContext, useContext } from "react";
+import { linkLabel } from "../lib/links";
 
 export interface WikiLinkActions {
   /** Pfad der Seite, auf die der Link zeigt, oder null, wenn es sie (noch) nicht gibt. */
@@ -15,6 +16,8 @@ export interface WikiLinkActions {
 export interface LinkSuggestion {
   title: string;
   folder: string;
+  /** HTML-Seite statt Notiz (eigenes Symbol in den Vorschlägen). */
+  html?: boolean;
   /** Was zwischen [[ und ]] eingefügt wird. */
   target: string;
 }
@@ -36,7 +39,7 @@ function WikiLinkView({ target, alias }: { target: string; alias: string }) {
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => actions.open(target)}
     >
-      {alias || target}
+      {alias || linkLabel(target)}
     </span>
   );
 }

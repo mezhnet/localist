@@ -1,6 +1,8 @@
 // Seitenlinks [[…]]: auflösen (welche Datei ist gemeint?) und nach dem Umbenennen anpassen.
-// Aufgelöst wird wie in Obsidian: [[Name]] sucht im ganzen Vault nach einer Seite mit diesem Titel,
+// Aufgelöst wird wie in Obsidian: [[Name]] sucht im ganzen Vault nach einer Notiz mit diesem Titel,
 // [[Ordner/Name]] meint genau diesen Pfad. "#Abschnitt" am Ende gehört nicht zum Seitennamen.
+// [[Name]] und [[Ordner/Name]] meinen nur Notizen (.md), [[Name.html]] meint eine HTML-Seite.
+import { isHtmlPath } from "./html";
 import { pageTitle, parentDir } from "./tree";
 import type { TreeNode } from "./vault-api";
 
@@ -27,17 +29,25 @@ export function linkPageName(target: string): string {
   return target.split(/[#^]/)[0].trim().replace(/\.md$/i, "");
 }
 
+/** Dateiname einer Seite in Kleinbuchstaben, z. B. "ideen.md". */
+function fileName(page: PageRef): string {
+  return page.path.slice(page.path.lastIndexOf("/") + 1).toLowerCase();
+}
+
 /** Pfad der Seite, auf die ein Link zeigt, oder null. `from` ist die Seite mit dem Link. */
 export function resolveLink(pages: readonly PageRef[], target: string, from?: string): string | null {
   const name = linkPageName(target).toLowerCase();
   if (name === "") return from ?? null; // [[#Abschnitt]] zeigt auf die eigene Seite
+  const html = name.endsWith(".html");
+  const candidates = pages.filter((page) => isHtmlPath(page.path) === html);
+  const wanted = html ? name : `${name}.md`;
   if (name.includes("/")) {
-    const exact = pages.find((page) => page.path.toLowerCase() === `${name}.md`);
+    const exact = candidates.find((page) => page.path.toLowerCase() === wanted);
     if (exact) return exact.path;
-    const suffix = pages.filter((page) => page.path.toLowerCase().endsWith(`/${name}.md`));
+    const suffix = candidates.filter((page) => page.path.toLowerCase().endsWith(`/${wanted}`));
     return suffix.length > 0 ? shortest(suffix).path : null;
   }
-  const matches = pages.filter((page) => page.title.toLowerCase() === name);
+  const matches = candidates.filter((page) => fileName(page) === wanted);
   if (matches.length === 0) return null;
   if (from !== undefined) {
     const sameFolder = matches.find((page) => parentDir(page.path) === parentDir(from));
@@ -50,11 +60,21 @@ function shortest(pages: readonly PageRef[]): PageRef {
   return [...pages].sort((a, b) => a.path.split("/").length - b.path.split("/").length || a.path.localeCompare(b.path))[0];
 }
 
-/** Linkziel für eine Seite: der Titel, außer er ist im Vault mehrdeutig, dann der Pfad ohne ".md". */
+/**
+ * Linkziel für eine Seite: bei Notizen der Titel, bei HTML-Seiten "Titel.html". Ist der Name im Vault
+ * mehrdeutig, der Pfad (bei Notizen ohne ".md").
+ */
 export function linkTargetFor(pages: readonly PageRef[], path: string): string {
-  const title = pageTitle(path);
-  const sameTitle = pages.filter((page) => page.title.toLowerCase() === title.toLowerCase());
-  return sameTitle.length > 1 ? path.replace(/\.md$/i, "") : title;
+  const html = isHtmlPath(path);
+  const own = path.slice(path.lastIndexOf("/") + 1).toLowerCase();
+  const sameName = pages.filter((page) => isHtmlPath(page.path) === html && fileName(page) === own);
+  if (html) return sameName.length > 1 ? path : `${pageTitle(path)}.html`;
+  return sameName.length > 1 ? path.replace(/\.md$/i, "") : pageTitle(path);
+}
+
+/** Wie ein Link im Editor angezeigt wird: ohne Endung, z. B. [[DNS.html]] → "DNS". */
+export function linkLabel(target: string): string {
+  return target.replace(/\.(md|html)$/i, "");
 }
 
 const WIKILINK = /(!?)\[\[([^[\]\n]+?)\]\]/g;
@@ -114,11 +134,12 @@ function mapOutsideCode(markdown: string, fn: (text: string) => string): string 
   return out.join("\n");
 }
 
-/** Wie heißt das neue Linkziel, nachdem `oldPath` zu `newPath` umbenannt/verschoben wurde? */
+/** Wie heißt das neue Linkziel, nachdem `oldPath` zu `newPath` umbenannt/verschoben wurde? Die Endung bleibt. */
 export function renamedTarget(oldTarget: string, newPath: string): string {
-  if (oldTarget.includes("/")) return newPath.replace(/\.md$/i, "");
-  const title = pageTitle(newPath);
-  // Titel gleich geblieben (nur Ordner verschoben oder Groß-/Kleinschreibung geändert): Der Link
+  const html = isHtmlPath(newPath);
+  if (oldTarget.includes("/")) return html ? newPath : newPath.replace(/\.md$/i, "");
+  const name = html ? `${pageTitle(newPath)}.html` : pageTitle(newPath);
+  // Name gleich geblieben (nur Ordner verschoben oder Groß-/Kleinschreibung geändert): Der Link
   // funktioniert weiter und bleibt so, wie er geschrieben war.
-  return title.toLowerCase() === oldTarget.toLowerCase() ? oldTarget : title;
+  return name.toLowerCase() === oldTarget.toLowerCase() ? oldTarget : name;
 }

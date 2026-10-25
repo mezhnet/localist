@@ -1,7 +1,7 @@
 // Schnittstelle zwischen Oberfläche und Rust-Seite (Tauri-Kommandos und Ereignisse).
 // Alle Pfade außer dem Vault-Wurzelpfad sind relativ zum Vault und verwenden "/" als Trenner.
 // Fehler kommen aus Rust als deutsche Meldungen (string) und werden als Promise-Rejection geliefert.
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { ask, open } from "@tauri-apps/plugin-dialog";
 
@@ -13,7 +13,7 @@ export interface VaultInfo {
 
 export type TreeNodeKind = "folder" | "page";
 
-/** Ein Eintrag im Ordnerbaum. `name` ist bei Seiten der Titel ohne ".md". */
+/** Ein Eintrag im Ordnerbaum. `name` ist bei Seiten der Titel ohne Endung (".md" oder ".html"). */
 export interface TreeNode {
   name: string;
   path: string;
@@ -21,7 +21,12 @@ export interface TreeNode {
   children?: TreeNode[];
   /** Ordner mit _ansichten.yaml (Datenbank). */
   database?: boolean;
+  /** HTML-Seite (.html) statt Notiz (.md). */
+  html?: boolean;
 }
+
+/** Seitentyp beim Anlegen. */
+export type PageKind = "notiz" | "html";
 
 export type VaultChangeKind = "created" | "modified" | "removed" | "renamed" | "rescan";
 
@@ -58,9 +63,36 @@ export function writePage(path: string, content: string): Promise<void> {
   return invoke<void>("write_page", { path, content });
 }
 
-/** Legt `<dir>/<title>.md` mit Frontmatter (id) an und liefert den relativen Pfad. */
-export function createPage(dir: string, title: string): Promise<string> {
-  return invoke<string>("create_page", { dir, title });
+/**
+ * Legt eine Notiz `<dir>/<title>.md` (Frontmatter mit id) oder eine HTML-Seite `<dir>/<title>.html`
+ * (Speicherformat mit localist-id) an und liefert den relativen Pfad.
+ */
+export function createPage(dir: string, title: string, kind: PageKind = "notiz"): Promise<string> {
+  return invoke<string>("create_page", { dir, title, kind });
+}
+
+/** Verschiebt eine Seite oder einen Ordner nach `targetDir` ("" = Vault-Wurzel). Liefert den neuen Pfad. */
+export function moveEntry(path: string, targetDir: string): Promise<string> {
+  return invoke<string>("move_entry", { path, targetDir });
+}
+
+export const PAGE_SCHEME = "localist-seite";
+
+declare global {
+  interface Window {
+    /** Nur in der Browser-Vorschau: Adresse der Vite-Middleware statt des Schemas. */
+    __localistSeitenBasis?: string;
+  }
+}
+
+/**
+ * Adresse einer Datei im Schema `localist-seite` für die abgeschottete Anzeige, z. B.
+ * "http://localist-seite.localhost/Notizen/DNS%20Kurs.html". `version` umgeht den Zwischenspeicher nach Änderungen.
+ */
+export function pageUrl(path: string, version = 0): string {
+  const base = window.__localistSeitenBasis ?? convertFileSrc("", PAGE_SCHEME);
+  const encoded = path.split("/").map(encodeURIComponent).join("/");
+  return `${base.endsWith("/") ? base : `${base}/`}${encoded}${version > 0 ? `?v=${version}` : ""}`;
 }
 
 /** Legt `<dir>/<name>` an und liefert den relativen Pfad. `dir` = "" für die Vault-Wurzel. */

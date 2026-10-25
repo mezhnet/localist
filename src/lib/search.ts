@@ -1,5 +1,6 @@
 // Volltextsuche, Schnellsuche (Strg+P), Backlinks und Vorlagen. Grundlage ist der Suchindex,
 // den die Rust-Seite im Cache-Ordner der App pflegt (Titel und Inhalt aller Seiten).
+import { htmlLinks, htmlVisibleText, isHtmlPath } from "./html";
 import { extractLinks, resolveLink, type PageRef } from "./links";
 import { readProperties, setProperty } from "./properties";
 import { joinFrontmatter, replaceFrontmatterEntry, splitFrontmatter } from "../markdown/frontmatter";
@@ -27,9 +28,10 @@ export function fold(text: string): string {
   return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss");
 }
 
-/** Text einer Seite ohne Frontmatter, mit Zeilenumbrüchen als Leerzeichen. */
-function bodyText(content: string): string {
-  return splitFrontmatter(content.replace(/^﻿/, "")).body.replace(/\s+/g, " ").trim();
+/** Text einer Seite mit Zeilenumbrüchen als Leerzeichen: Notizen ohne Frontmatter, HTML-Seiten nur der sichtbare Text. */
+function bodyText(entry: IndexEntry): string {
+  if (isHtmlPath(entry.path)) return htmlVisibleText(entry.content);
+  return splitFrontmatter(entry.content.replace(/^﻿/, "")).body.replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -41,7 +43,7 @@ export function searchEntries(entries: readonly IndexEntry[], query: string, lim
   if (terms.length === 0) return [];
   const hits: SearchHit[] = [];
   for (const entry of entries) {
-    const body = bodyText(entry.content);
+    const body = bodyText(entry);
     const title = fold(entry.title);
     // Gleiche Länge wie das Original, damit Positionen passen (fold ändert die Länge nur bei ß).
     const foldedBody = fold(body);
@@ -119,11 +121,19 @@ export interface Backlink {
   context: string;
 }
 
-/** Seiten, die auf `target` verlinken (ohne die Seite selbst), mit der Zeile des ersten Links. */
+/**
+ * Seiten, die auf `target` verlinken (ohne die Seite selbst), mit der Zeile des ersten Links.
+ * Notizen verlinken mit [[…]], HTML-Seiten mit <a href> (Kontext ist dann der Linktext).
+ */
 export function backlinksFor(entries: readonly IndexEntry[], pages: readonly PageRef[], target: string): Backlink[] {
   const result: Backlink[] = [];
   for (const entry of entries) {
     if (entry.path === target) continue;
+    if (isHtmlPath(entry.path)) {
+      const link = htmlLinks(entry.content, entry.path).find((candidate) => candidate.target === target);
+      if (link) result.push({ path: entry.path, title: entry.title, context: link.text ? `Link „${link.text}“` : "Link in der HTML-Seite" });
+      continue;
+    }
     const body = splitFrontmatter(entry.content.replace(/^﻿/, "")).body;
     const lines = body.split(/\r?\n/);
     const hit = lines.find((line) => extractLinks(line).some((name) => resolveLink(pages, name, entry.path) === target));

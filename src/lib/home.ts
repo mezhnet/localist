@@ -1,6 +1,7 @@
 // Hilfsfunktionen für die Startseite: zuletzt bearbeitete Seiten, Icons aus dem Suchindex,
 // Begrüßung und verständliche Zeitangaben ("vor 5 Min.").
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
+import { isHtmlPath, readHead } from "./html";
 import { TEMPLATES_DIR, type IndexEntry } from "./search";
 import { isInside } from "./tree";
 
@@ -12,11 +13,13 @@ export function recentPages(entries: readonly IndexEntry[], limit = 8): IndexEnt
     .slice(0, limit);
 }
 
-/** Icon (Emoji) jeder Seite aus dem Frontmatter, z. B. für Sidebar und Startseite. */
+/** Icon (Emoji) jeder Seite aus dem Frontmatter bzw. `<meta name="localist-icon">`, z. B. für Sidebar und Startseite. */
 export function pageIcons(entries: readonly IndexEntry[]): Map<string, string> {
   const icons = new Map<string, string>();
   for (const entry of entries) {
-    const icon = getFrontmatterField(splitFrontmatter(entry.content.replace(/^﻿/, "")).frontmatter, "icon");
+    const icon = isHtmlPath(entry.path)
+      ? readHead(entry.content).icon
+      : getFrontmatterField(splitFrontmatter(entry.content.replace(/^﻿/, "")).frontmatter, "icon");
     if (icon) icons.set(entry.path, icon);
   }
   return icons;

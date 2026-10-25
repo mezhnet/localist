@@ -24,7 +24,34 @@ pub enum NodeKind {
     Page,
 }
 
-/// Ein Eintrag im Ordnerbaum. `name` ist bei Seiten der Titel ohne ".md".
+/// Art einer Seite: Notiz (`.md`) oder HTML-Seite (`.html`). Die Dateiendung bestimmt den Typ.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PageType {
+    Note,
+    Html,
+}
+
+impl PageType {
+    pub fn extension(self) -> &'static str {
+        match self {
+            PageType::Note => "md",
+            PageType::Html => "html",
+        }
+    }
+
+    /// Typ aus der Oberfläche: "notiz" (Standard) oder "html".
+    pub fn parse(kind: Option<&str>) -> Result<PageType, String> {
+        match kind.unwrap_or("notiz") {
+            "notiz" => Ok(PageType::Note),
+            "html" => Ok(PageType::Html),
+            other => Err(format!("Unbekannter Seitentyp „{other}“.")),
+        }
+    }
+}
+
+const PAGE_TYPES: [PageType; 2] = [PageType::Note, PageType::Html];
+
+/// Ein Eintrag im Ordnerbaum. `name` ist bei Seiten der Titel ohne Endung (".md" oder ".html").
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct TreeNode {
     pub name: String,
@@ -35,6 +62,9 @@ pub struct TreeNode {
     /// Ordner mit `_ansichten.yaml`: eine Datenbank.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub database: bool,
+    /// Seite ist eine HTML-Seite (`.html`) statt einer Notiz (`.md`).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub html: bool,
 }
 
 /// Versteckte Einträge (Name beginnt mit ".") erscheinen nicht in der Sidebar.
@@ -42,14 +72,51 @@ pub fn is_hidden(name: &str) -> bool {
     name.starts_with('.')
 }
 
-/// Seitentitel aus dem Dateinamen, falls es eine Markdown-Datei ist.
+/// Titel und Typ einer Seite aus dem Dateinamen (".md" = Notiz, ".html" = HTML-Seite), sonst None.
+pub fn page_file(file_name: &str) -> Option<(String, PageType)> {
+    PAGE_TYPES.into_iter().find_map(|page_type| {
+        let suffix = format!(".{}", page_type.extension());
+        let len = file_name.len();
+        let cut = len.checked_sub(suffix.len())?;
+        (cut > 0 && file_name.is_char_boundary(cut) && file_name[cut..].eq_ignore_ascii_case(&suffix))
+            .then(|| (file_name[..cut].to_string(), page_type))
+    })
+}
+
+/// Seitentitel aus dem Dateinamen, falls es eine Seite (Notiz oder HTML-Seite) ist.
 pub fn page_title(file_name: &str) -> Option<String> {
-    let len = file_name.len();
-    if len > 3 && file_name.is_char_boundary(len - 3) && file_name[len - 3..].eq_ignore_ascii_case(".md") {
-        Some(file_name[..len - 3].to_string())
-    } else {
-        None
-    }
+    page_file(file_name).map(|(title, _)| title)
+}
+
+/// Windows unterscheidet keine Groß-/Kleinschreibung: "ideen.md" und "Ideen.md" sind dieselbe Datei.
+fn same_path(a: &Path, b: &Path) -> bool {
+    a.to_string_lossy().to_lowercase() == b.to_string_lossy().to_lowercase()
+}
+
+/// Liegt im Ordner schon eine Seite mit diesem Titel, egal welchen Typs? `except` ist die Seite selbst
+/// (beim Umbenennen). Ein Name darf pro Ordner nur einmal vorkommen, auch über beide Typen hinweg.
+fn page_name_taken(folder: &Path, title: &str, except: Option<&Path>) -> bool {
+    PAGE_TYPES
+        .iter()
+        .map(|page_type| folder.join(format!("{title}.{}", page_type.extension())))
+        .any(|path| path.exists() && !except.is_some_and(|own| same_path(own, &path)))
+}
+
+fn escape_html(text: &str) -> String {
+    text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+}
+
+/// Inhalt einer neuen HTML-Seite nach dem Speicherformat. `depth` ist die Ordnertiefe der Seite,
+/// damit die Verweise auf `.localist/bausteine/` relativ stimmen.
+pub fn new_html_page(title: &str, id: &str, depth: usize) -> String {
+    let up = "../".repeat(depth);
+    format!(
+        "<!doctype html>\n<html lang=\"de\">\n<head>\n<meta charset=\"utf-8\">\n\
+         <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{}</title>\n\
+         <meta name=\"localist-id\" content=\"{id}\">\n<link rel=\"stylesheet\" href=\"{up}{SETTINGS_DIR}/bausteine/localist.css\">\n\
+         <script src=\"{up}{SETTINGS_DIR}/bausteine/localist.js\" defer></script>\n</head>\n<body>\n<main>\n</main>\n</body>\n</html>\n",
+        escape_html(title)
+    )
 }
 
 /// Wandelt einen relativen Vault-Pfad in einen absoluten um und verhindert, dass er den Vault verlässt.
@@ -136,10 +203,11 @@ fn list_dir(root: &Path, dir: &Path) -> Vec<TreeNode> {
         if file_type.is_dir() {
             let children = list_dir(root, &path);
             let database = path.join(VIEWS_FILE).is_file();
-            folders.push(TreeNode { name, path: rel, kind: NodeKind::Folder, children: Some(children), database });
+            folders.push(TreeNode { name, path: rel, kind: NodeKind::Folder, children: Some(children), database, html: false });
         } else if file_type.is_file() {
-            if let Some(title) = page_title(&name) {
-                pages.push(TreeNode { name: title, path: rel, kind: NodeKind::Page, children: None, database: false });
+            if let Some((title, page_type)) = page_file(&name) {
+                let html = page_type == PageType::Html;
+                pages.push(TreeNode { name: title, path: rel, kind: NodeKind::Page, children: None, database: false, html });
             }
         }
     }
@@ -219,18 +287,23 @@ pub fn ensure_settings(root: &Path) -> Result<(), String> {
     write_atomic(&file, b"{\n  \"version\": 1\n}\n")
 }
 
-/// Legt `<dir>/<title>.md` mit Frontmatter (id) an und liefert den relativen Pfad.
-pub fn create_page(root: &Path, dir: &str, title: &str) -> Result<String, String> {
+/// Legt eine neue Seite an: `<dir>/<title>.md` mit Frontmatter (id) oder `<dir>/<title>.html` nach dem
+/// Speicherformat (mit `localist-id`). Liefert den relativen Pfad.
+pub fn create_page(root: &Path, dir: &str, title: &str, page_type: PageType) -> Result<String, String> {
     let title = validate_name(title)?;
     let folder = resolve(root, dir)?;
     if !folder.is_dir() {
         return Err("Der Zielordner existiert nicht.".into());
     }
-    let path = folder.join(format!("{title}.md"));
-    if path.exists() {
+    if page_name_taken(&folder, &title, None) {
         return Err(format!("Hier gibt es schon eine Seite „{title}“."));
     }
-    let content = format!("---\nid: {}\n---\n", uuid::Uuid::new_v4());
+    let path = folder.join(format!("{title}.{}", page_type.extension()));
+    let id = uuid::Uuid::new_v4().to_string();
+    let content = match page_type {
+        PageType::Note => format!("---\nid: {id}\n---\n"),
+        PageType::Html => new_html_page(&title, &id, dir.split('/').filter(|part| !part.is_empty()).count()),
+    };
     write_atomic(&path, content.as_bytes())?;
     to_rel(root, &path).ok_or_else(|| "Ungültiger Pfad.".into())
 }
@@ -250,7 +323,7 @@ pub fn create_folder(root: &Path, dir: &str, name: &str) -> Result<String, Strin
     to_rel(root, &path).ok_or_else(|| "Ungültiger Pfad.".into())
 }
 
-/// Benennt um (Seiten: neuer Titel ohne ".md"). Liefert den neuen relativen Pfad.
+/// Benennt um (Seiten: neuer Titel ohne Endung, die Endung bleibt). Liefert den neuen relativen Pfad.
 pub fn rename_entry(root: &Path, rel: &str, new_name: &str) -> Result<String, String> {
     if rel.is_empty() {
         return Err("Der Vault selbst kann hier nicht umbenannt werden.".into());
@@ -260,14 +333,60 @@ pub fn rename_entry(root: &Path, rel: &str, new_name: &str) -> Result<String, St
         return Err("Der Eintrag existiert nicht mehr.".into());
     }
     let name = validate_name(new_name)?;
-    let file_name = if source.is_dir() { name.clone() } else { format!("{name}.md") };
+    let page_type = if source.is_dir() { None } else { page_file(&display_name(&source)).map(|(_, page_type)| page_type) };
+    let file_name = match page_type {
+        Some(page_type) => format!("{name}.{}", page_type.extension()),
+        None => name.clone(),
+    };
     let target = source.with_file_name(&file_name);
-    // Windows unterscheidet keine Groß-/Kleinschreibung: "ideen" → "Ideen" ist derselbe Eintrag.
-    let same_entry = source.to_string_lossy().to_lowercase() == target.to_string_lossy().to_lowercase();
-    if target.exists() && !same_entry {
+    let folder = source.parent().ok_or("Ungültiger Pfad.")?;
+    // Nur Groß-/Kleinschreibung ändern ("ideen" → "Ideen") ist derselbe Eintrag und erlaubt.
+    let taken = match page_type {
+        Some(_) => page_name_taken(folder, &name, Some(&source)),
+        None => target.exists() && !same_path(&source, &target),
+    };
+    if taken {
         return Err(format!("Hier gibt es schon einen Eintrag „{name}“."));
     }
     fs::rename(&source, &target).map_err(|e| format!("Umbenennen fehlgeschlagen: {e}"))?;
+    to_rel(root, &target).ok_or_else(|| "Ungültiger Pfad.".into())
+}
+
+/// Verschiebt eine Seite oder einen Ordner in einen anderen Ordner (`target_dir` = "" für die Vault-Wurzel).
+/// Liefert den neuen relativen Pfad. Links passt danach die Oberfläche an.
+pub fn move_entry(root: &Path, rel: &str, target_dir: &str) -> Result<String, String> {
+    if rel.is_empty() {
+        return Err("Der Vault selbst kann nicht verschoben werden.".into());
+    }
+    let source = resolve(root, rel)?;
+    if !source.exists() {
+        return Err("Der Eintrag existiert nicht mehr.".into());
+    }
+    if target_dir.split('/').any(is_hidden) {
+        return Err("In versteckte Ordner kann nicht verschoben werden.".into());
+    }
+    let folder = resolve(root, target_dir)?;
+    if !folder.is_dir() {
+        return Err("Der Zielordner existiert nicht.".into());
+    }
+    let (rel_lower, target_lower) = (rel.to_lowercase(), target_dir.to_lowercase());
+    if target_lower == rel_lower || target_lower.starts_with(&format!("{rel_lower}/")) {
+        return Err("Ein Ordner kann nicht in sich selbst verschoben werden.".into());
+    }
+    let name = display_name(&source);
+    let target = folder.join(&name);
+    if same_path(&source, &target) {
+        return Ok(rel.to_string());
+    }
+    let taken = match page_file(&name) {
+        Some((title, _)) if source.is_file() => page_name_taken(&folder, &title, None),
+        _ => target.exists(),
+    };
+    if taken {
+        let shown = page_title(&name).filter(|_| source.is_file()).unwrap_or(name.clone());
+        return Err(format!("Im Zielordner gibt es schon einen Eintrag „{shown}“."));
+    }
+    fs::rename(&source, &target).map_err(|e| format!("Verschieben fehlgeschlagen: {e}"))?;
     to_rel(root, &target).ok_or_else(|| "Ungültiger Pfad.".into())
 }
 
@@ -531,12 +650,12 @@ mod tests {
         assert_eq!(folder, "Projekte");
         assert!(create_folder(&vault.0, "", "Projekte").is_err());
 
-        let page = create_page(&vault.0, "Projekte", "Umzug").unwrap();
+        let page = create_page(&vault.0, "Projekte", "Umzug", PageType::Note).unwrap();
         assert_eq!(page, "Projekte/Umzug.md");
         let content = read_text(&vault.0.join("Projekte/Umzug.md")).unwrap();
         assert!(content.starts_with("---\nid: "), "Frontmatter mit id: {content}");
         assert_eq!(content.lines().nth(1).unwrap().len(), "id: ".len() + 36);
-        assert!(create_page(&vault.0, "Projekte", "Umzug").is_err());
+        assert!(create_page(&vault.0, "Projekte", "Umzug", PageType::Note).is_err());
 
         let renamed = rename_entry(&vault.0, "Projekte/Umzug.md", "Umzug 2027").unwrap();
         assert_eq!(renamed, "Projekte/Umzug 2027.md");
@@ -545,7 +664,7 @@ mod tests {
         // Nur Groß-/Kleinschreibung ändern ist erlaubt.
         assert_eq!(rename_entry(&vault.0, "Projekte/Umzug 2027.md", "umzug 2027").unwrap(), "Projekte/umzug 2027.md");
 
-        create_page(&vault.0, "Projekte", "Andere").unwrap();
+        create_page(&vault.0, "Projekte", "Andere", PageType::Note).unwrap();
         assert!(rename_entry(&vault.0, "Projekte/Andere.md", "umzug 2027").is_err());
 
         let renamed_folder = rename_entry(&vault.0, "Projekte", "Archiv").unwrap();
@@ -671,5 +790,91 @@ mod tests {
         assert_eq!(page_title("Bild.png"), None);
         assert_eq!(page_title(".md"), None);
         assert_eq!(page_title("Äpfel.md"), Some("Äpfel".into()));
+    }
+
+    #[test]
+    fn seitentyp_aus_dateinamen() {
+        assert_eq!(page_file("DNS.html"), Some(("DNS".into(), PageType::Html)));
+        assert_eq!(page_file("Übersicht.HTML"), Some(("Übersicht".into(), PageType::Html)));
+        assert_eq!(page_file("Ideen.md"), Some(("Ideen".into(), PageType::Note)));
+        assert_eq!(page_file("Version 1.2.md"), Some(("Version 1.2".into(), PageType::Note)));
+        assert_eq!(page_file("alt.htm"), None);
+        assert_eq!(page_file(".html"), None);
+        assert_eq!(page_title("DNS.html"), Some("DNS".into()));
+    }
+
+    #[test]
+    fn html_seiten_erscheinen_im_ordnerbaum() {
+        let vault = TestVault::new();
+        vault.file("Lernen/DNS.html", "<!doctype html>");
+        vault.file("Lernen/Subnetting.md", "");
+        vault.file("Lernen/alt.htm", "");
+        let tree = list_tree(&vault.0).unwrap();
+        let pages = tree[0].children.as_ref().unwrap();
+        assert_eq!(pages.iter().map(|n| (n.name.as_str(), n.path.as_str(), n.html)).collect::<Vec<_>>(), vec![
+            ("DNS", "Lernen/DNS.html", true),
+            ("Subnetting", "Lernen/Subnetting.md", false),
+        ]);
+        let json = serde_json::to_string(&pages[0]).unwrap();
+        assert!(json.contains("\"html\":true"), "{json}");
+        assert!(!serde_json::to_string(&pages[1]).unwrap().contains("html"));
+    }
+
+    #[test]
+    fn html_seite_wird_nach_dem_speicherformat_angelegt() {
+        let vault = TestVault::new();
+        fs::create_dir_all(vault.0.join("Lernen/Netze")).unwrap();
+        let path = create_page(&vault.0, "Lernen/Netze", "DNS & Ports", PageType::Html).unwrap();
+        assert_eq!(path, "Lernen/Netze/DNS & Ports.html");
+        let content = read_text(&vault.0.join(&path)).unwrap();
+        let id_line = content.lines().find(|line| line.starts_with("<meta name=\"localist-id\"")).unwrap();
+        let id = id_line.trim_start_matches("<meta name=\"localist-id\" content=\"").trim_end_matches("\">");
+        assert_eq!(id.len(), 36, "{id_line}");
+        assert_eq!(content, new_html_page("DNS & Ports", id, 2));
+        assert!(content.contains("<title>DNS &amp; Ports</title>"));
+        assert!(new_html_page("a<b>", "x", 0).contains("<title>a&lt;b&gt;</title>"));
+        assert!(content.contains("<link rel=\"stylesheet\" href=\"../../.localist/bausteine/localist.css\">"));
+        assert!(content.contains("<script src=\"../../.localist/bausteine/localist.js\" defer></script>"));
+        assert!(content.contains("<main>\n</main>"));
+        // In der Vault-Wurzel ohne "../"
+        let root_page = create_page(&vault.0, "", "Start", PageType::Html).unwrap();
+        assert!(read_text(&vault.0.join(root_page)).unwrap().contains("href=\".localist/bausteine/localist.css\""));
+    }
+
+    #[test]
+    fn ein_name_gilt_pro_ordner_fuer_beide_typen() {
+        let vault = TestVault::new();
+        create_page(&vault.0, "", "Ideen", PageType::Note).unwrap();
+        assert!(create_page(&vault.0, "", "Ideen", PageType::Html).unwrap_err().contains("schon eine Seite"));
+        assert!(create_page(&vault.0, "", "ideen", PageType::Html).is_err());
+        create_page(&vault.0, "", "DNS", PageType::Html).unwrap();
+        assert!(create_page(&vault.0, "", "DNS", PageType::Note).is_err());
+        // Umbenennen: Endung bleibt, Name darf nicht schon als anderer Typ vorkommen.
+        assert!(rename_entry(&vault.0, "Ideen.md", "DNS").is_err());
+        assert!(rename_entry(&vault.0, "DNS.html", "ideen").is_err());
+        assert_eq!(rename_entry(&vault.0, "DNS.html", "Namensauflösung").unwrap(), "Namensauflösung.html");
+        assert_eq!(rename_entry(&vault.0, "Namensauflösung.html", "namensauflösung").unwrap(), "namensauflösung.html");
+    }
+
+    #[test]
+    fn seiten_und_ordner_lassen_sich_verschieben() {
+        let vault = TestVault::new();
+        vault.file("Notizen/Ideen.md", "a");
+        vault.file("Notizen/DNS.html", "b");
+        vault.file("Archiv/Ideen.html", "c");
+        vault.file("Archiv/Alt/Plan.md", "d");
+        assert_eq!(move_entry(&vault.0, "Notizen/DNS.html", "Archiv").unwrap(), "Archiv/DNS.html");
+        assert_eq!(read_text(&vault.0.join("Archiv/DNS.html")).unwrap(), "b");
+        // Gleicher Name als anderer Typ im Ziel: nicht erlaubt.
+        assert!(move_entry(&vault.0, "Notizen/Ideen.md", "Archiv").unwrap_err().contains("„Ideen“"));
+        assert_eq!(move_entry(&vault.0, "Notizen/Ideen.md", "").unwrap(), "Ideen.md");
+        // Ordner samt Inhalt, aber nicht in sich selbst.
+        assert!(move_entry(&vault.0, "Archiv", "Archiv/Alt").is_err());
+        assert!(move_entry(&vault.0, "Archiv", "Archiv").is_err());
+        assert_eq!(move_entry(&vault.0, "Archiv/Alt", "Notizen").unwrap(), "Notizen/Alt");
+        assert!(vault.0.join("Notizen/Alt/Plan.md").is_file());
+        assert!(move_entry(&vault.0, "Notizen", ".localist").is_err());
+        assert!(move_entry(&vault.0, "Notizen", "Fehlt").unwrap_err().contains("Zielordner"));
+        assert!(move_entry(&vault.0, "Notizen", "../draußen").is_err());
     }
 }

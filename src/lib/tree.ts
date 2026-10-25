@@ -27,10 +27,10 @@ export function parentDir(path: string): string {
   return index === -1 ? "" : path.slice(0, index);
 }
 
-/** Seitentitel aus einem Pfad, z. B. "Notizen/Ideen.md" → "Ideen". */
+/** Seitentitel aus einem Pfad, z. B. "Notizen/Ideen.md" → "Ideen", "Lernen/DNS.html" → "DNS". */
 export function pageTitle(path: string): string {
   const name = path.slice(path.lastIndexOf("/") + 1);
-  return name.replace(/\.md$/i, "");
+  return name.replace(/\.(md|html)$/i, "");
 }
 
 /** Liegt `path` in `folder` (oder ist es `folder` selbst)? */

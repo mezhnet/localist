@@ -4,17 +4,30 @@
 // In der gebauten App ist diese Datei nicht enthalten (siehe main.tsx).
 import { emit } from "@tauri-apps/api/event";
 import { mockIPC } from "@tauri-apps/api/mocks";
+import { newHtmlPage } from "./html";
 import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-api";
 
 const ROOT = "beispiel-vault (Browser-Vorschau)";
 const PREFIX = "../../beispiel-vault/";
 
-const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispiel-vault/**/*.yaml", "../../beispiel-vault/.localist/settings.json"], {
+const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispiel-vault/**/*.html", "../../beispiel-vault/**/*.yaml", "../../beispiel-vault/.localist/settings.json"], {
   query: "?raw",
   import: "default",
   eager: true,
 });
-const assetSeed = import.meta.glob(["../../beispiel-vault/**/*", "!**/*.md", "!**/*.yaml"], { query: "?url", import: "default", eager: true });
+const assetSeed = import.meta.glob(["../../beispiel-vault/**/*", "!**/*.md", "!**/*.html", "!**/*.yaml"], { query: "?url", import: "default", eager: true });
+
+const PAGE_FILE = /\.(md|html)$/i;
+
+/**
+ * Meldet HTML-Seiten an die Vite-Middleware, damit die abgeschottete Anzeige auch in der Vorschau angelegte
+ * oder geänderte Seiten zeigt (nur im Arbeitsspeicher des Servers, nie auf der Festplatte). In Tests nicht nötig.
+ */
+function syncPreview(path: string, content: string | null) {
+  if (import.meta.env.MODE === "test" || !/\.html$/i.test(path)) return;
+  const url = `/__localist-dev/datei?pfad=${encodeURIComponent(path)}`;
+  void fetch(url, content === null ? { method: "DELETE" } : { method: "PUT", body: content }).catch(() => {});
+}
 
 interface DevVault {
   files: Map<string, string>;
@@ -85,16 +98,28 @@ export function installDevBackend(): void {
       }
     }
     for (const file of files.keys()) {
-      if (parentOf(file) === dir && !hidden(file) && /\.md$/i.test(file)) nodes.push({ name: nameOf(file).replace(/\.md$/i, ""), path: file, kind: "page" });
+      if (parentOf(file) === dir && !hidden(file) && PAGE_FILE.test(file)) {
+        const html = /\.html$/i.test(file);
+        nodes.push({ name: nameOf(file).replace(PAGE_FILE, ""), path: file, kind: "page", ...(html ? { html } : {}) });
+      }
     }
     return nodes;
   };
+
+  /** Gibt es im Ordner schon eine Seite mit diesem Titel (Notiz oder HTML-Seite)? */
+  const pageNameTaken = (dir: string, title: string, except?: string) =>
+    ["md", "html"].some((ext) => {
+      const candidate = join(dir, `${title}.${ext}`).toLowerCase();
+      return [...files.keys()].some((file) => file.toLowerCase() === candidate && file.toLowerCase() !== except?.toLowerCase());
+    });
 
   const movePrefix = (from: string, to: string) => {
     for (const [path, text] of [...files]) {
       if (path === from || path.startsWith(`${from}/`)) {
         files.delete(path);
         files.set(to + path.slice(from.length), text);
+        syncPreview(path, null);
+        syncPreview(to + path.slice(from.length), text);
         modified.set(to + path.slice(from.length), modified.get(path) ?? Date.now());
         modified.delete(path);
       }
@@ -108,7 +133,12 @@ export function installDevBackend(): void {
   };
 
   const remove = (path: string) => {
-    for (const file of [...files.keys()]) if (file === path || file.startsWith(`${path}/`)) files.delete(file);
+    for (const file of [...files.keys()]) {
+      if (file === path || file.startsWith(`${path}/`)) {
+        files.delete(file);
+        syncPreview(file, null);
+      }
+    }
     for (const folder of [...folders]) if (folder === path || folder.startsWith(`${path}/`)) folders.delete(folder);
   };
 
@@ -144,13 +174,18 @@ export function installDevBackend(): void {
         case "write_page":
           files.set(a.path, a.content);
           touch(a.path);
+          syncPreview(a.path, a.content);
           setTimeout(() => notify({ kind: "modified", path: a.path }), 250);
           return null;
         case "create_page": {
-          const path = join(a.dir, `${validate(a.title)}.md`);
-          if (exists(path)) throw `Hier gibt es schon eine Seite „${a.title}“.`;
-          files.set(path, `---\nid: ${crypto.randomUUID()}\n---\n`);
+          const title = validate(a.title);
+          const html = a.kind === "html";
+          const path = join(a.dir, `${title}.${html ? "html" : "md"}`);
+          if (pageNameTaken(a.dir, title)) throw `Hier gibt es schon eine Seite „${title}“.`;
+          const content = html ? newHtmlPage(title, crypto.randomUUID(), path) : `---\nid: ${crypto.randomUUID()}\n---\n`;
+          files.set(path, content);
           touch(path);
+          syncPreview(path, content);
           notify({ kind: "created", path });
           return path;
         }
@@ -165,8 +200,26 @@ export function installDevBackend(): void {
           const isFolder = folders.has(a.path);
           const name = validate(a.newName);
           const parent = parentOf(a.path);
-          const target = join(parent, isFolder ? name : `${name}.md`);
-          if (target.toLowerCase() !== a.path.toLowerCase() && exists(target)) throw `Hier gibt es schon einen Eintrag „${name}“.`;
+          const ext = /\.html$/i.test(a.path) ? "html" : "md";
+          const target = join(parent, isFolder ? name : `${name}.${ext}`);
+          const taken = isFolder ? target.toLowerCase() !== a.path.toLowerCase() && exists(target) : pageNameTaken(parent, name, a.path);
+          if (taken) throw `Hier gibt es schon einen Eintrag „${name}“.`;
+          movePrefix(a.path, target);
+          notify({ kind: "renamed", path: a.path, newPath: target });
+          return target;
+        }
+        case "move_entry": {
+          const dir = String(a.targetDir);
+          if (!files.has(a.path) && !folders.has(a.path)) throw "Der Eintrag existiert nicht mehr.";
+          if (dir !== "" && !folders.has(dir)) throw "Der Zielordner existiert nicht.";
+          if (dir.toLowerCase() === a.path.toLowerCase() || dir.toLowerCase().startsWith(`${a.path.toLowerCase()}/`)) {
+            throw "Ein Ordner kann nicht in sich selbst verschoben werden.";
+          }
+          const target = join(dir, nameOf(a.path));
+          if (target === a.path) return target;
+          const isPage = files.has(a.path) && PAGE_FILE.test(a.path);
+          const taken = isPage ? pageNameTaken(dir, nameOf(a.path).replace(PAGE_FILE, "")) : exists(target);
+          if (taken) throw `Im Zielordner gibt es schon einen Eintrag „${nameOf(a.path).replace(PAGE_FILE, "")}“.`;
           movePrefix(a.path, target);
           notify({ kind: "renamed", path: a.path, newPath: target });
           return target;
@@ -197,8 +250,8 @@ export function installDevBackend(): void {
         }
         case "vault_index":
           return [...files]
-            .filter(([path]) => /\.md$/i.test(path) && !hidden(path))
-            .map(([path, content]) => ({ path, title: nameOf(path).replace(/\.md$/i, ""), content, modified: modified.get(path) ?? 0 }));
+            .filter(([path]) => PAGE_FILE.test(path) && !hidden(path))
+            .map(([path, content]) => ({ path, title: nameOf(path).replace(PAGE_FILE, ""), content, modified: modified.get(path) ?? 0 }));
         case "resolve_attachment": {
           const dir = parentOf(a.page);
           const target = decodeURIComponent(a.target);
@@ -226,6 +279,9 @@ export function installDevBackend(): void {
     path: string,
   ) => path;
 
+  // HTML-Seiten zeigt die Vite-Middleware (vite.config.ts) statt des Schemas localist-seite.
+  window.__localistSeitenBasis = `${location.origin}/__localist-seite/`;
+
   window.__devVault = {
     files,
     folders,
@@ -233,6 +289,7 @@ export function installDevBackend(): void {
       const isNew = !files.has(path);
       files.set(path, content);
       touch(path);
+      syncPreview(path, content);
       addParents(path);
       notify({ kind: isNew ? "created" : "modified", path });
     },
