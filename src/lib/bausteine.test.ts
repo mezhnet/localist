@@ -37,6 +37,13 @@ describe("Bausteine einfügen", () => {
     expect(text).toBe("  <hr>\n  <p>Eins</p>");
   });
 
+  it("Cursor ganz am Anfang, der Inhalt beginnt mit einem Zeilenumbruch (wie meist in <main>)", () => {
+    // Fehler aus der Android-Prüfung: Werkzeugleiste angetippt, bevor der Editor den Fokus hatte
+    const { text, selected } = insert("\n<p>Eins</p>\n", 0, "callout");
+    expect(text).toBe('<l-callout typ="info">Text</l-callout>\n<p>Eins</p>\n');
+    expect(selected).toBe("Text");
+  });
+
   it("mitten in einer Zeile: Die Zeile wird geteilt", () => {
     const doc = "<p>Eins</p> <p>Zwei</p>";
     const { text } = insert(doc, doc.indexOf(" <p>Zwei"), "trennlinie");

@@ -234,7 +234,8 @@ export interface EinfuegePlan {
  * Folgezeilen der Vorlage bekommen die Einrückung der aktuellen Zeile.
  */
 export function planInsert(doc: string, pos: number, vorlage: readonly string[], auswahl?: string): EinfuegePlan {
-  const lineStart = doc.lastIndexOf("\n", pos - 1) + 1;
+  // Bei pos 0 nicht suchen: lastIndexOf("\n", -1) fände ein Zeilenende an Stelle 0.
+  const lineStart = pos === 0 ? 0 : doc.lastIndexOf("\n", pos - 1) + 1;
   const newline = doc.indexOf("\n", pos);
   const lineEnd = newline === -1 ? doc.length : newline;
   const line = doc.slice(lineStart, lineEnd);
