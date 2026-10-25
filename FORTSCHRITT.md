@@ -9,7 +9,7 @@
 - [x] Slash-Menü (`/`) zum Einfügen von Blöcken.
 - [x] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
 - [x] Callouts und Toggles im Obsidian-Format (siehe Speicherformat).
-- [ ] Icon und Cover pro Seite, gespeichert im Frontmatter (`icon`, `cover`).
+- [x] Icon und Cover pro Seite, gespeichert im Frontmatter (`icon`, `cover`).
 - [ ] Hell- und Dunkelmodus: folgt dem System, manuell umschaltbar.
 - [ ] Links zwischen Seiten als `[[Seitenname]]` mit Vorschlägen beim Tippen, ein Klick öffnet die Seite. Beim Umbenennen einer Seite werden Links darauf im ganzen Vault angepasst.
 - [x] Die Roundtrip-Tests decken zusätzlich Callouts, Toggles und `[[Links]]` ab.
