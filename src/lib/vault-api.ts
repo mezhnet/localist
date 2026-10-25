@@ -4,7 +4,7 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { EigenerBaustein } from "./eigene-bausteine";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { ask, open } from "@tauri-apps/plugin-dialog";
+import { ask, open, save } from "@tauri-apps/plugin-dialog";
 
 /** Geöffneter Vault: absoluter Pfad und Anzeigename (Ordnername). */
 export interface VaultInfo {
@@ -24,6 +24,8 @@ export interface TreeNode {
   database?: boolean;
   /** HTML-Seite (.html) statt Notiz (.md). */
   html?: boolean;
+  /** Ordner mit _notizbuch.yaml (Notizbuch; ist er auch Datenbank, gilt er als Datenbank). */
+  notebook?: boolean;
 }
 
 /** Seitentyp beim Anlegen. */
@@ -119,6 +121,31 @@ export function createFolder(dir: string, name: string): Promise<string> {
 /** Benennt um (Seiten: neuer Titel ohne ".md"). Liefert den neuen relativen Pfad. */
 export function renameEntry(path: string, newName: string): Promise<string> {
   return invoke<string>("rename_entry", { path, newName });
+}
+
+/** Vault-Pfad eines Bildes aus einer Seite (relativ zur Seite oder zum Vault) oder null. */
+export function anhangPfad(page: string, target: string): Promise<string | null> {
+  return invoke<string | null>("anhang_pfad", { page, target });
+}
+
+/** Inhalt einer Datei im Vault als Base64 (Bilder für den Export). */
+export function dateiBase64(path: string): Promise<string> {
+  return invoke<string>("datei_base64", { path });
+}
+
+/** Speichern-Dialog für den Export; liefert den gewählten Pfad oder null. */
+export function pickExportTarget(name: string): Promise<string | null> {
+  return save({ title: "Als HTML-Datei exportieren", defaultPath: `${name}.html`, filters: [{ name: "HTML-Seite", extensions: ["html"] }] });
+}
+
+/** Schreibt die exportierte Seite an den gewählten Ort (auch außerhalb des Vaults). */
+export function exportSchreiben(ziel: string, inhalt: string): Promise<void> {
+  return invoke<void>("export_schreiben", { ziel, inhalt });
+}
+
+/** Fertig dargestellte Notiz für die abgeschottete Anzeige (Notizbuch); danach zeigt `pageUrl(pfad)` sie. */
+export function notizDarstellungSetzen(pfad: string, html: string): Promise<void> {
+  return invoke<void>("notiz_darstellung_setzen", { pfad, html });
 }
 
 /** Eigene Bausteine des Vaults („Code-Speicher“ in `.localist/bausteine/eigene/`), nach Namen sortiert. */

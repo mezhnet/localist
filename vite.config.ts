@@ -77,6 +77,7 @@ function localistBausteine(): Plugin {
  */
 function localistSeite(): Plugin {
   const overlay = new Map<string, string | null>();
+  const darstellungen = new Map<string, string>();
   return {
     name: "localist-seite",
     configureServer(server) {
@@ -88,6 +89,19 @@ function localistSeite(): Plugin {
           for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
           res.end(body);
         };
+
+        if (url.pathname === "/__localist-dev/darstellung") {
+          // Fertig dargestellte Notiz für das Notizbuch (wie notiz_darstellung_setzen in Rust)
+          const rel = requestToRel(`/${url.searchParams.get("pfad") ?? ""}`);
+          if (rel === null || !/\.md$/i.test(rel) || req.method !== "PUT") return send(400, "text/plain; charset=utf-8", "Ungültig.");
+          const chunks: Uint8Array[] = [];
+          req.on("data", (chunk: Uint8Array) => chunks.push(chunk));
+          req.on("end", () => {
+            darstellungen.set(rel, new TextDecoder().decode(Buffer.concat(chunks)));
+            send(204, "text/plain", "");
+          });
+          return;
+        }
 
         if (url.pathname === "/__localist-dev/datei") {
           const pfad = url.searchParams.get("pfad") ?? "";
@@ -129,6 +143,10 @@ function localistSeite(): Plugin {
           return send(200, contentType(rel), injectBridge(seite, readFileSync(`${SEITE}/bruecke.js`, "utf8"), PAGE_PREFIX), headers);
         }
         let body: string | Uint8Array | null = null;
+        const darstellung = darstellungen.get(rel);
+        if (darstellung !== undefined) {
+          return send(200, "text/html; charset=utf-8", injectBridge(darstellung, readFileSync(`${SEITE}/bruecke.js`, "utf8"), PAGE_PREFIX), headers);
+        }
         if (overlay.has(rel)) body = overlay.get(rel) ?? null;
         else {
           const file = `beispiel-vault/${rel}`;

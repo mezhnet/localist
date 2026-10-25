@@ -7,7 +7,7 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import bundledCss from "../../src-tauri/seite/localist.css?raw";
 import bundledJs from "../../src-tauri/seite/localist.js?raw";
 import { EIGENE_DIR, eigenerBausteinDatei, eigenerBausteinLesen, eigenerBausteinName } from "./eigene-bausteine";
-import { newHtmlPage } from "./html";
+import { newHtmlPage, resolveRelative } from "./html";
 import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-api";
 
 const ROOT = "beispiel-vault (Browser-Vorschau)";
@@ -41,6 +41,9 @@ interface DevVault {
   externalDelete: (path: string) => void;
   /** Simuliert einen verschwundenen Vault-Ordner (z. B. abgezogener USB-Stick). */
   setMissing: (missing: boolean) => void;
+  /** Exportierte Dateien (Ziel → Inhalt) und fertig dargestellte Notizen (Pfad → HTML). */
+  exporte: Map<string, string>;
+  darstellungen: Map<string, string>;
 }
 
 declare global {
@@ -97,7 +100,8 @@ export function installDevBackend(): void {
     for (const folder of folders) {
       if (parentOf(folder) === dir && !hidden(folder)) {
         const database = files.has(`${folder}/_ansichten.yaml`);
-        nodes.push({ name: nameOf(folder), path: folder, kind: "folder", children: listDir(folder), ...(database ? { database } : {}) });
+        const notebook = files.has(`${folder}/_notizbuch.yaml`);
+        nodes.push({ name: nameOf(folder), path: folder, kind: "folder", children: listDir(folder), ...(database ? { database } : {}), ...(notebook ? { notebook } : {}) });
       }
     }
     for (const file of files.keys()) {
@@ -152,6 +156,10 @@ export function installDevBackend(): void {
       .map(([pfad, inhalt]) => ({ name: pfad.slice(EIGENE_DIR.length + 1, -".html".length), ...eigenerBausteinLesen(inhalt) }))
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
+  /** Exportierte Dateien (nur Vorschau) und fertig dargestellte Notizen für das Notizbuch. */
+  const exporte = new Map<string, string>();
+  const darstellungen = new Map<string, string>();
+
   let missing = false;
   // Simulierter Gerätespeicher für die Ordnerauswahl auf Android (localStorage "dev-platform" = "android").
   const deviceFolders = new Map<string, string[]>([
@@ -163,7 +171,7 @@ export function installDevBackend(): void {
     ["/data/app/Vaults", []],
   ]);
   mockIPC(
-    (cmd, args) => {
+    async (cmd, args) => {
       const a = (args ?? {}) as Record<string, any>;
       if (missing && !cmd.startsWith("plugin:") && cmd !== "get_last_vault") {
         throw `Der Vault-Ordner „${ROOT}“ wurde nicht gefunden.`;
@@ -245,6 +253,35 @@ export function installDevBackend(): void {
           remove(a.path);
           notify({ kind: "removed", path: a.path });
           return null;
+        // Export und Notizbuch (wie src-tauri/src/export.rs)
+        case "anhang_pfad": {
+          const ziel = decodeURIComponent(String(a.target).split(/[?#]/)[0]).replace(/^\.\//, "");
+          for (const kandidat of [resolveRelative(parentOf(a.page), ziel), resolveRelative("", ziel)]) {
+            if (kandidat !== null && (assets.has(kandidat) || files.has(kandidat))) return kandidat;
+          }
+          return null;
+        }
+        case "datei_base64": {
+          const url = assets.get(a.path);
+          if (url === undefined) throw `„${nameOf(a.path)}“ wurde nicht gefunden.`;
+          const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+          let binaer = "";
+          for (const byte of bytes) binaer += String.fromCharCode(byte);
+          return btoa(binaer);
+        }
+        case "export_schreiben":
+          if (!/\.html?$/i.test(a.ziel)) throw "Exportiert wird nur als .html-Datei.";
+          exporte.set(a.ziel, a.inhalt);
+          return null;
+        case "notiz_darstellung_setzen":
+          if (!/\.md$/i.test(a.pfad)) throw "Nur Notizen (.md) werden so dargestellt.";
+          darstellungen.set(a.pfad, a.html);
+          if (import.meta.env.MODE !== "test") {
+            await fetch(`/__localist-dev/darstellung?pfad=${encodeURIComponent(a.pfad)}`, { method: "PUT", body: a.html }).catch(() => {});
+          }
+          return null;
+        case "plugin:dialog|save":
+          return `C:/Export/${a.options?.defaultPath ?? "Seite.html"}`;
         // Eigene Bausteine (wie src-tauri/src/eigene.rs)
         case "eigene_bausteine":
           return eigeneListe();
@@ -330,6 +367,8 @@ export function installDevBackend(): void {
   window.__devVault = {
     files,
     folders,
+    exporte,
+    darstellungen,
     externalWrite(path, content) {
       const isNew = !files.has(path);
       files.set(path, content);

@@ -3,6 +3,7 @@
 
 mod bausteine;
 mod eigene;
+mod export;
 mod page_scheme;
 mod search_index;
 mod security_test;
@@ -26,6 +27,8 @@ struct AppState {
     start_vault: Mutex<Option<String>>,
     /// Sicherheitstest: Hat ein Befehl aus der Testseite die App erreicht? (Das wäre eine Lücke.)
     probe_reached: std::sync::atomic::AtomicBool,
+    /// Fertig dargestellte Notizen für die Notizbuch-Ansicht (liefert das Schema unter dem Pfad der Notiz aus).
+    darstellungen: Mutex<export::Darstellungen>,
 }
 
 impl AppState {
@@ -120,6 +123,7 @@ async fn open_vault(app: AppHandle, state: State<'_, AppState>, path: String) ->
     let new_watcher = watcher::start(app.clone(), root.clone())?;
     *lock(&state.watcher) = Some(new_watcher);
     *lock(&state.root) = Some(root.clone());
+    lock(&state.darstellungen).leeren();
 
     // Bilder aus dem Vault dürfen im Editor angezeigt werden (Tauri-Asset-Protokoll).
     let _ = app.asset_protocol_scope().allow_directory(&root, true);
@@ -131,6 +135,37 @@ async fn open_vault(app: AppHandle, state: State<'_, AppState>, path: String) ->
     }
     let name = root.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(path.clone());
     Ok(VaultInfo { root: path, name })
+}
+
+/// Vault-Pfad eines Bildes aus einer Seite (relativ zur Seite oder zum Vault) oder None.
+#[tauri::command]
+async fn anhang_pfad(state: State<'_, AppState>, page: String, target: String) -> Result<Option<String>, String> {
+    let root = state.root()?;
+    Ok(vault::resolve_attachment(&root, &page, &target).and_then(|path| vault::to_rel(&root, &path)))
+}
+
+/// Inhalt einer Datei im Vault als Base64 (Bilder für den Export).
+#[tauri::command]
+async fn datei_base64(state: State<'_, AppState>, path: String) -> Result<String, String> {
+    export::datei_base64(&vault::resolve(&state.root()?, &path)?)
+}
+
+/// Schreibt eine exportierte Seite an den im Speichern-Dialog gewählten Ort (außerhalb des Vaults erlaubt).
+#[tauri::command]
+async fn export_schreiben(ziel: String, inhalt: String) -> Result<(), String> {
+    export::export_schreiben(Path::new(&ziel), &inhalt)
+}
+
+/// Legt die fertig dargestellte Fassung einer Notiz für die abgeschottete Anzeige ab (Notizbuch).
+#[tauri::command]
+async fn notiz_darstellung_setzen(state: State<'_, AppState>, pfad: String, html: String) -> Result<(), String> {
+    let root = state.root()?;
+    vault::resolve(&root, &pfad)?;
+    if !pfad.to_lowercase().ends_with(".md") {
+        return Err("Nur Notizen (.md) werden so dargestellt.".into());
+    }
+    lock(&state.darstellungen).setzen(&pfad, html);
+    Ok(())
 }
 
 /// Eigene Bausteine des Vaults („Code-Speicher“), nach Namen sortiert.
@@ -321,7 +356,12 @@ pub fn run() {
                 let state = app.state::<AppState>();
                 let root = lock(&state.root).clone();
                 let test = lock(&state.security_test).clone();
-                let answer = page_scheme::answer(root.as_deref(), &path, "/", |rel| test.as_ref().and_then(|test| test.virtual_file(rel)));
+                let answer = page_scheme::answer(root.as_deref(), &path, "/", |rel| {
+                    test.as_ref().and_then(|test| test.virtual_file(rel)).or_else(|| {
+                        // Notiz im Notizbuch: die fertig dargestellte Fassung statt des Markdown-Texts
+                        lock(&state.darstellungen).holen(rel).map(|html| (html.clone().into_bytes(), "text/html; charset=utf-8"))
+                    })
+                });
                 let mut response = tauri::http::Response::builder().status(answer.status).header("Content-Type", answer.content_type);
                 for (name, value) in page_scheme::headers() {
                     response = response.header(name, value);
@@ -370,7 +410,11 @@ pub fn run() {
             sicherheitstest_bericht,
             eigene_bausteine,
             eigenen_baustein_speichern,
-            eigenen_baustein_loeschen
+            eigenen_baustein_loeschen,
+            anhang_pfad,
+            datei_base64,
+            export_schreiben,
+            notiz_darstellung_setzen
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");

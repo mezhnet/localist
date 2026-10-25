@@ -13,6 +13,7 @@ pub const JS: &str = include_str!("../seite/localist.js");
 pub const DIR: &str = ".localist/bausteine";
 
 /// Version der gebündelten Bausteine (aus der ersten Zeile, z. B. "1.0.0+3fa2c91b").
+#[cfg(test)]
 pub fn version() -> &'static str {
     CSS.strip_prefix("/*! Localist-Bausteine ").and_then(|rest| rest.split_whitespace().next()).unwrap_or("unbekannt")
 }

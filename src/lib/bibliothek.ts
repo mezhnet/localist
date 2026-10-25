@@ -3,8 +3,8 @@
 // (Vite-Plugin → src-tauri/seite/bibliothek.html); beim Ausliefern ersetzt das Schema die Marke durch die
 // eigenen Bausteine (src-tauri/src/eigene.rs, gleiche Regeln wie `bibliothekSeite`). Die Seite liegt virtuell
 // unter `.localist/bausteine/bibliothek.html` und läuft wie jede HTML-Seite in der abgeschotteten Anzeige.
-import { BAUSTEINE, type BausteinInfo } from "./bausteine";
-import type { EigenerBaustein } from "./eigene-bausteine";
+import { BAUSTEINE, type BausteinInfo } from "./bausteine.ts";
+import type { EigenerBaustein } from "./eigene-bausteine.ts";
 
 export const BIBLIOTHEK_PFAD = ".localist/bausteine/bibliothek.html";
 export const EIGENE_MARKE = "<!-- eigene-bausteine -->";

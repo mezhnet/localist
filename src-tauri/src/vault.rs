@@ -10,6 +10,8 @@ use std::time::Duration;
 
 /// Datei, die einen Ordner zur Datenbank macht.
 pub const VIEWS_FILE: &str = "_ansichten.yaml";
+/// Ein Ordner mit dieser Datei ist ein Notizbuch (außer er ist schon Datenbank).
+pub const NOTEBOOK_FILE: &str = "_notizbuch.yaml";
 
 /// Ordner mit den Einstellungen eines Vaults (wie `.obsidian`).
 pub const SETTINGS_DIR: &str = ".localist";
@@ -65,6 +67,9 @@ pub struct TreeNode {
     /// Seite ist eine HTML-Seite (`.html`) statt einer Notiz (`.md`).
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub html: bool,
+    /// Ordner mit `_notizbuch.yaml`. Hat er auch `_ansichten.yaml`, gilt er als Datenbank (die Oberfläche zeigt einen Hinweis).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub notebook: bool,
 }
 
 /// Versteckte Einträge (Name beginnt mit ".") erscheinen nicht in der Sidebar.
@@ -203,11 +208,12 @@ fn list_dir(root: &Path, dir: &Path) -> Vec<TreeNode> {
         if file_type.is_dir() {
             let children = list_dir(root, &path);
             let database = path.join(VIEWS_FILE).is_file();
-            folders.push(TreeNode { name, path: rel, kind: NodeKind::Folder, children: Some(children), database, html: false });
+            let notebook = path.join(NOTEBOOK_FILE).is_file();
+            folders.push(TreeNode { name, path: rel, kind: NodeKind::Folder, children: Some(children), database, html: false, notebook });
         } else if file_type.is_file() {
             if let Some((title, page_type)) = page_file(&name) {
                 let html = page_type == PageType::Html;
-                pages.push(TreeNode { name: title, path: rel, kind: NodeKind::Page, children: None, database: false, html });
+                pages.push(TreeNode { name: title, path: rel, kind: NodeKind::Page, children: None, database: false, html, notebook: false });
             }
         }
     }
@@ -217,7 +223,7 @@ fn list_dir(root: &Path, dir: &Path) -> Vec<TreeNode> {
     folders
 }
 
-fn display_name(path: &Path) -> String {
+pub(crate) fn display_name(path: &Path) -> String {
     path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
 }
 
@@ -605,6 +611,7 @@ mod tests {
         assert_eq!(notizen[0].path, "Notizen/Ideen.md");
         assert_eq!(tree[2].children.as_ref().unwrap()[0].name, "Umzug");
         assert!(tree[2].database, "Projekte hat _ansichten.yaml und ist eine Datenbank");
+        assert!(!tree[2].notebook && !tree[1].notebook, "ohne _notizbuch.yaml kein Notizbuch");
         assert!(!tree[1].database);
     }
 
