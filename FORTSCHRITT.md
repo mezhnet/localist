@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 8 – Android-APK
-- Zuletzt aktualisiert: 2026-10-25 13:42
-- Nächster Schritt: Warten, bis der Nutzer den Windows-Entwicklermodus eingeschaltet hat (siehe „Offene Probleme“). Danach APK bauen (`npx tauri android build --debug --apk --target aarch64 --target x86_64`), im Emulator „Medium_Phone_API_37.0“ testen und den Windows-Build erneut prüfen.
+- Zuletzt aktualisiert: 2026-10-25 14:07
+- Nächster Schritt: Abschluss der Etappe 8 (Nachweise und Abschluss-Commit).
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
+- [x] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
 - [ ] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
 - [ ] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
 - [x] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
