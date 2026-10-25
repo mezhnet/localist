@@ -2,11 +2,15 @@
 
 ## Aktueller Stand
 - Etappe: 8 – Android-APK
-- Zuletzt aktualisiert: 2026-10-25 13:31
-- Nächster Schritt: Fertig-Kriterien der neuen Etappe als Checkliste übernehmen und mit der Umsetzung beginnen.
+- Zuletzt aktualisiert: 2026-10-25 13:32
+- Nächster Schritt: Warten, bis der Nutzer die Android-Einrichtung bestätigt (Umgebungsvariablen JAVA_HOME, ANDROID_HOME, NDK_HOME und Rust-Ziele für Android, siehe „Offene Probleme“). Danach `npx tauri android init` und den ersten APK-Build.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- (werden zu Beginn der Etappe eingetragen)
+- [ ] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
+- [ ] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
+- [ ] Der Vault-Ordner lässt sich auf dem Handy auswählen, Seiten lassen sich lesen und bearbeiten.
+- [ ] Die Oberfläche ist für Handy-Bildschirme angepasst (Sidebar als ausklappbares Menü).
+- [ ] Der Windows-Build funktioniert weiterhin.
 
 ## Abgeschlossene Etappen
 - Etappe 7 – Version 1.0 für den PC (abgeschlossen am 2026-10-25). Nachweise: `npm test` 126 von 126 Tests grün (12 Testdateien), `cargo test` 18 von 18 grün (darunter `alter_einstellungsordner_meinapp_wird_uebernommen` und `verstaendliche_fehlermeldungen_auf_deutsch`), `npx tsc --noEmit` ohne Fehler, 0 TODOs im Quellcode, `npm run tauri build` ohne Fehler: EXE `src-tauri\target\release\localist.exe`, Installer `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe` und `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi` (beide deutsch). Hinweis: Die Uhrzeiten „Zuletzt aktualisiert“ der Etappen 2 bis 7 waren geschätzt; ab jetzt kommt die Zeit von der Systemuhr.
@@ -60,6 +64,7 @@
 - Etappe 0 – Fundament (abgeschlossen am 2026-10-24). Am 2026-10-25 auf dem Stand `09838e1` erneut nachgeprüft: `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zweite Nachprüfung am 2026-10-25 um 10:57 bestanden, nachdem drei Probleme gelöst waren (siehe „Offene Probleme“): `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (Rust-Teil in 1 min 56 s, EXE und beide Installer neu erzeugt, Pfade wie oben), „Hallo Vault“ in `src/App.tsx` und im Build `dist/assets/`, `git status` sauber, `CLAUDE.md` unverändert (Hash `f4a432f…` gleich in Arbeitskopie und Commit).
 
 ## Offene Probleme
+- 2026-10-25: Etappe 8 wartet auf den Nutzer. Schon vorhanden: Android Studio (mit Java im Ordner `jbr`, OpenJDK 25), Android-SDK unter `%LOCALAPPDATA%\Android\Sdk` mit Plattformen 34–37, Build-Tools 35/36, Platform-Tools, Command-line Tools und NDK 28.2.13676358. Es fehlen: die Benutzer-Umgebungsvariablen `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME` und die Rust-Ziele für Android (`rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`). Anleitung dazu im Chat vom 2026-10-25; nach Bestätigung des Nutzers weiter.
 - Gelöst am 2026-10-25: Der Nutzer hat den App-Namen festgelegt: **Localist**, Einstellungsordner `.localist/`.
 - Gelöst am 2026-10-25: Rust war nicht mehr installiert (`npm run tauri build` brach mit `cargo metadata … program not found` ab, `%USERPROFILE%\.cargo` und `%USERPROFILE%\.rustup` fehlten). Auf Wunsch des Nutzers per `winget install --id Rustlang.Rustup --exact` neu installiert (rustup 1.29.1, `cargo 1.99.1`, `rustc 1.99.1`, Toolchain `stable-x86_64-pc-windows-msvc`). Der Installer trägt `%USERPROFILE%\.cargo\bin` in den Benutzer-PATH ein. Ein Terminal, das schon vorher offen war, kennt den neuen Pfad erst nach einem Neustart.
 - Gelöst am 2026-10-25: Die Microsoft C++ Build Tools fehlten wieder (kein `vswhere.exe`, kein MSVC-Ordner). Auf Wunsch des Nutzers mit demselben winget-Befehl wie am 2026-10-24 neu installiert (Build Tools 2022, Version 17.14.37806.7, MSVC 14.44.35207).
