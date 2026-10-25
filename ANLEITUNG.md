@@ -162,6 +162,10 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
     (Eigenschaftstypen und Ansichten). Ein Klick auf die Datenbank (🗃️) zeigt die Tabelle: eine Zeile pro Seite, eine
     Spalte pro Eigenschaft. Werte änderst du direkt in der Zelle, „Filter“ und „Sortieren“ bzw. ein Klick auf eine
     Spaltenüberschrift stellen die Ansicht ein, „+ Neu“ legt eine neue Seite an.
+15. **Kanban und mehrere Ansichten:** Über dem Inhalt einer Datenbank stehen Reiter. „+“ fügt eine Ansicht hinzu
+    (Tabelle oder Kanban), ein Doppelklick auf einen Reiter benennt sie um. Das Kanban gruppiert nach einer Status- oder
+    Auswahl-Eigenschaft („Gruppieren nach“). Zieh eine Karte in eine andere Spalte, um den Wert in der Datei zu ändern.
+    „+ Neu“ unter einer Spalte legt eine Seite mit diesem Wert an, ein Klick auf eine Karte öffnet die Seite.
 
 ## Häufige Probleme
 

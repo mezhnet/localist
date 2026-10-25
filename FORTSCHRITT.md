@@ -1,18 +1,20 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 4 – Kanban
-- Zuletzt aktualisiert: 2026-10-25 13:30
-- Nächster Schritt: Abschlussprüfung der Etappe 4 (npm test, tsc, tauri build) und Abschluss-Commit.
+- Etappe: 5 – Kalender
+- Zuletzt aktualisiert: 2026-10-25 13:33
+- Nächster Schritt: Fertig-Kriterien der neuen Etappe als Checkliste übernehmen und mit der Umsetzung beginnen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Kanban-Ansicht einer Datenbank, gruppiert nach einer Status- oder Auswahl-Eigenschaft.
-- [x] Eine Karte per Drag & Drop in eine andere Spalte zu ziehen ändert den Wert in der Datei.
-- [x] Neue Karten lassen sich direkt in einer Spalte anlegen, ein Klick auf eine Karte öffnet die Seite.
-- [x] Mehrere Ansichten pro Datenbank (z. B. Tabelle und Kanban), umschaltbar per Reiter, gespeichert in `_ansichten.yaml`.
-- [x] Tests für die Kanban-Logik (Gruppieren, Wert ändern).
+- (werden zu Beginn der Etappe eingetragen)
 
 ## Abgeschlossene Etappen
+- Etappe 4 – Kanban (abgeschlossen am 2026-10-25). Nachweise: `npm test` 99 von 99 Tests grün (10 Testdateien, dreimal hintereinander stabil), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Reiter Tabelle/Kanban, Spalten Geplant/In Arbeit/Erledigt/Ohne status mit Karten. Dabei behoben: Die Datenbank lud bei jedem Neuzeichnen alle Dateien neu, was eine gerade verschobene Karte zurücksetzen konnte.
+  - [x] Kanban-Ansicht einer Datenbank, gruppiert nach einer Status- oder Auswahl-Eigenschaft.
+  - [x] Eine Karte per Drag & Drop in eine andere Spalte zu ziehen ändert den Wert in der Datei.
+  - [x] Neue Karten lassen sich direkt in einer Spalte anlegen, ein Klick auf eine Karte öffnet die Seite.
+  - [x] Mehrere Ansichten pro Datenbank (z. B. Tabelle und Kanban), umschaltbar per Reiter, gespeichert in `_ansichten.yaml`.
+  - [x] Tests für die Kanban-Logik (Gruppieren, Wert ändern).
 - Etappe 3 – Eigenschaften und Tabelle (abgeschlossen am 2026-10-25). Nachweise: `npm test` 91 von 91 Tests grün (9 Testdateien), `cargo test` 13 von 13 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Datenbank „Projekte“ als Tabelle (sortiert nach fällig aus `_ansichten.yaml`), Eigenschaften-Leiste auf „Website-Relaunch“.
   - [x] Oben auf jeder Seite gibt es eine Eigenschaften-Leiste mit den Typen Text, Zahl, Auswahl, Mehrfachauswahl, Status, Datum, Checkbox und URL, gespeichert im Frontmatter.
   - [x] Ein Ordner lässt sich in eine Datenbank umwandeln (legt `_ansichten.yaml` an, dort stehen auch die Eigenschaftstypen).
