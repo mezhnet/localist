@@ -138,7 +138,8 @@ describe("Roundtrip Markdown → Editor → Markdown", () => {
     const entries = Object.entries(files as Record<string, string>);
     expect(entries.length).toBeGreaterThanOrEqual(5);
     for (const [, text] of entries) {
-      expectRoundtrip(splitFrontmatter(text).body);
+      // Git kann die Dateien beim Auschecken mit "\r\n" anlegen; das Seiten-Modell behält das bei (page.test.ts).
+      expectRoundtrip(splitFrontmatter(text.replace(/\r\n/g, "\n")).body);
     }
   });
 });

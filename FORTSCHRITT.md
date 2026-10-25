@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 1 – Vault und Seiten
-- Zuletzt aktualisiert: 2026-10-25 11:37
-- Nächster Schritt: Rust-Kommandos für den Vault (öffnen, Ordnerbaum, lesen/schreiben, anlegen/umbenennen/löschen, Dateiwächter) und die Oberfläche mit Vault-Auswahl, Sidebar und Editor bauen. Der Markdown-Konverter (`src/markdown/`) ist fertig und getestet.
+- Zuletzt aktualisiert: 2026-10-25 11:52
+- Nächster Schritt: Restliche Kriterien der Etappe 1 abhaken und nachweisen, danach Abschlussprüfung (npm test, tsc, tauri build).
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Der Vault-Ordner lässt sich per Dialog auswählen, der zuletzt geöffnete Vault öffnet sich beim nächsten Start automatisch.
+- [x] Der Vault-Ordner lässt sich per Dialog auswählen, der zuletzt geöffnete Vault öffnet sich beim nächsten Start automatisch.
 - [ ] Die Sidebar zeigt den Ordnerbaum mit Ordnern und `.md`-Dateien, versteckte Ordner sind ausgeblendet.
 - [ ] Seiten und Ordner lassen sich anlegen, umbenennen und löschen (Löschen nur nach Bestätigung).
 - [ ] Eine Seite öffnet sich im Block-Editor und wird kurz nach der letzten Eingabe automatisch als Markdown gespeichert.
@@ -25,6 +25,10 @@
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Der zuletzt geöffnete Vault wird in `zustand.json` im App-Datenordner gemerkt (Windows: `%APPDATA%de.localprojekt.desktop`), nicht im Vault. Beim Öffnen legt die App `.meinapp/settings.json` an, falls es fehlt.
+- 2026-10-25: Löschen verschiebt Seiten und Ordner in den Papierkorb des Systems (Rust-Paket `trash`), damit nichts endgültig verloren geht.
+- 2026-10-25: Für die Entwicklung im Browser simuliert `src/lib/dev-backend.ts` die Rust-Kommandos mit einem Vault im Arbeitsspeicher (Inhalt aus `beispiel-vault/`). Die Oberflächen-Tests (`src/App.test.tsx`) nutzen dieselbe Simulation. In der gebauten App ist sie nicht enthalten.
+- 2026-10-25: Slash-Menü und Ziehgriff von BlockNote sind in Etappe 1 abgeschaltet (`slashMenu={false}`, `sideMenu={false}`), weil sie zu Etappe 2 gehören. Ebenso gibt es vorerst nur den hellen Modus.
 - 2026-10-25: Eigener Markdown-Konverter (`src/markdown/`) auf Basis von remark (mdast) statt der eingebauten Markdown-Funktionen von BlockNote. Diese gehen über HTML und sind laut BlockNote selbst verlustbehaftet (`blocksToMarkdownLossy`). Der Konverter erzeugt beim Speichern zuerst unmaskiertes Markdown und liest es zur Kontrolle wieder ein. Nur wenn das Ergebnis abweicht, wird maskiert (z. B. `*`). So bleiben Obsidian-Schreibweisen wie `[[Seite]]` oder `> [!info]` unverändert. Markdown, für das es keinen Editor-Block gibt (Tabellen, HTML, Fußnoten), bleibt als Block `rawMarkdown` bzw. Formatierung `raw` wörtlich erhalten. BlockNote bleibt der Editor.
 - 2026-10-25: Das Editor-Schema (`src/editor/schema.ts`) enthält nur Blöcke und Formatierungen mit Markdown-Entsprechung. Unterstreichen wird als `<u>…</u>` gespeichert (wie in Obsidian). Textfarben, Ausrichtung, Tabellen, Audio/Video und Toggle-Überschriften sind nicht enthalten.
 - 2026-10-24: Projekt mit `create-tauri-app` (Vorlage `react-ts`, Paketmanager npm) erzeugt. Arbeitstitel und Paketname `localprojekt`, App-Identifier `de.localprojekt.desktop`. Der endgültige App-Name wird erst in Etappe 7 festgelegt.

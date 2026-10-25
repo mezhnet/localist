@@ -76,6 +76,11 @@ export function deleteEntry(path: string): Promise<void> {
   return invoke<void>("delete_entry", { path });
 }
 
+/** Absoluter Pfad eines Bildes, das in einer Seite verlinkt ist (relativ zur Seite oder zum Vault), oder null. */
+export function resolveAttachment(page: string, target: string): Promise<string | null> {
+  return invoke<string | null>("resolve_attachment", { page, target });
+}
+
 /** Abonniert Änderungen im Vault (auch von außen). Liefert die Funktion zum Abbestellen. */
 export function onVaultChanged(handler: (change: VaultChange) => void): Promise<UnlistenFn> {
   return listen<VaultChange>(VAULT_CHANGED_EVENT, (event) => handler(event.payload));
