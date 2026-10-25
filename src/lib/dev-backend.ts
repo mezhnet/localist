@@ -106,6 +106,15 @@ export function installDevBackend(): void {
   };
 
   let missing = false;
+  // Simulierter Gerätespeicher für die Ordnerauswahl auf Android (localStorage "dev-platform" = "android").
+  const deviceFolders = new Map<string, string[]>([
+    ["/storage/emulated/0", ["Documents", "Download", "Pictures"]],
+    ["/storage/emulated/0/Documents", ["Beispiel-Vault"]],
+    ["/storage/emulated/0/Documents/Beispiel-Vault", []],
+    ["/storage/emulated/0/Download", []],
+    ["/storage/emulated/0/Pictures", []],
+    ["/data/app/Vaults", []],
+  ]);
   mockIPC(
     (cmd, args) => {
       const a = (args ?? {}) as Record<string, any>;
@@ -117,7 +126,7 @@ export function installDevBackend(): void {
           return localStorage.getItem("dev-last-vault");
         case "open_vault":
           localStorage.setItem("dev-last-vault", a.path);
-          return { root: a.path, name: a.path };
+          return { root: a.path, name: String(a.path).split("/").pop() || a.path };
         case "list_tree":
           return listDir("");
         case "read_page": {
@@ -157,6 +166,26 @@ export function installDevBackend(): void {
           remove(a.path);
           notify({ kind: "removed", path: a.path });
           return null;
+        case "app_platform":
+          return localStorage.getItem("dev-platform") ?? "browser";
+        case "storage_locations":
+          return [
+            { name: "Interner Speicher", path: "/storage/emulated/0" },
+            { name: "App-Speicher", path: "/data/app/Vaults" },
+          ];
+        case "list_folders": {
+          const children = deviceFolders.get(a.path);
+          if (!children) throw `Der Ordner „${a.path}“ wurde nicht gefunden.`;
+          return children.map((name) => ({ name, path: `${a.path}/${name}` }));
+        }
+        case "create_folder_at": {
+          const name = validate(a.name);
+          const children = deviceFolders.get(a.parent) ?? [];
+          if (children.includes(name)) throw `Hier gibt es schon einen Ordner „${name}“.`;
+          deviceFolders.set(a.parent, [...children, name]);
+          deviceFolders.set(`${a.parent}/${name}`, []);
+          return `${a.parent}/${name}`;
+        }
         case "vault_index":
           return [...files]
             .filter(([path]) => /\.md$/i.test(path) && !hidden(path))

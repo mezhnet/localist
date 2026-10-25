@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { FolderPicker } from "./components/FolderPicker";
 import { Workspace } from "./components/Workspace";
 import { errorMessage } from "./lib/autosave";
 import { ThemeProvider } from "./lib/theme";
-import { getLastVault, openVault, pickVaultFolder, type VaultInfo } from "./lib/vault-api";
+import { appPlatform, getLastVault, openVault, pickVaultFolder, type VaultInfo } from "./lib/vault-api";
 
 type Phase = "starting" | "ready";
 
@@ -22,6 +23,9 @@ function AppContent() {
   const [phase, setPhase] = useState<Phase>("starting");
   const [vault, setVault] = useState<VaultInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Auf Android wählt man den Vault in einer eigenen Ordnerauswahl (siehe FolderPicker). */
+  const [platform, setPlatform] = useState("unbekannt");
+  const [picking, setPicking] = useState(false);
   const started = useRef(false);
 
   // Beim Start den zuletzt geöffneten Vault wieder öffnen.
@@ -29,6 +33,7 @@ function AppContent() {
     if (started.current) return;
     started.current = true;
     (async () => {
+      setPlatform(await appPlatform().catch(() => "unbekannt"));
       try {
         const last = await getLastVault();
         if (last) {
@@ -46,16 +51,37 @@ function AppContent() {
     })();
   }, []);
 
-  const chooseVault = async () => {
+  const openChosen = async (path: string) => {
     try {
-      const path = await pickVaultFolder();
-      if (!path) return;
       setVault(await openVault(path));
       setError(null);
     } catch (chooseError) {
       setError(errorMessage(chooseError));
     }
   };
+
+  const chooseVault = async () => {
+    if (platform === "android") {
+      setPicking(true);
+      return;
+    }
+    try {
+      const path = await pickVaultFolder();
+      if (path) await openChosen(path);
+    } catch (chooseError) {
+      setError(errorMessage(chooseError));
+    }
+  };
+
+  const picker = picking && (
+    <FolderPicker
+      onCancel={() => setPicking(false)}
+      onPick={(path) => {
+        setPicking(false);
+        void openChosen(path);
+      }}
+    />
+  );
 
   if (phase === "starting") {
     return <div className="splash">Lädt …</div>;
@@ -79,11 +105,17 @@ function AppContent() {
         <button type="button" className="primary" onClick={() => void chooseVault()}>
           Vault-Ordner öffnen …
         </button>
+        {picker}
       </main>
     );
   }
 
-  return <Workspace key={vault.root} vault={vault} onSwitchVault={() => void chooseVault()} />;
+  return (
+    <>
+      <Workspace key={vault.root} vault={vault} onSwitchVault={() => void chooseVault()} />
+      {picker}
+    </>
+  );
 }
 
 export default App;

@@ -63,6 +63,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   const [databaseVersion, setDatabaseVersion] = useState(0);
   /** Wird bei jeder Änderung im Vault erhöht (z. B. damit Backlinks neu berechnet werden). */
   const [vaultVersion, setVaultVersion] = useState(0);
+  /** Auf dem Handy ist die Sidebar ein ausklappbares Menü. */
+  const [menuOpen, setMenuOpen] = useState(false);
   const [dialog, setDialog] = useState<{ kind: "quick" } | { kind: "search" } | { kind: "template"; dir: string } | null>(null);
   const saverRef = useRef<AutoSaver | null>(null);
   const pageRef = useRef(page);
@@ -165,6 +167,9 @@ export function Workspace({ vault, onSwitchVault }: Props) {
       clearTimeout(timer);
     };
   }, [refreshTree, showError]);
+
+  // Nach dem Öffnen einer Seite oder Datenbank klappt das Menü auf dem Handy wieder zu.
+  useEffect(() => setMenuOpen(false), [page?.path, database]);
 
   // Tastenkürzel: Strg+P Schnellsuche, Strg+Umschalt+F Volltextsuche.
   useEffect(() => {
@@ -394,6 +399,19 @@ export function Workspace({ vault, onSwitchVault }: Props) {
 
   return (
     <div className="workspace">
+      <header className="mobile-bar">
+        <button type="button" className="menu-button" aria-label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+          ☰
+        </button>
+        <span className="mobile-title">
+          {page ? pageTitle(page.path) : database ? pageTitle(database) : vault.name}
+        </span>
+        <button type="button" className="menu-button" aria-label="Seite suchen" onClick={() => setDialog({ kind: "quick" })}>
+          ⌕
+        </button>
+      </header>
+      {menuOpen && <div className="drawer-backdrop" aria-hidden="true" onClick={() => setMenuOpen(false)} />}
+      <div className={`sidebar-shell${menuOpen ? " open" : ""}`}>
       <Sidebar
         vaultName={vault.name}
         tree={tree}
@@ -416,6 +434,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           onSwitchVault();
         }}
       />
+      </div>
       <main className="main">
         {notice && (
           <div className={`notice ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>

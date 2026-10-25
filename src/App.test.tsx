@@ -51,7 +51,7 @@ describe("Start und Vault-Auswahl", () => {
 
   it("öffnet den zuletzt geöffneten Vault beim Start automatisch", async () => {
     await openVaultFromStart();
-    expect(screen.getByText("Testvault")).toBeTruthy();
+    expect(document.querySelector(".vault-name")?.textContent).toBe("Testvault");
     expect(screen.queryByText("Hallo Vault")).toBeNull();
   });
 
@@ -435,6 +435,41 @@ describe("Verständliche Fehlermeldungen statt Abstürzen", () => {
     expect(alert.textContent).toContain("Da ist etwas schiefgegangen");
     expect(alert.textContent).toContain("Test-Absturz");
     expect(screen.getByRole("button", { name: "App neu laden" })).toBeTruthy();
+  });
+});
+
+describe("Handy (Android)", () => {
+  it("wählt den Vault-Ordner in der eigenen Ordnerauswahl, legt bei Bedarf einen neuen Ordner an", async () => {
+    localStorage.setItem("dev-platform", "android");
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Vault-Ordner öffnen …" }));
+    const picker = await screen.findByRole("dialog", { name: "Vault-Ordner auswählen" });
+    expect(within(picker).getByRole("button", { name: "Diesen Ordner als Vault verwenden" })).toHaveProperty("disabled", true);
+
+    fireEvent.click(await within(picker).findByText("📁 Interner Speicher"));
+    fireEvent.click(await within(picker).findByText("📁 Documents"));
+    fireEvent.change(within(picker).getByRole("textbox", { name: "Name für neuen Ordner" }), { target: { value: "Mein Vault" } });
+    fireEvent.click(within(picker).getByRole("button", { name: "Anlegen" }));
+    expect(await within(picker).findByText("Interner Speicher / Documents / Mein Vault")).toBeTruthy();
+
+    fireEvent.click(within(picker).getByRole("button", { name: "Diesen Ordner als Vault verwenden" }));
+    expect(await screen.findByRole("tree")).toBeTruthy();
+    expect(localStorage.getItem("dev-last-vault")).toBe("/storage/emulated/0/Documents/Mein Vault");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("Seiten lassen sich über das ausklappbare Menü öffnen und bearbeiten, das Menü klappt danach zu", async () => {
+    await openVaultFromStart();
+    const menuButton = screen.getByRole("button", { name: "Menü öffnen" });
+    expect(menuButton.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(menuButton);
+    expect(menuButton.getAttribute("aria-expanded")).toBe("true");
+    expect(document.querySelector(".sidebar-shell.open")).toBeTruthy();
+
+    await openPage("Notizen", "Ideen");
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    await waitFor(() => expect(document.querySelector(".sidebar-shell.open")).toBeNull());
+    expect(document.querySelector(".mobile-title")?.textContent).toBe("Ideen");
   });
 });
 

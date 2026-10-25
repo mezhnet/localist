@@ -1,7 +1,7 @@
 // Tabellenansicht einer Datenbank: eine Zeile pro Seite, eine Spalte pro Eigenschaft.
 // Zellen schreiben direkt ins Frontmatter der jeweiligen Seite; Sortierung und Filter
 // stehen in `_ansichten.yaml`.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { errorMessage } from "../lib/autosave";
 import {
   applyView,
@@ -90,10 +90,14 @@ export function DatabaseView(props: Props) {
   // Nur neu laden, wenn sich die Seiten im Ordner oder ihre Dateien wirklich geändert haben
   // (pagePaths ist bei jedem Neuzeichnen ein neues Array).
   const pathsKey = pagePaths.join("\n");
+  // Zählt eigene Änderungen. Ein Ladevorgang, der vor einer Änderung begonnen hat, ist veraltet und
+  // wird verworfen (sonst spränge z. B. eine verschobene Karte kurz zurück); der Dateiwächter lädt danach neu.
+  const writes = useRef(0);
   useEffect(() => {
     let cancelled = false;
+    const startedAt = writes.current;
     void loadRows(pathsKey ? pathsKey.split("\n") : []).then((loaded) => {
-      if (cancelled) return;
+      if (cancelled || writes.current !== startedAt) return;
       setRows(loaded);
       setLoading(false);
     });
@@ -143,6 +147,7 @@ export function DatabaseView(props: Props) {
   };
 
   const setCell = async (row: Row, name: string, value: PropertyValue | null) => {
+    writes.current++;
     setRows((current) =>
       current.map((r) => (r.path === row.path ? { ...r, values: withValue(r.values, name, value) } : r)),
     );

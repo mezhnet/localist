@@ -1589,3 +1589,214 @@ button {
   margin: -8px 0 8px;
   font-weight: 500;
 }
+
+/* Ordnerauswahl für den Vault auf dem Handy */
+.folder-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.folder-picker-header button,
+.folder-picker-actions button:not(.primary),
+.folder-picker-new button {
+  font: inherit;
+  border: 1px solid var(--border);
+  background: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.folder-picker-new {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.folder-picker-new input {
+  flex: 1;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.folder-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.folder-picker .notice {
+  margin: 8px 14px 0;
+}
+
+/* Kopfzeile mit Menü-Knopf: nur auf schmalen Bildschirmen */
+.mobile-bar {
+  display: none;
+}
+
+.sidebar-shell {
+  display: contents;
+}
+
+@media (max-width: 768px) {
+  .workspace {
+    flex-direction: column;
+  }
+
+  .mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 48px;
+    padding: env(safe-area-inset-top) 6px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+
+  .menu-button {
+    border: none;
+    background: none;
+    font-size: 22px;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .menu-button:active {
+    background: var(--hover);
+  }
+
+  .mobile-title {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Sidebar als ausklappbares Menü von links */
+  .sidebar-shell {
+    display: flex;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 85vw);
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .sidebar-shell.open {
+    transform: none;
+    box-shadow: 0 0 24px rgba(15, 15, 15, 0.3);
+  }
+
+  .sidebar-shell .sidebar {
+    width: 100%;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(15, 15, 15, 0.35);
+  }
+
+  /* Ohne Maus gibt es kein Überfahren: Bedienelemente immer zeigen, Zeilen höher für Finger */
+  .tree-action,
+  .open-button,
+  .page-header-actions {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .tree-row {
+    min-height: 36px;
+  }
+
+  .sidebar-actions kbd {
+    display: none;
+  }
+
+  .main {
+    flex: 1;
+  }
+
+  .page {
+    padding: 0 12px 80px;
+  }
+
+  .page-header-inner {
+    padding: 16px 12px 4px;
+  }
+
+  .page-title {
+    padding-left: 0;
+    font-size: 28px;
+  }
+
+  .muted,
+  .properties,
+  .backlinks {
+    padding-left: 0;
+    margin-left: 0;
+  }
+
+  .property-name {
+    flex-basis: 110px;
+  }
+
+  .block-editor.bn-container .bn-editor {
+    padding-inline: 4px;
+  }
+
+  .database {
+    padding: 12px 8px 80px;
+  }
+
+  .database-header h1 {
+    font-size: 24px;
+  }
+
+  .calendar-layout {
+    flex-direction: column;
+  }
+
+  .calendar-undated {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .calendar-day {
+    min-height: 64px;
+    padding: 2px;
+  }
+
+  .kanban-column {
+    flex-basis: 230px;
+  }
+
+  .dialog-backdrop {
+    padding-top: 4vh;
+  }
+
+  .notice {
+    margin: 8px 8px 0;
+  }
+}

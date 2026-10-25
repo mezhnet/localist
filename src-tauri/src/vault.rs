@@ -280,7 +280,70 @@ pub fn delete_entry(root: &Path, rel: &str) -> Result<(), String> {
     if !path.exists() {
         return Err("Der Eintrag existiert nicht mehr.".into());
     }
-    trash::delete(&path).map_err(|e| format!("„{}“ konnte nicht in den Papierkorb verschoben werden: {e}", display_name(&path)))
+    move_to_trash(root, &path)
+}
+
+#[cfg(not(target_os = "android"))]
+fn move_to_trash(_root: &Path, path: &Path) -> Result<(), String> {
+    trash::delete(path).map_err(|e| format!("„{}“ konnte nicht in den Papierkorb verschoben werden: {e}", display_name(path)))
+}
+
+#[cfg(target_os = "android")]
+fn move_to_trash(root: &Path, path: &Path) -> Result<(), String> {
+    vault_trash(root, path).map(|_| ())
+}
+
+/// Papierkorb im Vault (für Android, das keinen System-Papierkorb hat): verschiebt den Eintrag nach
+/// `.localist/Papierkorb/`. Von dort lässt er sich mit jedem Dateimanager zurückholen.
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub fn vault_trash(root: &Path, path: &Path) -> Result<PathBuf, String> {
+    let bin = root.join(SETTINGS_DIR).join("Papierkorb");
+    fs::create_dir_all(&bin).map_err(|e| format!("Der Papierkorb im Vault konnte nicht angelegt werden: {e}"))?;
+    let name = display_name(path);
+    let mut target = bin.join(&name);
+    let mut number = 2;
+    while target.exists() {
+        target = bin.join(format!("{name} ({number})"));
+        number += 1;
+    }
+    fs::rename(path, &target).map_err(|e| format!("„{name}“ konnte nicht in den Papierkorb verschoben werden: {e}"))?;
+    Ok(target)
+}
+
+/// Ein Ordner für die Ordnerauswahl auf dem Handy.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FolderEntry {
+    pub name: String,
+    pub path: String,
+}
+
+/// Unterordner (ohne versteckte) eines absoluten Pfads, alphabetisch – für die eigene Ordnerauswahl auf
+/// Android, wo der System-Dialog keine normalen Dateipfade liefert.
+pub fn list_folders(dir: &Path) -> Result<Vec<FolderEntry>, String> {
+    let entries = fs::read_dir(dir).map_err(|e| match e.kind() {
+        std::io::ErrorKind::PermissionDenied => "Kein Zugriff auf diesen Ordner. Erlaube Localist in den Android-Einstellungen den „Zugriff auf alle Dateien“.".to_string(),
+        std::io::ErrorKind::NotFound => format!("Der Ordner „{}“ wurde nicht gefunden.", dir.display()),
+        _ => format!("Der Ordner „{}“ konnte nicht gelesen werden: {e}", dir.display()),
+    })?;
+    let mut folders: Vec<FolderEntry> = entries
+        .flatten()
+        .filter(|entry| entry.file_type().map(|t| t.is_dir()).unwrap_or(false))
+        .map(|entry| FolderEntry { name: entry.file_name().to_string_lossy().into_owned(), path: entry.path().to_string_lossy().into_owned() })
+        .filter(|folder| !is_hidden(&folder.name))
+        .collect();
+    folders.sort_by_key(|folder| folder.name.to_lowercase());
+    Ok(folders)
+}
+
+/// Legt einen neuen Ordner (z. B. für einen neuen Vault) in einem absoluten Pfad an.
+pub fn create_folder_at(parent: &Path, name: &str) -> Result<String, String> {
+    let name = validate_name(name)?;
+    let path = parent.join(&name);
+    if path.exists() {
+        return Err(format!("Hier gibt es schon einen Ordner „{name}“."));
+    }
+    fs::create_dir_all(&path).map_err(|e| format!("Der Ordner „{name}“ konnte nicht angelegt werden: {e}"))?;
+    Ok(path.to_string_lossy().into_owned())
 }
 
 /// Ordner für Bilder, die von außerhalb in den Vault übernommen werden.
@@ -569,6 +632,36 @@ mod tests {
         assert!(list_tree(&missing).unwrap_err().starts_with("Der Vault-Ordner"));
         assert_eq!(write_atomic(&missing.join("A.md"), b"x").unwrap_err(), "Der Ordner für „A.md“ existiert nicht mehr.");
         assert!(delete_entry(&vault.0, "").unwrap_err().contains("Vault selbst"));
+    }
+
+    #[test]
+    fn papierkorb_im_vault_fuer_android() {
+        let vault = TestVault::new();
+        vault.file("Notizen/Ideen.md", "eins");
+        let first = vault_trash(&vault.0, &vault.0.join("Notizen/Ideen.md")).unwrap();
+        assert_eq!(first, vault.0.join(".localist").join("Papierkorb").join("Ideen.md"));
+        vault.file("Notizen/Ideen.md", "zwei");
+        let second = vault_trash(&vault.0, &vault.0.join("Notizen/Ideen.md")).unwrap();
+        assert_eq!(second.file_name().unwrap().to_string_lossy(), "Ideen.md (2)");
+        assert_eq!(read_text(&first).unwrap(), "eins");
+        assert!(!vault.0.join("Notizen/Ideen.md").exists());
+        // Der Papierkorb ist versteckt und taucht nicht in der Sidebar auf.
+        assert_eq!(list_tree(&vault.0).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn ordnerauswahl_listet_unterordner_und_legt_neue_an() {
+        let vault = TestVault::new();
+        vault.file("Documents/a.md", "");
+        vault.file("Download/b.txt", "");
+        vault.file(".versteckt/c", "");
+        vault.file("datei.txt", "");
+        let names: Vec<_> = list_folders(&vault.0).unwrap().into_iter().map(|f| f.name).collect();
+        assert_eq!(names, vec!["Documents", "Download"]);
+        let created = create_folder_at(&vault.0.join("Documents"), "Mein Vault").unwrap();
+        assert!(Path::new(&created).is_dir());
+        assert!(create_folder_at(&vault.0.join("Documents"), "Mein Vault").is_err());
+        assert!(list_folders(&vault.0.join("fehlt")).unwrap_err().contains("nicht gefunden"));
     }
 
     #[test]

@@ -103,6 +103,31 @@ export function vaultIndex(): Promise<{ path: string; title: string; content: st
   return invoke("vault_index");
 }
 
+export interface FolderEntry {
+  name: string;
+  path: string;
+}
+
+/** Betriebssystem, auf dem die App läuft ("windows", "android", …). */
+export function appPlatform(): Promise<string> {
+  return invoke<string>("app_platform");
+}
+
+/** Startpunkte für die eigene Ordnerauswahl (Android: interner Speicher und App-Speicher). */
+export function storageLocations(): Promise<FolderEntry[]> {
+  return invoke<FolderEntry[]>("storage_locations");
+}
+
+/** Unterordner eines absoluten Pfads (ohne versteckte). */
+export function listFolders(path: string): Promise<FolderEntry[]> {
+  return invoke<FolderEntry[]>("list_folders", { path });
+}
+
+/** Legt einen Ordner in einem absoluten Pfad an und liefert seinen Pfad. */
+export function createFolderAt(parent: string, name: string): Promise<string> {
+  return invoke<string>("create_folder_at", { parent, name });
+}
+
 /** Abonniert Änderungen im Vault (auch von außen). Liefert die Funktion zum Abbestellen. */
 export function onVaultChanged(handler: (change: VaultChange) => void): Promise<UnlistenFn> {
   return listen<VaultChange>(VAULT_CHANGED_EVENT, (event) => handler(event.payload));

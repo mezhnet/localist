@@ -169,6 +169,40 @@ async fn vault_index(app: AppHandle, state: State<'_, AppState>) -> Result<Vec<s
     search_index::update_index(&root, &search_index::index_file_for(&cache, &root))
 }
 
+/// Betriebssystem ("windows", "android", …), damit die Oberfläche sich anpassen kann.
+#[tauri::command]
+fn app_platform() -> &'static str {
+    std::env::consts::OS
+}
+
+/// Startpunkte für die eigene Ordnerauswahl auf dem Handy.
+#[tauri::command]
+async fn storage_locations(app: AppHandle) -> Result<Vec<vault::FolderEntry>, String> {
+    let mut locations = Vec::new();
+    if cfg!(target_os = "android") {
+        locations.push(vault::FolderEntry { name: "Interner Speicher".into(), path: "/storage/emulated/0".into() });
+    } else if let Ok(home) = app.path().home_dir() {
+        locations.push(vault::FolderEntry { name: "Benutzerordner".into(), path: path_to_string(&home) });
+    }
+    // Immer erreichbar, auch ohne Speicher-Berechtigung (wird mit der App gelöscht).
+    if let Ok(dir) = app.path().app_data_dir() {
+        let vaults = dir.join("Vaults");
+        let _ = std::fs::create_dir_all(&vaults);
+        locations.push(vault::FolderEntry { name: "App-Speicher".into(), path: path_to_string(&vaults) });
+    }
+    Ok(locations)
+}
+
+#[tauri::command]
+async fn list_folders(path: String) -> Result<Vec<vault::FolderEntry>, String> {
+    vault::list_folders(Path::new(&path))
+}
+
+#[tauri::command]
+async fn create_folder_at(parent: String, name: String) -> Result<String, String> {
+    vault::create_folder_at(Path::new(&parent), &name)
+}
+
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -191,7 +225,11 @@ pub fn run() {
             delete_entry,
             resolve_attachment,
             import_attachment,
-            vault_index
+            vault_index,
+            app_platform,
+            storage_locations,
+            list_folders,
+            create_folder_at
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");
