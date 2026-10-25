@@ -223,6 +223,57 @@ describe("Eigenschaften und Datenbanken", () => {
   });
 });
 
+describe("Kanban", () => {
+  async function openKanban() {
+    await openVaultFromStart();
+    fireEvent.click(await screen.findByText("Projekte"));
+    await screen.findByDisplayValue("Umzug"); // Einträge sind geladen
+    fireEvent.click(screen.getByRole("button", { name: "Ansicht hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "▥ Kanban" }));
+    return screen.findByRole("list", { name: "Kanban nach status" });
+  }
+
+  it("legt eine Kanban-Ansicht an (gespeichert in _ansichten.yaml) und schaltet per Reiter um", async () => {
+    const board = await openKanban();
+    const columns = within(board).getAllByRole("listitem").map((column) => column.getAttribute("aria-label"));
+    expect(columns).toEqual(["Spalte Geplant", "Spalte In Arbeit", "Spalte Erledigt", "Ohne status".replace(/^/, "Spalte ")]);
+    expect(within(within(board).getByRole("listitem", { name: "Spalte In Arbeit" })).getByRole("article", { name: "Website-Relaunch" })).toBeTruthy();
+    await waitFor(() =>
+      expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("  - name: Kanban\n    typ: kanban\n    gruppierung: status\n"),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "▦ Tabelle" }));
+    expect(await screen.findByRole("table")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "▥ Kanban" }));
+    expect(await screen.findByRole("list", { name: "Kanban nach status" })).toBeTruthy();
+  });
+
+  it("Drag & Drop in eine andere Spalte ändert den Wert in der Datei", async () => {
+    const board = await openKanban();
+    const card = within(board).getByRole("article", { name: "Umzug" });
+    const target = within(board).getByRole("listitem", { name: "Spalte Erledigt" });
+    const data = new Map<string, string>();
+    const dataTransfer = { setData: (k: string, v: string) => data.set(k, v), getData: (k: string) => data.get(k) ?? "", dropEffect: "", effectAllowed: "" };
+    fireEvent.dragStart(card, { dataTransfer });
+    fireEvent.dragOver(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
+    await waitFor(() => expect(vault().files.get("Projekte/Umzug.md")).toContain("status: Erledigt\n"));
+    expect(vault().files.get("Projekte/Umzug.md")).toContain("id: 8c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f\n");
+    expect(within(target).getByRole("article", { name: "Umzug" })).toBeTruthy();
+  });
+
+  it("legt neue Karten direkt in einer Spalte an, ein Klick auf eine Karte öffnet die Seite", async () => {
+    const board = await openKanban();
+    const column = within(board).getByRole("listitem", { name: "Spalte In Arbeit" });
+    fireEvent.click(within(column).getByRole("button", { name: "+ Neu" }));
+    await waitFor(() => expect(vault().files.get("Projekte/Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\nstatus: In Arbeit\n---\n$/));
+    expect(await within(column).findByRole("article", { name: "Unbenannt" })).toBeTruthy();
+
+    fireEvent.click(within(board).getByRole("article", { name: "Website-Relaunch" }));
+    expect(await screen.findByText("Domain prüfen")).toBeTruthy();
+  });
+});
+
 describe("Seiten im Editor", () => {
   it("öffnet eine Seite im Block-Editor", async () => {
     await openVaultFromStart();

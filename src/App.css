@@ -1082,3 +1082,168 @@ button {
   background: var(--accent);
   color: #fff;
 }
+
+/* Reiter für mehrere Ansichten einer Datenbank */
+.view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.view-tab,
+.view-add,
+.view-remove {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.view-tab:hover,
+.view-add:hover,
+.view-remove:hover {
+  color: var(--text);
+}
+
+.view-tab.selected {
+  color: var(--text);
+  border-bottom-color: var(--text);
+  font-weight: 500;
+}
+
+.view-remove {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.view-tab-input {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 3px 6px;
+  width: 140px;
+}
+
+.group-select {
+  color: var(--text-muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.group-select select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+/* Kanban-Board */
+.kanban {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0 16px;
+}
+
+.kanban-column {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--callout-bg);
+  min-height: 120px;
+  transition: background 0.1s;
+}
+
+.kanban-column.drop-target {
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg));
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px 6px;
+}
+
+.kanban-label {
+  font-weight: 500;
+  font-size: 13px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 10%, var(--bg));
+}
+
+.kanban-label.status-erledigt,
+.kanban-label.status-fertig {
+  background: color-mix(in srgb, #0f7b6c 22%, var(--bg));
+}
+
+.kanban-label.status-in-arbeit {
+  background: color-mix(in srgb, #2383e2 22%, var(--bg));
+}
+
+.kanban-count {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.kanban-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.06);
+}
+
+.kanban-card:hover {
+  background: color-mix(in srgb, var(--text) 3%, var(--bg));
+}
+
+.kanban-card:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.kanban-card-title {
+  font-weight: 500;
+}
+
+.kanban-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.kanban-add {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.kanban-add:hover {
+  background: var(--hover);
+}

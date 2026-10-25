@@ -15,11 +15,14 @@ import {
   type FilterRule,
   type Row,
   type SortRule,
+  type ViewConfig,
 } from "../lib/database";
 import { normalizeValue, PROPERTY_TYPES, readProperties, setProperty, typeInfo, type PropertyType, type PropertyValue } from "../lib/properties";
 import { pageTitle } from "../lib/tree";
 import { readPage, writePage } from "../lib/vault-api";
 import { joinFrontmatter, splitFrontmatter } from "../markdown/frontmatter";
+import { groupableProperties, groupProperty } from "../lib/kanban";
+import { KanbanBoard } from "./KanbanBoard";
 import { AddPropertyForm } from "./PropertiesBar";
 import { PropertyInput } from "./PropertyInput";
 
@@ -66,14 +69,28 @@ export function DatabaseView(props: Props) {
   const { folder, config, pagePaths, version } = props;
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
-  const [panel, setPanel] = useState<"sort" | "filter" | "add" | null>(null);
+  const [panel, setPanel] = useState<"sort" | "filter" | "add" | "views" | null>(null);
   const [columnMenu, setColumnMenu] = useState<string | null>(null);
-  const view = config.ansichten[0];
+  const [active, setActiveState] = useState(() => readActiveView(folder));
+  const viewIndex = Math.min(active, config.ansichten.length - 1);
+  const view = config.ansichten[viewIndex];
   const schema = config.eigenschaften;
+  const setActive = (index: number) => {
+    setActiveState(index);
+    setPanel(null);
+    try {
+      localStorage.setItem(`ansicht:${folder}`, String(index));
+    } catch {
+      // Ohne Speicher startet die Datenbank mit der ersten Ansicht.
+    }
+  };
 
+  // Nur neu laden, wenn sich die Seiten im Ordner oder ihre Dateien wirklich geändert haben
+  // (pagePaths ist bei jedem Neuzeichnen ein neues Array).
+  const pathsKey = pagePaths.join("\n");
   useEffect(() => {
     let cancelled = false;
-    void loadRows(pagePaths).then((loaded) => {
+    void loadRows(pathsKey ? pathsKey.split("\n") : []).then((loaded) => {
       if (cancelled) return;
       setRows(loaded);
       setLoading(false);
@@ -81,13 +98,40 @@ export function DatabaseView(props: Props) {
     return () => {
       cancelled = true;
     };
-  }, [pagePaths, version]);
+  }, [pathsKey, version]);
 
   const shown = useMemo(() => applyView(rows, view, schema), [rows, view, schema]);
   const columns = visibleColumns(view, schema);
+  const groupBy = view.typ === "kanban" ? groupProperty(view, config) : null;
 
   const saveView = (changes: Partial<typeof view>) => {
-    props.onSaveConfig({ ...config, ansichten: [{ ...view, ...changes }, ...config.ansichten.slice(1)] });
+    props.onSaveConfig({ ...config, ansichten: replaceAt(config.ansichten, viewIndex, { ...view, ...changes }) });
+  };
+
+  const addView = (typ: "tabelle" | "kanban") => {
+    const base = typ === "kanban" ? { name: "Kanban", typ, gruppierung: groupableProperties(config)[0] } : { name: "Tabelle", typ };
+    const names = config.ansichten.map((v) => v.name);
+    let name = base.name;
+    for (let i = 2; names.includes(name); i++) name = `${base.name} ${i}`;
+    props.onSaveConfig({ ...config, ansichten: [...config.ansichten, { ...base, name, sortierung: [], filter: [] }] });
+    setActive(config.ansichten.length);
+  };
+
+  const removeView = () => {
+    if (config.ansichten.length <= 1) return;
+    props.onSaveConfig({ ...config, ansichten: config.ansichten.filter((_, i) => i !== viewIndex) });
+    setActive(Math.max(0, viewIndex - 1));
+  };
+
+  const createCard = async (value: string | null, property: string) => {
+    const path = await props.onCreateRow();
+    if (!path) return;
+    try {
+      if (value !== null) await writeRowValue(path, property, value);
+    } catch (error) {
+      props.onError(errorMessage(error));
+    }
+    setRows(await loadRows([...pagePaths.filter((p) => p !== path), path]));
   };
 
   const setCell = async (row: Row, name: string, value: PropertyValue | null) => {
@@ -140,6 +184,16 @@ export function DatabaseView(props: Props) {
           <span aria-hidden="true">🗃️</span> {folder.slice(folder.lastIndexOf("/") + 1)}
         </h1>
         <div className="database-toolbar">
+          {view.typ === "kanban" && groupBy && (
+            <label className="group-select">
+              Gruppieren nach{" "}
+              <select aria-label="Gruppieren nach" value={groupBy} onChange={(event) => saveView({ gruppierung: event.target.value })}>
+                {groupableProperties(config).map((name) => (
+                  <option key={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <button type="button" className={view.filter.length > 0 ? "active" : ""} onClick={() => setPanel(panel === "filter" ? null : "filter")}>
             Filter{view.filter.length > 0 ? ` (${view.filter.length})` : ""}
           </button>
@@ -149,15 +203,51 @@ export function DatabaseView(props: Props) {
           <button
             type="button"
             className="primary"
-            onClick={async () => {
-              const path = await props.onCreateRow();
-              if (path) setRows(await loadRows([...pagePaths, path]));
-            }}
+            onClick={() => void createCard(null, groupBy ?? "")}
           >
             + Neu
           </button>
         </div>
       </div>
+
+      <div className="view-tabs" role="tablist" aria-label="Ansichten">
+        {config.ansichten.map((v, index) => (
+          <ViewTab
+            key={index}
+            view={v}
+            selected={index === viewIndex}
+            onSelect={() => setActive(index)}
+            onRename={(name) => props.onSaveConfig({ ...config, ansichten: replaceAt(config.ansichten, index, { ...v, name }) })}
+          />
+        ))}
+        <button type="button" className="view-add" aria-label="Ansicht hinzufügen" title="Ansicht hinzufügen" onClick={() => setPanel(panel === "views" ? null : "views")}>
+          +
+        </button>
+        {config.ansichten.length > 1 && (
+          <button type="button" className="view-remove" title="Diese Ansicht entfernen (die Seiten bleiben erhalten)" onClick={removeView}>
+            Ansicht entfernen
+          </button>
+        )}
+      </div>
+
+      {panel === "views" && (
+        <div className="database-panel" aria-label="Neue Ansicht">
+          <button type="button" onClick={() => addView("tabelle")}>
+            ▦ Tabelle
+          </button>
+          <button
+            type="button"
+            disabled={groupableProperties(config).length === 0}
+            title={groupableProperties(config).length === 0 ? "Dafür braucht die Datenbank eine Status- oder Auswahl-Eigenschaft." : undefined}
+            onClick={() => addView("kanban")}
+          >
+            ▥ Kanban
+          </button>
+          {groupableProperties(config).length === 0 && (
+            <p className="muted-small">Für ein Kanban braucht die Datenbank eine Eigenschaft vom Typ Status oder Auswahl.</p>
+          )}
+        </div>
+      )}
 
       {panel === "sort" && (
         <div className="database-panel" aria-label="Sortierung">
@@ -223,6 +313,22 @@ export function DatabaseView(props: Props) {
         </div>
       )}
 
+      {view.typ === "kanban" ? (
+        groupBy ? (
+          <KanbanBoard
+            rows={rows}
+            view={view}
+            config={config}
+            property={groupBy}
+            onOpen={props.onOpenPage}
+            onMove={(row, value) => void setCell(row, groupBy, value)}
+            onCreate={(value) => void createCard(value, groupBy)}
+          />
+        ) : (
+          <p className="muted-small">Für ein Kanban braucht die Datenbank eine Eigenschaft vom Typ Status oder Auswahl.</p>
+        )
+      ) : (
+      <>
       <div className="table-wrapper">
         <table className="database-table">
           <thead>
@@ -324,10 +430,59 @@ export function DatabaseView(props: Props) {
           />
         </div>
       )}
+      </>
+      )}
       <p className="muted-small database-count">
         {shown.length} von {rows.length} {rows.length === 1 ? "Eintrag" : "Einträgen"}
       </p>
     </div>
+  );
+}
+
+/** Zuletzt gewählte Ansicht dieser Datenbank (nur Bedienkomfort, nicht im Vault gespeichert). */
+function readActiveView(folder: string): number {
+  try {
+    return Math.max(0, Number(localStorage.getItem(`ansicht:${folder}`)) || 0);
+  } catch {
+    return 0;
+  }
+}
+
+/** Reiter einer Ansicht; Doppelklick benennt sie um. */
+function ViewTab({ view, selected, onSelect, onRename }: { view: ViewConfig; selected: boolean; onSelect: () => void; onRename: (name: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const icon = view.typ === "kanban" ? "▥" : "▦";
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        className="view-tab-input"
+        aria-label="Name der Ansicht"
+        defaultValue={view.name}
+        onBlur={(event) => {
+          setEditing(false);
+          const name = event.currentTarget.value.trim();
+          if (name && name !== view.name) onRename(name);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur();
+          if (event.key === "Escape") setEditing(false);
+        }}
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={selected}
+      className={`view-tab${selected ? " selected" : ""}`}
+      title="Doppelklick zum Umbenennen"
+      onClick={onSelect}
+      onDoubleClick={() => setEditing(true)}
+    >
+      {icon} {view.name}
+    </button>
   );
 }
 
