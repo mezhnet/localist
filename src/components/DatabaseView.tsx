@@ -22,6 +22,8 @@ import { pageTitle } from "../lib/tree";
 import { readPage, writePage } from "../lib/vault-api";
 import { joinFrontmatter, splitFrontmatter } from "../markdown/frontmatter";
 import { groupableProperties, groupProperty } from "../lib/kanban";
+import { calendarProperty, dateProperties } from "../lib/calendar";
+import { CalendarView } from "./CalendarView";
 import { KanbanBoard } from "./KanbanBoard";
 import { AddPropertyForm } from "./PropertiesBar";
 import { PropertyInput } from "./PropertyInput";
@@ -103,13 +105,19 @@ export function DatabaseView(props: Props) {
   const shown = useMemo(() => applyView(rows, view, schema), [rows, view, schema]);
   const columns = visibleColumns(view, schema);
   const groupBy = view.typ === "kanban" ? groupProperty(view, config) : null;
+  const dateBy = view.typ === "kalender" ? calendarProperty(view, config) : null;
 
   const saveView = (changes: Partial<typeof view>) => {
     props.onSaveConfig({ ...config, ansichten: replaceAt(config.ansichten, viewIndex, { ...view, ...changes }) });
   };
 
-  const addView = (typ: "tabelle" | "kanban") => {
-    const base = typ === "kanban" ? { name: "Kanban", typ, gruppierung: groupableProperties(config)[0] } : { name: "Tabelle", typ };
+  const addView = (typ: "tabelle" | "kanban" | "kalender") => {
+    const base =
+      typ === "kanban"
+        ? { name: "Kanban", typ, gruppierung: groupableProperties(config)[0] }
+        : typ === "kalender"
+          ? { name: "Kalender", typ, datum: dateProperties(config)[0], modus: "monat" }
+          : { name: "Tabelle", typ };
     const names = config.ansichten.map((v) => v.name);
     let name = base.name;
     for (let i = 2; names.includes(name); i++) name = `${base.name} ${i}`;
@@ -184,6 +192,16 @@ export function DatabaseView(props: Props) {
           <span aria-hidden="true">🗃️</span> {folder.slice(folder.lastIndexOf("/") + 1)}
         </h1>
         <div className="database-toolbar">
+          {view.typ === "kalender" && dateBy && (
+            <label className="group-select">
+              Datum aus{" "}
+              <select aria-label="Datum aus" value={dateBy} onChange={(event) => saveView({ datum: event.target.value })}>
+                {dateProperties(config).map((name) => (
+                  <option key={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+          )}
           {view.typ === "kanban" && groupBy && (
             <label className="group-select">
               Gruppieren nach{" "}
@@ -203,7 +221,7 @@ export function DatabaseView(props: Props) {
           <button
             type="button"
             className="primary"
-            onClick={() => void createCard(null, groupBy ?? "")}
+            onClick={() => void createCard(null, groupBy ?? dateBy ?? "")}
           >
             + Neu
           </button>
@@ -243,9 +261,18 @@ export function DatabaseView(props: Props) {
           >
             ▥ Kanban
           </button>
+          <button
+            type="button"
+            disabled={dateProperties(config).length === 0}
+            title={dateProperties(config).length === 0 ? "Dafür braucht die Datenbank eine Datums-Eigenschaft." : undefined}
+            onClick={() => addView("kalender")}
+          >
+            📅 Kalender
+          </button>
           {groupableProperties(config).length === 0 && (
             <p className="muted-small">Für ein Kanban braucht die Datenbank eine Eigenschaft vom Typ Status oder Auswahl.</p>
           )}
+          {dateProperties(config).length === 0 && <p className="muted-small">Für einen Kalender braucht die Datenbank eine Eigenschaft vom Typ Datum.</p>}
         </div>
       )}
 
@@ -313,7 +340,22 @@ export function DatabaseView(props: Props) {
         </div>
       )}
 
-      {view.typ === "kanban" ? (
+      {view.typ === "kalender" ? (
+        dateBy ? (
+          <CalendarView
+            rows={rows}
+            view={view}
+            config={config}
+            property={dateBy}
+            onOpen={props.onOpenPage}
+            onMove={(row, value) => void setCell(row, dateBy, value)}
+            onCreate={(day) => void createCard(day, dateBy)}
+            onSaveView={saveView}
+          />
+        ) : (
+          <p className="muted-small">Für einen Kalender braucht die Datenbank eine Eigenschaft vom Typ Datum.</p>
+        )
+      ) : view.typ === "kanban" ? (
         groupBy ? (
           <KanbanBoard
             rows={rows}
@@ -451,7 +493,7 @@ function readActiveView(folder: string): number {
 /** Reiter einer Ansicht; Doppelklick benennt sie um. */
 function ViewTab({ view, selected, onSelect, onRename }: { view: ViewConfig; selected: boolean; onSelect: () => void; onRename: (name: string) => void }) {
   const [editing, setEditing] = useState(false);
-  const icon = view.typ === "kanban" ? "▥" : "▦";
+  const icon = view.typ === "kanban" ? "▥" : view.typ === "kalender" ? "📅" : "▦";
   if (editing) {
     return (
       <input

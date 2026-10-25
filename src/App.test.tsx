@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { today, weekDays } from "./lib/calendar";
 import { installDevBackend } from "./lib/dev-backend";
 
 function vault() {
@@ -271,6 +272,70 @@ describe("Kanban", () => {
 
     fireEvent.click(within(board).getByRole("article", { name: "Website-Relaunch" }));
     expect(await screen.findByText("Domain prüfen")).toBeTruthy();
+  });
+});
+
+describe("Kalender", () => {
+  const fmt = (day: string) => `${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}`;
+  const dragTo = (item: HTMLElement, target: HTMLElement) => {
+    const data = new Map<string, string>();
+    const dataTransfer = { setData: (k: string, v: string) => data.set(k, v), getData: (k: string) => data.get(k) ?? "", dropEffect: "", effectAllowed: "" };
+    fireEvent.dragStart(item, { dataTransfer });
+    fireEvent.dragOver(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
+  };
+
+  async function openCalendar() {
+    const now = today();
+    vault().externalWrite(
+      "Projekte/Website-Relaunch.md",
+      `---\nid: 3f2a\nstatus: In Arbeit\nfällig: ${now}T09:30\n---\nInhalt\n`,
+    );
+    vault().externalWrite("Projekte/Notiz.md", "---\nid: n1\nstatus: Geplant\n---\n");
+    await openVaultFromStart();
+    fireEvent.click(await screen.findByText("Projekte"));
+    await screen.findByDisplayValue("Notiz");
+    fireEvent.click(screen.getByRole("button", { name: "Ansicht hinzufügen" }));
+    fireEvent.click(screen.getByRole("button", { name: "📅 Kalender" }));
+    return screen.findByRole("grid", { name: "Kalender nach fällig" });
+  }
+
+  it("zeigt Einträge im Monat, schaltet auf Woche um (gespeichert in _ansichten.yaml)", async () => {
+    const grid = await openCalendar();
+    const cell = within(grid).getByRole("gridcell", { name: fmt(today()) });
+    expect(within(cell).getByRole("button", { name: "Website-Relaunch" }).textContent).toContain("09:30");
+    await waitFor(() => expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("    typ: kalender\n    datum: fällig\n    modus: monat\n"));
+    expect(within(grid).getAllByRole("gridcell").length).toBeGreaterThanOrEqual(28);
+
+    fireEvent.click(screen.getByRole("button", { name: "Woche" }));
+    await waitFor(() => expect(within(screen.getByRole("grid")).getAllByRole("gridcell")).toHaveLength(7));
+    expect(vault().files.get("Projekte/_ansichten.yaml")).toContain("    modus: woche\n");
+  });
+
+  it("Drag & Drop auf einen anderen Tag ändert das Datum in der Datei (Uhrzeit bleibt)", async () => {
+    const grid = await openCalendar();
+    const week = weekDays(today());
+    const target = week[(week.indexOf(today()) + 1) % 7];
+    dragTo(within(grid).getByRole("button", { name: "Website-Relaunch" }), within(grid).getByRole("gridcell", { name: fmt(target) }));
+    await waitFor(() => expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain(`fällig: ${target}T09:30\n`));
+    expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("---\nInhalt\n");
+  });
+
+  it("ein Klick auf einen Tag legt einen Eintrag mit diesem Datum an", async () => {
+    const grid = await openCalendar();
+    const day = weekDays(today())[0];
+    fireEvent.click(within(grid).getByRole("gridcell", { name: fmt(day) }));
+    await waitFor(() => expect(vault().files.get("Projekte/Unbenannt.md")).toMatch(new RegExp(`^---\\nid: [0-9a-f-]{36}\\nfällig: ${day}\\n---\\n$`)));
+    expect(await within(screen.getByRole("gridcell", { name: fmt(day) })).findByRole("button", { name: "Unbenannt" })).toBeTruthy();
+  });
+
+  it("Einträge ohne Datum stehen in der Liste „Ohne Datum“ und lassen sich auf einen Tag ziehen", async () => {
+    const grid = await openCalendar();
+    const undated = screen.getByRole("complementary", { name: "Ohne Datum" });
+    const notiz = within(undated).getByRole("button", { name: "Notiz" });
+    dragTo(notiz, within(grid).getByRole("gridcell", { name: fmt(today()) }));
+    await waitFor(() => expect(vault().files.get("Projekte/Notiz.md")).toBe(`---\nid: n1\nstatus: Geplant\nfällig: ${today()}\n---\n`));
+    await waitFor(() => expect(within(undated).queryByRole("button", { name: "Notiz" })).toBeNull());
   });
 });
 
