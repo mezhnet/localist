@@ -926,6 +926,13 @@
 }
 
 /* ---------- Notizbuch: Inhaltsverzeichnis links, Seite rechts, Zurück/Weiter unten ---------- */
+/* Ganze Breite des Arbeitsbereichs nutzen, höchstens Inhaltsverzeichnis + normale Seitenbreite */
+.page.notizbuch-seite {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(var(--sidebar-width) + var(--content-width) + 3 * var(--space-8));
+}
+
 .notizbuch-kopf {
   display: flex;
   align-items: center;
