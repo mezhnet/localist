@@ -97,10 +97,18 @@ Internetverbindung nötig.
 npm test
 ```
 
-Führt alle Tests einmal mit Vitest aus und zeigt das Ergebnis an. Testdateien enden auf `.test.ts` oder
+Führt alle Tests der Oberfläche einmal mit Vitest aus und zeigt das Ergebnis an. Testdateien enden auf `.test.ts` oder
 `.test.tsx` und liegen in `src/` neben dem Code, den sie prüfen. Die Datei `src/test-setup.ts` wird vor jeder
 Testdatei geladen und räumt nach jedem Test das Test-DOM auf. Während des Entwickelns kann `npx vitest`
 laufen, dann werden die Tests bei jeder Änderung automatisch wiederholt.
+
+Die Tests der Rust-Seite (Ordnerbaum, sicheres Speichern, Umbenennen, Dateiwächter) laufen getrennt davon:
+
+```
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+Sie legen nur temporäre Ordner im Temp-Verzeichnis von Windows an und löschen sie danach wieder.
 
 ## 6. TypeScript-Typen prüfen
 
@@ -116,8 +124,27 @@ Prüft den gesamten Frontend-Code auf Typfehler, ohne Dateien zu erzeugen. Keine
 npm run dev
 ```
 
-Startet nur den Vite-Entwicklungsserver unter <http://localhost:1420>. Praktisch für reine Oberflächen-Arbeit,
-aber alles, was Tauri braucht (zum Beispiel Dateizugriff), funktioniert dort nicht.
+Startet nur den Vite-Entwicklungsserver unter <http://localhost:1420>. Praktisch für reine Oberflächen-Arbeit.
+Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Oberfläche mit einem
+**simulierten Vault** im Arbeitsspeicher, der mit dem Inhalt von `beispiel-vault/` gefüllt ist
+(`src/lib/dev-backend.ts`). Änderungen dort sind nach dem Neuladen der Seite weg, echte Dateien bleiben unberührt.
+
+## 8. Erste Schritte in der App
+
+1. Beim ersten Start auf **„Vault-Ordner öffnen …“** klicken und einen Ordner wählen. Zum Ausprobieren eignet sich eine
+   **Kopie** von `beispiel-vault/` (nicht den Ordner im Projekt selbst, damit die Testdaten unverändert bleiben).
+   Die App merkt sich den Ordner und öffnet ihn beim nächsten Start automatisch. „Wechseln“ oben in der Sidebar
+   öffnet einen anderen Ordner.
+2. **Sidebar:** Ein Klick auf einen Ordner klappt ihn auf, ein Klick auf eine Seite öffnet sie. Versteckte Ordner wie
+   `.meinapp` und Dateien, die keine `.md`-Dateien sind, werden nicht angezeigt.
+3. **Anlegen:** „+ Neue Seite“ bzw. „+ Neuer Ordner“ oben, das „+“ neben einem Ordner oder ein Rechtsklick. Eine neue
+   Seite bekommt sofort eine eindeutige `id` im Frontmatter. Den Titel tippst du gleich oben auf der Seite ein.
+4. **Umbenennen:** großen Seitentitel ändern, in der Sidebar `F2` drücken oder Rechtsklick → „Umbenennen“.
+5. **Löschen:** Rechtsklick bzw. „⋯“ → „Löschen …“ oder `Entf`. Nach einer Rückfrage landet der Eintrag im
+   **Papierkorb** von Windows und lässt sich dort wiederherstellen.
+6. **Speichern** passiert automatisch etwa eine halbe Sekunde nach der letzten Eingabe. Es gibt keinen Speichern-Knopf.
+7. Ändert ein anderes Programm (z. B. Obsidian) eine geöffnete Seite, lädt die App sie neu. Wird sie dort gelöscht,
+   verschwindet sie aus der Sidebar.
 
 ## Häufige Probleme
 
