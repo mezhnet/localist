@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 import process from "node:process";
 // @ts-expect-error type error without @types/node package
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { bundledBaustein, contentType, injectBridge, requestToRel, schemeHeaders } from "./src/lib/seiten-schema";
+import { bundledBaustein, contentType, injectBridge, requestToRel, schemeHeaders } from "./src/lib/seiten-schema.ts";
 const host = process.env.TAURI_DEV_HOST;
 
 /** Ordner mit CSP, Brücken-Skript und Platzhaltern – dieselben Dateien nutzt src-tauri/src/page_scheme.rs. */

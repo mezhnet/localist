@@ -1,11 +1,13 @@
 // Sidebar: oben Startseite, Suche und das „Neu“-Menü, darunter die Favoriten und der Ordnerbaum des Vaults.
-// Seiten und Ordner lassen sich anlegen, umbenennen, anheften und löschen
-// (per Rechtsklick, "⋯"-Knopf, F2 oder Entf).
+// Seiten und Ordner lassen sich anlegen, umbenennen, anheften, verschieben (auch per Drag & Drop) und löschen
+// (per Rechtsklick, "⋯"-Knopf, F2 oder Entf). Notizen und HTML-Seiten haben verschiedene Symbole.
 import {
   ChevronRight,
   ChevronsUpDown,
   Database,
+  FileCode,
   FileText,
+  FolderInput,
   Folder,
   FolderOpen,
   House,
@@ -20,13 +22,13 @@ import {
   TextSearch,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from "react";
 import packageInfo from "../../package.json";
-import { ancestorFolders, findNode } from "../lib/tree";
+import { ancestorFolders, findNode, isInside, parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
 import { Button, cx, IconButton, Input, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, type MenuAnchor } from "./ui";
 
-export type CreateKind = "page" | "folder" | "database" | "template";
+export type CreateKind = "page" | "html" | "folder" | "database" | "template";
 
 export interface SidebarActions {
   onOpen: (path: string) => void;
@@ -34,6 +36,10 @@ export interface SidebarActions {
   onOpenHome: () => void;
   onCreate: (kind: CreateKind, dir: string) => void;
   onRename: (node: TreeNode, newName: string) => void;
+  /** Per Drag & Drop in einen Ordner gezogen ("" = Vault-Wurzel). */
+  onMove: (node: TreeNode, targetDir: string) => void;
+  /** „Verschieben nach …“ gewählt: Zielordner erfragen. */
+  onRequestMove: (node: TreeNode) => void;
   onDelete: (node: TreeNode) => void;
   onConvertToDatabase: (path: string) => void;
   onToggleFavorite: (path: string) => void;
@@ -70,6 +76,9 @@ export function Sidebar(props: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  /** Gezogener Eintrag und Ordner, über dem er gerade ist ("" = Vault-Wurzel). */
+  const dragged = useRef<TreeNode | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   // Ordner der geöffneten Seite und eines neu angelegten Eintrags aufklappen.
   useEffect(() => {
@@ -127,28 +136,71 @@ export function Sidebar(props: Props) {
 
   const isActive = (node: TreeNode) => node.path === openPath || node.path === props.openDatabase;
 
+  /** Darf `node` nach `targetDir` gezogen werden? Nicht dorthin, wo er schon liegt, und kein Ordner in sich selbst. */
+  const canDrop = (node: TreeNode | null, targetDir: string) =>
+    node !== null && parentDir(node.path) !== targetDir && !(node.kind === "folder" && isInside(targetDir, node.path));
+
+  /** Ziehen auf einen Ordner legt hinein, Ziehen auf eine Seite in deren Ordner. */
+  const dropProps = (targetDir: string) => ({
+    onDragOver: (event: ReactDragEvent) => {
+      if (!canDrop(dragged.current, targetDir)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      setDropTarget(targetDir);
+    },
+    onDragLeave: () => setDropTarget((current) => (current === targetDir ? null : current)),
+    onDrop: (event: ReactDragEvent) => {
+      const node = dragged.current;
+      if (!canDrop(node, targetDir) || !node) return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragged.current = null;
+      setDropTarget(null);
+      if (targetDir) setExpanded((previous) => new Set([...previous, targetDir]));
+      props.onMove(node, targetDir);
+    },
+  });
+
   const nodeIcon = (node: TreeNode, isOpen: boolean) => {
     if (node.kind === "page") {
       const emoji = icons.get(node.path);
-      return emoji ? <span className="tree-emoji">{emoji}</span> : <FileText />;
+      if (emoji) return <span className="tree-emoji">{emoji}</span>;
+      return node.html ? <FileCode /> : <FileText />;
     }
     if (node.database) return <Database />;
     return isOpen ? <FolderOpen /> : <Folder />;
   };
 
-  const renderNodes = (nodes: TreeNode[], depth: number) =>
-    nodes.map((node) => {
+  const renderNodes = (nodes: TreeNode[], depth: number) => {
+    // Gleichnamige Seiten im selben Ordner (z. B. Ideen.md und Ideen.html aus einem bestehenden Vault) markieren.
+    const counts = new Map<string, number>();
+    for (const node of nodes) if (node.kind === "page") counts.set(node.name.toLowerCase(), (counts.get(node.name.toLowerCase()) ?? 0) + 1);
+    return nodes.map((node) => {
       const isFolder = node.kind === "folder";
       const isOpen = expanded.has(node.path);
       const indent = { "--depth": depth } as CSSProperties;
+      const duplicate = node.kind === "page" && (counts.get(node.name.toLowerCase()) ?? 0) > 1;
+      const targetDir = isFolder ? node.path : parentDir(node.path);
       return (
         <li key={node.path} role="treeitem" aria-expanded={isFolder ? isOpen : undefined} aria-selected={isActive(node)}>
           {renaming === node.path ? (
             <RenameInput node={node} style={indent} onDone={(name) => finishRename(node, name)} />
           ) : (
             <div
-              className={cx("tree-row", isActive(node) && "active")}
+              className={cx("tree-row", isActive(node) && "active", isFolder && dropTarget === node.path && "drop-target")}
               style={indent}
+              draggable
+              onDragStart={(event) => {
+                dragged.current = node;
+                event.dataTransfer?.setData("text/plain", node.path);
+                if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+              }}
+              onDragEnd={() => {
+                dragged.current = null;
+                setDropTarget(null);
+              }}
+              {...dropProps(targetDir)}
               onContextMenu={(event) => setMenu({ kind: "node", anchor: atPointer(event), node })}
             >
               {isFolder ? (
@@ -183,6 +235,11 @@ export function Sidebar(props: Props) {
                   {nodeIcon(node, isOpen)}
                 </span>
                 <span className="tree-name">{node.name}</span>
+                {duplicate && (
+                  <span className="tree-duplicate" title="Gleicher Name wie eine andere Seite in diesem Ordner. [[Name]] meint die Notiz.">
+                    {node.html ? "HTML" : "MD"}
+                  </span>
+                )}
               </button>
               {isFolder && (
                 <IconButton
@@ -219,6 +276,7 @@ export function Sidebar(props: Props) {
         </li>
       );
     });
+  };
 
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
 
@@ -300,7 +358,7 @@ export function Sidebar(props: Props) {
             <Plus />
           </IconButton>
         </div>
-        <ul className="tree" role="tree" aria-label="Ordner und Seiten">
+        <ul className={cx("tree", dropTarget === "" && "drop-target")} role="tree" aria-label="Ordner und Seiten" {...dropProps("")}>
           {tree.length === 0 ? <li className="tree-empty">Noch keine Seiten</li> : renderNodes(tree, 0)}
         </ul>
       </section>
@@ -335,6 +393,7 @@ export function Sidebar(props: Props) {
             favorite={favorites.includes(menu.node.path)}
             onCreate={create}
             onRename={() => setRenaming(menu.node.path)}
+            onMove={() => props.onRequestMove(menu.node)}
             onDelete={() => props.onDelete(menu.node)}
             onToggleFavorite={() => props.onToggleFavorite(menu.node.path)}
             onDatabase={() => (menu.node.database ? props.onOpenDatabase(menu.node.path) : props.onConvertToDatabase(menu.node.path))}
@@ -353,6 +412,9 @@ function NewItems({ dir, tree, onCreate }: { dir: string; tree: TreeNode[]; onCr
       {where && <MenuLabel>Neu in „{where}“</MenuLabel>}
       <MenuItem icon={<FileText />} onSelect={() => onCreate("page", dir)}>
         Notiz
+      </MenuItem>
+      <MenuItem icon={<FileCode />} onSelect={() => onCreate("html", dir)}>
+        HTML-Seite
       </MenuItem>
       <MenuItem icon={<Folder />} onSelect={() => onCreate("folder", dir)}>
         Ordner
@@ -374,12 +436,13 @@ interface NodeItemsProps {
   favorite: boolean;
   onCreate: (kind: CreateKind, dir: string) => void;
   onRename: () => void;
+  onMove: () => void;
   onDelete: () => void;
   onToggleFavorite: () => void;
   onDatabase: () => void;
 }
 
-function NodeItems({ node, tree, favorite, onCreate, onRename, onDelete, onToggleFavorite, onDatabase }: NodeItemsProps) {
+function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase }: NodeItemsProps) {
   const isFolder = node.kind === "folder";
   return (
     <>
@@ -399,6 +462,9 @@ function NodeItems({ node, tree, favorite, onCreate, onRename, onDelete, onToggl
       )}
       <MenuItem icon={<Pencil />} hint="F2" onSelect={onRename}>
         Umbenennen
+      </MenuItem>
+      <MenuItem icon={<FolderInput />} onSelect={onMove}>
+        Verschieben nach …
       </MenuItem>
       <MenuSeparator />
       <MenuItem icon={<Trash2 />} hint="Entf" danger onSelect={onDelete}>

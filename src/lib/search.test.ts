@@ -77,3 +77,31 @@ describe("Vorlagen", () => {
     expect(instantiateTemplate("Nur Text\n", values)).toBe("---\nid: neu-1\n---\nNur Text\n");
   });
 });
+
+describe("HTML-Seiten in Suche und Backlinks", () => {
+  const html = `<!doctype html><html><head><title>DNS</title><meta name="localist-id" content="1"></head><body><main>
+<h1>Namensauflösung</h1><p>DNS nutzt Port 53.</p><p>Siehe <a href="../Notizen/Ideen.md">meine Ideen</a>.</p>
+<script>var geheimwort = "Port 9999";</script><style>.geheimstil { color: red }</style></main></body></html>`;
+  const htmlEntries: IndexEntry[] = [
+    { path: "Lernen/DNS.html", title: "DNS", content: html },
+    { path: "Notizen/Ideen.md", title: "Ideen", content: "# Ideen\n\nMehr dazu: [[DNS.html]]" },
+  ];
+  const htmlPages = allPages([
+    { name: "DNS", path: "Lernen/DNS.html", kind: "page", html: true },
+    { name: "Ideen", path: "Notizen/Ideen.md", kind: "page" },
+  ]);
+
+  it("durchsucht den sichtbaren Text, nicht Tags, Skripte oder Styles", () => {
+    const hits = searchEntries(htmlEntries, "port 53");
+    expect(hits.map((hit) => hit.path)).toEqual(["Lernen/DNS.html"]);
+    expect(hits[0].snippet).toContain("DNS nutzt Port 53.");
+    expect(searchEntries(htmlEntries, "geheimwort")).toEqual([]);
+    expect(searchEntries(htmlEntries, "geheimstil")).toEqual([]);
+    expect(searchEntries(htmlEntries, "localist-id")).toEqual([]);
+  });
+
+  it("Backlinks in beide Richtungen: <a href> aus HTML-Seiten und [[Name.html]] aus Notizen", () => {
+    expect(backlinksFor(htmlEntries, htmlPages, "Notizen/Ideen.md")).toEqual([{ path: "Lernen/DNS.html", title: "DNS", context: "Link „meine Ideen“" }]);
+    expect(backlinksFor(htmlEntries, htmlPages, "Lernen/DNS.html")).toEqual([{ path: "Notizen/Ideen.md", title: "Ideen", context: "Mehr dazu: [[DNS.html]]" }]);
+  });
+});

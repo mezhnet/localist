@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNS</title>
+<meta name="localist-id" content="7c1e2b4a-0d3f-4a5e-9b8c-1f2e3d4c5b6a">
+<meta name="localist-icon" content="🧠">
+<link rel="stylesheet" href="../.localist/bausteine/localist.css">
+<script src="../.localist/bausteine/localist.js" defer></script>
+</head>
+<body>
+<main>
+<h1>Namensauflösung mit DNS</h1>
+<l-callout typ="tipp">DNS übersetzt Namen wie example.com in IP-Adressen.</l-callout>
+
+<l-kartenstapel>
+  <l-karteikarte>
+    <l-frage>Welchen Port nutzt DNS?</l-frage>
+    <l-antwort>Port 53 (UDP und TCP)</l-antwort>
+  </l-karteikarte>
+</l-kartenstapel>
+
+<figure>
+  <img src="../Anh%C3%A4nge/skizze.png" alt="Skizze einer Namensauflösung" width="240">
+  <figcaption>Skizze aus dem Ordner „Anhänge“</figcaption>
+</figure>
+
+<table>
+  <tr><th>Eintrag</th><th>Bedeutung</th></tr>
+  <tr><td>A</td><td>IPv4-Adresse</td></tr>
+  <tr><td>AAAA</td><td>IPv6-Adresse</td></tr>
+  <tr><td>MX</td><td>Mailserver</td></tr>
+</table>
+
+<details>
+  <summary>Mehr zu Resolvern</summary>
+  <p>Ein Resolver fragt die Nameserver der Reihe nach ab und merkt sich die Antworten eine Zeit lang.</p>
+</details>
+
+<p>Siehe auch <a href="Ideen.md">Ideen</a> und die <a href="https://www.iana.org/domains/root">Root-Zone bei der IANA</a>.</p>
+</main>
+</body>
+</html>

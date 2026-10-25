@@ -244,6 +244,28 @@ button.tree-toggle:hover {
   white-space: nowrap;
 }
 
+/* Ziel beim Verschieben per Drag & Drop */
+.tree-row.drop-target,
+.tree.drop-target {
+  background: var(--color-accent-soft);
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-accent);
+}
+
+.tree.drop-target {
+  border-radius: var(--radius-md);
+}
+
+/* Gleichnamige Seiten im selben Ordner (z. B. Ideen.md und Ideen.html) */
+.tree-duplicate {
+  flex-shrink: 0;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+}
+
 .favorites .tree-row {
   padding-left: var(--space-1);
 }

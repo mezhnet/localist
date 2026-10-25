@@ -469,6 +469,48 @@
   text-decoration-style: dashed;
 }
 
+/* ---------- HTML-Seite (Ansicht „Lesen“) ---------- */
+.html-page-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3) var(--editor-inset);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-width) solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.html-page-type {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.html-page-type svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.html-page-mode {
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-neutral-soft);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Die abgeschottete Anzeige: so hoch wie ihr Inhalt (meldet die Brücke), ohne Rahmen. */
+.html-frame {
+  display: block;
+  width: calc(100% - var(--editor-inset));
+  min-height: var(--space-30);
+  margin-left: var(--editor-inset);
+  border: none;
+  background: transparent;
+  color-scheme: normal;
+}
+
 /* ---------- Backlinks ---------- */
 .backlinks {
   margin: var(--space-12) 0 0 var(--editor-inset);
@@ -557,9 +599,15 @@
 
   .muted,
   .properties,
-  .backlinks {
+  .backlinks,
+  .html-page-bar,
+  .html-frame {
     padding-left: 0;
     margin-left: 0;
+  }
+
+  .html-frame {
+    width: 100%;
   }
 
   .backlink {

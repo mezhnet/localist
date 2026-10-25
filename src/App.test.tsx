@@ -28,7 +28,7 @@ async function openPage(folder: string, page: string) {
 }
 
 /** Öffnet das „Neu“-Menü der Sidebar und wählt einen Eintrag. */
-function createNew(item: "Notiz" | "Ordner" | "Datenbank" | "Notiz aus Vorlage …") {
+function createNew(item: "Notiz" | "HTML-Seite" | "Ordner" | "Datenbank" | "Notiz aus Vorlage …") {
   fireEvent.click(screen.getByRole("button", { name: "Neu" }));
   fireEvent.click(screen.getByRole("menuitem", { name: item }));
 }
@@ -555,7 +555,9 @@ describe("Seiten im Editor", () => {
     fireEvent.change(title, { target: { value: "Gedanken" } });
     fireEvent.blur(title);
     await waitFor(() => expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("Siehe auch [[Gedanken]]."));
-    expect(await screen.findByText("Links in 1 Seite angepasst.")).toBeTruthy();
+    // Seit Etappe 10 verlinkt auch die HTML-Seite Notizen/DNS.html auf „Ideen“ (<a href>); sie wird mit angepasst.
+    expect(vault().files.get("Notizen/DNS.html")).toContain('<a href="Gedanken.md">Ideen</a>');
+    expect(await screen.findByText("Links in 2 Seiten angepasst.")).toBeTruthy();
   });
 
   it("schaltet zwischen hell und dunkel um und merkt sich die Wahl", async () => {
@@ -710,5 +712,166 @@ describe("Neues Design: Favoriten, Startseite, „Neu“-Menü und Einstellungen
     expect(within(dialog).getByRole("button", { name: "Anderen Vault öffnen …" })).toBeTruthy();
     fireEvent.keyDown(dialog, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+describe("HTML-Seiten (Etappe 10)", () => {
+  const frame = () => document.querySelector("iframe.html-frame") as HTMLIFrameElement;
+  const fromFrame = (data: unknown, source: Window | null = frame().contentWindow) =>
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data, source }));
+    });
+
+  async function openDns() {
+    await openVaultFromStart();
+    await openPage("Notizen", "DNS");
+    await waitFor(() => expect(frame()).toBeTruthy());
+  }
+
+  it("erscheinen in Sidebar (eigenes Symbol), Strg+P und Volltextsuche", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    const row = (await (await inTree()).findByTitle("Notizen/DNS.html")) as HTMLElement;
+    // Icon aus <meta name="localist-icon">, sonst das Symbol für HTML-Seiten
+    await waitFor(() => expect(row.querySelector(".tree-emoji")?.textContent).toBe("🧠"));
+    expect((await (await inTree()).findByTitle("Notizen/Ideen.md")).querySelector(".lucide-file-text")).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
+    fireEvent.change(await screen.findByRole("textbox", { name: "Schnellsuche" }), { target: { value: "dns" } });
+    const option = within(screen.getByRole("listbox", { name: "Ergebnisse" })).getAllByRole("option")[0];
+    expect(option.querySelector(".dialog-title")?.textContent).toBe("DNS");
+    expect(option.querySelector(".lucide-file-code")).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Schnellsuche" }), { key: "Escape" });
+
+    fireEvent.keyDown(window, { key: "f", ctrlKey: true, shiftKey: true });
+    fireEvent.change(await screen.findByRole("textbox", { name: "Volltextsuche" }), { target: { value: "Port 53" } });
+    const hit = await screen.findByRole("option", { name: /DNS/ });
+    expect(hit.querySelector("mark")?.textContent).toBe("Port");
+    expect(hit.textContent).toContain("Port 53 (UDP und TCP)");
+  });
+
+  it("„Neu“ → „HTML-Seite“ legt eine Seite nach dem Speicherformat an und zeigt sie abgeschottet an", async () => {
+    await openVaultFromStart();
+    createNew("HTML-Seite");
+    await waitFor(() => expect(vault().files.has("Unbenannt.html")).toBe(true));
+    const html = vault().files.get("Unbenannt.html")!;
+    expect(html).toMatch(/^<!doctype html>\n<html lang="de">\n<head>\n/);
+    expect(html).toMatch(/<title>Unbenannt<\/title>\n<meta name="localist-id" content="[0-9a-f-]{36}">\n<link rel="stylesheet" href=".localist\/bausteine\/localist.css">/);
+    expect(html).toContain("<main>\n</main>");
+    await waitFor(() => expect(frame()).toBeTruthy());
+    expect(frame().getAttribute("sandbox")).toBe("allow-scripts");
+    expect(frame().getAttribute("src")).toMatch(/\/__localist-seite\/Unbenannt\.html\?v=\d+$/);
+    expect(await screen.findByDisplayValue("Unbenannt")).toBeTruthy();
+  });
+
+  it("Umbenennen passt <title> an, ein Name gilt pro Ordner für beide Typen, Links folgen", async () => {
+    vault().externalWrite("Notizen/Ideen.md", "# Ideen\n\nMehr in [[DNS.html]].\n");
+    await openDns();
+    const title = screen.getByRole("textbox", { name: "Seitentitel" });
+    // Gleicher Name wie die Notiz „Ideen“ im selben Ordner: nicht erlaubt
+    fireEvent.change(title, { target: { value: "Ideen" } });
+    fireEvent.blur(title);
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(vault().files.has("Notizen/DNS.html")).toBe(true);
+
+    fireEvent.change(title, { target: { value: "Namensauflösung" } });
+    fireEvent.blur(title);
+    await waitFor(() => expect(vault().files.has("Notizen/Namensauflösung.html")).toBe(true));
+    expect(vault().files.has("Notizen/DNS.html")).toBe(false);
+    await waitFor(() => expect(vault().files.get("Notizen/Namensauflösung.html")).toContain("<title>Namensauflösung</title>"));
+    expect(vault().files.get("Notizen/Namensauflösung.html")).toContain('<meta name="localist-id" content="7c1e2b4a-0d3f-4a5e-9b8c-1f2e3d4c5b6a">');
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toContain("Mehr in [[Namensauflösung.html]]."));
+  });
+
+  it("Verschieben per „Verschieben nach …“: relative Pfade der HTML-Seite werden neu berechnet", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „DNS“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Verschieben nach …" }));
+    fireEvent.click(await screen.findByRole("option", { name: /Vault \(oberste Ebene\)/ }));
+    await waitFor(() => expect(vault().files.has("DNS.html")).toBe(true));
+    const html = vault().files.get("DNS.html")!;
+    expect(html).toContain('<link rel="stylesheet" href=".localist/bausteine/localist.css">');
+    expect(html).toContain('<script src=".localist/bausteine/localist.js" defer></script>');
+    expect(html).toContain('<img src="Anhänge/skizze.png" alt="Skizze einer Namensauflösung" width="240">');
+    expect(html).toContain('<a href="Notizen/Ideen.md">Ideen</a>');
+    expect(html).toContain('<a href="https://www.iana.org/domains/root">');
+  });
+
+  it("Verschieben per Drag & Drop: Notiz in einen anderen Ordner, Links und Favoriten folgen", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    const ideen = ((await (await inTree()).findByTitle("Notizen/Ideen.md")) as HTMLElement).closest(".tree-row")!;
+    const vorlagen = (await (await inTree()).findByTitle("Vorlagen")).closest(".tree-row")!;
+    const data = new Map<string, string>();
+    const dataTransfer = { setData: (k: string, v: string) => data.set(k, v), getData: (k: string) => data.get(k) ?? "", dropEffect: "", effectAllowed: "" };
+    fireEvent.dragStart(ideen, { dataTransfer });
+    fireEvent.dragOver(vorlagen, { dataTransfer });
+    expect(vorlagen.classList.contains("drop-target")).toBe(true);
+    fireEvent.drop(vorlagen, { dataTransfer });
+    await waitFor(() => expect(vault().files.has("Vorlagen/Ideen.md")).toBe(true));
+    expect(vault().files.has("Notizen/Ideen.md")).toBe(false);
+    // Der <a href> in der HTML-Seite zeigt auf den neuen Ort, [[Ideen]] (über den Titel) bleibt gleich.
+    await waitFor(() => expect(vault().files.get("Notizen/DNS.html")).toContain('<a href="../Vorlagen/Ideen.md">Ideen</a>'));
+    expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("Siehe auch [[Ideen]].");
+    expect(JSON.parse(vault().files.get(".localist/settings.json")!).favoriten).toEqual(["Vorlagen/Ideen.md", "Projekte"]);
+    // Ein Ordner lässt sich nicht in sich selbst ziehen.
+    const notizen = (await (await inTree()).findByTitle("Notizen")).closest(".tree-row")!;
+    fireEvent.dragStart(notizen, { dataTransfer });
+    fireEvent.dragOver(notizen, { dataTransfer });
+    expect(notizen.classList.contains("drop-target")).toBe(false);
+  });
+
+  it("Nachrichten der Seite: nur aus dem eigenen iframe und nur gültige (Links, Tastenkürzel)", async () => {
+    await openDns();
+    // Falsche Quelle: wird ignoriert
+    fromFrame({ localist: 1, typ: "link", pfad: "Notizen/Ideen.md" }, window);
+    // Ungültiger Pfad aus dem eigenen iframe: wird ignoriert
+    fromFrame({ localist: 1, typ: "link", pfad: "../geheim.md" });
+    expect((screen.getByRole("textbox", { name: "Seitentitel" }) as HTMLInputElement).value).toBe("DNS");
+    // Strg+P in der Seite öffnet die Schnellsuche der App
+    fromFrame({ localist: 1, typ: "taste", taste: "p", umschalt: false });
+    fireEvent.keyDown(await screen.findByRole("textbox", { name: "Schnellsuche" }), { key: "Escape" });
+    // Höhe übernehmen
+    fromFrame({ localist: 1, typ: "groesse", hoehe: 640 });
+    expect(frame().style.height).toBe("640px");
+    // Gültiger Link aus dem eigenen iframe: öffnet die Notiz in der App
+    fromFrame({ localist: 1, typ: "link", pfad: "Notizen/Ideen.md", anker: "" });
+    expect(await screen.findByText("Hier sammle ich lose Gedanken.")).toBeTruthy();
+  });
+
+  it("Seitenkopf aus <meta>, Backlinks und Neuladen nach Änderung von außen", async () => {
+    await openDns();
+    expect(screen.getByRole("button", { name: "Icon ändern" }).textContent).toBe("🧠");
+    const before = frame().getAttribute("src");
+    act(() => vault().externalWrite("Notizen/DNS.html", vault().files.get("Notizen/DNS.html")!.replace('content="🧠"', 'content="🌐"')));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Icon ändern" }).textContent).toBe("🌐"));
+    await waitFor(() => expect(frame().getAttribute("src")).not.toBe(before));
+
+    // Icon über den Seitenkopf ändern: nur das <meta>-Tag ändert sich
+    const original = vault().files.get("Notizen/DNS.html")!;
+    fireEvent.click(screen.getByRole("button", { name: "Icon ändern" }));
+    fireEvent.click(screen.getByRole("button", { name: "Icon 🚀" }));
+    await waitFor(() => expect(vault().files.get("Notizen/DNS.html")).toBe(original.replace('content="🌐"', 'content="🚀"')));
+
+    // Backlinks: Die Notiz „Ideen“ wird von der HTML-Seite verlinkt („Notizen“ ist schon aufgeklappt)
+    fireEvent.click(await (await inTree()).findByText("Ideen"));
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    const backlinks = await screen.findByRole("region", { name: "Backlinks" });
+    expect((await within(backlinks).findByRole("button", { name: /DNS/ })).textContent).toContain("Link „Ideen“");
+  });
+
+  it("Vorlagen funktionieren auch für HTML-Seiten (neue id, Titel, Pfade für den Zielordner)", async () => {
+    await openVaultFromStart();
+    createNew("Notiz aus Vorlage …");
+    fireEvent.click(await screen.findByRole("option", { name: /Lernseite/ }));
+    await waitFor(() => expect(vault().files.has("Unbenannt.html")).toBe(true));
+    const html = vault().files.get("Unbenannt.html")!;
+    expect(html).toContain("<title>Unbenannt</title>");
+    expect(html).toMatch(/<meta name="localist-id" content="[0-9a-f-]{36}">/);
+    expect(html).not.toContain('content="vorlage"');
+    expect(html).toContain('<link rel="stylesheet" href=".localist/bausteine/localist.css">');
+    expect(html).toMatch(/<p>Angelegt am \d{4}-\d{2}-\d{2} um \d{2}:\d{2}\.<\/p>/);
+    expect(vault().files.get("Vorlagen/Lernseite.html")).toContain("<title>{{title}}</title>");
   });
 });

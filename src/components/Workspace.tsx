@@ -1,10 +1,12 @@
 // Arbeitsbereich eines geöffneten Vaults: Sidebar links, rechts Startseite, Seite oder Datenbank.
 // Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen, anheften) und die Meldungen des Dateiwächters.
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChevronRight, Menu as MenuIcon, Search, Star, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage } from "../lib/autosave";
+import { instantiateHtmlTemplate, isHtmlPath, pathMapper, readHead, rewriteReferences, setTitle } from "../lib/html";
 import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewriteLinks, type PageRef } from "../lib/links";
 import { today } from "../lib/calendar";
 import { createDatabaseConfig, VIEWS_FILE, type DatabaseConfig } from "../lib/database";
@@ -24,6 +26,7 @@ import {
   listTree,
   onVaultChanged,
   readPage,
+  moveEntry,
   renameEntry,
   vaultIndex,
   writePage,
@@ -32,8 +35,9 @@ import {
 } from "../lib/vault-api";
 import { Backlinks } from "./Backlinks";
 import { DatabaseView, loadRows } from "./DatabaseView";
-import { QuickSwitcher, SearchDialog, SettingsDialog, TemplatePicker } from "./Dialogs";
+import { MoveDialog, QuickSwitcher, SearchDialog, SettingsDialog, TemplatePicker } from "./Dialogs";
 import { HomePage } from "./HomePage";
+import { HtmlPageView } from "./HtmlPageView";
 import { PageView } from "./PageView";
 import { Sidebar, type CreateKind } from "./Sidebar";
 import { Button, cx, IconButton } from "./ui";
@@ -73,7 +77,12 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   /** Auf dem Handy ist die Sidebar ein ausklappbares Menü. */
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialog, setDialog] = useState<
-    { kind: "quick" } | { kind: "search"; query?: string } | { kind: "template"; dir: string } | { kind: "settings" } | null
+    | { kind: "quick" }
+    | { kind: "search"; query?: string }
+    | { kind: "template"; dir: string }
+    | { kind: "settings" }
+    | { kind: "move"; node: TreeNode }
+    | null
   >(null);
   /** Suchindex für Startseite und Icons in der Sidebar (wird bei Änderungen im Vault neu geladen). */
   const [index, setIndex] = useState<IndexEntry[]>([]);
@@ -82,6 +91,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   pageRef.current = page;
   const databaseRef = useRef(database);
   databaseRef.current = database;
+  const treeRef = useRef(tree);
+  treeRef.current = tree;
 
   const showError = useCallback((text: string) => setNotice({ kind: "error", text }), []);
   const vaultSettings = useVaultSettings(showError);
@@ -258,7 +269,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
   /** Macht einen Ordner zur Datenbank: legt _ansichten.yaml mit den erkannten Eigenschaften an. */
   const convertToDatabase = async (folder: string) => {
     try {
-      const pages = (findNode(tree, folder)?.children ?? []).filter((node) => node.kind === "page").map((node) => node.path);
+      const pages = (findNode(tree, folder)?.children ?? []).filter((node) => node.kind === "page" && !node.html).map((node) => node.path);
       const config = createDatabaseConfig(await loadRows(pages));
       await schemas.saveConfig(folder, config);
       await refreshTree();
@@ -270,15 +281,26 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     }
   };
 
-  /** Neue Seite in `dir` aus einer Vorlage: Eigenschaften und Inhalt der Vorlage, eigene id. */
+  /**
+   * Neue Seite in `dir` aus einer Vorlage (Notiz oder HTML-Seite): Inhalt der Vorlage, eigene id, bei
+   * HTML-Seiten Titel und relative Pfade für den Zielordner neu.
+   */
   const createFromTemplate = async (dir: string, templatePath: string) => {
     try {
       const title = uniqueName(childrenOf(tree, dir), "Unbenannt");
-      const path = await createPage(dir, title);
-      const id = getFrontmatterField(splitFrontmatter(await readPage(path)).frontmatter, "id") ?? "";
+      const html = isHtmlPath(templatePath);
+      const path = await createPage(dir, title, html ? "html" : "notiz");
+      const created = await readPage(path);
       const now = new Date();
       const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      await writePage(path, instantiateTemplate(await readPage(templatePath), { id, title, date: today(), time }));
+      const template = await readPage(templatePath);
+      if (html) {
+        const values = { id: readHead(created).id ?? "", title, date: today(), time };
+        await writePage(path, instantiateHtmlTemplate(template, templatePath, path, values));
+      } else {
+        const id = getFrontmatterField(splitFrontmatter(created).frontmatter, "id") ?? "";
+        await writePage(path, instantiateTemplate(template, { id, title, date: today(), time }));
+      }
       await refreshTree();
       await openPage(path, true);
     } catch (error) {
@@ -298,10 +320,10 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     }
   };
 
-  const handleCreatePage = async (dir: string) => {
+  const handleCreatePage = async (dir: string, kind: "notiz" | "html" = "notiz") => {
     try {
       const title = uniqueName(childrenOf(tree, dir), "Unbenannt");
-      const path = await createPage(dir, title);
+      const path = await createPage(dir, title, kind);
       await refreshTree();
       await openPage(path, true);
     } catch (error) {
@@ -340,29 +362,35 @@ export function Workspace({ vault, onSwitchVault }: Props) {
 
   const handleCreate = (kind: CreateKind, dir: string) => {
     if (kind === "page") void handleCreatePage(dir);
+    else if (kind === "html") void handleCreatePage(dir, "html");
     else if (kind === "folder") void handleCreateFolder(dir);
     else if (kind === "database") void handleCreateDatabase(dir);
     else setDialog({ kind: "template", dir });
   };
 
-  const rename = async (node: TreeNode, newName: string): Promise<boolean> => {
+  /**
+   * Umbenennen oder Verschieben (`action` liefert den neuen Pfad). Danach werden offene Seite, Favoriten,
+   * bei HTML-Seiten der <title> und alle Links im Vault angepasst.
+   */
+  const relocate = async (node: TreeNode, action: () => Promise<string>, renamed: boolean): Promise<boolean> => {
     try {
       // Vorher speichern: Auch die offene Seite kann Links enthalten, die gleich angepasst werden.
       await saverRef.current?.flush();
       const oldPages = allPages(tree);
       const current = pageRef.current;
-      const newPath = await renameEntry(node.path, newName);
+      const newPath = await action();
+      if (newPath === node.path) return true;
       if (current && isInside(current.path, node.path)) setPagePath(movePath(current.path, node.path, newPath));
       const db = databaseRef.current;
       if (db && isInside(db, node.path)) setDatabase(movePath(db, node.path, newPath));
-
-      const moved = new Map<string, string>();
-      for (const page of oldPages) {
-        if (isInside(page.path, node.path)) moved.set(page.path, movePath(page.path, node.path, newPath));
-      }
       await updateFavorites((list) => renameInFavorites(list, node.path, newPath));
+      if (renamed && node.kind === "page" && isHtmlPath(newPath)) {
+        const text = await readPage(newPath);
+        const updated = setTitle(text, pageTitle(newPath));
+        if (updated !== text) await writePage(newPath, updated);
+      }
       await refreshTree();
-      const changed = await updateLinksAfterRename(oldPages, moved);
+      const changed = await updateLinksAfterRelocate(oldPages, pathMapper(node.path, newPath));
       if (changed > 0) {
         setNotice({ kind: "info", text: `Links in ${changed} ${changed === 1 ? "Seite" : "Seiten"} angepasst.` });
       }
@@ -373,31 +401,53 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     }
   };
 
-  /** Schreibt in allen Seiten die Links auf umbenannte Seiten um. Liefert die Zahl geänderter Seiten. */
-  const updateLinksAfterRename = async (oldPages: PageRef[], moved: Map<string, string>): Promise<number> => {
-    if (moved.size === 0) return 0;
+  const rename = (node: TreeNode, newName: string) => relocate(node, () => renameEntry(node.path, newName), true);
+  const move = (node: TreeNode, targetDir: string) => relocate(node, () => moveEntry(node.path, targetDir), false);
+
+  /**
+   * Passt nach Umbenennen/Verschieben alle Seiten an: in Notizen die [[Links]], in HTML-Seiten die relativen
+   * href- und src-Werte (Links, Bilder, Bausteine). Liefert die Zahl geänderter Seiten.
+   */
+  const updateLinksAfterRelocate = async (oldPages: PageRef[], mapPath: (path: string) => string): Promise<number> => {
     let changed = 0;
     for (const page of oldPages) {
-      const path = moved.get(page.path) ?? page.path;
+      const path = mapPath(page.path);
       let text: string;
       try {
         text = await readPage(path);
       } catch {
         continue;
       }
-      const updated = rewriteLinks(text, (name) => {
-        const target = resolveLink(oldPages, name, page.path);
-        const newTarget = target === null ? undefined : moved.get(target);
-        if (newTarget === undefined) return null;
-        const replacement = renamedTarget(name, newTarget);
-        return replacement === name ? null : replacement;
-      });
+      const updated = isHtmlPath(path)
+        ? rewriteReferences(text, page.path, path, mapPath)
+        : rewriteLinks(text, (name) => {
+            const target = resolveLink(oldPages, name, page.path);
+            if (target === null || mapPath(target) === target) return null;
+            const replacement = renamedTarget(name, mapPath(target));
+            return replacement === name ? null : replacement;
+          });
       if (updated !== text) {
         await writePage(path, updated);
         changed++;
       }
     }
     return changed;
+  };
+
+  /** Ein Link in einer HTML-Seite: Seite oder Datenbank im Vault öffnen. Der Pfad ist schon geprüft (bridge.ts). */
+  const openFromHtmlPage = (path: string) => {
+    const node = findNode(treeRef.current, path);
+    if (node?.kind === "page") void openPage(path);
+    else if (node?.database) void openDatabase(path);
+    else showError(`„${path}“ wurde im Vault nicht gefunden.`);
+  };
+
+  const openExternal = async (url: string) => {
+    try {
+      await openUrl(url);
+    } catch {
+      window.open(url, "_blank", "noopener");
+    }
   };
 
   // Für [[Links]] im Editor: auflösen, öffnen (fehlende Seiten anlegen) und Vorschläge.
@@ -416,7 +466,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           .filter((page) => page.title.toLowerCase().includes(q))
           .sort((a, b) => Number(!a.title.toLowerCase().startsWith(q)) - Number(!b.title.toLowerCase().startsWith(q)) || a.title.localeCompare(b.title, "de"))
           .slice(0, 12)
-          .map((page) => ({ title: page.title, folder: parentDir(page.path), target: linkTargetFor(pages, page.path) }));
+          .map((page) => ({ title: page.title, folder: parentDir(page.path), target: linkTargetFor(pages, page.path), html: isHtmlPath(page.path) }));
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- openPage nutzt nur Refs
@@ -425,8 +475,9 @@ export function Workspace({ vault, onSwitchVault }: Props) {
 
   const createAndOpenLinkedPage = async (name: string) => {
     try {
-      const title = name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name;
-      const path = await createPage("", title);
+      const html = isHtmlPath(name);
+      const title = pageTitle(name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name);
+      const path = await createPage("", title, html ? "html" : "notiz");
       await refreshTree();
       await openPage(path);
     } catch (error) {
@@ -486,6 +537,8 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           onOpenSettings={() => setDialog({ kind: "settings" })}
           onCreate={handleCreate}
           onRename={(node, newName) => void rename(node, newName)}
+          onMove={(node, targetDir) => void move(node, targetDir)}
+          onRequestMove={(node) => setDialog({ kind: "move", node })}
           onDelete={(node) => void handleDelete(node)}
           onSwitchVault={async () => {
             await saverRef.current?.flush();
@@ -558,7 +611,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
             key={database}
             folder={database}
             config={schemas.configs[database]}
-            pagePaths={(findNode(tree, database)?.children ?? []).filter((node) => node.kind === "page").map((node) => node.path)}
+            pagePaths={(findNode(tree, database)?.children ?? []).filter((node) => node.kind === "page" && !node.html).map((node) => node.path)}
             icons={icons}
             version={databaseVersion}
             onSaveConfig={(config) => void schemas.saveConfig(database, config)}
@@ -574,6 +627,20 @@ export function Workspace({ vault, onSwitchVault }: Props) {
             onError={showError}
           />
         ) : page ? (
+          isHtmlPath(page.path) ? (
+            <HtmlPageView
+              key={page.key}
+              path={page.path}
+              isNew={page.isNew}
+              externalVersion={externalVersion}
+              onRename={renameOpenPage}
+              onError={showError}
+              onOpenLink={openFromHtmlPage}
+              onOpenExternal={(url) => void openExternal(url)}
+            >
+              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path) => void openPage(path)} />
+            </HtmlPageView>
+          ) : (
           <WikiLinkContext.Provider value={linkActions}>
             <PageView
               key={page.key}
@@ -589,6 +656,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path) => void openPage(path)} />
             </PageView>
           </WikiLinkContext.Provider>
+          )
         ) : database ? null : (
           <HomePage
             vaultName={vault.name}
@@ -633,6 +701,18 @@ export function Workspace({ vault, onSwitchVault }: Props) {
             const dir = dialog.dir;
             setDialog(null);
             void createFromTemplate(dir, templatePath);
+          }}
+        />
+      )}
+      {dialog?.kind === "move" && (
+        <MoveDialog
+          node={dialog.node}
+          tree={tree}
+          onClose={() => setDialog(null)}
+          onPick={(targetDir) => {
+            const node = dialog.node;
+            setDialog(null);
+            void move(node, targetDir);
           }}
         />
       )}

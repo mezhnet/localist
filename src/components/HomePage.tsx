@@ -1,8 +1,9 @@
 // Startseite, wenn keine Seite offen ist: Begrüßung mit Suchfeld, Schnellaktionen,
 // zuletzt bearbeitete Seiten und Favoriten.
-import { Database, FilePlus, FileText, History, LayoutTemplate, Search, Star, TextSearch } from "lucide-react";
+import { Database, FileCode, FilePlus, FileText, History, LayoutTemplate, Search, Star, TextSearch } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { greeting, longDate, recentPages, relativeTime } from "../lib/home";
+import { isHtmlPath } from "../lib/html";
 import type { PageRef } from "../lib/links";
 import { quickSwitch, type IndexEntry } from "../lib/search";
 import { parentDir } from "../lib/tree";
@@ -57,6 +58,7 @@ export function HomePage(props: Props) {
               <PageCard
                 key={entry.path}
                 icon={props.icons.get(entry.path)}
+                html={isHtmlPath(entry.path)}
                 title={entry.title}
                 meta={`${parentDir(entry.path) || "Vault"} · ${entry.modified ? relativeTime(entry.modified, now.getTime()) : "unbekannt"}`}
                 onClick={() => props.onOpen({ path: entry.path, kind: "page" })}
@@ -79,6 +81,7 @@ export function HomePage(props: Props) {
                 key={node.path}
                 icon={node.kind === "folder" ? undefined : props.icons.get(node.path)}
                 database={node.kind === "folder"}
+                html={node.html}
                 title={node.name}
                 meta={node.kind === "folder" ? "Datenbank" : parentDir(node.path) || "Vault"}
                 onClick={() => props.onOpen(node)}
@@ -103,11 +106,25 @@ function ActionCard({ icon, title, text, onClick }: { icon: ReactNode; title: st
   );
 }
 
-function PageCard({ icon, database = false, title, meta, onClick }: { icon?: string; database?: boolean; title: string; meta: string; onClick: () => void }) {
+function PageCard({
+  icon,
+  database = false,
+  html = false,
+  title,
+  meta,
+  onClick,
+}: {
+  icon?: string;
+  database?: boolean;
+  html?: boolean;
+  title: string;
+  meta: string;
+  onClick: () => void;
+}) {
   return (
     <button type="button" className="home-card" onClick={onClick}>
       <span className={cx("home-card-icon", icon && "is-emoji")} aria-hidden="true">
-        {icon ?? (database ? <Database /> : <FileText />)}
+        {icon ?? (database ? <Database /> : html ? <FileCode /> : <FileText />)}
       </span>
       <span className="home-card-title">{title}</span>
       <span className="home-card-meta">{meta}</span>

@@ -200,8 +200,8 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
   );
 }
 
-/** Bildadresse aus Markdown oder Frontmatter in eine anzeigbare Adresse umwandeln. */
-async function resolveFileUrlFor(page: string, url: string): Promise<string> {
+/** Bildadresse aus Markdown, Frontmatter oder `<meta>` in eine anzeigbare Adresse umwandeln. */
+export async function resolveFileUrlFor(page: string, url: string): Promise<string> {
   if (/^(https?|data|blob|asset):/i.test(url)) return url;
   const absolute = await resolveAttachment(page, url).catch(() => null);
   return absolute ? convertFileSrc(absolute) : url;
@@ -214,7 +214,7 @@ interface PageTitleProps {
   onRename: (newTitle: string) => Promise<boolean>;
 }
 
-function PageTitle({ title, autoFocus, onRename }: PageTitleProps) {
+export function PageTitle({ title, autoFocus, onRename }: PageTitleProps) {
   const [value, setValue] = useState(title);
   const cancelled = useRef(false);
   useEffect(() => setValue(title), [title]);

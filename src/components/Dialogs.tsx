@@ -1,12 +1,14 @@
 // Dialoge über dem Arbeitsbereich: Schnellsuche (Strg+P), Volltextsuche, Vorlagen-Auswahl und Einstellungen.
 // Die drei Such-Dialoge sind Listen mit Eingabefeld, die sich mit Pfeiltasten, Enter und Escape bedienen lassen.
-import { FileText, FolderOpen, LayoutTemplate, Monitor, Moon, Search, Sun, TextSearch } from "lucide-react";
+import { FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Monitor, Moon, Search, Sun, TextSearch } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import packageInfo from "../../package.json";
 import type { PageRef } from "../lib/links";
 import { quickSwitch, searchEntries, type IndexEntry } from "../lib/search";
 import { useTheme, type ThemePreference } from "../lib/theme";
-import { parentDir } from "../lib/tree";
+import { isHtmlPath } from "../lib/html";
+import { isInside, parentDir } from "../lib/tree";
+import type { TreeNode } from "../lib/vault-api";
 import { Button, Dialog, Input, Kbd, Segmented } from "./ui";
 
 interface ListDialogProps<T> {
@@ -71,6 +73,11 @@ function ListDialog<T>(props: ListDialogProps<T>) {
   );
 }
 
+/** Symbol je Seitentyp: Notiz oder HTML-Seite. */
+function PageIcon({ path }: { path: string }) {
+  return isHtmlPath(path) ? <FileCode className="dialog-item-icon" aria-hidden="true" /> : <FileText className="dialog-item-icon" aria-hidden="true" />;
+}
+
 const keyHints = (
   <>
     <span>
@@ -104,7 +111,7 @@ export function QuickSwitcher({ pages, onOpen, onClose }: { pages: PageRef[]; on
       itemKey={(page) => page.path}
       render={(page) => (
         <>
-          <FileText className="dialog-item-icon" aria-hidden="true" />
+          <PageIcon path={page.path} />
           <span className="dialog-item-text">
             <span className="dialog-title">{page.title}</span>
             <span className="dialog-sub">{parentDir(page.path) || "Vault"}</span>
@@ -148,7 +155,7 @@ export function SearchDialog({
       itemKey={(hit) => hit.path}
       render={(hit) => (
         <>
-          <FileText className="dialog-item-icon" aria-hidden="true" />
+          <PageIcon path={hit.path} />
           <span className="dialog-item-text">
             <span className="dialog-title">
               {hit.title} <span className="dialog-sub">{parentDir(hit.path)}</span>
@@ -190,13 +197,62 @@ export function TemplatePicker({ templates, onPick, onClose }: { templates: Page
       itemKey={(page) => page.path}
       render={(page) => (
         <>
-          <LayoutTemplate className="dialog-item-icon" aria-hidden="true" />
+          <PageIcon path={page.path} />
           <span className="dialog-item-text">
             <span className="dialog-title">{page.title}</span>
           </span>
         </>
       )}
       footer={<span>Die neue Seite übernimmt Eigenschaften und Inhalt der Vorlage.</span>}
+    />
+  );
+}
+
+interface FolderChoice {
+  path: string;
+  name: string;
+}
+
+/** „Verschieben nach …“: Zielordner wählen (nicht der jetzige Ordner und bei Ordnern nicht sie selbst oder darin). */
+export function MoveDialog({ node, tree, onPick, onClose }: { node: TreeNode; tree: TreeNode[]; onPick: (dir: string) => void; onClose: () => void }) {
+  const [query, setQuery] = useState("");
+  const folders = useMemo(() => {
+    const all: FolderChoice[] = [{ path: "", name: "Vault (oberste Ebene)" }];
+    const walk = (nodes: readonly TreeNode[]) => {
+      for (const child of nodes) {
+        if (child.kind !== "folder") continue;
+        all.push({ path: child.path, name: child.name });
+        if (child.children) walk(child.children);
+      }
+    };
+    walk(tree);
+    const current = parentDir(node.path);
+    return all.filter((folder) => folder.path !== current && !(node.kind === "folder" && isInside(folder.path, node.path)));
+  }, [tree, node]);
+  const q = query.trim().toLowerCase();
+  const items = q ? folders.filter((folder) => folder.path.toLowerCase().includes(q) || folder.name.toLowerCase().includes(q)) : folders;
+  return (
+    <ListDialog
+      label={`„${node.name}“ verschieben nach`}
+      placeholder="Ordner suchen …"
+      icon={<FolderInput />}
+      items={items}
+      emptyText="Kein passender Ordner."
+      query={query}
+      onQuery={setQuery}
+      onPick={(folder) => onPick(folder.path)}
+      onClose={onClose}
+      itemKey={(folder) => folder.path || "/"}
+      render={(folder) => (
+        <>
+          {folder.path === "" ? <House className="dialog-item-icon" aria-hidden="true" /> : <Folder className="dialog-item-icon" aria-hidden="true" />}
+          <span className="dialog-item-text">
+            <span className="dialog-title">{folder.name}</span>
+            {folder.path.includes("/") && <span className="dialog-sub">{parentDir(folder.path)}</span>}
+          </span>
+        </>
+      )}
+      footer={<span>Links auf verschobene Seiten werden im ganzen Vault angepasst.</span>}
     />
   );
 }
