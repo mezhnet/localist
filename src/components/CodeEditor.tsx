@@ -1,10 +1,18 @@
 // Code-Editor für HTML-Seiten (CodeMirror 6): Syntaxhervorhebung, Zeilennummern, Einklappen, Suchen und
-// Ersetzen, Autovervollständigung für HTML-Tags. Farben kommen aus tokens.css (hell und dunkel).
+// Ersetzen, Autovervollständigung für HTML-Tags und Bausteine, „/“-Menü zum Einfügen von Bausteinen.
+// Farben kommen aus tokens.css (hell und dunkel).
 // Der Editor kennt keine Dateien: Er bekommt einen Text und meldet jede Änderung (mit dem Zeilenende der Datei).
-import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from "@codemirror/autocomplete";
+import {
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+  completionKeymap,
+  type CompletionContext,
+  type CompletionResult,
+} from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { html } from "@codemirror/lang-html";
-import { bracketMatching, foldGutter, foldKeymap, HighlightStyle, indentOnInput, syntaxHighlighting } from "@codemirror/language";
+import { html, htmlLanguage } from "@codemirror/lang-html";
+import { bracketMatching, foldGutter, foldKeymap, HighlightStyle, indentOnInput, syntaxHighlighting, syntaxTree } from "@codemirror/language";
 import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
 import { Compartment, EditorState } from "@codemirror/state";
 import {
@@ -20,7 +28,14 @@ import {
   rectangularSelection,
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
+import { BAUSTEIN_KLASSEN, BAUSTEIN_TAGS, BAUSTEINE, planInsert, type BausteinArt } from "../lib/bausteine";
+
+/** Was die Seite mit dem Editor machen kann (Werkzeugleiste). */
+export interface CodeEditorApi {
+  /** Fügt eine Vorlage eingerückt an der Cursorposition ein und markiert `auswahl`. */
+  insert: (vorlage: readonly string[], auswahl?: string) => void;
+}
 
 interface Props {
   /** Startinhalt. Wird nur übernommen, wenn sich `docVersion` ändert (z. B. nach Änderungen von außen). */
@@ -31,6 +46,46 @@ interface Props {
   dark: boolean;
   label: string;
   onChange: (value: string) => void;
+  /** Hier legt der Editor seine Schnittstelle ab. */
+  apiRef?: MutableRefObject<CodeEditorApi | null>;
+  /** Ein Baustein wurde im „/“-Menü gewählt (das „/…“ ist schon entfernt, der Cursor steht an seiner Stelle). */
+  onSlash?: (art: BausteinArt) => void;
+}
+
+/** Hier darf „/“ das Bausteinmenü öffnen: nicht in Tags, Attributen, Kommentaren, Skripten und Styles. */
+const NO_SLASH_MENU = new Set(["OpenTag", "CloseTag", "SelfClosingTag", "Attribute", "AttributeValue", "Comment", "ScriptText", "StyleText", "TextareaText"]);
+
+/**
+ * „/“-Menü: „/“ am Zeilenanfang (oder direkt nach einem Tag) zeigt alle Bausteine, weitere Buchstaben filtern.
+ * Die Auswahl löscht „/…“ und übergibt den Baustein an `onSlash`.
+ */
+function slashMenu(onSlash: MutableRefObject<((art: BausteinArt) => void) | undefined>) {
+  return (context: CompletionContext): CompletionResult | null => {
+    if (!onSlash.current) return null;
+    const match = context.matchBefore(/\/[\p{L}\d-]*$/u);
+    if (!match) return null;
+    const line = context.state.doc.lineAt(match.from);
+    const before = line.text.slice(0, match.from - line.from);
+    if (!/^\s*$/.test(before) && !/>\s*$/.test(before)) return null;
+    type Node = ReturnType<typeof syntaxTree>["topNode"];
+    for (let node: Node | null = syntaxTree(context.state).resolve(match.from, -1); node; node = node.parent) {
+      if (NO_SLASH_MENU.has(node.name)) return null;
+    }
+    return {
+      from: match.from + 1,
+      validFor: /^[\p{L}\d-]*$/u,
+      options: BAUSTEINE.map((info, index) => ({
+        label: info.name,
+        detail: info.beschreibung,
+        type: "class",
+        boost: -index,
+        apply: (view: EditorView, _completion: unknown, from: number, to: number) => {
+          view.dispatch({ changes: { from: from - 1, to, insert: "" } });
+          onSlash.current?.(info.art);
+        },
+      })),
+    };
+  };
 }
 
 /** Beschriftungen von CodeMirror auf Deutsch (Suchen und Ersetzen, Einklappen, Vorschläge). */
@@ -123,12 +178,14 @@ const editorTheme = (dark: boolean) =>
     { dark },
   );
 
-export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange }: Props) {
+export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange, apiRef, onSlash }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const themeSlot = useRef(new Compartment());
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onSlashRef = useRef(onSlash);
+  onSlashRef.current = onSlash;
   // Während der Inhalt von außen ersetzt wird, keine Änderung melden.
   const replacing = useRef(false);
 
@@ -157,7 +214,8 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
         highlightSelectionMatches(),
         search({ top: true }),
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap, indentWithTab]),
-        html({ autoCloseTags: true, selfClosingTags: false }),
+        html({ autoCloseTags: true, selfClosingTags: false, extraTags: BAUSTEIN_TAGS, extraGlobalAttributes: { class: BAUSTEIN_KLASSEN } }),
+        htmlLanguage.data.of({ autocomplete: slashMenu(onSlashRef) }),
         syntaxHighlighting(highlightStyle),
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({ "aria-label": label }),
@@ -168,9 +226,26 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
         }),
       ],
     });
-    view.current = new EditorView({ state, parent: host.current });
+    const editor = new EditorView({ state, parent: host.current });
+    view.current = editor;
+    if (apiRef) {
+      apiRef.current = {
+        insert: (vorlage, auswahl) => {
+          // Planen mit "\n" (Positionen wie in CodeMirror), einfügen mit dem Zeilenende der Datei.
+          const plan = planInsert(editor.state.doc.toString(), editor.state.selection.main.head, vorlage, auswahl);
+          editor.dispatch({
+            changes: { from: plan.from, to: plan.to, insert: plan.insert.split("\n").join(editor.state.lineBreak) },
+            selection: { anchor: plan.anchor, head: plan.head },
+            scrollIntoView: true,
+            userEvent: "input",
+          });
+          editor.focus();
+        },
+      };
+    }
     return () => {
-      view.current?.destroy();
+      if (apiRef?.current) apiRef.current = null;
+      editor.destroy();
       view.current = null;
     };
     // Der Editor wird nur einmal je Zeilenende aufgebaut; neuer Inhalt kommt über docVersion.

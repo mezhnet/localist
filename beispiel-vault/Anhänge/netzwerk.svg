@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="220" viewBox="0 0 480 220" role="img" aria-label="Drei Rechner an einem Router">
+  <rect x="0" y="0" width="480" height="220" rx="12" fill="#f3f3f1"/>
+  <g stroke="#9e9d98" stroke-width="3" stroke-linecap="round">
+    <line x1="240" y1="78" x2="96" y2="150"/>
+    <line x1="240" y1="78" x2="240" y2="150"/>
+    <line x1="240" y1="78" x2="384" y2="150"/>
+  </g>
+  <g>
+    <rect x="196" y="40" width="88" height="44" rx="10" fill="#2f6be0"/>
+    <circle cx="214" cy="62" r="4" fill="#ffffff"/>
+    <circle cx="228" cy="62" r="4" fill="#ffffff"/>
+    <circle cx="242" cy="62" r="4" fill="#9fd3b0"/>
+    <text x="240" y="30" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" fill="#2b2a27">Router</text>
+  </g>
+  <g font-family="Segoe UI, sans-serif" font-size="13" fill="#2b2a27" text-anchor="middle">
+    <g>
+      <rect x="66" y="142" width="60" height="40" rx="6" fill="#ffffff" stroke="#2b2a27" stroke-width="2"/>
+      <rect x="84" y="184" width="24" height="6" rx="2" fill="#2b2a27"/>
+      <text x="96" y="208">PC 1</text>
+    </g>
+    <g>
+      <rect x="210" y="142" width="60" height="40" rx="6" fill="#ffffff" stroke="#2b2a27" stroke-width="2"/>
+      <rect x="228" y="184" width="24" height="6" rx="2" fill="#2b2a27"/>
+      <text x="240" y="208">PC 2</text>
+    </g>
+    <g>
+      <rect x="354" y="142" width="60" height="40" rx="6" fill="#ffffff" stroke="#2b2a27" stroke-width="2"/>
+      <rect x="372" y="184" width="24" height="6" rx="2" fill="#2b2a27"/>
+      <text x="384" y="208">Laptop</text>
+    </g>
+  </g>
+</svg>

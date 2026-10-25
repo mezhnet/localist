@@ -638,6 +638,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
               onError={showError}
               onOpenLink={openFromHtmlPage}
               onOpenExternal={(url) => void openExternal(url)}
+              pages={pages}
             >
               <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path) => void openPage(path)} />
             </HtmlPageView>

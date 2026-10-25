@@ -5,6 +5,8 @@
   "use strict";
   if (window.parent === window) return; // direkt im Browser geöffnet: keine App da
   var BASIS = "__LOCALIST_BASIS__";
+  // Kennzeichen für localist.css: In der App steht die Seite schon in einer Spalte unter dem Titel.
+  document.documentElement.setAttribute("data-localist", "app");
   var senden = function (nachricht) {
     nachricht.localist = 1;
     window.parent.postMessage(nachricht, "*");

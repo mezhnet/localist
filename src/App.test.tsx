@@ -1,6 +1,7 @@
 // Oberflächen-Tests der ganzen App. Statt der Rust-Seite antwortet die Vault-Simulation aus
 // dev-backend.ts (Inhalt wie beispiel-vault/, nur im Arbeitsspeicher).
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { acceptCompletion, currentCompletions, startCompletion } from "@codemirror/autocomplete";
 import { EditorView } from "@codemirror/view";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -1022,5 +1023,119 @@ describe("HTML-Seiten: Code-Editor (Etappe 11)", () => {
     await waitFor(() => expect(document.querySelectorAll("iframe.html-frame")).toHaveLength(1));
     expect(document.querySelector("iframe.html-frame")!.classList.contains("is-loading")).toBe(false);
     expect(document.querySelector("iframe.html-frame")!.getAttribute("src")).not.toBe(firstSrc);
+  });
+});
+
+describe("Bausteine (Etappe 12)", () => {
+  const editorView = () => EditorView.findFromDOM(document.querySelector(".cm-editor") as HTMLElement)!;
+  const editorText = () => editorView().state.sliceDoc();
+  const toolbar = () => within(screen.getByRole("toolbar", { name: "Baustein einfügen" }));
+  const selectedText = () => {
+    const { from, to } = editorView().state.selection.main;
+    return editorView().state.sliceDoc(from, to);
+  };
+  /** Setzt den Cursor direkt hinter `text` (bzw. an den Anfang davon). */
+  const cursorAt = (text: string, where: "vor" | "hinter" = "hinter") =>
+    act(() => {
+      const view = editorView();
+      const at = view.state.doc.toString().indexOf(text);
+      expect(at).toBeGreaterThanOrEqual(0);
+      view.dispatch({ selection: { anchor: where === "vor" ? at : at + text.length } });
+    });
+  /** Tippt Text an der Cursorposition (wie über die Tastatur, damit die Autovervollständigung reagiert). */
+  const type = (text: string) =>
+    act(() => {
+      const view = editorView();
+      const pos = view.state.selection.main.head;
+      view.dispatch({ changes: { from: pos, insert: text }, selection: { anchor: pos + text.length }, userEvent: "input.type" });
+    });
+  const completions = () => currentCompletions(editorView().state).map((option) => option.label);
+
+  async function openInCode(folder: string, page: string) {
+    localStorage.setItem("html-ansicht", "code");
+    await openVaultFromStart();
+    await openPage(folder, page);
+    await waitFor(() => expect(document.querySelector(".cm-editor")).toBeTruthy());
+  }
+
+  it("beim Öffnen des Vaults liegen localist.css und localist.js mit Version in .localist/bausteine/", async () => {
+    await openVaultFromStart();
+    for (const name of ["localist.css", "localist.js"]) {
+      expect(vault().files.get(`.localist/bausteine/${name}`)).toMatch(/^\/\*! Localist-Bausteine \d+\.\d+\.\d+\+[0-9a-f]{8} /);
+    }
+  });
+
+  it("Werkzeugleiste: ein Klick fügt den Baustein eingerückt an der Cursorposition ein und speichert automatisch", async () => {
+    await openInCode("Notizen", "DNS");
+    expect(toolbar().getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Callout",
+      "Toggle",
+      "Tabelle",
+      "Checkliste",
+      "Spalten",
+      "Bild",
+      "Trennlinie",
+      "Code-Block",
+      "Seitenlink",
+    ]);
+    cursorAt("</l-callout>");
+    fireEvent.click(toolbar().getByRole("button", { name: "Checkliste" }));
+    expect(editorText()).toContain(
+      '</l-callout>\n<ul class="l-checkliste">\n  <li><input type="checkbox"> Erster Punkt</li>\n  <li><input type="checkbox"> Zweiter Punkt</li>\n</ul>\n\n<l-kartenstapel>',
+    );
+    expect(selectedText()).toBe("Erster Punkt");
+    // Eingerückt wie die Zeile, in der der Cursor steht.
+    cursorAt("<l-frage>", "vor");
+    fireEvent.click(toolbar().getByRole("button", { name: "Callout" }));
+    expect(editorText()).toContain('  <l-karteikarte>\n    <l-callout typ="info">Text</l-callout>\n    <l-frage>');
+    await waitFor(() => expect(vault().files.get("Notizen/DNS.html")).toContain('<ul class="l-checkliste">\n  <li><input type="checkbox"> Erster Punkt</li>'), {
+      timeout: 3000,
+    });
+  });
+
+  it("Seitenlink und Bild fragen nach dem Ziel und setzen einen Pfad relativ zur Seite", async () => {
+    await openInCode("Notizen", "DNS");
+    cursorAt("</table>");
+    fireEvent.click(toolbar().getByRole("button", { name: "Seitenlink" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Seite für den Seitenlink wählen" }), { target: { value: "Bausteine" } });
+    fireEvent.click(within(screen.getByRole("listbox", { name: "Ergebnisse" })).getAllByRole("option")[0]);
+    await waitFor(() => expect(editorText()).toContain('</table>\n<a class="l-seitenlink" href="../Lernen/Bausteine.html">Bausteine</a>\n'));
+
+    cursorAt("</details>");
+    fireEvent.click(toolbar().getByRole("button", { name: "Bild" }));
+    // Neue Pfade: Leerzeichen als %20, Umlaute bleiben lesbar (wie überall seit Etappe 10).
+    await waitFor(() => expect(editorText()).toContain('</details>\n<figure>\n  <img src="../Anhänge/skizze.png" alt="Beschreibung">\n  <figcaption>Bildunterschrift</figcaption>\n</figure>'));
+  });
+
+  it("„/“-Menü: „/“ am Zeilenanfang zeigt alle Bausteine, Tippen filtert, die Auswahl fügt ein", async () => {
+    await openInCode("Notizen", "DNS");
+    cursorAt("</l-callout>\n");
+    type("/");
+    await waitFor(() => expect(completions()).toEqual(["Callout", "Toggle", "Tabelle", "Checkliste", "Spalten", "Bild", "Trennlinie", "Code-Block", "Seitenlink"]));
+    type("tab");
+    await waitFor(() => expect(completions()).toEqual(["Tabelle"]));
+    act(() => {
+      acceptCompletion(editorView());
+    });
+    await waitFor(() => expect(editorText()).toContain("</l-callout>\n<table>\n  <tr><th>Spalte 1</th><th>Spalte 2</th></tr>\n  <tr><td>Wert</td><td>Wert</td></tr>\n</table>\n<l-kartenstapel>"));
+    expect(editorText()).not.toMatch(/^\/tab/m);
+    expect(selectedText()).toBe("Spalte 1");
+  });
+
+  it("„/“ in einem Tag oder Text öffnet das Menü nicht; die Autovervollständigung kennt Tags und Werte der Bausteine", async () => {
+    await openInCode("Notizen", "DNS");
+    cursorAt("Root-Zone bei der IANA</a>");
+    type(" und/");
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(completions()).not.toContain("Callout");
+
+    cursorAt("</l-callout>\n");
+    type("<l-");
+    await waitFor(() => expect(completions()).toEqual(expect.arrayContaining(["l-callout", "l-spalten"])));
+    type('callout typ="');
+    act(() => {
+      startCompletion(editorView());
+    });
+    await waitFor(() => expect(completions()).toEqual(expect.arrayContaining(["info", "tipp", "warnung", "fehler"])));
   });
 });

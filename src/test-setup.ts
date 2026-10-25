@@ -25,3 +25,11 @@ if (typeof window !== "undefined" && !window.matchMedia) {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// jsdom misst keine Textbereiche (Range.getClientRects fehlt). CodeMirror braucht das, wenn es zu einer
+// Stelle scrollt (z. B. nach dem Einfügen eines Bausteins); leere Maße reichen für die Tests.
+if (typeof Range !== "undefined" && !Range.prototype.getClientRects) {
+  const empty = { x: 0, y: 0, width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0, toJSON: () => ({}) } as DOMRect;
+  Range.prototype.getClientRects = () => Object.assign([], { item: () => null }) as unknown as DOMRectList;
+  Range.prototype.getBoundingClientRect = () => empty;
+}

@@ -541,8 +541,31 @@
   background: var(--color-bg);
 }
 
+.html-code-pane {
+  display: flex;
+  flex-direction: column;
+}
+
 .code-editor {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Werkzeugleiste über dem Code-Editor: scrollt auf schmalen Bildschirmen waagerecht. */
+.baustein-leiste {
+  display: flex;
+  flex: none;
+  gap: var(--space-0-5);
+  padding: var(--space-1) var(--space-1-5);
+  overflow-x: auto;
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-bg-subtle);
+  scrollbar-width: thin;
+}
+
+.baustein-leiste .ui-button {
+  flex: none;
+  white-space: nowrap;
 }
 
 /* Abgeschottete Anzeige. In „Lesen“ so hoch wie ihr Inhalt (meldet die Brücke), in „Geteilt“ mit eigenem

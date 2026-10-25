@@ -3,10 +3,12 @@
 // (Code links, Vorschau rechts). Umschalten per Schaltflächen oder Strg+E.
 // Der Editor zeigt nur den Inhalt von <main> (Schalter „Ganze Datei“ zeigt alles). Gespeichert wird automatisch:
 // unveränderter Anfang + Editor-Text + unveränderter Rest (siehe src/lib/html-editor.ts).
+// Über dem Editor fügt die Werkzeugleiste Bausteine ein, im Editor auch das „/“-Menü.
 import { FileCode } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { AutoSaver, errorMessage } from "../lib/autosave";
-import { readHead, relativePath, setMeta } from "../lib/html";
+import { bausteinInfo, type BausteinArt } from "../lib/bausteine";
+import { encodePath, readHead, relativePath, setMeta } from "../lib/html";
 import {
   HTML_VIEW_MODES,
   joinFromEditor,
@@ -17,10 +19,13 @@ import {
   type EditorSplit,
   type HtmlViewMode,
 } from "../lib/html-editor";
+import type { PageRef } from "../lib/links";
 import { useTheme } from "../lib/theme";
 import { pageTitle, parentDir } from "../lib/tree";
 import { importAttachment, pickImage, readPage, writePage } from "../lib/vault-api";
-import { CodeEditor } from "./CodeEditor";
+import { BausteinLeiste } from "./BausteinLeiste";
+import { CodeEditor, type CodeEditorApi } from "./CodeEditor";
+import { PagePicker } from "./Dialogs";
 import { PageHeader } from "./PageHeader";
 import { PagePreview } from "./PagePreview";
 import { PageTitle, resolveFileUrlFor } from "./PageView";
@@ -40,11 +45,13 @@ interface Props {
   onOpenLink: (path: string) => void;
   /** Ein Link in der Seite zeigt nach außen (http, https, mailto). */
   onOpenExternal: (url: string) => void;
+  /** Alle Seiten des Vaults (Ziele für Seitenlinks). */
+  pages: PageRef[];
   /** Wird unter der Seite angezeigt (Backlinks). */
   children?: ReactNode;
 }
 
-export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, onRename, onError, onOpenLink, onOpenExternal, children }: Props) {
+export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, onRename, onError, onOpenLink, onOpenExternal, pages, children }: Props) {
   const [mode, setModeState] = useState<HtmlViewMode>(() => (isNew ? "geteilt" : storedViewMode()));
   const [wholeFile, setWholeFile] = useState(false);
   /** Dateiinhalt zuletzt geladen oder gespeichert (für Kopf und Neuladen). */
@@ -69,6 +76,9 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
   wholeFileRef.current = wholeFile;
   const pathRef = useRef(path);
   pathRef.current = path;
+  const editorApi = useRef<CodeEditorApi | null>(null);
+  /** Auswahl der Seite für einen neuen Seitenlink. */
+  const [pickingPage, setPickingPage] = useState(false);
 
   const setMode = useCallback((next: HtmlViewMode) => {
     setModeState(next);
@@ -161,6 +171,34 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
     },
     [saverRef],
   );
+
+  /** Baustein aus Werkzeugleiste oder „/“-Menü einfügen. Bild und Seitenlink fragen vorher nach dem Ziel. */
+  const insertBaustein = async (art: BausteinArt) => {
+    const info = bausteinInfo(art);
+    if (info.ziel === "seite") {
+      setPickingPage(true);
+      return;
+    }
+    let src: string | undefined;
+    if (info.ziel === "bild") {
+      try {
+        const source = await pickImage();
+        if (!source) return;
+        // Bilder von außen kommen nach „Anhänge“; der Pfad steht relativ zur Seite.
+        src = encodePath(relativePath(parentDir(pathRef.current), await importAttachment(source)));
+      } catch (error) {
+        onError(errorMessage(error));
+        return;
+      }
+    }
+    editorApi.current?.insert(info.vorlage({ src }), info.auswahl);
+  };
+
+  const insertPageLink = (page: PageRef) => {
+    setPickingPage(false);
+    const info = bausteinInfo("seitenlink");
+    editorApi.current?.insert(info.vorlage({ href: encodePath(relativePath(parentDir(pathRef.current), page.path)), titel: page.title }), info.auswahl);
+  };
 
   const toggleWholeFile = () => {
     const next = !wholeFile;
@@ -264,6 +302,7 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
           <div className={cx("html-workspace", `is-${mode}`)}>
             {editing && (
               <div className="html-code-pane">
+                <BausteinLeiste onPick={(art) => void insertBaustein(art)} />
                 <CodeEditor
                   value={splitRef.current?.body ?? split.body}
                   docVersion={editorVersion}
@@ -271,6 +310,8 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
                   dark={resolved === "dark"}
                   label={`HTML-Code von „${title}“`}
                   onChange={onEditorChange}
+                  apiRef={editorApi}
+                  onSlash={(art) => void insertBaustein(art)}
                 />
               </div>
             )}
@@ -291,6 +332,14 @@ export function HtmlPageView({ path, isNew = false, externalVersion, saverRef, o
         )}
         {text !== null && children}
       </div>
+      {pickingPage && (
+        <PagePicker
+          pages={pages.filter((page) => page.path !== path)}
+          label="Seite für den Seitenlink wählen"
+          onPick={insertPageLink}
+          onClose={() => setPickingPage(false)}
+        />
+      )}
     </div>
   );
 }

@@ -123,6 +123,36 @@ export function QuickSwitcher({ pages, onOpen, onClose }: { pages: PageRef[]; on
   );
 }
 
+/** Seite auswählen, z. B. als Ziel eines Seitenlinks in einer HTML-Seite. */
+export function PagePicker({ pages, label, onPick, onClose }: { pages: PageRef[]; label: string; onPick: (page: PageRef) => void; onClose: () => void }) {
+  const [query, setQuery] = useState("");
+  const items = useMemo(() => quickSwitch(pages, query), [pages, query]);
+  return (
+    <ListDialog
+      label={label}
+      placeholder="Seite suchen …"
+      icon={<Search />}
+      items={items}
+      emptyText="Keine passende Seite."
+      query={query}
+      onQuery={setQuery}
+      onPick={onPick}
+      onClose={onClose}
+      itemKey={(page) => page.path}
+      render={(page) => (
+        <>
+          <PageIcon path={page.path} />
+          <span className="dialog-item-text">
+            <span className="dialog-title">{page.title}</span>
+            <span className="dialog-sub">{parentDir(page.path) || "Vault"}</span>
+          </span>
+        </>
+      )}
+      footer={keyHints}
+    />
+  );
+}
+
 /** Volltextsuche über alle Seiten (Suchindex aus dem Cache-Ordner der App). */
 export function SearchDialog({
   loadIndex,

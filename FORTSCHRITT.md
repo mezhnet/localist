@@ -2,13 +2,13 @@
 
 ## Aktueller Stand
 - Etappe: 12 – Baustein-Bibliothek: Grundbausteine
-- Zuletzt aktualisiert: 2026-10-25 20:02
-- Nächster Schritt: Beispielseite `Lernen/Bausteine.html`, Brücke kennzeichnet die App-Anzeige (`data-localist="app"`), dann Werkzeugleiste und „/“-Menü im Code-Editor.
+- Zuletzt aktualisiert: 2026-10-25 20:16
+- Nächster Schritt: Bearbeiten ohne Code (Stift-Symbol in „Lesen“/„Geteilt“, Formulare, Tabellen-Editor) und Häkchen in Checklisten speichern.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] `localist.css` und `localist.js` entstehen beim Build aus dem Quellcode der App (`src/bausteine/` und `tokens.css`). Beim Öffnen eines Vaults werden sie nach `.localist/bausteine/` geschrieben, wenn sie fehlen oder Version bzw. Inhalt abweichen (Versionsnummer in der Datei). Das Schema `localist-seite` liefert dieselbe gebündelte Fassung aus.
-- [ ] Grundbausteine mit dem Markup aus der Tabelle im Speicherformat: Callout, Toggle, Tabelle, Checkliste, Spalten, Bild, Trennlinie, Code-Block und Seitenlink.
-- [ ] Werkzeugleiste über dem Code-Editor und „/“-Menü im Code-Editor: Ein Klick fügt den Baustein sauber eingerückt an der Cursorposition ein. Die Autovervollständigung kennt alle Bausteine.
+- [x] Grundbausteine mit dem Markup aus der Tabelle im Speicherformat: Callout, Toggle, Tabelle, Checkliste, Spalten, Bild, Trennlinie, Code-Block und Seitenlink.
+- [x] Werkzeugleiste über dem Code-Editor und „/“-Menü im Code-Editor: Ein Klick fügt den Baustein sauber eingerückt an der Cursorposition ein. Die Autovervollständigung kennt alle Bausteine.
 - [ ] Bearbeiten ohne Code: In „Lesen“ und „Geteilt“ zeigt jeder Baustein beim Überfahren ein Stift-Symbol. Es öffnet ein Formular, bei Tabellen einen Tabellen-Editor zum Hinzufügen und Entfernen von Zeilen und Spalten. Speichern ändert nur diesen Baustein im Code.
 - [ ] Häkchen in Checklisten lassen sich in „Lesen“ setzen und werden in der Datei gespeichert.
 - [ ] Die Beispielseite `beispiel-vault/Lernen/Bausteine.html` zeigt alle Bausteine. Per Doppelklick in Edge oder Chrome geöffnet sieht der Inhalt aus wie in „Lesen“ und ist interaktiv (Screenshots beider Fälle in `docs/screenshots/etappe-12/`).
