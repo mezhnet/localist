@@ -125,6 +125,52 @@ describe("Roundtrip Markdown → Editor → Markdown", () => {
     expectRoundtrip("snake_case_name und 2 * 3 = 6 und #tag\n");
   });
 
+  it("Callouts im Obsidian-Format", () => {
+    const blocks = expectRoundtrip("> [!info] Hinweis\n> Der Hosting-Vertrag läuft Ende November aus.\n");
+    expect(blocks[0].type).toBe("callout");
+    expect(blocks[0].props).toEqual({ calloutType: "info", fold: "" });
+    expect(blocks[0].content).toEqual([{ type: "text", text: "Hinweis", styles: {} }]);
+    expect(blocks[0].children.map((b) => b.type)).toEqual(["paragraph"]);
+
+    expectRoundtrip("> [!warning] **Achtung** mit [[Ideen]]\n> Zeile eins\n> Zeile zwei\n>\n> - Punkt\n> - [ ] Aufgabe\n");
+    expectRoundtrip("> [!tip]\n> Ohne Titel\n");
+    expectRoundtrip("> [!note] Nur ein Titel\n");
+    expectRoundtrip("> [!example] Mit Code\n> ```js\n> let x = 1;\n> ```\n");
+    expectRoundtrip("> [!quote] Außen\n> Text\n>\n> > [!info] Innen\n> > Verschachtelt\n");
+  });
+
+  it("Toggles: einklappbare Callouts mit - (zu) oder + (offen)", () => {
+    const blocks = expectRoundtrip("> [!note]- Mehr anzeigen\n> Versteckter Inhalt\n");
+    expect(blocks[0].type).toBe("callout");
+    expect(blocks[0].props).toEqual({ calloutType: "note", fold: "-" });
+    const open = expectRoundtrip("> [!faq]+ Häufige Frage\n> Antwort\n>\n> 1. Schritt\n");
+    expect(open[0].props).toEqual({ calloutType: "faq", fold: "+" });
+    expectRoundtrip("> [!note]- Leer\n");
+  });
+
+  it("Seitenlinks [[…]] werden zu Links im Editor", () => {
+    const blocks = expectRoundtrip("Siehe [[Ideen]], [[Projekte/Umzug|den Umzug]] und [[Website-Relaunch#Hinweis]].\n");
+    expect(blocks[0].content).toEqual([
+      { type: "text", text: "Siehe ", styles: {} },
+      { type: "wikilink", props: { target: "Ideen", alias: "" } },
+      { type: "text", text: ", ", styles: {} },
+      { type: "wikilink", props: { target: "Projekte/Umzug", alias: "den Umzug" } },
+      { type: "text", text: " und ", styles: {} },
+      { type: "wikilink", props: { target: "Website-Relaunch#Hinweis", alias: "" } },
+      { type: "text", text: ".", styles: {} },
+    ]);
+    // Einbettungen, Code und formatierte Links bleiben Text.
+    const other = expectRoundtrip("Bild ![[skizze.png]] und `[[kein Link]]` und **[[fett]]**\n");
+    expect(JSON.stringify(other[0].content)).not.toContain('"wikilink"');
+    expectRoundtrip("- [ ] Aufgabe für [[Ideen]]\n\n# Überschrift mit [[Link]]\n");
+  });
+
+  it("getippter Text [[Seite]] wird beim Speichern zum Link", () => {
+    const markdown = blocksToMarkdown([{ type: "paragraph", content: "Neu: [[Ideen]]" } as never]);
+    expect(markdown).toBe("Neu: [[Ideen]]\n");
+    expect(markdownToBlocks(markdown)[0].content).toContainEqual({ type: "wikilink", props: { target: "Ideen", alias: "" } });
+  });
+
   it("Unbekanntes Markdown (z. B. Tabellen, HTML) bleibt wörtlich erhalten", () => {
     const table = "| Spalte | Wert |\n| ------ | ---- |\n| a      | 1    |\n";
     const blocks = expectRoundtrip(`Vorher\n\n${table}\nNachher\n`);

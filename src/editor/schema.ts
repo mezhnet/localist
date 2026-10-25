@@ -16,6 +16,8 @@ import {
   defaultInlineContentSpecs,
   defaultStyleSpecs,
 } from "@blocknote/core";
+import { createCalloutBlockSpec } from "./callout";
+import { WikiLink } from "./wikilink";
 
 /**
  * Markdown, das der Editor (noch) nicht als eigenen Block kennt, z. B. Tabellen oder HTML.
@@ -62,6 +64,7 @@ export const schema = BlockNoteSchema.create({
     image: createImageBlockSpec(),
     divider: createDividerBlockSpec(),
     rawMarkdown: createRawMarkdownBlockSpec(),
+    callout: createCalloutBlockSpec(),
   },
   styleSpecs: {
     bold: defaultStyleSpecs.bold,
@@ -71,7 +74,7 @@ export const schema = BlockNoteSchema.create({
     code: defaultStyleSpecs.code,
     raw: rawStyle,
   },
-  inlineContentSpecs: defaultInlineContentSpecs,
+  inlineContentSpecs: { ...defaultInlineContentSpecs, wikilink: WikiLink },
 });
 
 export type VaultBlock = typeof schema.Block;

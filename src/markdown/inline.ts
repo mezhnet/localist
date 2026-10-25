@@ -27,7 +27,21 @@ export interface LinkRun {
   content: TextRun[];
 }
 
-export type InlineRun = TextRun | LinkRun;
+/** Link zwischen Seiten im Obsidian-Format: [[target]] oder [[target|alias]]. */
+export interface WikiLinkRun {
+  type: "wikilink";
+  props: { target: string; alias: string };
+}
+
+export type InlineRun = TextRun | LinkRun | WikiLinkRun;
+
+// [[Seite]], [[Ordner/Seite#Abschnitt|Anzeigetext]]; ein "!" davor ist eine Einbettung und bleibt Text.
+const WIKILINK = /(!?)\[\[([^[\]\n]+?)\]\]/g;
+
+/** Markdown-Schreibweise eines Seitenlinks. */
+export function wikiLinkMarkdown(props: { target: string; alias: string }): string {
+  return props.alias ? `[[${props.target}|${props.alias}]]` : `[[${props.target}]]`;
+}
 
 /** So sieht der Inhalt eines Blocks im Editor aus (als Zeichenkette oder als Liste). */
 export type InlineInput = string | readonly unknown[] | undefined;
@@ -59,7 +73,8 @@ function convertPhrasing(
     const node = nodes[i];
     switch (node.type) {
       case "text":
-        pushText(out, node.value, current);
+        if (inLink || Object.keys(current).length > 0) pushText(out, node.value, current);
+        else pushTextWithWikiLinks(out, node.value);
         break;
       case "strong":
         convertPhrasing(node.children, source, { ...current, bold: true }, out, inLink);
@@ -102,6 +117,22 @@ function convertPhrasing(
         pushText(out, sliceSource(node, source), { ...current, raw: true });
     }
   }
+}
+
+/** Teilt unformatierten Text in Text und [[Links]]. Formatierte Links bleiben Text (z. B. **[[Seite]]**). */
+function pushTextWithWikiLinks(out: InlineRun[], text: string): void {
+  let last = 0;
+  for (const match of text.matchAll(WIKILINK)) {
+    if (match[1] === "!") continue;
+    const inner = match[2];
+    const bar = inner.indexOf("|");
+    const target = (bar === -1 ? inner : inner.slice(0, bar)).trim();
+    if (target === "") continue;
+    pushText(out, text.slice(last, match.index), {});
+    out.push({ type: "wikilink", props: { target, alias: bar === -1 ? "" : inner.slice(bar + 1).trim() } });
+    last = match.index + match[0].length;
+  }
+  pushText(out, text.slice(last), {});
 }
 
 function hasClosingUnderline(nodes: readonly PhrasingContent[], from: number): boolean {
@@ -152,6 +183,10 @@ export function mergeRuns(runs: readonly InlineRun[]): InlineRun[] {
       out.push({ type: "link", href: run.href, content: mergeRuns(run.content) as TextRun[] });
       continue;
     }
+    if (run.type === "wikilink") {
+      out.push(run);
+      continue;
+    }
     if (run.text === "") continue;
     const last = out[out.length - 1];
     if (last && last.type === "text" && sameStyles(last.styles, run.styles)) {
@@ -173,6 +208,9 @@ export function normalizeInline(content: InlineInput): InlineRun[] {
       runs.push({ type: "text", text: item, styles: {} });
     } else if (item.type === "text") {
       runs.push({ type: "text", text: String(item.text ?? ""), styles: cleanStyles((item.styles ?? {}) as Styles) });
+    } else if (item.type === "wikilink") {
+      const props = (item.props ?? {}) as Record<string, unknown>;
+      runs.push({ type: "wikilink", props: { target: String(props.target ?? ""), alias: String(props.alias ?? "") } });
     } else if (item.type === "link") {
       runs.push({
         type: "link",
@@ -186,7 +224,13 @@ export function normalizeInline(content: InlineInput): InlineRun[] {
 
 /** Reiner Text ohne Formatierung, z. B. für Bildunterschriften. */
 export function inlineToPlainText(runs: readonly InlineRun[]): string {
-  return runs.map((run) => (run.type === "text" ? run.text : run.content.map((c) => c.text).join(""))).join("");
+  return runs
+    .map((run) => {
+      if (run.type === "text") return run.text;
+      if (run.type === "wikilink") return run.props.alias || run.props.target;
+      return run.content.map((c) => c.text).join("");
+    })
+    .join("");
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +253,7 @@ export function inlineToMarkdown(content: InlineInput, context: InlineContext): 
 }
 
 function replaceNewlines(run: InlineRun): InlineRun {
+  if (run.type === "wikilink") return run;
   if (run.type === "text") return { ...run, text: run.text.replace(/\n/g, " ") };
   return { ...run, content: run.content.map((c) => ({ ...c, text: c.text.replace(/\n/g, " ") })) };
 }
@@ -221,6 +266,12 @@ export function buildPhrasing(runs: readonly InlineRun[]): PhrasingContent[] {
     const run = runs[i];
     if (run.type === "link") {
       out.push({ type: "link", url: run.href, title: null, children: buildMarks(run.content, new Set()) });
+      i++;
+      continue;
+    }
+    if (run.type === "wikilink") {
+      // Als wörtliches Markdown, damit es beim Maskieren nicht zu \[\[…]] wird.
+      out.push({ type: "html", value: wikiLinkMarkdown(run.props) });
       i++;
       continue;
     }
@@ -438,7 +489,10 @@ function flatten(runs: readonly InlineRun[]): Token[] {
     }
   };
   for (const run of runs) {
-    if (run.type === "link") {
+    if (run.type === "wikilink") {
+      // Ein [[Link]] und derselbe Text "[[…]]" sind gleichwertig: Getippte Links werden beim Speichern zu Links.
+      pushRun({ type: "text", text: wikiLinkMarkdown(run.props), styles: {} });
+    } else if (run.type === "link") {
       tokens.push({ kind: "linkStart", href: run.href });
       run.content.forEach(pushRun);
       tokens.push({ kind: "linkEnd", href: run.href });
