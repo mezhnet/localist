@@ -51,8 +51,23 @@
   };
 
   versuch("window.__TAURI__", function () { return window.__TAURI__; });
-  versuch("window.__TAURI_INTERNALS__", function () { return window.__TAURI_INTERNALS__; });
-  versuch("window.ipc (IPC-Kanal von Tauri)", function () { return window.ipc; });
+  // Unter Windows fügt WebView2 die Start-Skripte von Tauri in alle Frames ein, das Objekt ist deshalb sichtbar.
+  // Entscheidend ist, dass damit kein Befehl die App erreicht (prüft die App zusätzlich auf ihrer Seite).
+  var interna = window.__TAURI_INTERNALS__;
+  if (interna && typeof interna.invoke === "function") {
+    try {
+      var antwort = await Promise.race([
+        interna.invoke("sicherheitstest_probe", {}),
+        new Promise(function (_, nein) { setTimeout(function () { nein(new Error("keine Antwort nach 4 s")); }, 4000); }),
+      ]);
+      eintrag("window.__TAURI_INTERNALS__ (Tauri-Befehl aufrufen)", false, "Antwort: " + JSON.stringify(antwort));
+    } catch (fehler) {
+      eintrag("window.__TAURI_INTERNALS__ (Tauri-Befehl aufrufen)", true, "Objekt sichtbar (WebView2), Aufruf über IPC-Abruf und postMessage scheitert: " + fehler.message);
+    }
+  } else {
+    eintrag("window.__TAURI_INTERNALS__ (Tauri-Befehl aufrufen)", true, "nicht vorhanden");
+  }
+
   versuch("parent.document (App-Oberfläche)", function () { return window.parent.document; });
   versuch("top.document (App-Oberfläche)", function () { return window.top.document; });
   versuch("localStorage (Speicher der App)", function () { return window.localStorage; });

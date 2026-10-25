@@ -5,7 +5,8 @@
 //
 // Aufruf: node scripts/app-pruefung.mjs <localist.exe> <Vault-Kopie> <Screenshot-Ordner>
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const [exe, vault, outDir] = process.argv.slice(2);
@@ -17,8 +18,11 @@ const PORT = 9336;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 mkdirSync(outDir, { recursive: true });
 
+// Eigener WebView2-Datenordner: So stört die Prüfung keine laufende Localist-App (WebView2 erlaubt sonst
+// keine zweite Instanz mit anderen Startparametern) und hinterlässt nichts im Datenordner der echten App.
+const webviewData = mkdtempSync(join(tmpdir(), "localist-pruefung-webview-"));
 const app = spawn(exe, ["--vault", vault], {
-  env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${PORT}` },
+  env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${PORT}`, WEBVIEW2_USER_DATA_FOLDER: webviewData },
   stdio: "ignore",
 });
 
@@ -43,6 +47,7 @@ await new Promise((resolve) => (socket.onopen = resolve));
 let nextId = 1;
 const pending = new Map();
 const problems = [];
+/** Ausführungskontexte der Frames (frameId → contextId); das iframe hat einen undurchsichtigen Ursprung. */
 const contexts = new Map();
 socket.onmessage = (event) => {
   const message = JSON.parse(event.data);
@@ -57,7 +62,7 @@ socket.onmessage = (event) => {
     problems.push(`Ausnahme: ${message.params.exceptionDetails.exception?.description ?? message.params.exceptionDetails.text}`);
   } else if (message.method === "Runtime.executionContextCreated") {
     const context = message.params.context;
-    if (context.origin && context.auxData?.frameId) contexts.set(context.auxData.frameId, context.id);
+    if (context.auxData?.isDefault && context.auxData.frameId) contexts.set(context.auxData.frameId, context.id);
   }
 };
 const send = (method, params = {}) =>
@@ -115,14 +120,25 @@ try {
   const frameInfo = await evaluate(`(() => { const f = document.querySelector('iframe.html-frame'); const r = f.getBoundingClientRect(); return { src: f.src, sandbox: f.getAttribute('sandbox'), hoehe: f.style.height, x: r.x, y: r.y }; })()`);
   report.push(`HTML-Seite „DNS“ geöffnet: src ${frameInfo.src}, sandbox="${frameInfo.sandbox}", Höhe von der Brücke ${frameInfo.hoehe}`);
   // Im iframe nachsehen (eigener Ausführungskontext): Bild aus dem Vault geladen? Kein Tauri?
-  const tree = await send("Page.getFrameTree");
-  const child = tree.result.frameTree.childFrames?.[0]?.frame;
-  const inside = child && contexts.get(child.id);
+  await sleep(500);
+  // Das iframe läuft durch Site Isolation in einem eigenen Prozess: eigene Verbindung über die Zielliste.
+  const frameTarget = (await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()).find((t) => t.url.includes("DNS.html"));
+  const frameSocket = frameTarget && new WebSocket(frameTarget.webSocketDebuggerUrl);
+  if (frameSocket) await new Promise((resolve) => (frameSocket.onopen = resolve));
+  const inside = frameSocket
+    ? async (expression) => {
+        const answer = await new Promise((resolve) => {
+          frameSocket.onmessage = (event) => resolve(JSON.parse(event.data));
+          frameSocket.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true, awaitPromise: true } }));
+        });
+        return answer.result?.result?.value;
+      }
+    : null;
   if (inside) {
-    const state = await evaluate(
+    const state = await inside(
       `({ bildBreite: document.querySelector('img')?.naturalWidth, tauri: typeof window.__TAURI_INTERNALS__, ipc: typeof window.ipc, ursprung: String(window.origin), link: (() => { const r = document.querySelector('a[href="Ideen.md"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })() })`,
-      inside,
     );
+    frameSocket.close();
     report.push(`Im iframe: Bild aus dem Vault ${state.bildBreite > 0 ? `geladen (${state.bildBreite} px breit)` : "NICHT geladen"}, __TAURI_INTERNALS__: ${state.tauri}, window.ipc: ${state.ipc}, Ursprung: ${state.ursprung}`);
     await shot("app-html-seite");
 
@@ -136,12 +152,15 @@ try {
     await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
     await sleep(300);
 
-    // Klick auf den Link „Ideen“ in der Seite öffnet die Notiz in der App
-    await click(frameInfo.x + state.link.x, frameInfo.y + state.link.y);
+    // Klick auf den Link „Ideen“ in der Seite öffnet die Notiz in der App (vorher ins Bild scrollen)
+    await evaluate(`document.querySelector('.main').scrollTop += ${Math.round(frameInfo.y + state.link.y - 400)}`);
+    await sleep(300);
+    const frameTop = await evaluate(`document.querySelector('iframe.html-frame').getBoundingClientRect().y`);
+    await click(frameInfo.x + state.link.x, frameTop + state.link.y);
     const opened = await waitFor(`document.querySelector('.page-title')?.value === "Ideen"`, "Notiz nach Linkklick").catch(() => false);
     report.push(`Klick auf den Link „Ideen“ in der HTML-Seite öffnet die Notiz in der App: ${opened ? "ja" : "NEIN"}`);
   } else {
-    report.push("Ausführungskontext des iframes nicht gefunden.");
+    report.push("Das iframe wurde in der Zielliste nicht gefunden.");
   }
 
   report.push(problems.length === 0 ? "Konsole: keine Fehler und keine CSP-Verstöße." : `Konsole: ${problems.length} Meldungen:\n  ${problems.join("\n  ")}`);
@@ -151,5 +170,7 @@ try {
 } finally {
   console.log(report.join("\n"));
   socket.close();
-  app.kill();
+  app.kill(); // beendet nur die hier gestartete Prüf-App
+  await sleep(1000);
+  rmSync(webviewData, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
 }

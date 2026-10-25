@@ -861,6 +861,16 @@ describe("HTML-Seiten (Etappe 10)", () => {
     expect((await within(backlinks).findByRole("button", { name: /DNS/ })).textContent).toContain("Link „Ideen“");
   });
 
+  it("Löschen funktioniert wie bei Notizen (nur nach Bestätigung, Favoriten werden bereinigt)", async () => {
+    await openDns();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "Aktionen für „DNS“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Löschen …" }));
+    await waitFor(() => expect(vault().files.has("Notizen/DNS.html")).toBe(false));
+    expect(confirm.mock.calls[0][0]).toContain("Die Seite „DNS“ löschen?");
+    await waitFor(() => expect(document.querySelector("iframe.html-frame")).toBeNull());
+  });
+
   it("Vorlagen funktionieren auch für HTML-Seiten (neue id, Titel, Pfade für den Zielordner)", async () => {
     await openVaultFromStart();
     createNew("Notiz aus Vorlage …");

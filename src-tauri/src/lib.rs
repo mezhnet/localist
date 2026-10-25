@@ -22,6 +22,8 @@ struct AppState {
     security_test: Mutex<Option<security_test::SecurityTest>>,
     /// `localist.exe --vault <pfad>`: öffnet diesen Vault nur für diesen Start, ohne ihn zu merken (z. B. für Tests).
     start_vault: Mutex<Option<String>>,
+    /// Sicherheitstest: Hat ein Befehl aus der Testseite die App erreicht? (Das wäre eine Lücke.)
+    probe_reached: std::sync::atomic::AtomicBool,
 }
 
 impl AppState {
@@ -230,6 +232,22 @@ async fn sicherheitstest_info(state: State<'_, AppState>) -> Result<Option<Strin
     Ok(lock(&state.security_test).as_ref().map(|test| path_to_string(&test.vault)))
 }
 
+/// Sicherheitstest: Diesen Befehl ruft die Testseite aus der abgeschotteten Anzeige auf. Kommt er hier an,
+/// könnte eine Seite Tauri-Befehle nutzen – der Test zählt das als Lücke.
+#[tauri::command]
+async fn sicherheitstest_probe(state: State<'_, AppState>) -> Result<String, String> {
+    if lock(&state.security_test).is_some() {
+        state.probe_reached.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+    Ok("erreicht".into())
+}
+
+/// Sicherheitstest: Hat die Testseite `sicherheitstest_probe` erreicht?
+#[tauri::command]
+async fn sicherheitstest_probe_status(state: State<'_, AppState>) -> Result<bool, String> {
+    Ok(state.probe_reached.load(std::sync::atomic::Ordering::SeqCst))
+}
+
 /// Ergebnisse des Sicherheitstests: Tabelle auf der Konsole, aufräumen, App mit Exit-Code beenden.
 #[tauri::command]
 async fn sicherheitstest_bericht(app: AppHandle, state: State<'_, AppState>, ergebnisse: Vec<security_test::Check>) -> Result<(), String> {
@@ -322,6 +340,8 @@ pub fn run() {
             list_folders,
             create_folder_at,
             sicherheitstest_info,
+            sicherheitstest_probe,
+            sicherheitstest_probe_status,
             sicherheitstest_bericht
         ])
         .run(tauri::generate_context!())
