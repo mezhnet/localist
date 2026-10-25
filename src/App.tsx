@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import "./styles/index.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FolderPicker } from "./components/FolderPicker";
+import { SecurityTestRunner } from "./components/SecurityTestRunner";
 import { Button } from "./components/ui";
 import { Workspace } from "./components/Workspace";
 import { errorMessage } from "./lib/autosave";
 import { ThemeProvider } from "./lib/theme";
-import { appPlatform, getLastVault, openVault, pickVaultFolder, type VaultInfo } from "./lib/vault-api";
+import { appPlatform, getLastVault, openVault, pickVaultFolder, securityTestVault, type VaultInfo } from "./lib/vault-api";
 
 type Phase = "starting" | "ready";
 
@@ -28,6 +29,8 @@ function AppContent() {
   /** Auf Android wählt man den Vault in einer eigenen Ordnerauswahl (siehe FolderPicker). */
   const [platform, setPlatform] = useState("unbekannt");
   const [picking, setPicking] = useState(false);
+  /** `localist.exe --sicherheitstest`: statt des Arbeitsbereichs läuft der Test. */
+  const [securityTest, setSecurityTest] = useState(false);
   const started = useRef(false);
 
   // Beim Start den zuletzt geöffneten Vault wieder öffnen.
@@ -36,6 +39,13 @@ function AppContent() {
     started.current = true;
     (async () => {
       setPlatform(await appPlatform().catch(() => "unbekannt"));
+      const testVault = await securityTestVault().catch(() => null);
+      if (testVault) {
+        setVault(await openVault(testVault));
+        setSecurityTest(true);
+        setPhase("ready");
+        return;
+      }
       try {
         const last = await getLastVault();
         if (last) {
@@ -92,6 +102,8 @@ function AppContent() {
       </div>
     );
   }
+
+  if (securityTest) return <SecurityTestRunner />;
 
   if (!vault) {
     return (

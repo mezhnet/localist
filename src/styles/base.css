@@ -237,3 +237,17 @@ h3 {
     font-size: var(--font-size-2xl);
   }
 }
+
+/* Modus --sicherheitstest */
+.security-test {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
+.security-test-frame {
+  width: 100%;
+  height: var(--calendar-week-height);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}

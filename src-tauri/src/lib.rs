@@ -3,10 +3,12 @@
 
 mod page_scheme;
 mod search_index;
+mod security_test;
 mod vault;
 mod watcher;
 
 use serde::{Deserialize, Serialize};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
@@ -16,6 +18,10 @@ use tauri::{AppHandle, Manager, State};
 struct AppState {
     root: Mutex<Option<PathBuf>>,
     watcher: Mutex<Option<watcher::VaultWatcher>>,
+    /// Gesetzt bei `localist.exe --sicherheitstest`.
+    security_test: Mutex<Option<security_test::SecurityTest>>,
+    /// `localist.exe --vault <pfad>`: öffnet diesen Vault nur für diesen Start, ohne ihn zu merken (z. B. für Tests).
+    start_vault: Mutex<Option<String>>,
 }
 
 impl AppState {
@@ -84,7 +90,10 @@ fn save_remembered(app: &AppHandle, remembered: &Remembered) -> Result<(), Strin
 
 /// Zuletzt geöffneter Vault (absoluter Pfad) oder null, wenn noch keiner gemerkt ist.
 #[tauri::command]
-async fn get_last_vault(app: AppHandle) -> Result<Option<String>, String> {
+async fn get_last_vault(app: AppHandle, state: State<'_, AppState>) -> Result<Option<String>, String> {
+    if let Some(vault) = lock(&state.start_vault).clone() {
+        return Ok(Some(vault));
+    }
     Ok(load_remembered(&app).last_vault)
 }
 
@@ -106,7 +115,11 @@ async fn open_vault(app: AppHandle, state: State<'_, AppState>, path: String) ->
     // Bilder aus dem Vault dürfen im Editor angezeigt werden (Tauri-Asset-Protokoll).
     let _ = app.asset_protocol_scope().allow_directory(&root, true);
 
-    save_remembered(&app, &Remembered { last_vault: Some(path.clone()) })?;
+    // Sicherheitstest und --vault sollen nicht den zuletzt geöffneten Vault des Nutzers ersetzen.
+    let temporary = lock(&state.security_test).is_some() || lock(&state.start_vault).as_deref() == Some(path.as_str());
+    if !temporary {
+        save_remembered(&app, &Remembered { last_vault: Some(path.clone()) })?;
+    }
     let name = root.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(path.clone());
     Ok(VaultInfo { root: path, name })
 }
@@ -211,23 +224,61 @@ async fn create_folder_at(parent: String, name: String) -> Result<String, String
     vault::create_folder_at(Path::new(&parent), &name)
 }
 
+/// Im Modus `--sicherheitstest`: der zu öffnende Test-Vault, sonst null.
+#[tauri::command]
+async fn sicherheitstest_info(state: State<'_, AppState>) -> Result<Option<String>, String> {
+    Ok(lock(&state.security_test).as_ref().map(|test| path_to_string(&test.vault)))
+}
+
+/// Ergebnisse des Sicherheitstests: Tabelle auf der Konsole, aufräumen, App mit Exit-Code beenden.
+#[tauri::command]
+async fn sicherheitstest_bericht(app: AppHandle, state: State<'_, AppState>, ergebnisse: Vec<security_test::Check>) -> Result<(), String> {
+    let test = lock(&state.security_test).clone().ok_or("Es läuft kein Sicherheitstest.")?;
+    let (text, passed) = security_test::report(&test.vault, &ergebnisse);
+    print!("{text}");
+    let _ = std::io::stdout().flush();
+    test.cleanup();
+    app.exit(if passed { 0 } else { 1 });
+    Ok(())
+}
+
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let state = AppState::default();
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(position) = args.iter().position(|arg| arg == "--vault") {
+        *lock(&state.start_vault) = args.get(position + 1).cloned();
+    }
+    match security_test::from_args(&args) {
+        None => {}
+        Some(Ok(test)) => {
+            security_test::attach_console();
+            *lock(&state.security_test) = Some(test);
+        }
+        Some(Err(message)) => {
+            security_test::attach_console();
+            eprintln!("Sicherheitstest: {message}");
+            std::process::exit(2);
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState::default())
+        .manage(state)
         // HTML-Seiten für die abgeschottete Anzeige (siehe page_scheme.rs).
         .register_asynchronous_uri_scheme_protocol(page_scheme::SCHEME, |ctx, request, responder| {
             let app = ctx.app_handle().clone();
             let path = request.uri().path().to_string();
             std::thread::spawn(move || {
-                let root = lock(&app.state::<AppState>().root).clone();
-                let answer = page_scheme::answer(root.as_deref(), &path, "/", |_| None);
+                let state = app.state::<AppState>();
+                let root = lock(&state.root).clone();
+                let test = lock(&state.security_test).clone();
+                let answer = page_scheme::answer(root.as_deref(), &path, "/", |rel| test.as_ref().and_then(|test| test.virtual_file(rel)));
                 let mut response = tauri::http::Response::builder().status(answer.status).header("Content-Type", answer.content_type);
                 for (name, value) in page_scheme::headers() {
                     response = response.header(name, value);
@@ -237,6 +288,20 @@ pub fn run() {
                     Err(_) => responder.respond(tauri::http::Response::new(Vec::new())),
                 }
             });
+        })
+        .setup(|app| {
+            // Sicherheitstest: Kommt nach 60 Sekunden kein Ergebnis, gilt er als nicht bestanden.
+            if let Some(test) = lock(&app.state::<AppState>().security_test).clone() {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                    println!("Localist – Sicherheitstest: Zeitüberschreitung, die Testseite hat keine Ergebnisse gemeldet. NICHT bestanden.");
+                    let _ = std::io::stdout().flush();
+                    test.cleanup();
+                    handle.exit(2);
+                });
+            }
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_last_vault,
@@ -255,7 +320,9 @@ pub fn run() {
             app_platform,
             storage_locations,
             list_folders,
-            create_folder_at
+            create_folder_at,
+            sicherheitstest_info,
+            sicherheitstest_bericht
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");

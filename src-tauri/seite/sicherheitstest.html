@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Sicherheitstest</title>
+</head>
+<body>
+<main>
+<h1>Sicherheitstest der abgeschotteten Anzeige</h1>
+<p id="status">Läuft …</p>
+<script>
+// Diese Seite liefert localist.exe nur im Modus --sicherheitstest aus (nicht aus dem Vault, gleiche CSP und
+// Brücke wie jede HTML-Seite). Sie versucht alles, was eine Seite nicht darf, und meldet per postMessage,
+// ob es verhindert wurde. Die Kontrolle (Bild aus dem Vault) muss dagegen klappen.
+(async function () {
+  "use strict";
+  var ergebnisse = [];
+  var eintrag = function (pruefung, blockiert, detail, erwartet) {
+    ergebnisse.push({ pruefung: pruefung, blockiert: blockiert, detail: String(detail).slice(0, 300), erwartet: erwartet || "blockiert" });
+  };
+  var versuch = function (pruefung, lesen) {
+    try {
+      var wert = lesen();
+      eintrag(pruefung, wert === undefined || wert === null, wert === undefined || wert === null ? "nicht vorhanden" : "vorhanden: " + typeof wert);
+    } catch (fehler) {
+      eintrag(pruefung, true, fehler.name + ": " + fehler.message);
+    }
+  };
+  var abruf = async function (pruefung, url) {
+    try {
+      var antwort = await fetch(url, { method: "POST", body: "{}" });
+      eintrag(pruefung, false, "Antwort " + antwort.status);
+    } catch (fehler) {
+      eintrag(pruefung, true, fehler.name + ": " + fehler.message);
+    }
+  };
+  var laden = function (pruefung, art, adresse, erwartet) {
+    return new Promise(function (fertig) {
+      var element = art === "bild" ? new Image() : document.createElement("script");
+      var ende = function (blockiert, detail) {
+        clearTimeout(zeit);
+        eintrag(pruefung, blockiert, detail, erwartet);
+        fertig();
+      };
+      var zeit = setTimeout(function () { ende(true, "keine Antwort"); }, 5000);
+      element.onload = function () { ende(false, art === "bild" ? "geladen (" + element.naturalWidth + "×" + element.naturalHeight + ")" : "geladen"); };
+      element.onerror = function () { ende(true, "nicht geladen"); };
+      element.src = adresse;
+      if (art === "skript") document.head.appendChild(element);
+    });
+  };
+
+  versuch("window.__TAURI__", function () { return window.__TAURI__; });
+  versuch("window.__TAURI_INTERNALS__", function () { return window.__TAURI_INTERNALS__; });
+  versuch("window.ipc (IPC-Kanal von Tauri)", function () { return window.ipc; });
+  versuch("parent.document (App-Oberfläche)", function () { return window.parent.document; });
+  versuch("top.document (App-Oberfläche)", function () { return window.top.document; });
+  versuch("localStorage (Speicher der App)", function () { return window.localStorage; });
+  versuch("document.cookie", function () { document.cookie = "test=1"; return document.cookie || null; });
+  await abruf("fetch ins Netzwerk (https://example.com)", "https://example.com/");
+  await abruf("fetch an die Tauri-IPC (http://ipc.localhost/…)", "http://ipc.localhost/plugin%3Aopener%7Copen_url");
+  await abruf("fetch an die Tauri-IPC (ipc://localhost/…)", "ipc://localhost/plugin%3Aopener%7Copen_url");
+  await abruf("fetch an das Asset-Protokoll (Dateien des Rechners)", "http://asset.localhost/C%3A%2FWindows%2Fwin.ini");
+  await abruf("fetch einer Datei im Vault", "__sicherheitstest__.png");
+  await laden("Kontrolle: Bild aus dem Vault wird angezeigt", "bild", "__sicherheitstest__.png", "erlaubt");
+  await laden("Bild von https://…", "bild", "https://www.google.com/favicon.ico");
+  await laden("Datei außerhalb des Vaults (../)", "bild", "../__GEHEIM__");
+  await laden("Datei außerhalb des Vaults (%2e%2e/)", "bild", "%2e%2e/__GEHEIM__");
+  await laden("Datei außerhalb des Vaults (..%2f)", "bild", "..%2f__GEHEIM__");
+  await laden("Datei außerhalb des Vaults (..%5c)", "bild", "..%5c__GEHEIM__");
+  await laden("Einstellungen des Vaults (.localist/settings.json)", "skript", ".localist/settings.json");
+  versuch("window.open nach außen (Popup)", function () { return window.open("https://example.com/"); });
+
+  document.getElementById("status").textContent = "Fertig, " + ergebnisse.length + " Prüfungen.";
+  window.parent.postMessage({ localist: 1, typ: "sicherheitstest", ergebnisse: ergebnisse }, "*");
+  // Zum Schluss: Navigation nach außen. Ob sie blockiert wird, prüft die App (CSP frame-src).
+  setTimeout(function () { location.href = "https://example.com/"; }, 500);
+})();
+</script>
+</main>
+</body>
+</html>

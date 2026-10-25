@@ -78,6 +78,16 @@ export function moveEntry(path: string, targetDir: string): Promise<string> {
 
 export const PAGE_SCHEME = "localist-seite";
 
+/** Nur bei `localist.exe --sicherheitstest`: Pfad des Test-Vaults, sonst null. */
+export function securityTestVault(): Promise<string | null> {
+  return invoke<string | null>("sicherheitstest_info");
+}
+
+/** Ergebnisse des Sicherheitstests an die Rust-Seite (Tabelle auf der Konsole, danach beendet sich die App). */
+export function reportSecurityTest(ergebnisse: { pruefung: string; blockiert: boolean; detail: string; erwartet: string }[]): Promise<void> {
+  return invoke<void>("sicherheitstest_bericht", { ergebnisse });
+}
+
 declare global {
   interface Window {
     /** Nur in der Browser-Vorschau: Adresse der Vite-Middleware statt des Schemas. */

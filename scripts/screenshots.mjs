@@ -1,17 +1,18 @@
-// Screenshots der Browser-Vorschau für docs/screenshots/<etappe>/: Startseite, Notiz, Tabelle, Kanban und Kalender,
-// jeweils hell und dunkel, am PC (1280 × 800) und auf dem Handy (360 × 740).
+// Screenshots der Browser-Vorschau für docs/screenshots/<etappe>/, jeweils hell und dunkel, am PC (1280 × 800)
+// und auf dem Handy (360 × 740). Szenen "etappe9": Startseite, Notiz, Tabelle, Kanban, Kalender.
+// Szenen "etappe10": HTML-Seite in der abgeschotteten Anzeige, „Neu“-Menü und „Verschieben nach …“.
 // Nutzt das installierte Microsoft Edge unsichtbar im Hintergrund über das DevTools-Protokoll, ohne zusätzliche Pakete.
 // Damit Kanban und Kalender etwas zeigen, legt das Skript einige Beispiel-Einträge an – nur im Arbeitsspeicher
 // der Vorschau (dev-backend.ts), echte Dateien ändern sich nicht.
 //
 // Aufruf, während die Vorschau läuft (z. B. `npm run dev -- --port 1430`):
-//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9
+//   node scripts/screenshots.mjs http://localhost:1430 docs/screenshots/etappe-9 [etappe9|etappe10]
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const [base = "http://localhost:1430", outDir = "docs/screenshots/etappe-9"] = process.argv.slice(2);
+const [base = "http://localhost:1430", outDir = "docs/screenshots/etappe-9", scenes = "etappe9"] = process.argv.slice(2);
 const EDGE = process.env.EDGE_PATH ?? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 const PORT = 9333;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -105,6 +106,39 @@ const SAMPLE_DATA = `(() => {
     + "  - name: Kalender\\n    typ: kalender\\n    datum: fällig\\n    modus: monat\\n    sortierung: []\\n    filter: []\\n");
 })()`;
 
+async function openVault(theme, device) {
+  const mobile = device === "handy";
+  await send("Emulation.setDeviceMetricsOverride", mobile ? { width: 360, height: 740, deviceScaleFactor: 2, mobile: true } : { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme === "hell" ? "light" : "dark" }] });
+  await send("Page.navigate", { url: base });
+  await waitFor("document.body", "Seite");
+  await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", ${JSON.stringify(theme === "hell" ? "light" : "dark")}); true`);
+  await send("Page.navigate", { url: base });
+  await waitFor(`document.querySelector('[role="tree"] .tree-row') && document.querySelector('.home-card')`, "Startseite");
+  return mobile ? "handy-" : "";
+}
+
+async function runHtml(theme, device) {
+  const prefix = await openVault(theme, device);
+  await click('.tree [title="Notizen"]');
+  await waitFor(`document.querySelector('.tree [title="Notizen/DNS.html"]')`, "DNS.html im Ordnerbaum");
+  await click('.tree [title="Notizen/DNS.html"]');
+  await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('iframe.html-frame').style.height`, "HTML-Seite mit Höhe");
+  await sleep(800);
+  await shot(`${prefix}html-seite-${theme}`);
+  if (prefix) return;
+  await evaluate(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Neu").click()`);
+  await waitFor(`document.querySelector('[role="menu"]')`, "Neu-Menü");
+  await shot(`neu-menue-${theme}`);
+  await evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))`);
+  await sleep(300);
+  await click('[aria-label="Aktionen für „DNS“"]');
+  await waitFor(`[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.includes("Verschieben nach"))`, "Menü mit Verschieben");
+  await evaluate(`[...document.querySelectorAll('[role="menuitem"]')].find((m) => m.textContent.includes("Verschieben nach")).click()`);
+  await waitFor(`document.querySelector('[role="dialog"]')`, "Verschieben-Dialog");
+  await shot(`verschieben-${theme}`);
+}
+
 async function run(theme, device) {
   const mobile = device === "handy";
   await send("Emulation.setDeviceMetricsOverride", mobile ? { width: 360, height: 740, deviceScaleFactor: 2, mobile: true } : { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
@@ -152,7 +186,8 @@ try {
   for (const device of ["pc", "handy"]) {
     for (const theme of ["hell", "dunkel"]) {
       console.log(`${device === "pc" ? "PC" : "Handy"}, ${theme}:`);
-      await run(theme, device);
+      if (scenes === "etappe10") await runHtml(theme, device);
+      else await run(theme, device);
     }
   }
 } finally {

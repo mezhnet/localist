@@ -228,6 +228,8 @@ export function installDevBackend(): void {
           remove(a.path);
           notify({ kind: "removed", path: a.path });
           return null;
+        case "sicherheitstest_info":
+          return null;
         case "app_platform":
           return localStorage.getItem("dev-platform") ?? "browser";
         case "storage_locations":
