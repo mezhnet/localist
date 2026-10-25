@@ -3,10 +3,15 @@
 ## Aktueller Stand
 - Etappe: 3 – Eigenschaften und Tabelle
 - Zuletzt aktualisiert: 2026-10-25 12:24
-- Nächster Schritt: Fertig-Kriterien der Etappe 3 als Checkliste übernehmen und mit der Eigenschaften-Leiste beginnen.
+- Nächster Schritt: Eigenschaften im Frontmatter lesen/schreiben (mit Tests), danach Eigenschaften-Leiste, Datenbank-Ordner und Tabellenansicht.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- (werden zu Beginn der Etappe 3 eingetragen)
+- [ ] Oben auf jeder Seite gibt es eine Eigenschaften-Leiste mit den Typen Text, Zahl, Auswahl, Mehrfachauswahl, Status, Datum, Checkbox und URL, gespeichert im Frontmatter.
+- [ ] Ein Ordner lässt sich in eine Datenbank umwandeln (legt `_ansichten.yaml` an, dort stehen auch die Eigenschaftstypen).
+- [ ] Tabellenansicht: eine Zeile pro Seite, eine Spalte pro Eigenschaft, Werte direkt in der Zelle bearbeitbar.
+- [ ] Sortieren und Filtern, die Einstellungen werden in `_ansichten.yaml` gespeichert.
+- [ ] Eine neue Zeile legt eine neue `.md`-Datei mit `id` an.
+- [ ] Tests für Frontmatter lesen und schreiben, inklusive Erhalt unbekannter Felder und Datumsformat.
 
 ## Abgeschlossene Etappen
 - Etappe 2 – Notion-Feeling (abgeschlossen am 2026-10-25). Nachweise: `npm test` 73 von 73 Tests grün (7 Testdateien), `cargo test` 13 von 13 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Slash-Menü mit Callout und Toggle, Toggle wird als `> [!note]- Details` gespeichert, `[[`-Vorschläge, Klick auf Link öffnet die Seite, Umbenennen passt Links an, Dunkelmodus folgt dem System. Der Ziehgriff erscheint beim Überfahren eines Blocks; das Verschieben selbst ist die eingebaute Funktion von BlockNote und ließ sich im Testwerkzeug nicht automatisch ausführen (es erzeugt keine echten Drag-Ereignisse).
