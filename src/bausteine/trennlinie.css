@@ -1,0 +1,8 @@
+/* Trennlinie: <hr> */
+
+hr {
+  height: 0;
+  margin: var(--space-6) 0;
+  border: none;
+  border-top: var(--border-width) solid var(--color-border-strong);
+}

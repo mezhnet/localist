@@ -1,6 +1,7 @@
 //! Tauri-Kommandos für die Oberfläche. Die eigentliche Dateiarbeit steckt in `vault.rs`,
 //! der Dateiwächter in `watcher.rs`. Fehler gehen als deutsche Meldungen an die Oberfläche.
 
+mod bausteine;
 mod page_scheme;
 mod search_index;
 mod security_test;
@@ -107,6 +108,11 @@ async fn open_vault(app: AppHandle, state: State<'_, AppState>, path: String) ->
         return Err(format!("Der Vault-Ordner „{path}“ wurde nicht gefunden."));
     }
     vault::ensure_settings(&root)?;
+    // localist.css/localist.js im Vault aktuell halten (für HTML-Seiten im Browser). Ein schreibgeschützter
+    // Vault ist kein Grund, ihn nicht zu öffnen: In der App liefert das Schema ohnehin die gebündelte Fassung.
+    if let Err(message) = bausteine::ensure(&root) {
+        eprintln!("Bausteine nicht geschrieben: {message}");
+    }
 
     // Alten Wächter zuerst beenden, dann den neuen starten.
     lock(&state.watcher).take();

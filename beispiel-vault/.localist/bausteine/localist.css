@@ -1,0 +1,752 @@
+/*! Localist-Bausteine 1.0.0+95139fb2 – Aussehen (localist.css)
+    Diese Datei verwaltet Localist. Sie entsteht aus src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
+    erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
+
+/* ---- tokens.css ---- */
+/* Design-System von Localist: Farben, Abstände, Schriften, Radien und Schatten.
+   Nur in dieser Datei stehen feste Werte. Alle anderen CSS-Dateien nutzen ausschließlich diese
+   Variablen (ein Test in src/styles/tokens.test.ts prüft, dass dort keine festen Farben stehen).
+   Hell ist der Standard. Dunkel gilt, wenn die App data-theme="dark" setzt oder – ohne App,
+   z. B. später in HTML-Seiten im Browser – wenn das System dunkel eingestellt ist. */
+
+:root {
+  color-scheme: light;
+
+  /* Flächen */
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f9f9f8;
+  --color-bg-muted: #f3f3f1;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-selected: #ffffff;
+  --color-backdrop: rgba(18, 18, 17, 0.32);
+
+  /* Text */
+  --color-text: #2b2a27;
+  --color-text-muted: #75746f;
+  --color-text-faint: #a8a7a2;
+  --color-text-on-accent: #ffffff;
+
+  /* Linien und Zustände */
+  --color-border: rgba(43, 42, 39, 0.1);
+  --color-border-strong: rgba(43, 42, 39, 0.18);
+  --color-hover: rgba(43, 42, 39, 0.05);
+  --color-active: rgba(43, 42, 39, 0.085);
+
+  /* Akzentfarbe (die einzige kräftige Farbe der Oberfläche) */
+  --color-accent: #2f6be0;
+  --color-accent-hover: #2459c4;
+  --color-accent-soft: rgba(47, 107, 224, 0.1);
+  --color-accent-softer: rgba(47, 107, 224, 0.06);
+  --color-focus-ring: rgba(47, 107, 224, 0.4);
+
+  /* Rückmeldungen, zurückhaltend eingesetzt */
+  --color-danger: #c9423a;
+  --color-danger-soft: rgba(201, 66, 58, 0.09);
+  --color-success: #2e8456;
+  --color-success-soft: rgba(46, 132, 86, 0.12);
+  --color-warning: #b26f08;
+  --color-warning-soft: rgba(210, 140, 20, 0.14);
+  --color-info: #2f6be0;
+  --color-info-soft: rgba(47, 107, 224, 0.09);
+  --color-neutral-soft: rgba(43, 42, 39, 0.07);
+
+  /* Inhalte */
+  --color-link-underline: rgba(43, 42, 39, 0.32);
+  --color-unresolved: #a8a7a2;
+  --color-highlight: rgba(255, 207, 51, 0.45);
+  --color-code-bg: rgba(135, 131, 120, 0.12);
+  --color-on-image: rgba(255, 255, 255, 0.92);
+  --color-on-image-text: #2b2a27;
+  --color-scrollbar: rgba(43, 42, 39, 0.16);
+
+  /* Code-Editor (Syntaxhervorhebung) */
+  --color-code-tag: #b42d5c;
+  --color-code-attribute: #8a5a00;
+  --color-code-string: #1d7a4a;
+  --color-code-comment: #8b8a85;
+  --color-code-keyword: #6b46c1;
+  --color-code-number: #1c63c4;
+  --color-code-gutter: #b0afaa;
+  --color-code-selection: rgba(47, 107, 224, 0.18);
+
+  /* Schrift */
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 40px;
+  --font-size-icon: 64px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --letter-spacing-tight: -0.015em;
+
+  /* Abstände (4er-Raster) */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-30: 120px;
+
+  /* Größen */
+  --size-control-sm: 26px;
+  --size-control-md: 32px;
+  --size-control-lg: 40px;
+  --size-control-xl: 44px;
+  --size-control-touch: 44px;
+  --size-row: 28px;
+  --size-row-touch: 36px;
+  --size-table-row: 36px;
+  --size-badge: 18px;
+  --size-avatar: 22px;
+  --size-icon-xs: 12px;
+  --size-icon-sm: 14px;
+  --size-icon-md: 16px;
+  --size-icon-lg: 20px;
+  --size-icon-xl: 24px;
+  --size-card-icon: 26px;
+  --size-dot: 6px;
+  --border-width: 1px;
+  --border-width-strong: 2px;
+  --border-width-accent: 3px;
+  --sidebar-width: 264px;
+  --sidebar-drawer-width: 300px;
+  --tree-indent: 14px;
+  --content-width: 760px;
+  --editor-inset: 54px;
+  --wide-width: 1040px;
+  --search-width: 560px;
+  --dialog-width-sm: 420px;
+  --dialog-width: 620px;
+  --dialog-width-lg: 860px;
+  --menu-min-width: 200px;
+  --menu-max-width: 320px;
+  --popover-width: 340px;
+  --toast-width: 560px;
+  --cover-height: 240px;
+  --card-min-width: 180px;
+  --action-min-width: 200px;
+  --table-col-width: 150px;
+  --table-col-max: 320px;
+  --table-name-width: 260px;
+  --kanban-column-width: 272px;
+  --calendar-day-height: 108px;
+  --calendar-week-height: 320px;
+  --calendar-undated-width: 240px;
+  --property-name-width: 160px;
+  --code-pane-height: 72vh;
+  --code-pane-min-height: 320px;
+
+  /* Radien */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 999px;
+
+  /* Schatten */
+  --shadow-xs: 0 1px 2px rgba(18, 18, 17, 0.05);
+  --shadow-sm: 0 1px 2px rgba(18, 18, 17, 0.06), 0 1px 1px rgba(18, 18, 17, 0.03);
+  --shadow-md: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 4px 12px rgba(18, 18, 17, 0.1);
+  --shadow-lg: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 12px 40px rgba(18, 18, 17, 0.18);
+  --shadow-drawer: 4px 0 24px rgba(18, 18, 17, 0.18);
+  --shadow-focus: 0 0 0 3px var(--color-focus-ring);
+
+  /* Bewegung und Ebenen */
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --z-sticky: 10;
+  --z-popover: 50;
+  --z-drawer: 60;
+  --z-menu: 100;
+  --z-dialog: 200;
+}
+
+/* Dunkelmodus (Werte doppelt, damit beide Wege dieselben Farben liefern) */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #1a1a19;
+  --color-bg-subtle: #202020;
+  --color-bg-muted: #262625;
+  --color-surface: #222221;
+  --color-surface-raised: #2a2a29;
+  --color-surface-selected: #3a3a38;
+  --color-backdrop: rgba(0, 0, 0, 0.55);
+
+  --color-text: #e8e7e3;
+  --color-text-muted: #9e9d98;
+  --color-text-faint: #6d6c68;
+  --color-text-on-accent: #ffffff;
+
+  --color-border: rgba(255, 255, 255, 0.085);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+  --color-hover: rgba(255, 255, 255, 0.05);
+  --color-active: rgba(255, 255, 255, 0.085);
+
+  --color-accent: #5b8ff0;
+  --color-accent-hover: #7aa5f3;
+  --color-accent-soft: rgba(91, 143, 240, 0.16);
+  --color-accent-softer: rgba(91, 143, 240, 0.09);
+  --color-focus-ring: rgba(91, 143, 240, 0.5);
+
+  --color-danger: #f0776d;
+  --color-danger-soft: rgba(240, 119, 109, 0.13);
+  --color-success: #5cc08a;
+  --color-success-soft: rgba(92, 192, 138, 0.14);
+  --color-warning: #e3a542;
+  --color-warning-soft: rgba(227, 165, 66, 0.15);
+  --color-info: #5b8ff0;
+  --color-info-soft: rgba(91, 143, 240, 0.14);
+  --color-neutral-soft: rgba(255, 255, 255, 0.08);
+
+  --color-link-underline: rgba(255, 255, 255, 0.35);
+  --color-unresolved: #6d6c68;
+  --color-highlight: rgba(255, 196, 0, 0.32);
+  --color-code-bg: rgba(255, 255, 255, 0.07);
+  --color-on-image: rgba(32, 32, 32, 0.88);
+  --color-on-image-text: #e8e7e3;
+  --color-scrollbar: rgba(255, 255, 255, 0.16);
+
+  --color-code-tag: #f08dab;
+  --color-code-attribute: #e2b96a;
+  --color-code-string: #86cf9f;
+  --color-code-comment: #7f7e7a;
+  --color-code-keyword: #c3a6f4;
+  --color-code-number: #7db8ff;
+  --color-code-gutter: #6a6965;
+  --color-code-selection: rgba(91, 143, 240, 0.3);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --color-bg: #1a1a19;
+    --color-bg-subtle: #202020;
+    --color-bg-muted: #262625;
+    --color-surface: #222221;
+    --color-surface-raised: #2a2a29;
+    --color-surface-selected: #3a3a38;
+    --color-backdrop: rgba(0, 0, 0, 0.55);
+
+    --color-text: #e8e7e3;
+    --color-text-muted: #9e9d98;
+    --color-text-faint: #6d6c68;
+    --color-text-on-accent: #ffffff;
+
+    --color-border: rgba(255, 255, 255, 0.085);
+    --color-border-strong: rgba(255, 255, 255, 0.15);
+    --color-hover: rgba(255, 255, 255, 0.05);
+    --color-active: rgba(255, 255, 255, 0.085);
+
+    --color-accent: #5b8ff0;
+    --color-accent-hover: #7aa5f3;
+    --color-accent-soft: rgba(91, 143, 240, 0.16);
+    --color-accent-softer: rgba(91, 143, 240, 0.09);
+    --color-focus-ring: rgba(91, 143, 240, 0.5);
+
+    --color-danger: #f0776d;
+    --color-danger-soft: rgba(240, 119, 109, 0.13);
+    --color-success: #5cc08a;
+    --color-success-soft: rgba(92, 192, 138, 0.14);
+    --color-warning: #e3a542;
+    --color-warning-soft: rgba(227, 165, 66, 0.15);
+    --color-info: #5b8ff0;
+    --color-info-soft: rgba(91, 143, 240, 0.14);
+    --color-neutral-soft: rgba(255, 255, 255, 0.08);
+
+    --color-link-underline: rgba(255, 255, 255, 0.35);
+    --color-unresolved: #6d6c68;
+    --color-highlight: rgba(255, 196, 0, 0.32);
+    --color-code-bg: rgba(255, 255, 255, 0.07);
+    --color-on-image: rgba(32, 32, 32, 0.88);
+    --color-on-image-text: #e8e7e3;
+    --color-scrollbar: rgba(255, 255, 255, 0.16);
+
+    --color-code-tag: #f08dab;
+    --color-code-attribute: #e2b96a;
+    --color-code-string: #86cf9f;
+    --color-code-comment: #7f7e7a;
+    --color-code-keyword: #c3a6f4;
+    --color-code-number: #7db8ff;
+    --color-code-gutter: #6a6965;
+    --color-code-selection: rgba(91, 143, 240, 0.3);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
+    --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ---- basis.css ---- */
+/* Grundgerüst einer HTML-Seite: Schrift, Farben, Lesebreite und Textelemente wie in der App.
+   Per Doppelklick im Browser geöffnet steht der Inhalt mittig mit Rand; in der App (data-localist="app",
+   setzt das Brücken-Skript) steht die Seite schon in der Spalte unter dem Titel und bekommt keinen eigenen Rand. */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-normal);
+  overflow-wrap: break-word;
+}
+
+main {
+  display: block;
+  box-sizing: border-box;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6) var(--space-24);
+}
+
+:root[data-localist="app"] body {
+  background: transparent;
+}
+
+:root[data-localist="app"] main {
+  max-width: none;
+  padding: 0 0 var(--space-4);
+}
+
+main > :first-child {
+  margin-top: 0;
+}
+
+main > :last-child {
+  margin-bottom: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  margin: var(--space-8) 0 var(--space-2);
+}
+
+h1 {
+  font-size: var(--font-size-3xl);
+}
+
+h2 {
+  font-size: var(--font-size-2xl);
+}
+
+h3 {
+  font-size: var(--font-size-xl);
+}
+
+h4 {
+  font-size: var(--font-size-lg);
+}
+
+p {
+  margin: var(--space-2) 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-link-underline);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+ul,
+ol {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-6);
+}
+
+li + li {
+  margin-top: var(--space-1);
+}
+
+blockquote {
+  margin: var(--space-3) 0;
+  padding: 0 0 0 var(--space-4);
+  border-left: var(--border-width-accent) solid currentColor;
+}
+
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+:not(pre) > code {
+  padding: var(--space-0-5) var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-code-bg);
+  color: var(--color-danger);
+}
+
+mark {
+  background: var(--color-highlight);
+  color: inherit;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+@media (max-width: 600px) {
+  main {
+    padding: var(--space-6) var(--space-4) var(--space-16);
+  }
+
+  h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  h2 {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* ---- bild.css ---- */
+/* Bild: <figure><img src="…" alt="…"><figcaption>…</figcaption></figure> */
+
+figure {
+  margin: var(--space-4) 0;
+}
+
+figure > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+figcaption {
+  margin-top: var(--space-1-5);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ---- callout.css ---- */
+/* Callout: <l-callout typ="info|tipp|warnung|fehler">Text</l-callout> – farbige Box mit Symbol.
+   Ohne CSS bleibt der Text als normaler Absatz lesbar. */
+
+l-callout {
+  display: block;
+  position: relative;
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + var(--space-8));
+  border-radius: var(--radius-md);
+  background: var(--color-info-soft);
+}
+
+l-callout::before {
+  content: "ℹ️" / "";
+  position: absolute;
+  left: var(--space-4);
+  top: var(--space-3);
+  width: var(--space-6);
+  text-align: center;
+  line-height: inherit;
+}
+
+l-callout[typ="tipp"] {
+  background: var(--color-success-soft);
+}
+
+l-callout[typ="tipp"]::before {
+  content: "💡" / "";
+}
+
+l-callout[typ="warnung"] {
+  background: var(--color-warning-soft);
+}
+
+l-callout[typ="warnung"]::before {
+  content: "⚠️" / "";
+}
+
+l-callout[typ="fehler"] {
+  background: var(--color-danger-soft);
+}
+
+l-callout[typ="fehler"]::before {
+  content: "⛔" / "";
+}
+
+l-callout > :first-child {
+  margin-top: 0;
+}
+
+l-callout > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---- checkliste.css ---- */
+/* Checkliste: <ul class="l-checkliste"><li><input type="checkbox" checked> Text</li></ul>
+   Erledigte Punkte werden durchgestrichen. In der App speichert ein Häkchen direkt in der Datei. */
+
+ul.l-checkliste {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul.l-checkliste > li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  cursor: default;
+}
+
+ul.l-checkliste > li > input[type="checkbox"] {
+  flex: none;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  margin: 0;
+  position: relative;
+  top: var(--space-0-5);
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+ul.l-checkliste > li:has(> input[type="checkbox"]:checked) {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-text-faint);
+}
+
+/* ---- code.css ---- */
+/* Code-Block: <pre><code class="language-…">…</code></pre>. Die Sprache zeigt localist.js als kleine
+   Beschriftung an (data-sprache); ohne Skript bleibt es ein normaler Code-Block. */
+
+pre {
+  position: relative;
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  border: var(--border-width) solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  tab-size: 2;
+}
+
+pre > code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+pre[data-sprache]::before {
+  content: attr(data-sprache);
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---- seitenlink.css ---- */
+/* Seitenlink: <a class="l-seitenlink" href="../Notizen/Ideen.md">Ideen</a> – Verweis auf eine andere Seite
+   mit Symbol (Notiz oder HTML-Seite). In der App öffnet ein Klick die Seite. */
+
+a.l-seitenlink {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1-5);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+a.l-seitenlink::before {
+  content: "📄" / "";
+  text-decoration: none;
+  display: inline-block;
+}
+
+a.l-seitenlink[href$=".html" i]::before,
+a.l-seitenlink[href*=".html#" i]::before {
+  content: "🌐" / "";
+}
+
+a.l-seitenlink:hover {
+  background: var(--color-hover);
+}
+
+/* ---- spalten.css ---- */
+/* Spalten: <l-spalten><l-spalte>…</l-spalte><l-spalte>…</l-spalte></l-spalten>
+   Nebeneinander, auf schmalen Bildschirmen untereinander. */
+
+l-spalten {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  margin: var(--space-4) 0;
+}
+
+l-spalte {
+  display: block;
+  min-width: 0;
+}
+
+l-spalte > :first-child {
+  margin-top: 0;
+}
+
+l-spalte > :last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  l-spalten {
+    grid-auto-flow: row;
+    gap: var(--space-4);
+  }
+}
+
+/* ---- tabelle.css ---- */
+/* Tabelle: <table> mit <tr>, <th>, <td>. Breite Tabellen scrollen waagerecht statt die Seite zu sprengen. */
+
+table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: var(--space-4) 0;
+  border-collapse: collapse;
+  font-size: var(--font-size-md);
+}
+
+th,
+td {
+  min-width: var(--space-16);
+  padding: var(--space-1-5) var(--space-3);
+  border: var(--border-width) solid var(--color-border-strong);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--color-bg-subtle);
+  font-weight: var(--font-weight-semibold);
+}
+
+caption {
+  caption-side: bottom;
+  padding-top: var(--space-1-5);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: left;
+}
+
+/* ---- toggle.css ---- */
+/* Toggle: <details><summary>Titel</summary>…</details> – das Auf- und Zuklappen kann der Browser selbst. */
+
+details {
+  margin: var(--space-2) 0;
+}
+
+details > summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1-5);
+  cursor: pointer;
+  list-style: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::before {
+  content: "▸" / "";
+  flex: none;
+  display: inline-block;
+  width: var(--space-4);
+  color: var(--color-text-muted);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+details > summary:hover {
+  background: var(--color-hover);
+}
+
+details > summary:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+details > :not(summary) {
+  margin-left: calc(var(--space-4) + var(--space-1-5));
+}
+
+/* ---- trennlinie.css ---- */
+/* Trennlinie: <hr> */
+
+hr {
+  height: 0;
+  margin: var(--space-6) 0;
+  border: none;
+  border-top: var(--border-width) solid var(--color-border-strong);
+}

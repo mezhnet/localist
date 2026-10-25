@@ -1,0 +1,31 @@
+/* Checkliste: <ul class="l-checkliste"><li><input type="checkbox" checked> Text</li></ul>
+   Erledigte Punkte werden durchgestrichen. In der App speichert ein Häkchen direkt in der Datei. */
+
+ul.l-checkliste {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul.l-checkliste > li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  cursor: default;
+}
+
+ul.l-checkliste > li > input[type="checkbox"] {
+  flex: none;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  margin: 0;
+  position: relative;
+  top: var(--space-0-5);
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+ul.l-checkliste > li:has(> input[type="checkbox"]:checked) {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-text-faint);
+}

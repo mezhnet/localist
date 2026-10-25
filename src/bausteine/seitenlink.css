@@ -1,0 +1,26 @@
+/* Seitenlink: <a class="l-seitenlink" href="../Notizen/Ideen.md">Ideen</a> – Verweis auf eine andere Seite
+   mit Symbol (Notiz oder HTML-Seite). In der App öffnet ein Klick die Seite. */
+
+a.l-seitenlink {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1-5);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+a.l-seitenlink::before {
+  content: "📄" / "";
+  text-decoration: none;
+  display: inline-block;
+}
+
+a.l-seitenlink[href$=".html" i]::before,
+a.l-seitenlink[href*=".html#" i]::before {
+  content: "🌐" / "";
+}
+
+a.l-seitenlink:hover {
+  background: var(--color-hover);
+}

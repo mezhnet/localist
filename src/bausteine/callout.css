@@ -1,0 +1,53 @@
+/* Callout: <l-callout typ="info|tipp|warnung|fehler">Text</l-callout> – farbige Box mit Symbol.
+   Ohne CSS bleibt der Text als normaler Absatz lesbar. */
+
+l-callout {
+  display: block;
+  position: relative;
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + var(--space-8));
+  border-radius: var(--radius-md);
+  background: var(--color-info-soft);
+}
+
+l-callout::before {
+  content: "ℹ️" / "";
+  position: absolute;
+  left: var(--space-4);
+  top: var(--space-3);
+  width: var(--space-6);
+  text-align: center;
+  line-height: inherit;
+}
+
+l-callout[typ="tipp"] {
+  background: var(--color-success-soft);
+}
+
+l-callout[typ="tipp"]::before {
+  content: "💡" / "";
+}
+
+l-callout[typ="warnung"] {
+  background: var(--color-warning-soft);
+}
+
+l-callout[typ="warnung"]::before {
+  content: "⚠️" / "";
+}
+
+l-callout[typ="fehler"] {
+  background: var(--color-danger-soft);
+}
+
+l-callout[typ="fehler"]::before {
+  content: "⛔" / "";
+}
+
+l-callout > :first-child {
+  margin-top: 0;
+}
+
+l-callout > :last-child {
+  margin-bottom: 0;
+}

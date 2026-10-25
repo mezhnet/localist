@@ -14,3 +14,9 @@
 # Shell-Skripte des Android-Projekts brauchen Unix-Zeilenenden
 *.sh text eol=lf
 src-tauri/gen/android/gradlew text eol=lf
+
+# Erzeugte Bausteine (localist.css/js): immer LF, damit die Prüfsumme und der Test „ist aktuell“ stabil bleiben
+src-tauri/seite/localist.css text eol=lf
+src-tauri/seite/localist.js text eol=lf
+beispiel-vault/.localist/bausteine/localist.css text eol=lf
+beispiel-vault/.localist/bausteine/localist.js text eol=lf

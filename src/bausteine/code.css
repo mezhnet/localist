@@ -1,0 +1,33 @@
+/* Code-Block: <pre><code class="language-…">…</code></pre>. Die Sprache zeigt localist.js als kleine
+   Beschriftung an (data-sprache); ohne Skript bleibt es ein normaler Code-Block. */
+
+pre {
+  position: relative;
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  border: var(--border-width) solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  tab-size: 2;
+}
+
+pre > code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+pre[data-sprache]::before {
+  content: attr(data-sprache);
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}

@@ -1,6 +1,6 @@
 // Regeln des Schemas `localist-seite` für die Browser-Vorschau (Vite-Middleware in vite.config.ts).
 // Gleiche Regeln wie src-tauri/src/page_scheme.rs: nur Dateien aus dem Vault, versteckte Ordner nur für
-// `.localist/bausteine/` (dafür die gebündelten Platzhalter), CSP und Brücken-Skript aus src-tauri/seite/.
+// `.localist/bausteine/` (dafür die gebündelte Fassung aus src-tauri/seite/), CSP und Brücken-Skript ebenfalls von dort.
 
 const BAUSTEINE_DIR = ".localist/bausteine";
 

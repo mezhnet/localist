@@ -1,0 +1,33 @@
+/* Tabelle: <table> mit <tr>, <th>, <td>. Breite Tabellen scrollen waagerecht statt die Seite zu sprengen. */
+
+table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: var(--space-4) 0;
+  border-collapse: collapse;
+  font-size: var(--font-size-md);
+}
+
+th,
+td {
+  min-width: var(--space-16);
+  padding: var(--space-1-5) var(--space-3);
+  border: var(--border-width) solid var(--color-border-strong);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--color-bg-subtle);
+  font-weight: var(--font-weight-semibold);
+}
+
+caption {
+  caption-side: bottom;
+  padding-top: var(--space-1-5);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: left;
+}

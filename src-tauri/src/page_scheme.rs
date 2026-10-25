@@ -3,9 +3,11 @@
 //! Adresse `http://localist-seite.localhost/<Pfad im Vault>`.
 //!
 //! Regeln: nur Dateien aus dem Vault (Prüfung wie `vault::resolve`, auch gegen `%2e%2e`, `%2f` und `\`),
-//! versteckte Ordner nur für `.localist/bausteine/`, dafür immer die mit der App gebündelte Fassung.
-//! Jede Antwort trägt die CSP der Seiten. In ausgelieferte HTML-Seiten (nie in die Datei) kommt das Brücken-Skript.
+//! versteckte Ordner nur für `.localist/bausteine/`, dafür immer die mit der App gebündelte Fassung
+//! (`bausteine::CSS` und `bausteine::JS`). Jede Antwort trägt die CSP der Seiten. In ausgelieferte HTML-Seiten
+//! (nie in die Datei) kommt das Brücken-Skript.
 
+use crate::bausteine::{self, DIR as BAUSTEINE_DIR};
 use crate::vault::{is_hidden, read_text, resolve};
 use std::fs;
 use std::path::Path;
@@ -18,9 +20,6 @@ pub fn csp() -> &'static str {
 }
 
 const BRIDGE: &str = include_str!("../seite/bruecke.js");
-const PLACEHOLDER_CSS: &str = include_str!("../seite/localist.css");
-const PLACEHOLDER_JS: &str = include_str!("../seite/localist.js");
-const BAUSTEINE_DIR: &str = ".localist/bausteine";
 
 /// Eine Antwort des Schemas.
 #[derive(Debug, PartialEq, Eq)]
@@ -147,10 +146,10 @@ pub fn answer(root: Option<&Path>, request_path: &str, basis: &str, extra: impl 
     };
     let lower = rel.to_lowercase();
     if lower == format!("{BAUSTEINE_DIR}/localist.css") {
-        return Answer { status: 200, content_type: content_type(&rel), body: PLACEHOLDER_CSS.as_bytes().to_vec() };
+        return Answer { status: 200, content_type: content_type(&rel), body: bausteine::CSS.as_bytes().to_vec() };
     }
     if lower == format!("{BAUSTEINE_DIR}/localist.js") {
-        return Answer { status: 200, content_type: content_type(&rel), body: PLACEHOLDER_JS.as_bytes().to_vec() };
+        return Answer { status: 200, content_type: content_type(&rel), body: bausteine::JS.as_bytes().to_vec() };
     }
     if let Some((body, content_type)) = extra(&rel) {
         let body = if content_type.starts_with("text/html") { inject_bridge(&String::from_utf8_lossy(&body), basis).into_bytes() } else { body };
@@ -245,9 +244,9 @@ mod tests {
         // Bausteine: immer die gebündelte Fassung, auch wenn im Vault etwas anderes liegt.
         fs::write(vault.join(".localist/bausteine/localist.css"), "body { color: red }").unwrap();
         let css = answer(Some(&vault), "/.localist/bausteine/localist.css", "/", none);
-        assert_eq!(css.body, PLACEHOLDER_CSS.as_bytes());
+        assert_eq!(css.body, bausteine::CSS.as_bytes());
         assert_eq!(css.content_type, "text/css; charset=utf-8");
-        assert_eq!(answer(Some(&vault), "/.localist/bausteine/localist.js", "/", none).body, PLACEHOLDER_JS.as_bytes());
+        assert_eq!(answer(Some(&vault), "/.localist/bausteine/localist.js", "/", none).body, bausteine::JS.as_bytes());
 
         let _ = fs::remove_dir_all(&vault);
         let _ = fs::remove_file(vault.parent().unwrap().join("localist-schema-geheim.txt"));

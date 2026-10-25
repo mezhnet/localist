@@ -1,0 +1,18 @@
+/* Bild: <figure><img src="…" alt="…"><figcaption>…</figcaption></figure> */
+
+figure {
+  margin: var(--space-4) 0;
+}
+
+figure > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+figcaption {
+  margin-top: var(--space-1-5);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

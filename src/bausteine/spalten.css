@@ -1,0 +1,30 @@
+/* Spalten: <l-spalten><l-spalte>…</l-spalte><l-spalte>…</l-spalte></l-spalten>
+   Nebeneinander, auf schmalen Bildschirmen untereinander. */
+
+l-spalten {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  margin: var(--space-4) 0;
+}
+
+l-spalte {
+  display: block;
+  min-width: 0;
+}
+
+l-spalte > :first-child {
+  margin-top: 0;
+}
+
+l-spalte > :last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  l-spalten {
+    grid-auto-flow: row;
+    gap: var(--space-4);
+  }
+}

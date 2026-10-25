@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 12 – Baustein-Bibliothek: Grundbausteine
-- Zuletzt aktualisiert: 2026-10-25 19:40
-- Nächster Schritt: `localist.css`/`localist.js` beim Build aus `src/bausteine/` und `tokens.css` erzeugen, beim Öffnen eines Vaults nach `.localist/bausteine/` schreiben, Schema liefert die gebündelte Fassung.
+- Zuletzt aktualisiert: 2026-10-25 20:02
+- Nächster Schritt: Beispielseite `Lernen/Bausteine.html`, Brücke kennzeichnet die App-Anzeige (`data-localist="app"`), dann Werkzeugleiste und „/“-Menü im Code-Editor.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] `localist.css` und `localist.js` entstehen beim Build aus dem Quellcode der App (`src/bausteine/` und `tokens.css`). Beim Öffnen eines Vaults werden sie nach `.localist/bausteine/` geschrieben, wenn sie fehlen oder Version bzw. Inhalt abweichen (Versionsnummer in der Datei). Das Schema `localist-seite` liefert dieselbe gebündelte Fassung aus.
+- [x] `localist.css` und `localist.js` entstehen beim Build aus dem Quellcode der App (`src/bausteine/` und `tokens.css`). Beim Öffnen eines Vaults werden sie nach `.localist/bausteine/` geschrieben, wenn sie fehlen oder Version bzw. Inhalt abweichen (Versionsnummer in der Datei). Das Schema `localist-seite` liefert dieselbe gebündelte Fassung aus.
 - [ ] Grundbausteine mit dem Markup aus der Tabelle im Speicherformat: Callout, Toggle, Tabelle, Checkliste, Spalten, Bild, Trennlinie, Code-Block und Seitenlink.
 - [ ] Werkzeugleiste über dem Code-Editor und „/“-Menü im Code-Editor: Ein Klick fügt den Baustein sauber eingerückt an der Cursorposition ein. Die Autovervollständigung kennt alle Bausteine.
 - [ ] Bearbeiten ohne Code: In „Lesen“ und „Geteilt“ zeigt jeder Baustein beim Überfahren ein Stift-Symbol. Es öffnet ein Formular, bei Tabellen einen Tabellen-Editor zum Hinzufügen und Entfernen von Zeilen und Spalten. Speichern ändert nur diesen Baustein im Code.

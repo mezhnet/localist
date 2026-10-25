@@ -4,13 +4,59 @@ import react from "@vitejs/plugin-react";
 // @ts-expect-error type error without @types/node package
 import process from "node:process";
 // @ts-expect-error type error without @types/node package
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { bausteineBauen } from "./src/bausteine/bauen.ts";
 import { bundledBaustein, contentType, injectBridge, requestToRel, schemeHeaders } from "./src/lib/seiten-schema.ts";
 const host = process.env.TAURI_DEV_HOST;
 
-/** Ordner mit CSP, Brücken-Skript und Platzhaltern – dieselben Dateien nutzt src-tauri/src/page_scheme.rs. */
+/** Ordner mit CSP, Brücken-Skript und Bausteinen – dieselben Dateien nutzt src-tauri/src/page_scheme.rs. */
 const SEITE = "src-tauri/seite";
 const PAGE_PREFIX = "/__localist-seite/";
+
+/**
+ * Erzeugt localist.css und localist.js aus src/styles/tokens.css und src/bausteine/ (beim Build vor dem
+ * Rust-Teil, in der Vorschau beim Start und bei jeder Änderung). Ziel: src-tauri/seite/ (von dort bündelt die
+ * App sie) und beispiel-vault/.localist/bausteine/ (damit der Beispiel-Vault auch per Doppelklick funktioniert).
+ * Geschrieben wird nur, wenn sich etwas geändert hat. In Tests nicht: Dort prüft ein Test, dass alles aktuell ist.
+ */
+function localistBausteine(): Plugin {
+  const quellen = (ext: string) =>
+    Object.fromEntries(
+      (readdirSync("src/bausteine") as string[]).filter((name) => name.endsWith(ext)).map((name) => [name, readFileSync(`src/bausteine/${name}`, "utf8") as string]),
+    );
+  const erzeugen = () => {
+    const gebaut = bausteineBauen({
+      appVersion: JSON.parse(readFileSync("package.json", "utf8")).version,
+      tokens: readFileSync("src/styles/tokens.css", "utf8"),
+      css: quellen(".css"),
+      js: quellen(".js"),
+    });
+    for (const dir of [SEITE, "beispiel-vault/.localist/bausteine"]) {
+      mkdirSync(dir, { recursive: true });
+      for (const [name, text] of [
+        ["localist.css", gebaut.css],
+        ["localist.js", gebaut.js],
+      ]) {
+        const file = `${dir}/${name}`;
+        if (!existsSync(file) || readFileSync(file, "utf8") !== text) writeFileSync(file, text);
+      }
+    }
+  };
+  return {
+    name: "localist-bausteine",
+    apply: () => !process.env.VITEST,
+    buildStart: erzeugen,
+    configureServer(server) {
+      server.watcher.add(["src/bausteine", "src/styles/tokens.css"]);
+      const onChange = (file: string) => {
+        if (/src[\\/](bausteine[\\/][^\\/]+\.(css|js)|styles[\\/]tokens\.css)$/.test(file)) erzeugen();
+      };
+      server.watcher.on("change", onChange);
+      server.watcher.on("add", onChange);
+      server.watcher.on("unlink", onChange);
+    },
+  };
+}
 
 /**
  * Browser-Vorschau für HTML-Seiten (Arbeitsregel 8): liefert `beispiel-vault/` unter /__localist-seite/ mit
@@ -75,7 +121,7 @@ function localistSeite(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
-  plugins: [react(), localistSeite()],
+  plugins: [react(), localistBausteine(), localistSeite()],
 
 
   // Vitest: Tests laufen in einer simulierten Browser-Umgebung (jsdom),

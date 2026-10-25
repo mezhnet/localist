@@ -4,6 +4,8 @@
 // In der gebauten App ist diese Datei nicht enthalten (siehe main.tsx).
 import { emit } from "@tauri-apps/api/event";
 import { mockIPC } from "@tauri-apps/api/mocks";
+import bundledCss from "../../src-tauri/seite/localist.css?raw";
+import bundledJs from "../../src-tauri/seite/localist.js?raw";
 import { newHtmlPage } from "./html";
 import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-api";
 
@@ -163,6 +165,13 @@ export function installDevBackend(): void {
           return localStorage.getItem("dev-last-vault");
         case "open_vault":
           localStorage.setItem("dev-last-vault", a.path);
+          // Wie bausteine::ensure in Rust: gebündelte Bausteine in den Vault, wenn sie fehlen oder abweichen.
+          for (const [name, text] of [
+            ["localist.css", bundledCss],
+            ["localist.js", bundledJs],
+          ]) {
+            if (files.get(`.localist/bausteine/${name}`) !== text) files.set(`.localist/bausteine/${name}`, text);
+          }
           return { root: a.path, name: String(a.path).split("/").pop() || a.path };
         case "list_tree":
           return listDir("");
