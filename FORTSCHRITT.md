@@ -1,16 +1,104 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 15 – Version 2.0
-- Zuletzt aktualisiert: 2026-10-25 22:03
-- Nächster Schritt: Klickliste „Version 2.0“ anlegen und in der Browser-Vorschau abhaken, danach Klickliste „Version 1.0“, `tsc`, TODO/FIXME-Prüfung, Build und Abschluss.
+- Etappe: 15 – Version 2.0 (abgeschlossen, Version 2.0.0 ist fertig)
+- Zuletzt aktualisiert: 2026-10-25 22:15
+- Nächster Schritt: keiner offen. Alle Etappen aus `CLAUDE.md` sind umgesetzt; neue Wünsche (z. B. aus „Zukunft“) erst nach Absprache mit dem Nutzer.
 
 ## Fertig-Kriterien der aktuellen Etappe
+- Alle Etappen 0–15 sind abgeschlossen. Ideen für später stehen in `CLAUDE.md` unter „Zukunft (noch nicht umsetzen)“.
+
+## Klickliste „Version 1.0“
+Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
+
+Stand: am 2026-10-25 mit dem Stand von Etappe 15 (Version 2.0.0) in der Browser-Vorschau (Port 1430) erneut durchgeklickt, alle 12 Punkte bestanden. Das erledigt `scripts/klickliste.mjs` mit echter Tastatur und Maus in Microsoft Edge (Aufruf `node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" 1.0`); nur die Kanban-Karte wird mit Drag-Ereignissen per Skript gezogen. Ausgabe:
+    ```
+    Klickliste „Version 1.0“ (Etappe 15), Vorschau http://localhost:1430:
+    [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 15.“
+    [x] 2. Callout über das „/“-Menü: eingefügt
+    [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 15 [[Formatierung]]“, Klick öffnet „Formatierung“
+    [x] 4. Eigenschaft: `kategorie: Lernen` im Frontmatter
+    [x] 5. Tabelle: Zelle, Sortierung, Filter: priorität: mittel; absteigend: Umzug, Website-Relaunch; Filter status ist Geplant: Umzug
+    [x] 6. Kanban: „Umzug“ nach „Erledigt“ (status: Erledigt)
+    [x] 7. Kalender: Woche „KW 43 · 19.10.–25.10.2026“, Monat, Klick auf einen Tag legt Projekte/Unbenannt.md → fällig: 2026-10-14 an
+    [x] 8. Volltextsuche „Wochenplanung“: Treffer: Ideen (markiert: „Wochenplanung“)
+    [x] 9. Strg+P: „relaunch“ + Enter öffnet „Website-Relaunch“
+    [x] 10. Vorlage „Projekt“: `Unbenannt.md` mit neuer id, Eigenschaften und Inhalt der Vorlage
+    [x] 11. Backlinks unter „Ideen“: Verlinkt von 3🧱BausteineLink „Ideen“🧠DNSLink „Ideen“🚀Website-RelaunchSiehe auch [[Ideen]].
+    [x] 12. Hell/Dunkel bleibt nach dem Neuladen: sofort „dark“, nach dem Neuladen „dark“
+    ```
+- [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
+- [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
+- [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
+- [x] Eigenschaft: In der Eigenschaften-Leiste eine Eigenschaft hinzufügen und einen Wert setzen.
+- [x] Tabelle: Datenbank „Projekte“ öffnen, eine Zelle ändern, sortieren und filtern.
+- [x] Kanban: Kanban-Ansicht öffnen, eine Karte in eine andere Spalte ziehen.
+- [x] Kalender: Kalender-Ansicht öffnen, Monat/Woche umschalten, ein Klick auf einen Tag legt einen Eintrag an.
+- [x] Suche: Volltextsuche nach „Wochenplanung“ findet „Ideen“ mit markiertem Treffer.
+- [x] Strg+P: Schnellsuche öffnet eine Seite per Enter.
+- [x] Vorlage: Neue Seite aus der Vorlage „Projekt“ übernimmt Eigenschaften und Inhalt.
+- [x] Backlinks: Unter „Ideen“ steht „Website-Relaunch“ unter „Verlinkt von“.
+- [x] Hell/Dunkel: Umschalten wirkt sofort und bleibt nach dem Neuladen erhalten.
+
+## Klickliste „Version 2.0“
+Feste Liste für Version 2.0 (Etappe 15). Sie wird wie die Liste „Version 1.0“ in der Browser-Vorschau geprüft, ebenfalls mit `scripts/klickliste.mjs` (echte Tastatur und Maus in Microsoft Edge, Aufruf `node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" 2.0`). Rückfragen der Seite beantwortet das Skript wie ein Mensch mit „OK“.
+
+Stand: am 2026-10-25 mit Version 2.0.0 durchgeklickt, alle 7 Punkte bestanden. Ausgabe:
+    ```
+    Klickliste „Version 2.0“ (Etappe 15), Vorschau http://localhost:1430:
+    [x] 1. HTML-Seite anlegen: Unbenannt.html mit localist-id 72c5cb07-ad92-4d18-957f-c1aad411d026, <title>Unbenannt</title> und Verweisen auf .localist/bausteine/, geöffnet in „Geteilt“
+    [x] 2. Code bearbeiten: getippt, gespeichert (nur diese Zeile neu, Rest der Datei Zeichen für Zeichen gleich), Vorschau zeigt „Klickliste Version 2.0“
+    [x] 3. Jeder Baustein (Werkzeugleiste, dann „Lesen“): 13 Bausteine eingefügt (13 Markups in der Datei); in „Lesen“: {"callout":"Info","bild":1,"code":null,"stapel":"0 von 2 gewusst","quiz":"Punkte: 0 von 1","diagramm":1,"spalten":"grid"}, Karteikarte per Klick umgedreht
+    [x] 4. Eigener Baustein: .localist/bausteine/eigene/Klickliste-Box.html: "<!-- beschreibung: Aus der Klickliste 2.0 -->\n<l-callout typ=\"info\">Text</l-callout>\n"; in der Werkzeugleiste, Klick fügt ihn ein (1 → 2)
+    [x] 5. Notizbuch: _notizbuch.yaml "titel: Notizen\nseiten:\n  - DNS.html\n  - Formatierung.md\n  - Ideen.md\n", Inhaltsverzeichnis 1DNS, 2Formatierung, 3Ideen, „Weiter“ → Formatierung
+    [x] 6. Umwandeln: Rückfrage „„Ideen“ in eine HTML-Seite umwandeln? Die Notiz kommt in den Papierkorb, Links im Vault werden angepasst.“ mit OK beantwortet; Notizen/Ideen.html angelegt, Ideen.md im Papierkorb, Website-Relaunch verlinkt [[Ideen.html]], Notizbuch-Eintrag Ideen.html
+    [x] 7. Export: C:/Export/DNS.html (127978 Zeichen): CSS und Skript eingebettet, keine Verweise auf .localist/
+    ```
+- [x] HTML-Seite anlegen: „Neu“ → „HTML-Seite“ legt `Unbenannt.html` nach dem Speicherformat an (mit `localist-id`) und öffnet sie in „Geteilt“.
+- [x] Code bearbeiten: Im Code-Editor tippen; gespeichert wird nur die geänderte Stelle, die Vorschau zeigt den neuen Text.
+- [x] Jeder Baustein: alle 13 Bausteine über die Werkzeugleiste einfügen (Bild und Seitenlink mit Auswahl), in „Lesen“ dargestellt, Karteikarte per Klick umdrehen.
+- [x] Eigener Baustein: markierten Code „Als Baustein speichern“, er erscheint in der Werkzeugleiste und lässt sich einfügen.
+- [x] Notizbuch: Ordner „Notizen“ in ein Notizbuch umwandeln, Inhaltsverzeichnis, „Weiter“.
+- [x] Umwandeln: „Ideen“ nach Rückfrage in eine HTML-Seite umwandeln, Links und Notizbuch-Eintrag werden angepasst.
+- [x] Export: „DNS“ als eigenständige HTML-Datei exportieren (CSS und Skript eingebettet).
+
+## Abgeschlossene Etappen
+- Etappe 15 – Version 2.0 (abgeschlossen am 2026-10-25). Nachweise: `npm test` 297 von 297 Tests grün (27 Testdateien, neu der Test „Cursor ganz am Anfang, der Inhalt beginnt mit einem Zeilenumbruch (wie meist in <main>)“ in `src/lib/bausteine.test.ts`; geändert der Oberflächen-Test „Werkzeugleiste fügt Karteikarte, Kartenstapel, Quiz und Diagramm nach dem Speicherformat ein“, siehe „Entscheidungen“), `cargo test` 42 von 42 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,64 MiB)). Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) abgehakt (siehe oben).
+  - Gebaute `localist.exe` 2.0.0 erneut geprüft: Sicherheitstest „Ergebnis: 21 von 21 Prüfungen bestanden – die Seite hat keinen Zugriff auf App, Dateien außerhalb des Vaults oder Netzwerk.“ (Exit-Code 0). App-Prüfung (`node scripts/app-pruefung.mjs …`, Screenshots in `docs/screenshots/etappe-15/app/`):
+    ```
+    App gestartet: http://tauri.localhost/, Vault „pruef-vault-e15“
+    Notiz „Ideen“ geöffnet: docs\screenshots\etappe-15\app\app-notiz.png
+    Datenbank „Projekte“ geöffnet (2 Zeilen): docs\screenshots\etappe-15\app\app-datenbank.png
+    HTML-Seite „DNS“ geöffnet: src http://localist-seite.localhost/Notizen/DNS.html?v=1, sandbox="allow-scripts", Höhe von der Brücke 1001px
+    Im iframe: Bild aus dem Vault geladen (1 px breit), __TAURI_INTERNALS__: object, window.ipc: object, Ursprung: null
+    Strg+P mit Fokus in der HTML-Seite öffnet die Schnellsuche der App: ja
+    Klick auf den Link „Ideen“ in der HTML-Seite öffnet die Notiz in der App: ja
+    Ansicht „Code“: CodeMirror mit Zeilennummern läuft: docs\screenshots\etappe-15\app\app-code.png
+    Ansicht „Geteilt“: Editor und Vorschau nebeneinander: docs\screenshots\etappe-15\app\app-geteilt.png
+    Vault geöffnet → .localist/bausteine/localist.css: gleich der gebündelten Fassung, /*! Localist-Bausteine 2.0.0+55327b46 – Aussehen (localist.c…
+    Vault geöffnet → .localist/bausteine/localist.js: gleich der gebündelten Fassung
+    In der Seite: Bausteine 2.0.0+55327b46, Schrift Inter geladen, Callout-Hintergrund rgba(91, 143, 240, 0.14), Code-Beschriftung „HTML“
+    Stift-Symbol am Callout (echte Maus in WebView2): docs\screenshots\etappe-15\app\app-stift.png; Klick öffnet das Formular: ja
+    Formular zeigt den Text aus der Datei: „Ein Callout hebt einen Hinweis hervor.“: docs\screenshots\etappe-15\app\app-formular.png
+    Häkchen in „Lesen“ gesetzt (echter Klick): Datei geändert, nur diese Stelle (checked ergänzt): docs\screenshots\etappe-15\app\app-haekchen.png
+    Lern-Bausteine: 4 Karteikarten, Kartenstapel „0 von 3 gewusst“, Quiz „Punkte: 0 von 2“, 3 Diagramme als SVG gezeichnet
+    Echte Klicks: Karteikarte umgedreht: ja; Kartenstapel nach Umdrehen bewertbar, nach „Gewusst“: „1 von 3 gewusst“; Quiz nach Klick auf „32“: „Richtig!“, „Punkte: 1 von 2“: docs\screenshots\etappe-15\app\app-lernen.png
+    Bibliothek (http://localist-seite.localhost/.localist/bausteine/bibliothek.html?v=1): 14 Einträge mit Vorschau, eigene Bausteine aus dem Vault: Lernziel-Box: docs\screenshots\etappe-15\app\app-bibliothek.png
+    Eigener Baustein aus markiertem Code gespeichert: "<!-- beschreibung: Gespeichert in der gebauten App -->\n<l-callout typ=\"tipp\">DNS übersetzt Namen wie example.com in IP-Adressen.</l-callout>"; in der Werkzeugleiste: ja: docs\screenshots\etappe-15\app\app-eigener-baustein.png
+    Notizbuch „Lernen für die Prüfung“: Inhaltsverzeichnis ["1Subnetting","2Bausteine"], Seite http://localist-seite.localhost/Lernen/Subnetting.md?v=1 (sandbox="allow-scripts"), Notiz fertig dargestellt: {"callout":"tipp","toggle":"Lösungsweg","tabellenzeilen":4,"checkliste":2,"bausteine":"2.0.0+55327b46","tauri":"object"}: docs\screenshots\etappe-15\app\app-notizbuch.png
+    „Weiter“ blättert zu Bausteine, „Zurück“: Zurück: Subnetting
+    Rückfrage: Dialog 'In HTML-Seite umwandeln' erschienen mit dem Text '„Formatierung“ in eine HTML-Seite umwandeln? Die Notiz kommt in den Papierkorb, Links im Vault werden angepasst.', 'Ja' gewählt, Dialog geschlossen: True.
+    Umgewandelt: Formatierung.html geschrieben (1240 Zeichen, <title>Formatierung</title>, 9 Blöcke), Formatierung.md im Vault: entfernt (Papierkorb), Hinweis: „„Formatierung“ ist jetzt eine HTML-Seite.“: docs\screenshots\etappe-15\app\app-umgewandelt.png
+    Export: Speichern-Dialog 'Als HTML-Datei exportieren' erschienen (vorgeschlagen: 'Bausteine.html'), Dateiname eingetragen, 'Speichern' gewählt, Dialog geschlossen: True.
+    Exportierte Datei C:\Users\emre\AppData\Local\Temp\localist-pruefung-export-…\Bausteine.html: 133249 Zeichen, CSS eingebettet: ja, Skript eingebettet: ja, Bild als data:-URL: ja, Verweise in den Vault: 0
+    Hinweis nach dem Export: „„Bausteine“ wurde als eigenständige HTML-Datei gespeichert: C:\Users\emre\AppData\Local\Temp\localist-pruefung-export-…\Bausteine.html“
+    Konsole: keine Fehler und keine CSP-Verstöße.
+    ```
 - [x] Version 2.0.0 in `package.json`, `tauri.conf.json` und `Cargo.toml`. Die Windows-Installer werden gebaut, die Pfade sind genannt.
   - `npm run tauri build` (EXIT=0): `src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,64 MiB). Die Bausteine tragen jetzt `2.0.0+55327b46`, die Sidebar zeigt „v2.0.0“ (aus `package.json`).
 - [x] Android: Die APK wird gebaut. Im Emulator geprüft und mit `adb`-Befehlen samt Ausgabe belegt (Installation, Screenshots per `adb exec-out screencap`): HTML-Seiten und Notizbücher lassen sich lesen, Karteikarten und Quiz per Fingertipp bedienen, die Code-Ansicht ist nutzbar (Werkzeugleiste scrollbar).
   - APK: `npx tauri android build --debug --apk --target aarch64 --target x86_64` (EXIT=0) → `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk` (versionName 2.0.0, versionCode 2000000).
-  - Emulator „Medium_Phone_API_37.0“ (Android 17, 1080 × 2400, ohne Fenster gestartet). Geprüft mit `node scripts/android-pruefung.mjs <adb.exe> <apk> beispiel-vault docs/screenshots/etappe-15/android`: Navigation über die WebView-Entwicklerschnittstelle der Debug-APK, bedient wird per Fingertipp (`adb shell input tap/swipe`). Im ersten Lauf wurde die Vault-Kopie über die Ordnerauswahl geöffnet (`Ordnerauswahl, Speicherorte: ["Interner Speicher/storage/emulated/0","App-Speicher/data/user/0/de.localist.desktop/Vaults"]`); dabei fiel ein Fehler beim Einfügen eines Bausteins am Dokumentanfang auf (`RangeError: Invalid change range 1 to 0`), behoben in `src/lib/bausteine.ts` mit neuem Test „Cursor ganz am Anfang, der Inhalt beginnt mit einem Zeilenumbruch (wie meist in <main>)“. Ausgabe des zweiten Laufs mit der korrigierten APK:
+  - Emulator „Medium_Phone_API_37.0“ (Android 17, 1080 × 2400, ohne Fenster gestartet). Geprüft mit `node scripts/android-pruefung.mjs <adb.exe> <apk> beispiel-vault docs/screenshots/etappe-15/android`: Navigation über die WebView-Entwicklerschnittstelle der Debug-APK, bedient wird per Fingertipp (`adb shell input tap/swipe`). Im ersten Lauf wurde die Vault-Kopie über die Ordnerauswahl geöffnet (`Ordnerauswahl, Speicherorte: ["Interner Speicher/storage/emulated/0","App-Speicher/data/user/0/de.localist.desktop/Vaults"]`); dabei fiel ein Fehler beim Einfügen eines Bausteins am Dokumentanfang auf (`RangeError: Invalid change range 1 to 0`), behoben in `src/lib/bausteine.ts` mit neuem Test „Cursor ganz am Anfang, der Inhalt beginnt mit einem Zeilenumbruch (wie meist in <main>)“. Danach wurde der Lauf mit der finalen APK (nach allen Änderungen dieser Etappe, neu gebaut) wiederholt:
     ```
     > adb devices
           List of devices attached
@@ -21,7 +109,7 @@
     > adb shell dumpsys package de.localist.desktop | grep versionName
           versionName=2.0.0
     > adb push C:\Users\emre\AppData\Local\Temp\localist-android-…\Localist-Pruefung /sdcard/Documents/Localist-Pruefung
-          C:\Users\emre\AppData\Local\Temp\localist-android-…\Localist-Pruefung\: 17 files pushed, 0 skipped. 0.3 MB/s (137605 bytes in 0.434s)
+          C:\Users\emre\AppData\Local\Temp\localist-android-…\Localist-Pruefung\: 17 files pushed, 0 skipped. 0.2 MB/s (137605 bytes in 0.588s)
     > adb shell appops set de.localist.desktop MANAGE_EXTERNAL_STORAGE allow
           
     > adb shell am start -n de.localist.desktop/.MainActivity
@@ -49,7 +137,7 @@
     Werkzeugleiste: sichtbar 386 px, Inhalt 1506 px breit, overflow-x: auto
     > adb exec-out screencap -p > docs\screenshots\etappe-15\android\07-code.png
     > adb shell input swipe 968 809 112 809 400   (Werkzeugleiste nach links wischen)
-    Werkzeugleiste nach dem Wischen: scrollLeft 449.9047546386719 px (vorher 0)
+    Werkzeugleiste nach dem Wischen: scrollLeft 438.4761962890625 px (vorher 0)
     > adb exec-out screencap -p > docs\screenshots\etappe-15\android\08-code-werkzeugleiste-gewischt.png
     > adb shell input tap 153 808   („Callout“ in der Werkzeugleiste)
     > adb shell grep -c "<l-callout" /sdcard/Documents/Localist-Pruefung/Notizen/DNS.html
@@ -60,44 +148,12 @@
     Screenshots in docs/screenshots/etappe-15/android (android).
     ```
   - Screenshots per `adb exec-out screencap`: [01-vault](docs/screenshots/etappe-15/android/01-vault.png), [02-html-seite](docs/screenshots/etappe-15/android/02-html-seite.png), [03-notizbuch](docs/screenshots/etappe-15/android/03-notizbuch.png), [04-karteikarte](docs/screenshots/etappe-15/android/04-karteikarte.png), [05-kartenstapel](docs/screenshots/etappe-15/android/05-kartenstapel.png), [06-quiz](docs/screenshots/etappe-15/android/06-quiz.png), [07-code](docs/screenshots/etappe-15/android/07-code.png), [08-code-werkzeugleiste-gewischt](docs/screenshots/etappe-15/android/08-code-werkzeugleiste-gewischt.png), [09-code-eingefuegt](docs/screenshots/etappe-15/android/09-code-eingefuegt.png)
-- [ ] Die Klickliste „Version 1.0“ und eine Klickliste „Version 2.0“ (HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein, Notizbuch, Umwandeln, Export) sind in `FORTSCHRITT.md` abgehakt.
-- [ ] Keine Fehler bei `npx tsc --noEmit`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
+- [x] Die Klickliste „Version 1.0“ und eine Klickliste „Version 2.0“ (HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein, Notizbuch, Umwandeln, Export) sind in `FORTSCHRITT.md` abgehakt.
+  - Beide Listen stehen unten unter „Klickliste „Version 1.0““ und „Klickliste „Version 2.0““, alle 12 bzw. 7 Punkte bestanden (`node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" 1.0` bzw. `… 2.0`).
+- [x] Keine Fehler bei `npx tsc --noEmit`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
+  - `npx tsc --noEmit` ohne Ausgabe (Exit-Code 0); `git grep -nE "TODO|FIXME" -- src src-tauri/src` ohne Ausgabe (Exit-Code 1 = kein Treffer).
 - [x] `README.md` und `ANLEITUNG.md` sind aktualisiert, mit einem Abschnitt „Neu in Version 2.0“ und einer kurzen Einführung in HTML-Seiten und Bausteine für Einsteiger.
   - `README.md`: Abschnitte „Neu in Version 2.0“ und „HTML-Seiten in einer Minute“. `ANLEITUNG.md`: „Neu in Version 2.0“, neuer Abschnitt „9. HTML-Seiten, Bausteine und Notizbücher – kurze Einführung“ (Was ist HTML, Ansichten, Bausteine mit Markup-Tabelle und Beispiel, Bearbeiten ohne Code, eigene Bausteine, Links, Sicherheit, Notizbücher, Umwandeln, Export), Versionsnummern 2.0.0, „Erste Schritte“ an das neue Design angepasst (Sidebar, „Neu“-Menü, Verschieben, Einstellungen), Speicherorte um HTML-Seiten, Notizbücher und Bausteine ergänzt.
-
-## Klickliste „Version 1.0“
-Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
-
-Stand: am 2026-10-25 mit dem Stand von Etappe 14 in der Browser-Vorschau (Port 1430) erneut durchgeklickt, alle 12 Punkte bestanden. Seit Etappe 13 erledigt das `scripts/klickliste.mjs` mit echter Tastatur und Maus in Microsoft Edge (Aufruf `node scripts/klickliste.mjs http://localhost:1430 "Etappe 14"`); nur die Kanban-Karte wird wie bisher mit Drag-Ereignissen per Skript gezogen. Ausgabe:
-    ```
-    Klickliste „Version 1.0“ (Etappe 14), Vorschau http://localhost:1430:
-    [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 14.“
-    [x] 2. Callout über das „/“-Menü: eingefügt
-    [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 14 [[Formatierung]]“, Klick öffnet „Formatierung“
-    [x] 4. Eigenschaft: `kategorie: Lernen` im Frontmatter
-    [x] 5. Tabelle: Zelle, Sortierung, Filter: priorität: mittel; absteigend: Umzug, Website-Relaunch; Filter status ist Geplant: Umzug
-    [x] 6. Kanban: „Umzug“ nach „Erledigt“ (status: Erledigt)
-    [x] 7. Kalender: Woche „KW 43 · 19.10.–25.10.2026“, Monat, Klick auf einen Tag legt Projekte/Unbenannt.md → fällig: 2026-10-14 an
-    [x] 8. Volltextsuche „Wochenplanung“: Treffer: Ideen (markiert: „Wochenplanung“)
-    [x] 9. Strg+P: „relaunch“ + Enter öffnet „Website-Relaunch“
-    [x] 10. Vorlage „Projekt“: `Unbenannt.md` mit neuer id, Eigenschaften und Inhalt der Vorlage
-    [x] 11. Backlinks unter „Ideen“: Verlinkt von 3🧱BausteineLink „Ideen“🧠DNSLink „Ideen“🚀Website-RelaunchSiehe auch [[Ideen]].
-    [x] 12. Hell/Dunkel bleibt nach dem Neuladen: sofort „dark“, nach dem Neuladen „dark“
-    ```
-- [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
-- [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
-- [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
-- [x] Eigenschaft: In der Eigenschaften-Leiste eine Eigenschaft hinzufügen und einen Wert setzen.
-- [x] Tabelle: Datenbank „Projekte“ öffnen, eine Zelle ändern, sortieren und filtern.
-- [x] Kanban: Kanban-Ansicht öffnen, eine Karte in eine andere Spalte ziehen.
-- [x] Kalender: Kalender-Ansicht öffnen, Monat/Woche umschalten, ein Klick auf einen Tag legt einen Eintrag an.
-- [x] Suche: Volltextsuche nach „Wochenplanung“ findet „Ideen“ mit markiertem Treffer.
-- [x] Strg+P: Schnellsuche öffnet eine Seite per Enter.
-- [x] Vorlage: Neue Seite aus der Vorlage „Projekt“ übernimmt Eigenschaften und Inhalt.
-- [x] Backlinks: Unter „Ideen“ steht „Website-Relaunch“ unter „Verlinkt von“.
-- [x] Hell/Dunkel: Umschalten wirkt sofort und bleibt nach dem Neuladen erhalten.
-
-## Abgeschlossene Etappen
 - Etappe 14 – Notizbücher, Umwandeln und Export (abgeschlossen am 2026-10-25). Nachweise: `npm test` 296 von 296 Tests grün (27 Testdateien, neu `src/lib/notizbuch.test.ts` (6), `src/lib/notiz-html.test.ts` (15, je Element), `src/lib/export.test.ts` (3) und 6 Oberflächen-Tests „Notizbücher, Umwandeln und Export (Etappe 14)“ in `src/App.test.tsx`), `cargo test` 42 von 42 grün (neu `export::tests::base64_wie_im_standard`, `export::tests::export_schreibt_nur_html_dateien`, `export::tests::darstellungen_behalten_hoechstens_die_letzten_seiten`, `vault::tests::ordner_mit_notizbuch_datei_ist_ein_notizbuch`), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `…\bundle\msi\Localist_1.0.0_x64_de-DE.msi` (3,37 MiB), `…\bundle\nsis\Localist_1.0.0_x64-setup.exe` (2,64 MiB)). Klickliste „Version 1.0“ abgehakt (siehe oben). Screenshots (`npm run screenshots -- http://localhost:1430 docs/screenshots/etappe-14 etappe14`):
     - Notizbuch „Lernen“ mit fertig dargestellter Notiz (Toggle per echtem Klick aufgeklappt): [hell](docs/screenshots/etappe-14/notizbuch-hell.png) / [dunkel](docs/screenshots/etappe-14/notizbuch-dunkel.png), nach „Weiter“: [hell](docs/screenshots/etappe-14/notizbuch-weiter-hell.png) / [dunkel](docs/screenshots/etappe-14/notizbuch-weiter-dunkel.png), nach dem Umsortieren: [hell](docs/screenshots/etappe-14/notizbuch-umsortiert-hell.png) / [dunkel](docs/screenshots/etappe-14/notizbuch-umsortiert-dunkel.png), Handy (360 × 740): [hell](docs/screenshots/etappe-14/handy-notizbuch-hell.png) / [dunkel](docs/screenshots/etappe-14/handy-notizbuch-dunkel.png)
     - „In HTML-Seite umwandeln“: Menü [hell](docs/screenshots/etappe-14/umwandeln-menue-hell.png) / [dunkel](docs/screenshots/etappe-14/umwandeln-menue-dunkel.png), Ergebnis in „Geteilt“: [hell](docs/screenshots/etappe-14/umgewandelt-hell.png) / [dunkel](docs/screenshots/etappe-14/umgewandelt-dunkel.png)
@@ -393,6 +449,11 @@ Stand: am 2026-10-25 mit dem Stand von Etappe 14 in der Browser-Vorschau (Port 1
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Etappe 15 – Version 2.0.0 steht in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml`. Die Sidebar liest sie aus `package.json`, die Bausteine tragen `2.0.0+<Prüfsumme>`, die APK übernimmt sie aus `tauri.conf.json` (versionCode 2000000).
+- 2026-10-25: Etappe 15 – Fehler behoben, gefunden bei der Android-Prüfung: Beginnt der Inhalt von `<main>` mit einem Zeilenumbruch und steht der Cursor ganz am Anfang (z. B. Werkzeugleiste angetippt, bevor der Editor den Fokus hatte), fand `planInsert` den Zeilenanfang falsch (`lastIndexOf("\n", -1)` sucht an Stelle 0) und CodeMirror meldete `RangeError: Invalid change range 1 to 0`. Neuer Test in `src/lib/bausteine.test.ts`.
+- 2026-10-25: Etappe 15 – Bewusste Verhaltensänderung beim Einfügen mehrerer Bausteine nacheinander: Ist noch genau der Platzhalter des zuletzt eingefügten Bausteins markiert und wurde nichts geändert, kommt der nächste Baustein hinter den ganzen vorigen Baustein (bisher hinter die Zeile des Platzhalters, also z. B. eine Karteikarte mitten in eine Quizfrage, was das Quiz zerstört). Ist sonst etwas markiert, bleibt es beim bisherigen Verhalten. Deshalb wurde die Erwartung im Oberflächen-Test „Werkzeugleiste fügt Karteikarte, Kartenstapel, Quiz und Diagramm nach dem Speicherformat ein“ geändert und um den Fall „anderes markiert“ ergänzt. `EinfuegePlan` liefert dafür zusätzlich `ende`.
+- 2026-10-25: Etappe 15 – Android-Prüfung mit `scripts/android-pruefung.mjs`: Die Debug-APK hat die WebView-Entwicklerschnittstelle; darüber navigiert das Skript und liest Ergebnisse aus, bedient wird mit echten Fingertipps (`adb shell input tap/swipe`). Die Umrechnung von CSS-Pixeln in Bildschirmpunkte nutzt `devicePixelRatio` und die Höhe der Statusleiste. Der Emulator läuft ohne Fenster (`-no-window`), die Vault-Kopie liegt unter `/sdcard/Documents/Localist-Pruefung`.
+- 2026-10-25: Etappe 15 – Klickliste „Version 2.0“ als zweite Liste in `scripts/klickliste.mjs` (drittes Argument `1.0` oder `2.0`). Rückfragen (`window.confirm`) beantwortet das Skript über `Page.handleJavaScriptDialog` mit „OK“.
 - 2026-10-25: Etappe 14 – Notizbuch: `_notizbuch.yaml` wird mit der Bibliothek `yaml` gelesen und beim Umsortieren mit `parseDocument` geändert, damit Kommentare und weitere Schlüssel erhalten bleiben (`src/lib/notizbuch.ts`). Seiten, die in der Liste fehlen, kommen alphabetisch (deutsch, ohne Groß/Klein) ans Ende; Einträge ohne Datei werden übergangen, aber nicht gelöscht. Umbenennen, Verschieben und Umwandeln passen den Eintrag an. Der Ordnerbaum meldet `notebook: true` (Rust `vault.rs`); liegen `_ansichten.yaml` und `_notizbuch.yaml` zusammen in einem Ordner, gilt er als Datenbank und die App zeigt einen Hinweis.
 - 2026-10-25: Etappe 14 – Notizen im Notizbuch werden wie HTML-Seiten in der abgeschotteten Anzeige gezeigt: Die App wandelt die Notiz mit `src/lib/notiz-html.ts` um und übergibt das Ergebnis mit dem Befehl `notiz_darstellung_setzen` an Rust (nur Pfade auf `.md` im Vault, höchstens 64 Seiten im Arbeitsspeicher, beim Öffnen eines Vaults geleert). Das Schema `localist-seite` liefert unter dem Pfad der Notiz dann diese Darstellung mit CSP und Brücke aus; Roh-HTML aus der Notiz gelangt so nie in die App-Oberfläche. Die Vorschau im Browser macht dasselbe über `PUT /__localist-dev/darstellung`.
 - 2026-10-25: Etappe 14 – „In HTML-Seite umwandeln“ arbeitet auf dem mdast aus `src/markdown/mdast.ts` (nicht auf dem HTML von BlockNote). Texte werden HTML-maskiert, Callout-Typen von Obsidian auf die vier Typen von `<l-callout>` abgebildet (z. B. `tip` → `tipp`, `danger` → `fehler`, unbekannte → `info`), `[[Links]]` werden zu relativen `<a href>` (Leerzeichen als `%20`, Umlaute lesbar), fehlende Ziele zu `Name.md`. `id` bleibt erhalten, damit die Seite dieselbe Identität behält; nur ohne `id` wird eine neue vergeben. Die Notiz kommt erst in den Papierkorb, wenn die HTML-Seite geschrieben ist.

@@ -223,6 +223,8 @@ export interface EinfuegePlan {
   /** Danach markierter Bereich (oder Cursor ans Ende des Bausteins). */
   anchor: number;
   head: number;
+  /** Ende des eingefügten Bausteins im neuen Text. */
+  ende: number;
 }
 
 /**
@@ -267,9 +269,10 @@ export function planInsert(doc: string, pos: number, vorlage: readonly string[],
     insert = `\n${indent}${block}\n${indent}`;
     blockStart = from + 1 + indent.length;
   }
+  const ende = blockStart + block.length;
   const found = auswahl ? block.indexOf(auswahl) : -1;
-  if (found === -1) return { from, to, insert, anchor: blockStart + block.length, head: blockStart + block.length };
-  return { from, to, insert, anchor: blockStart + found, head: blockStart + found + auswahl!.length };
+  if (found === -1) return { from, to, insert, anchor: ende, head: ende, ende };
+  return { from, to, insert, anchor: blockStart + found, head: blockStart + found + auswahl!.length, ende };
 }
 
 /** Wendet einen Plan auf einen Text an (für Tests und ohne Editor). */

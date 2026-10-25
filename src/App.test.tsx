@@ -1289,9 +1289,14 @@ describe("Lern-Bausteine und Diagramme bearbeiten (Etappe 13)", () => {
     expect(view.state.sliceDoc()).toContain(
       '</h1>\n<l-quiz>\n  <l-quizfrage>\n    <l-frage>Frage</l-frage>\n    <ul>\n      <li>Falsche Antwort</li>\n      <li data-richtig>Richtige Antwort</li>\n    </ul>\n  </l-quizfrage>\n</l-quiz>\n',
     );
-    // Der Platzhalter „Frage“ ist markiert: Der nächste Baustein kommt hinter diese Zeile, nicht mitten hinein.
+    // Der Platzhalter „Frage“ ist noch markiert: Der nächste Baustein kommt hinter das ganze Quiz, nicht in es hinein.
     fireEvent.click(toolbar.getByRole("button", { name: "Karteikarte" }));
-    expect(view.state.sliceDoc()).toContain("    <l-frage>Frage</l-frage>\n    <l-karteikarte>\n      <l-frage>Frage</l-frage>\n      <l-antwort>Antwort</l-antwort>\n    </l-karteikarte>\n    <ul>");
+    expect(view.state.sliceDoc()).toContain("  </l-quizfrage>\n</l-quiz>\n<l-karteikarte>\n  <l-frage>Frage</l-frage>\n  <l-antwort>Antwort</l-antwort>\n</l-karteikarte>\n");
+    // Ist etwas anderes markiert, kommt der Baustein wie bisher hinter die Zeile mit der Markierung.
+    const frageZeile = view.state.doc.toString().indexOf("<l-frage>Frage</l-frage>");
+    act(() => view.dispatch({ selection: { anchor: frageZeile + "<l-frage>".length, head: frageZeile + "<l-frage>Frage".length } }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Trennlinie" }));
+    expect(view.state.sliceDoc()).toContain("    <l-frage>Frage</l-frage>\n    <hr>\n    <ul>");
     act(() => view.dispatch({ selection: { anchor: view.state.doc.toString().indexOf("</h1>") + 5 } }));
     fireEvent.click(toolbar.getByRole("button", { name: "Diagramm" }));
     expect(view.state.sliceDoc()).toContain('</h1>\n<l-diagramm typ="balken" titel="Titel">\n  <table>\n    <tr><th>Beschriftung</th><th>Wert</th></tr>');

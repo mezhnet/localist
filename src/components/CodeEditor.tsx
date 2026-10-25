@@ -14,7 +14,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { html, htmlLanguage } from "@codemirror/lang-html";
 import { bracketMatching, foldGutter, foldKeymap, HighlightStyle, indentOnInput, syntaxHighlighting, syntaxTree } from "@codemirror/language";
 import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
-import { Compartment, EditorState } from "@codemirror/state";
+import { Compartment, EditorState, type Text as DocText } from "@codemirror/state";
 import {
   crosshairCursor,
   drawSelection,
@@ -242,12 +242,16 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
     const editor = new EditorView({ state, parent: host.current });
     view.current = editor;
     if (apiRef) {
+      /** Zuletzt eingefügter Baustein (Text danach, markierter Platzhalter, Ende des Bausteins). */
+      let zuletzt: { doc: DocText; anchor: number; head: number; ende: number } | null = null;
       apiRef.current = {
         insert: (vorlage, auswahl) => {
-          // Planen mit "\n" (Positionen wie in CodeMirror), einfügen mit dem Zeilenende der Datei. Ist etwas markiert
-          // (z. B. der Platzhalter des zuletzt eingefügten Bausteins), kommt der neue Baustein hinter diese Zeile.
+          // Planen mit "\n" (Positionen wie in CodeMirror), einfügen mit dem Zeilenende der Datei. Ist noch genau der
+          // Platzhalter des zuletzt eingefügten Bausteins markiert und hat sich nichts geändert, kommt der neue
+          // Baustein hinter diesen Baustein (nicht in ihn hinein). Ist sonst etwas markiert, kommt er hinter die Zeile.
           const selection = editor.state.selection.main;
-          const pos = selection.empty ? selection.head : editor.state.doc.lineAt(selection.to).to;
+          const folgt = zuletzt !== null && zuletzt.doc === editor.state.doc && zuletzt.anchor === selection.anchor && zuletzt.head === selection.head;
+          const pos = folgt ? zuletzt!.ende : selection.empty ? selection.head : editor.state.doc.lineAt(selection.to).to;
           const plan = planInsert(editor.state.doc.toString(), pos, vorlage, auswahl);
           editor.dispatch({
             changes: { from: plan.from, to: plan.to, insert: plan.insert.split("\n").join(editor.state.lineBreak) },
@@ -255,6 +259,7 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
             scrollIntoView: true,
             userEvent: "input",
           });
+          zuletzt = { doc: editor.state.doc, anchor: plan.anchor, head: plan.head, ende: plan.ende };
           editor.focus();
         },
         markierung: () => {
