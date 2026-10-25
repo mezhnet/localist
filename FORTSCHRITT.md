@@ -9,7 +9,7 @@
 - [x] Oben auf jeder Seite gibt es eine Eigenschaften-Leiste mit den Typen Text, Zahl, Auswahl, Mehrfachauswahl, Status, Datum, Checkbox und URL, gespeichert im Frontmatter.
 - [x] Ein Ordner lässt sich in eine Datenbank umwandeln (legt `_ansichten.yaml` an, dort stehen auch die Eigenschaftstypen).
 - [x] Tabellenansicht: eine Zeile pro Seite, eine Spalte pro Eigenschaft, Werte direkt in der Zelle bearbeitbar.
-- [ ] Sortieren und Filtern, die Einstellungen werden in `_ansichten.yaml` gespeichert.
+- [x] Sortieren und Filtern, die Einstellungen werden in `_ansichten.yaml` gespeichert.
 - [ ] Eine neue Zeile legt eine neue `.md`-Datei mit `id` an.
 - [x] Tests für Frontmatter lesen und schreiben, inklusive Erhalt unbekannter Felder und Datumsformat.
 
