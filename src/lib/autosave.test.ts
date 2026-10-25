@@ -74,6 +74,17 @@ describe("AutoSaver (automatisches Speichern)", () => {
     expect(saver.lastSaved).toBe("alt");
   });
 
+  it("erkennt eigene Speicherungen, auch die vorletzte", async () => {
+    const saver = new AutoSaver("v0", async () => {});
+    saver.schedule(() => "v1");
+    await saver.flush();
+    saver.schedule(() => "v2");
+    await saver.flush();
+    expect(saver.isOwnWrite("v2")).toBe(true);
+    expect(saver.isOwnWrite("v1")).toBe(true);
+    expect(saver.isOwnWrite("von außen")).toBe(false);
+  });
+
   it("cancel verwirft vorgemerkte Änderungen", async () => {
     const write = vi.fn(async () => {});
     const saver = new AutoSaver("", write);

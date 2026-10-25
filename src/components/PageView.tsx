@@ -64,7 +64,7 @@ export function PageView({ path, isNew = false, externalVersion, saverRef, onRen
     readPage(pathRef.current).then(
       (text) => {
         const saver = saverRef.current;
-        if (cancelled || !saver || text === saver.lastSaved || saver.dirty) return;
+        if (cancelled || !saver || saver.isOwnWrite(text) || saver.dirty) return;
         const page = parsePage(text);
         formatRef.current = page.format;
         saver.lastSaved = text;

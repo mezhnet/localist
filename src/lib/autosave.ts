@@ -9,6 +9,8 @@ export class AutoSaver {
   private produce: (() => string) | null = null;
   private queue: Promise<void> = Promise.resolve();
   private saving = 0;
+  /** Die letzten selbst geschriebenen Fassungen, um Meldungen des Dateiwächters darüber zu erkennen. */
+  private recent: string[] = [];
 
   /**
    * @param lastSaved Text, der gerade in der Datei steht.
@@ -27,6 +29,11 @@ export class AutoSaver {
     this.produce = produce;
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.flush(), this.delay);
+  }
+
+  /** Stammt dieser Dateiinhalt von einer eigenen Speicherung (aktuell oder kurz davor)? */
+  isOwnWrite(text: string): boolean {
+    return text === this.lastSaved || this.recent.includes(text);
   }
 
   /** Gibt es Änderungen, die noch nicht in der Datei stehen? */
@@ -62,6 +69,7 @@ export class AutoSaver {
     try {
       await this.write(text);
       this.lastSaved = text;
+      this.recent = [text, ...this.recent].slice(0, 5);
     } catch (error) {
       this.onError(`Speichern fehlgeschlagen: ${errorMessage(error)}`);
     }
