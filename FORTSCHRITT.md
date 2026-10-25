@@ -1,12 +1,37 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: alle Etappen 0 bis 8 abgeschlossen (Localist 1.0.0 für Windows und Android)
-- Zuletzt aktualisiert: 2026-10-25 14:08
-- Nächster Schritt: keiner aus CLAUDE.md. Mögliche nächste Schritte stehen dort unter „Zukunft“ (Google-Kalender), sie werden erst auf ausdrücklichen Wunsch des Nutzers umgesetzt.
+- Etappe: 9 – Neues Design
+- Zuletzt aktualisiert: 2026-10-25 15:33
+- Nächster Schritt: Design-Tokens in `src/styles/tokens.css` und Test gegen feste Farbwerte
 
 ## Fertig-Kriterien der aktuellen Etappe
-- keine offene Etappe
+- [ ] Alle Farben, Abstände, Schriftgrößen, Radien und Schatten stehen als CSS-Variablen in `src/styles/tokens.css` (hell und dunkel). Ein Test prüft alle `.css`-Dateien unter `src/` außer `tokens.css` und stellt sicher, dass dort keine festen Farbwerte (`#…`, `rgb(…)`, `rgba(…)`, `hsl(…)`, `hsla(…)`) stehen.
+- [x] Die Klickliste „Version 1.0“ (siehe Arbeitsregel 7) steht in `FORTSCHRITT.md`.
+- [ ] Wiederverwendbare UI-Komponenten unter `src/components/ui/` (Schaltfläche, Menü, Dialog, Eingabefeld, Reiter) ersetzen die bisherigen Einzellösungen in Sidebar, Dialogen, Eigenschaften-Leiste und Datenbank-Ansichten.
+- [ ] Die Schrift ist lokal eingebunden, die App lädt nichts aus dem Internet.
+- [ ] Überarbeitete Sidebar: oben ein Bereich „Favoriten“ (Seiten anheften und lösen, gespeichert in `.localist/settings.json`), darunter der Ordnerbaum. Ein „Neu“-Menü fasst Notiz, Ordner und Datenbank zusammen.
+- [ ] Startseite, wenn keine Seite offen ist: zuletzt bearbeitete Seiten, Favoriten, Schnellaktionen und ein Suchfeld.
+- [ ] Notizen, Datenbank-Ansichten (Tabelle, Kanban, Kalender), Dialoge und Einstellungen nutzen das neue Design, hell und dunkel, und sind ab 360 px Breite bedienbar.
+- [ ] Screenshots (hell und dunkel) von Startseite, Notiz, Tabelle, Kanban und Kalender liegen in `docs/screenshots/etappe-9/` und sind in `FORTSCHRITT.md` verlinkt.
+- [ ] Alle Funktionen der Version 1.0 funktionieren weiterhin (siehe Arbeitsregel 7).
+
+## Klickliste „Version 1.0“
+Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
+
+Stand: noch nicht durchgeklickt (Etappe 9 läuft)
+- [ ] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
+- [ ] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
+- [ ] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
+- [ ] Eigenschaft: In der Eigenschaften-Leiste eine Eigenschaft hinzufügen und einen Wert setzen.
+- [ ] Tabelle: Datenbank „Projekte“ öffnen, eine Zelle ändern, sortieren und filtern.
+- [ ] Kanban: Kanban-Ansicht öffnen, eine Karte in eine andere Spalte ziehen.
+- [ ] Kalender: Kalender-Ansicht öffnen, Monat/Woche umschalten, ein Klick auf einen Tag legt einen Eintrag an.
+- [ ] Suche: Volltextsuche nach „Wochenplanung“ findet „Ideen“ mit markiertem Treffer.
+- [ ] Strg+P: Schnellsuche öffnet eine Seite per Enter.
+- [ ] Vorlage: Neue Seite aus der Vorlage „Projekt“ übernimmt Eigenschaften und Inhalt.
+- [ ] Backlinks: Unter „Ideen“ steht „Website-Relaunch“ unter „Verlinkt von“.
+- [ ] Hell/Dunkel: Umschalten wirkt sofort und bleibt nach dem Neuladen erhalten.
 
 ## Abgeschlossene Etappen
 - Etappe 8 – Android-APK (abgeschlossen am 2026-10-25). Nachweise: `npm test` 128 von 128 Tests grün (12 Testdateien), `cargo test` 20 von 20 grün (darunter `papierkorb_im_vault_fuer_android`, `ordnerauswahl_listet_unterordner_und_legt_neue_an`), `npx tsc --noEmit` ohne Fehler. Android: `npx tauri android build --debug --apk --target aarch64 --target x86_64` erzeugt `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk`. Im Emulator „Medium_Phone_API_37.0“ (Android 17) installiert und bedient: Ordnerauswahl → Interner Speicher → Documents → Beispiel-Vault (Kopie) → als Vault verwendet; Seite „Ideen“ über das ausklappbare Menü geöffnet (Inhalt und Backlinks sichtbar); Text über die Android-Tastatur ergänzt, danach stand in der Datei auf dem Gerät „- Lesezeichen für Artikel vom Handy bearbeitet“; nach Neuinstallation öffnete sich der zuletzt geöffnete Vault automatisch. Windows: `npm run tauri build` ohne Fehler (`localist.exe`, `Localist_1.0.0_x64-setup.exe`, `Localist_1.0.0_x64_de-DE.msi`).
