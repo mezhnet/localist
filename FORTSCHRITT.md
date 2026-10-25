@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 4 – Kanban
-- Zuletzt aktualisiert: 2026-10-25 13:14
-- Nächster Schritt: Kanban-Logik mit Tests, danach Reiter für mehrere Ansichten und die Kanban-Oberfläche.
+- Zuletzt aktualisiert: 2026-10-25 13:30
+- Nächster Schritt: Abschlussprüfung der Etappe 4 (npm test, tsc, tauri build) und Abschluss-Commit.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Kanban-Ansicht einer Datenbank, gruppiert nach einer Status- oder Auswahl-Eigenschaft.
+- [x] Kanban-Ansicht einer Datenbank, gruppiert nach einer Status- oder Auswahl-Eigenschaft.
 - [ ] Eine Karte per Drag & Drop in eine andere Spalte zu ziehen ändert den Wert in der Datei.
 - [ ] Neue Karten lassen sich direkt in einer Spalte anlegen, ein Klick auf eine Karte öffnet die Seite.
 - [ ] Mehrere Ansichten pro Datenbank (z. B. Tabelle und Kanban), umschaltbar per Reiter, gespeichert in `_ansichten.yaml`.
