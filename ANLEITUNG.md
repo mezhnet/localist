@@ -166,6 +166,10 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
     (Tabelle oder Kanban), ein Doppelklick auf einen Reiter benennt sie um. Das Kanban gruppiert nach einer Status- oder
     Auswahl-Eigenschaft („Gruppieren nach“). Zieh eine Karte in eine andere Spalte, um den Wert in der Datei zu ändern.
     „+ Neu“ unter einer Spalte legt eine Seite mit diesem Wert an, ein Klick auf eine Karte öffnet die Seite.
+16. **Kalender:** „+“ bei den Reitern → „📅 Kalender“ (dafür braucht die Datenbank eine Datums-Eigenschaft). Oben
+    wählst du Monat oder Woche und blätterst mit ‹ und ›. Ein Klick auf einen Tag legt eine Seite mit diesem Datum an,
+    ein Eintrag lässt sich auf einen anderen Tag ziehen (eine Uhrzeit bleibt dabei erhalten). Einträge ohne Datum
+    stehen rechts unter „Ohne Datum“ und lassen sich von dort in den Kalender ziehen.
 
 ## Häufige Probleme
 
