@@ -1,6 +1,7 @@
 //! Tauri-Kommandos für die Oberfläche. Die eigentliche Dateiarbeit steckt in `vault.rs`,
 //! der Dateiwächter in `watcher.rs`. Fehler gehen als deutsche Meldungen an die Oberfläche.
 
+mod search_index;
 mod vault;
 mod watcher;
 
@@ -139,6 +140,17 @@ async fn import_attachment(state: State<'_, AppState>, source: String) -> Result
     vault::import_attachment(&state.root()?, Path::new(&source))
 }
 
+/// Suchindex aller Seiten (Titel, Inhalt). Liegt im Cache-Ordner der App, nicht im Vault.
+#[tauri::command]
+async fn vault_index(app: AppHandle, state: State<'_, AppState>) -> Result<Vec<search_index::IndexEntry>, String> {
+    let root = state.root()?;
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("Der Cache-Ordner der App wurde nicht gefunden: {e}"))?;
+    search_index::update_index(&root, &search_index::index_file_for(&cache, &root))
+}
+
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -160,7 +172,8 @@ pub fn run() {
             rename_entry,
             delete_entry,
             resolve_attachment,
-            import_attachment
+            import_attachment,
+            vault_index
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");

@@ -81,6 +81,16 @@ export function rewriteLinks(markdown: string, replace: (pageName: string) => st
   );
 }
 
+/** Alle Linkziele [[…]] eines Markdown-Textes (Seitenname ohne Abschnitt), ohne Links in Code. */
+export function extractLinks(markdown: string): string[] {
+  const names: string[] = [];
+  rewriteLinks(markdown, (pageName) => {
+    names.push(pageName);
+    return null;
+  });
+  return names;
+}
+
 /** Wendet `fn` nur auf Text außerhalb von Code-Blöcken (``` / ~~~) und Code-Spannen (`…`) an. */
 function mapOutsideCode(markdown: string, fn: (text: string) => string): string {
   const lines = markdown.split("\n");

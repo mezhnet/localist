@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 6 – Komfort
-- Zuletzt aktualisiert: 2026-10-25 13:53
+- Zuletzt aktualisiert: 2026-10-25 14:02
 - Nächster Schritt: Suchindex in Rust (App-Datenordner), Such- und Backlink-Logik mit Tests, danach Volltextsuche, Strg+P, Vorlagen und Backlinks in der Oberfläche.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -11,7 +11,7 @@
 - [ ] Vorlagen: Seiten aus dem Ordner `Vorlagen/` lassen sich als Grundlage für neue Seiten nutzen.
 - [ ] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
 - [ ] Der Suchindex liegt im App-Datenordner, nicht im Vault.
-- [ ] Tests für Suche und Backlinks.
+- [x] Tests für Suche und Backlinks.
 
 ## Abgeschlossene Etappen
 - Etappe 5 – Kalender (abgeschlossen am 2026-10-25). Nachweise: `npm test` 111 von 111 Tests grün (11 Testdateien, zweimal hintereinander stabil), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Monatsansicht Oktober 2026 mit markiertem heutigen Tag und einem Termin mit Uhrzeit, Liste „Ohne Datum“.
@@ -59,6 +59,7 @@
 - Gelöst am 2026-10-24: Die Microsoft C++ Build Tools fehlten. Auf Wunsch des Nutzers wurden sie aus der Sitzung per `winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` installiert (Build Tools 2022 Version 17.14.42, MSVC 14.44.35207, Windows 11 SDK). Rust fand den Linker ohne Neustart.
 
 ## Entscheidungen
+- 2026-10-25: Der Suchindex (`src-tauri/src/search_index.rs`) enthält Titel, Inhalt und Änderungszeit jeder Seite und liegt als JSON im Cache-Ordner der App (`%LOCALAPPDATA%\de.localprojekt.desktop\suchindex\<Hash des Vault-Pfads>.json`), nie im Vault. Bei jedem Abruf werden nur geänderte Dateien neu gelesen. Gelöscht oder beschädigt wird er einfach neu aufgebaut. Suche, Strg+P und Backlinks werten den Index in TypeScript aus (`src/lib/search.ts`). Vorlagen unterstützen die Obsidian-Platzhalter `{{title}}`, `{{date}}`, `{{time}}`.
 - 2026-10-25: Die Kalenderansicht rechnet nur mit Kalendertagen in UTC (`src/lib/calendar.ts`), nie mit lokaler Uhrzeit, damit Sommer-/Winterzeit keinen Tag verschiebt. Wochen beginnen am Montag, Kalenderwochen nach ISO 8601. Beim Verschieben bleibt eine Uhrzeit (`YYYY-MM-DDTHH:MM`) erhalten. In `_ansichten.yaml` hat eine Kalender-Ansicht `typ: kalender`, `datum: <Eigenschaft>` und `modus: monat|woche`.
 - 2026-10-25: Eigenschaften werden im Frontmatter zeilengenau geändert (`src/lib/properties.ts`): Nur die Zeilen des geänderten Feldes werden mit der Bibliothek `yaml` neu geschrieben, alle anderen Zeilen (auch unbekannte Felder und Kommentare) bleiben unverändert. Gelesen wird mit YAML 1.2, dadurch bleiben Datumswerte Text im Format `YYYY-MM-DD` bzw. `YYYY-MM-DDTHH:MM`. Typnamen und Schlüssel in `_ansichten.yaml` sind deutsch (`eigenschaften`, `ansichten`, `typ`, `optionen`, `sortierung`, `filter`), Typen: text, zahl, auswahl, mehrfachauswahl, status, datum, checkbox, url. Eigenschaftstypen außerhalb von Datenbanken stehen in `.meinapp/settings.json` unter `eigenschaften`.
 - 2026-10-25: Der zuletzt geöffnete Vault wird in `zustand.json` im App-Datenordner gemerkt (Windows: `%APPDATA%de.localprojekt.desktop`), nicht im Vault. Beim Öffnen legt die App `.meinapp/settings.json` an, falls es fehlt.
