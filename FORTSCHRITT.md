@@ -2,11 +2,11 @@
 
 ## Aktueller Stand
 - Etappe: 2 – Notion-Feeling
-- Zuletzt aktualisiert: 2026-10-25 12:04
-- Nächster Schritt: Editor-Oberfläche: Slash-Menü mit Callout/Toggle, Ziehgriff, [[-Vorschläge und Klick auf Links, danach Links beim Umbenennen anpassen, Dunkelmodus, Icon und Cover.
+- Zuletzt aktualisiert: 2026-10-25 12:20
+- Nächster Schritt: Abschlussprüfung der Etappe 2 (npm test, tsc, tauri build) und Abschluss-Commit.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Slash-Menü (`/`) zum Einfügen von Blöcken.
+- [x] Slash-Menü (`/`) zum Einfügen von Blöcken.
 - [ ] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
 - [ ] Callouts und Toggles im Obsidian-Format (siehe Speicherformat).
 - [ ] Icon und Cover pro Seite, gespeichert im Frontmatter (`icon`, `cover`).
