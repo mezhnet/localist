@@ -4,8 +4,8 @@
 // schnittstelle wird über WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS nur für diesen Start eingeschaltet.
 //
 // Aufruf: node scripts/app-pruefung.mjs <localist.exe> <Vault-Kopie> <Screenshot-Ordner>
-import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -21,6 +21,8 @@ mkdirSync(outDir, { recursive: true });
 // Eigener WebView2-Datenordner: So stört die Prüfung keine laufende Localist-App (WebView2 erlaubt sonst
 // keine zweite Instanz mit anderen Startparametern) und hinterlässt nichts im Datenordner der echten App.
 const webviewData = mkdtempSync(join(tmpdir(), "localist-pruefung-webview-"));
+// Ziel für den Export (Etappe 14): ein leerer Ordner außerhalb des Vaults
+const exportDir = mkdtempSync(join(tmpdir(), "localist-pruefung-export-"));
 const app = spawn(exe, ["--vault", vault], {
   env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${PORT}`, WEBVIEW2_USER_DATA_FOLDER: webviewData },
   stdio: "ignore",
@@ -343,6 +345,76 @@ try {
     await pickMode("Lesen");
   }
 
+  // Etappe 14: Notizbuch (Notiz fertig dargestellt über das Schema), Umwandeln und Export mit den echten Dialogen
+  const inFrame = async (urlPart, expression) => {
+    const ziel = (await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()).find((t) => t.type === "iframe" && t.url.includes(urlPart));
+    if (!ziel) return null;
+    return new Promise((resolve) => {
+      const s = new WebSocket(ziel.webSocketDebuggerUrl);
+      s.onopen = () => s.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+      s.onmessage = (event) => {
+        resolve(JSON.parse(event.data).result?.result?.value);
+        s.close();
+      };
+    });
+  };
+  /** Beantwortet einen Dialog der App über scripts/dialog-bedienen.ps1 (nur Fenster dieses Prozesses). */
+  const dialog = (...args) => {
+    const ergebnis = spawnSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/dialog-bedienen.ps1", "-ProzessId", String(app.pid), ...args], { encoding: "utf8" });
+    return { ok: ergebnis.status === 0, text: (ergebnis.stdout || ergebnis.stderr).trim() };
+  };
+  const menue = async (seite, punkt) => {
+    await evaluate(`document.querySelector('[aria-label="Aktionen für „${seite}“"]').click()`);
+    await waitFor(`[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.includes(${JSON.stringify(punkt)}))`, `Menüpunkt ${punkt}`);
+    await evaluate(`[...document.querySelectorAll('[role="menuitem"]')].find((m) => m.textContent.includes(${JSON.stringify(punkt)})).click()`);
+  };
+  const NOTIZBUCH = `document.querySelector('.notizbuch-inhaltsseite iframe.html-frame:not(.is-loading)') && document.querySelector('.notizbuch-inhaltsseite .html-preview').style.height`;
+  await evaluate(`document.querySelector('.tree [title="Lernen"]').click()`);
+  await waitFor(NOTIZBUCH, "Notizbuch mit dargestellter Notiz");
+  await sleep(1000);
+  const notizbuch = {
+    titel: await evaluate(`document.querySelector('.notizbuch-kopf h1').textContent`),
+    inhalt: await evaluate(`[...document.querySelectorAll('.notizbuch-eintrag')].map((b) => b.textContent)`),
+    iframe: await evaluate(`(() => { const f = document.querySelector('.notizbuch-inhaltsseite iframe.html-frame:not(.is-loading)'); return { src: f.src, sandbox: f.getAttribute('sandbox') }; })()`),
+  };
+  const notizImFrame = await inFrame(
+    "Subnetting.md",
+    `({ callout: document.querySelector("l-callout")?.getAttribute("typ"), toggle: document.querySelector("details > summary")?.textContent, tabellenzeilen: document.querySelectorAll("table tr").length, checkliste: document.querySelectorAll("ul.l-checkliste input").length, bausteine: document.documentElement.getAttribute("data-localist-bausteine"), tauri: typeof window.__TAURI_INTERNALS__ })`,
+  );
+  report.push(`Notizbuch „${notizbuch.titel}“: Inhaltsverzeichnis ${JSON.stringify(notizbuch.inhalt)}, Seite ${notizbuch.iframe.src} (sandbox="${notizbuch.iframe.sandbox}"), Notiz fertig dargestellt: ${JSON.stringify(notizImFrame)}: ${await shot("app-notizbuch")}`);
+  await evaluate(`[...document.querySelectorAll('.notizbuch-blaettern button')].find((b) => b.textContent.startsWith("Weiter")).click()`);
+  await waitFor(`${NOTIZBUCH} && document.querySelector('.notizbuch-inhaltsseite iframe.html-frame:not(.is-loading)').src.includes("Bausteine.html")`, "nächste Seite im Notizbuch");
+  report.push(`„Weiter“ blättert zu ${await evaluate(`document.querySelector('.notizbuch-leiste h2').textContent`)}, „Zurück“: ${await evaluate(`document.querySelector('.notizbuch-blaettern button').textContent`)}`);
+
+  // „In HTML-Seite umwandeln“: Rückfrage der App mit „Ja“ beantworten
+  await evaluate(`document.querySelector('.tree [title="Notizen/Formatierung.md"]') || document.querySelector('.tree [title="Notizen"]').click()`);
+  await waitFor(`document.querySelector('[aria-label="Aktionen für „Formatierung“"]')`, "Formatierung im Ordnerbaum");
+  await menue("Formatierung", "In HTML-Seite umwandeln");
+  report.push(`Rückfrage: ${dialog("-Titel", "In HTML-Seite umwandeln", "-Knopf", "Ja").text}`);
+  const htmlDatei = join(vault, "Notizen", "Formatierung.html");
+  for (let i = 0; i < 50 && !existsSync(htmlDatei); i++) await sleep(200);
+  await waitFor(`document.querySelector('[aria-label="Ansicht (Strg+E)"]') && document.querySelector('.tree [title="Notizen/Formatierung.html"]')`, "umgewandelte Seite geöffnet");
+  const umgewandelt = existsSync(htmlDatei) ? readFileSync(htmlDatei, "utf8") : "";
+  report.push(
+    `Umgewandelt: Formatierung.html ${umgewandelt ? `geschrieben (${umgewandelt.length} Zeichen, <title>${/<title>(.*?)<\/title>/.exec(umgewandelt)?.[1]}</title>, ${(umgewandelt.match(/<(h[1-3]|ul|ol|table|blockquote|pre|l-callout|details)\b/g) ?? []).length} Blöcke)` : "NICHT geschrieben"}, Formatierung.md im Vault: ${existsSync(join(vault, "Notizen", "Formatierung.md")) ? "NOCH DA" : "entfernt (Papierkorb)"}, Hinweis: „${await evaluate(`document.querySelector('.notice')?.textContent ?? ""`)}“: ${await shot("app-umgewandelt")}`,
+  );
+
+  // „Als HTML-Datei exportieren“: Speichern-Dialog ausfüllen, Datei landet außerhalb des Vaults
+  const exportDatei = join(exportDir, "Bausteine.html");
+  await evaluate(`document.querySelector('.tree [title="Lernen/Bausteine.html"]') || document.querySelector('.tree [title="Lernen"]').click()`);
+  await waitFor(`document.querySelector('[aria-label="Aktionen für „Bausteine“"]')`, "Bausteine im Ordnerbaum");
+  await menue("Bausteine", "Als HTML-Datei exportieren");
+  report.push(`Export: ${dialog("-Titel", "Als HTML-Datei exportieren", "-Dateiname", exportDatei).text}`);
+  for (let i = 0; i < 50 && !existsSync(exportDatei); i++) await sleep(200);
+  const exportiert = existsSync(exportDatei) ? readFileSync(exportDatei, "utf8") : "";
+  report.push(
+    exportiert
+      ? `Exportierte Datei ${exportDatei}: ${exportiert.length} Zeichen, CSS eingebettet: ${exportiert.includes("<style>\n/*! Localist-Bausteine") ? "ja" : "NEIN"}, Skript eingebettet: ${/<script>\n\/\*! Localist-Bausteine/.test(exportiert) ? "ja" : "NEIN"}, Bild als data:-URL: ${exportiert.includes('src="data:image/svg+xml;base64,') ? "ja" : "NEIN"}, Verweise in den Vault: ${(exportiert.match(/\.localist\//g) ?? []).length}`
+      : `Exportierte Datei ${exportDatei}: NICHT geschrieben`,
+  );
+  await sleep(500);
+  report.push(`Hinweis nach dem Export: „${await evaluate(`document.querySelector('.notice')?.textContent ?? ""`)}“`);
+
   report.push(problems.length === 0 ? "Konsole: keine Fehler und keine CSP-Verstöße." : `Konsole: ${problems.length} Meldungen:\n  ${problems.join("\n  ")}`);
 } catch (error) {
   report.push(`FEHLER: ${error.message}`);
@@ -353,4 +425,5 @@ try {
   app.kill(); // beendet nur die hier gestartete Prüf-App
   await sleep(1000);
   rmSync(webviewData, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
+  rmSync(exportDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
 }
