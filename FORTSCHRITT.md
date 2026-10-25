@@ -1,39 +1,52 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 9 – Neues Design
-- Zuletzt aktualisiert: 2026-10-25 16:06
-- Nächster Schritt: Screenshots (hell und dunkel) nach `docs/screenshots/etappe-9/`, danach Klickliste „Version 1.0“ und Prüfungen (`npm test`, `cargo test`, `tsc`, `tauri build`)
+- Etappe: 9 – Neues Design ist abgeschlossen. Als Nächstes kommt Etappe 10 – HTML-Seiten: Grundlage und sichere Anzeige.
+- Zuletzt aktualisiert: 2026-10-25 16:14
+- Nächster Schritt: Etappe 10 beginnen (Fertig-Kriterien aus `CLAUDE.md` übernehmen, mit `.html`-Dateien in Sidebar, Strg+P und Suche anfangen).
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Alle Farben, Abstände, Schriftgrößen, Radien und Schatten stehen als CSS-Variablen in `src/styles/tokens.css` (hell und dunkel). Ein Test prüft alle `.css`-Dateien unter `src/` außer `tokens.css` und stellt sicher, dass dort keine festen Farbwerte (`#…`, `rgb(…)`, `rgba(…)`, `hsl(…)`, `hsla(…)`) stehen.
-- [x] Die Klickliste „Version 1.0“ (siehe Arbeitsregel 7) steht in `FORTSCHRITT.md`.
-- [x] Wiederverwendbare UI-Komponenten unter `src/components/ui/` (Schaltfläche, Menü, Dialog, Eingabefeld, Reiter) ersetzen die bisherigen Einzellösungen in Sidebar, Dialogen, Eigenschaften-Leiste und Datenbank-Ansichten.
-- [x] Die Schrift ist lokal eingebunden, die App lädt nichts aus dem Internet.
-- [x] Überarbeitete Sidebar: oben ein Bereich „Favoriten“ (Seiten anheften und lösen, gespeichert in `.localist/settings.json`), darunter der Ordnerbaum. Ein „Neu“-Menü fasst Notiz, Ordner und Datenbank zusammen.
-- [x] Startseite, wenn keine Seite offen ist: zuletzt bearbeitete Seiten, Favoriten, Schnellaktionen und ein Suchfeld.
-- [ ] Notizen, Datenbank-Ansichten (Tabelle, Kanban, Kalender), Dialoge und Einstellungen nutzen das neue Design, hell und dunkel, und sind ab 360 px Breite bedienbar.
-- [ ] Screenshots (hell und dunkel) von Startseite, Notiz, Tabelle, Kanban und Kalender liegen in `docs/screenshots/etappe-9/` und sind in `FORTSCHRITT.md` verlinkt.
-- [ ] Alle Funktionen der Version 1.0 funktionieren weiterhin (siehe Arbeitsregel 7).
+- Etappe 10 ist noch nicht begonnen.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
 
-Stand: noch nicht durchgeklickt (Etappe 9 läuft)
-- [ ] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
-- [ ] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
-- [ ] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
-- [ ] Eigenschaft: In der Eigenschaften-Leiste eine Eigenschaft hinzufügen und einen Wert setzen.
-- [ ] Tabelle: Datenbank „Projekte“ öffnen, eine Zelle ändern, sortieren und filtern.
-- [ ] Kanban: Kanban-Ansicht öffnen, eine Karte in eine andere Spalte ziehen.
-- [ ] Kalender: Kalender-Ansicht öffnen, Monat/Woche umschalten, ein Klick auf einen Tag legt einen Eintrag an.
-- [ ] Suche: Volltextsuche nach „Wochenplanung“ findet „Ideen“ mit markiertem Treffer.
-- [ ] Strg+P: Schnellsuche öffnet eine Seite per Enter.
-- [ ] Vorlage: Neue Seite aus der Vorlage „Projekt“ übernimmt Eigenschaften und Inhalt.
-- [ ] Backlinks: Unter „Ideen“ steht „Website-Relaunch“ unter „Verlinkt von“.
-- [ ] Hell/Dunkel: Umschalten wirkt sofort und bleibt nach dem Neuladen erhalten.
+Stand: am 2026-10-25 mit dem Stand von Etappe 9 in der Browser-Vorschau (Port 1430) durchgeklickt, alle 12 Punkte bestanden. Die Kanban-Karte wurde mit echten Drag-Ereignissen per Skript gezogen, weil das Testwerkzeug keine Maus-Drags erzeugen kann (wie in Etappe 2).
+- [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
+- [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
+- [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
+- [x] Eigenschaft: In der Eigenschaften-Leiste eine Eigenschaft hinzufügen und einen Wert setzen.
+- [x] Tabelle: Datenbank „Projekte“ öffnen, eine Zelle ändern, sortieren und filtern.
+- [x] Kanban: Kanban-Ansicht öffnen, eine Karte in eine andere Spalte ziehen.
+- [x] Kalender: Kalender-Ansicht öffnen, Monat/Woche umschalten, ein Klick auf einen Tag legt einen Eintrag an.
+- [x] Suche: Volltextsuche nach „Wochenplanung“ findet „Ideen“ mit markiertem Treffer.
+- [x] Strg+P: Schnellsuche öffnet eine Seite per Enter.
+- [x] Vorlage: Neue Seite aus der Vorlage „Projekt“ übernimmt Eigenschaften und Inhalt.
+- [x] Backlinks: Unter „Ideen“ steht „Website-Relaunch“ unter „Verlinkt von“.
+- [x] Hell/Dunkel: Umschalten wirkt sofort und bleibt nach dem Neuladen erhalten.
 
 ## Abgeschlossene Etappen
+- Etappe 9 – Neues Design (abgeschlossen am 2026-10-25). Nachweise: `npm test` 148 von 148 Tests grün (15 Testdateien, neu u. a. `src/styles/tokens.test.ts`, `src/lib/favorites.test.ts`, `src/lib/home.test.ts` und 7 Oberflächen-Tests „Neues Design“), `cargo test` 20 von 20 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\nsis\Localist_1.0.0_x64-setup.exe`, `src-tauri\target\release\bundle\msi\Localist_1.0.0_x64_de-DE.msi`). Im gebauten CSS (`dist/assets/index-*.css`) stehen nur lokale Schriftdateien (`/assets/inter-*.woff2`), keine externen Adressen; in der Vorschau gingen alle 103 Anfragen an `localhost`. Klickliste „Version 1.0“ abgehakt (siehe oben). Screenshots entstehen mit `npm run screenshots -- http://localhost:1430 docs/screenshots/etappe-9` (`scripts/screenshots.mjs`, steuert Microsoft Edge im Hintergrund):
+    - PC (1280 × 800) – Startseite: [hell](docs/screenshots/etappe-9/startseite-hell.png), [dunkel](docs/screenshots/etappe-9/startseite-dunkel.png)
+    - PC (1280 × 800) – Notiz: [hell](docs/screenshots/etappe-9/notiz-hell.png), [dunkel](docs/screenshots/etappe-9/notiz-dunkel.png)
+    - PC (1280 × 800) – Tabelle: [hell](docs/screenshots/etappe-9/tabelle-hell.png), [dunkel](docs/screenshots/etappe-9/tabelle-dunkel.png)
+    - PC (1280 × 800) – Kanban: [hell](docs/screenshots/etappe-9/kanban-hell.png), [dunkel](docs/screenshots/etappe-9/kanban-dunkel.png)
+    - PC (1280 × 800) – Kalender: [hell](docs/screenshots/etappe-9/kalender-hell.png), [dunkel](docs/screenshots/etappe-9/kalender-dunkel.png)
+    - Handy (360 × 740) – Startseite: [hell](docs/screenshots/etappe-9/handy-startseite-hell.png), [dunkel](docs/screenshots/etappe-9/handy-startseite-dunkel.png)
+    - Handy (360 × 740) – Notiz: [hell](docs/screenshots/etappe-9/handy-notiz-hell.png), [dunkel](docs/screenshots/etappe-9/handy-notiz-dunkel.png)
+    - Handy (360 × 740) – Tabelle: [hell](docs/screenshots/etappe-9/handy-tabelle-hell.png), [dunkel](docs/screenshots/etappe-9/handy-tabelle-dunkel.png)
+    - Handy (360 × 740) – Kanban: [hell](docs/screenshots/etappe-9/handy-kanban-hell.png), [dunkel](docs/screenshots/etappe-9/handy-kanban-dunkel.png)
+    - Handy (360 × 740) – Kalender: [hell](docs/screenshots/etappe-9/handy-kalender-hell.png), [dunkel](docs/screenshots/etappe-9/handy-kalender-dunkel.png)
+    - Handy (360 × 740) – Menü (Sidebar ausgeklappt): [hell](docs/screenshots/etappe-9/handy-menue-hell.png), [dunkel](docs/screenshots/etappe-9/handy-menue-dunkel.png)
+  - [x] Alle Farben, Abstände, Schriftgrößen, Radien und Schatten stehen als CSS-Variablen in `src/styles/tokens.css` (hell und dunkel). Ein Test prüft alle `.css`-Dateien unter `src/` außer `tokens.css` und stellt sicher, dass dort keine festen Farbwerte (`#…`, `rgb(…)`, `rgba(…)`, `hsl(…)`, `hsla(…)`) stehen.
+  - [x] Die Klickliste „Version 1.0“ (siehe Arbeitsregel 7) steht in `FORTSCHRITT.md`.
+  - [x] Wiederverwendbare UI-Komponenten unter `src/components/ui/` (Schaltfläche, Menü, Dialog, Eingabefeld, Reiter) ersetzen die bisherigen Einzellösungen in Sidebar, Dialogen, Eigenschaften-Leiste und Datenbank-Ansichten.
+  - [x] Die Schrift ist lokal eingebunden, die App lädt nichts aus dem Internet.
+  - [x] Überarbeitete Sidebar: oben ein Bereich „Favoriten“ (Seiten anheften und lösen, gespeichert in `.localist/settings.json`), darunter der Ordnerbaum. Ein „Neu“-Menü fasst Notiz, Ordner und Datenbank zusammen.
+  - [x] Startseite, wenn keine Seite offen ist: zuletzt bearbeitete Seiten, Favoriten, Schnellaktionen und ein Suchfeld.
+  - [x] Notizen, Datenbank-Ansichten (Tabelle, Kanban, Kalender), Dialoge und Einstellungen nutzen das neue Design, hell und dunkel, und sind ab 360 px Breite bedienbar.
+  - [x] Screenshots (hell und dunkel) von Startseite, Notiz, Tabelle, Kanban und Kalender liegen in `docs/screenshots/etappe-9/` und sind in `FORTSCHRITT.md` verlinkt.
+  - [x] Alle Funktionen der Version 1.0 funktionieren weiterhin (siehe Arbeitsregel 7).
 - Etappe 8 – Android-APK (abgeschlossen am 2026-10-25). Nachweise: `npm test` 128 von 128 Tests grün (12 Testdateien), `cargo test` 20 von 20 grün (darunter `papierkorb_im_vault_fuer_android`, `ordnerauswahl_listet_unterordner_und_legt_neue_an`), `npx tsc --noEmit` ohne Fehler. Android: `npx tauri android build --debug --apk --target aarch64 --target x86_64` erzeugt `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk`. Im Emulator „Medium_Phone_API_37.0“ (Android 17) installiert und bedient: Ordnerauswahl → Interner Speicher → Documents → Beispiel-Vault (Kopie) → als Vault verwendet; Seite „Ideen“ über das ausklappbare Menü geöffnet (Inhalt und Backlinks sichtbar); Text über die Android-Tastatur ergänzt, danach stand in der Datei auf dem Gerät „- Lesezeichen für Artikel vom Handy bearbeitet“; nach Neuinstallation öffnete sich der zuletzt geöffnete Vault automatisch. Windows: `npm run tauri build` ohne Fehler (`localist.exe`, `Localist_1.0.0_x64-setup.exe`, `Localist_1.0.0_x64_de-DE.msi`).
   - [x] Der Android-Build mit Tauri ist eingerichtet. Die nötigen Werkzeuge (Android Studio, SDK, NDK) hat der Nutzer nach Anleitung selbst installiert.
   - [x] Ein Android-Build erzeugt eine APK, der Pfad ist genannt.
