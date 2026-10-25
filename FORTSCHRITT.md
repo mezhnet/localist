@@ -7,7 +7,7 @@
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Endgültiger App-Name und App-Icon (den Namen vorher beim Nutzer erfragen). Wird der Einstellungsordner `.meinapp/` umbenannt, werden bestehende Vaults automatisch übernommen.
-- [ ] Ein Windows-Installer wird gebaut, die Version ist 1.0.0.
+- [x] Ein Windows-Installer wird gebaut, die Version ist 1.0.0.
 - [x] Verständliche deutsche Fehlermeldungen statt Abstürzen (z. B. Datei nicht lesbar, Vault-Ordner fehlt).
 - [x] Keine Fehler bei `npx tsc --noEmit`, keine offenen TODOs aus früheren Etappen.
 - [ ] Die `ANLEITUNG.md` ist auf dem aktuellen Stand.
