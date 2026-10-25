@@ -1,20 +1,22 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 2 – Notion-Feeling
-- Zuletzt aktualisiert: 2026-10-25 12:20
-- Nächster Schritt: Abschlussprüfung der Etappe 2 (npm test, tsc, tauri build) und Abschluss-Commit.
+- Etappe: 3 – Eigenschaften und Tabelle
+- Zuletzt aktualisiert: 2026-10-25 12:24
+- Nächster Schritt: Fertig-Kriterien der Etappe 3 als Checkliste übernehmen und mit der Eigenschaften-Leiste beginnen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [x] Slash-Menü (`/`) zum Einfügen von Blöcken.
-- [x] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
-- [x] Callouts und Toggles im Obsidian-Format (siehe Speicherformat).
-- [x] Icon und Cover pro Seite, gespeichert im Frontmatter (`icon`, `cover`).
-- [x] Hell- und Dunkelmodus: folgt dem System, manuell umschaltbar.
-- [x] Links zwischen Seiten als `[[Seitenname]]` mit Vorschlägen beim Tippen, ein Klick öffnet die Seite. Beim Umbenennen einer Seite werden Links darauf im ganzen Vault angepasst.
-- [x] Die Roundtrip-Tests decken zusätzlich Callouts, Toggles und `[[Links]]` ab.
+- (werden zu Beginn der Etappe 3 eingetragen)
 
 ## Abgeschlossene Etappen
+- Etappe 2 – Notion-Feeling (abgeschlossen am 2026-10-25). Nachweise: `npm test` 73 von 73 Tests grün (7 Testdateien), `cargo test` 13 von 13 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Slash-Menü mit Callout und Toggle, Toggle wird als `> [!note]- Details` gespeichert, `[[`-Vorschläge, Klick auf Link öffnet die Seite, Umbenennen passt Links an, Dunkelmodus folgt dem System. Der Ziehgriff erscheint beim Überfahren eines Blocks; das Verschieben selbst ist die eingebaute Funktion von BlockNote und ließ sich im Testwerkzeug nicht automatisch ausführen (es erzeugt keine echten Drag-Ereignisse).
+  - [x] Slash-Menü (`/`) zum Einfügen von Blöcken.
+  - [x] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
+  - [x] Callouts und Toggles im Obsidian-Format (siehe Speicherformat).
+  - [x] Icon und Cover pro Seite, gespeichert im Frontmatter (`icon`, `cover`).
+  - [x] Hell- und Dunkelmodus: folgt dem System, manuell umschaltbar.
+  - [x] Links zwischen Seiten als `[[Seitenname]]` mit Vorschlägen beim Tippen, ein Klick öffnet die Seite. Beim Umbenennen einer Seite werden Links darauf im ganzen Vault angepasst.
+  - [x] Die Roundtrip-Tests decken zusätzlich Callouts, Toggles und `[[Links]]` ab.
 - Etappe 1 – Vault und Seiten (abgeschlossen am 2026-10-25). Nachweise: `npm test` 56 von 56 Tests grün (6 Testdateien), `cargo test --manifest-path src-tauri/Cargo.toml` 12 von 12 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zusätzlich in der Browser-Vorschau durchgeklickt: Vault öffnen und nach Neuladen automatisch wieder öffnen, Seite öffnen, Tippen und automatisch speichern, Änderung und Löschen von außen, Anlegen, Umbenennen, Löschen mit Rückfrage.
   - [x] Der Vault-Ordner lässt sich per Dialog auswählen, der zuletzt geöffnete Vault öffnet sich beim nächsten Start automatisch.
   - [x] Die Sidebar zeigt den Ordnerbaum mit Ordnern und `.md`-Dateien, versteckte Ordner sind ausgeblendet.

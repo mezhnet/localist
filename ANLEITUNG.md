@@ -145,6 +145,16 @@ Im Browser gibt es keinen Zugriff auf echte Dateien. Stattdessen arbeitet die Ob
 6. **Speichern** passiert automatisch etwa eine halbe Sekunde nach der letzten Eingabe. Es gibt keinen Speichern-Knopf.
 7. Ändert ein anderes Programm (z. B. Obsidian) eine geöffnete Seite, lädt die App sie neu. Wird sie dort gelöscht,
    verschwindet sie aus der Sidebar.
+8. **Blöcke einfügen:** `/` tippen öffnet das Slash-Menü (Überschriften, Listen, Zitat, Callout, Toggle, Code, Bild …).
+   Links neben jedem Block erscheinen beim Überfahren `+` und der Ziehgriff `⠿`: Mit dem Griff verschiebst du Blöcke,
+   ein Klick darauf öffnet ein Menü zum Löschen.
+9. **Callouts und Toggles** werden wie in Obsidian gespeichert: `> [!info] Titel`, ein Toggle als `> [!note]- Titel`.
+   Ein Klick auf das Symbol im Callout wechselt den Typ (Info, Warnung, Tipp …).
+10. **Links zwischen Seiten:** `[[` tippen und eine Seite aus den Vorschlägen wählen. Ein Klick auf den Link öffnet die
+    Seite. Fehlt sie noch, wird sie angelegt. Benennst du eine Seite um, passt die App alle Links darauf im Vault an.
+11. **Icon und Cover:** Beim Überfahren des Seitenkopfs erscheinen „Icon hinzufügen“ und „Cover hinzufügen“.
+    Beides steht im Frontmatter (`icon`, `cover`). Bilder von außerhalb werden nach `Anhänge/` kopiert.
+12. **Hell/Dunkel:** unten in der Sidebar unter „Darstellung“. „Wie System“ folgt der Windows-Einstellung.
 
 ## Häufige Probleme
 
