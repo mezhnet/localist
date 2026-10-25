@@ -2,14 +2,14 @@
 
 ## Aktueller Stand
 - Etappe: 7 – Version 1.0 für den PC
-- Zuletzt aktualisiert: 2026-10-25 14:22
-- Nächster Schritt: Deutsche Fehlermeldungen statt Abstürzen und TODO-Prüfung; danach den Nutzer nach dem endgültigen App-Namen fragen.
+- Zuletzt aktualisiert: 2026-10-25 14:35
+- Nächster Schritt: Den Nutzer nach dem endgültigen App-Namen fragen (wartet auf Antwort). Danach Name, Icon, Version 1.0.0, Umzug von `.meinapp/`, Installer und ANLEITUNG.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [ ] Endgültiger App-Name und App-Icon (den Namen vorher beim Nutzer erfragen). Wird der Einstellungsordner `.meinapp/` umbenannt, werden bestehende Vaults automatisch übernommen.
 - [ ] Ein Windows-Installer wird gebaut, die Version ist 1.0.0.
-- [ ] Verständliche deutsche Fehlermeldungen statt Abstürzen (z. B. Datei nicht lesbar, Vault-Ordner fehlt).
-- [ ] Keine Fehler bei `npx tsc --noEmit`, keine offenen TODOs aus früheren Etappen.
+- [x] Verständliche deutsche Fehlermeldungen statt Abstürzen (z. B. Datei nicht lesbar, Vault-Ordner fehlt).
+- [x] Keine Fehler bei `npx tsc --noEmit`, keine offenen TODOs aus früheren Etappen.
 - [ ] Die `ANLEITUNG.md` ist auf dem aktuellen Stand.
 
 ## Abgeschlossene Etappen
@@ -58,7 +58,7 @@
 - Etappe 0 – Fundament (abgeschlossen am 2026-10-24). Am 2026-10-25 auf dem Stand `09838e1` erneut nachgeprüft: `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zweite Nachprüfung am 2026-10-25 um 10:57 bestanden, nachdem drei Probleme gelöst waren (siehe „Offene Probleme“): `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (Rust-Teil in 1 min 56 s, EXE und beide Installer neu erzeugt, Pfade wie oben), „Hallo Vault“ in `src/App.tsx` und im Build `dist/assets/`, `git status` sauber, `CLAUDE.md` unverändert (Hash `f4a432f…` gleich in Arbeitskopie und Commit).
 
 ## Offene Probleme
-- keine.
+- 2026-10-25: Etappe 7 wartet auf den endgültigen App-Namen vom Nutzer.
 - Gelöst am 2026-10-25: Rust war nicht mehr installiert (`npm run tauri build` brach mit `cargo metadata … program not found` ab, `%USERPROFILE%\.cargo` und `%USERPROFILE%\.rustup` fehlten). Auf Wunsch des Nutzers per `winget install --id Rustlang.Rustup --exact` neu installiert (rustup 1.29.1, `cargo 1.99.1`, `rustc 1.99.1`, Toolchain `stable-x86_64-pc-windows-msvc`). Der Installer trägt `%USERPROFILE%\.cargo\bin` in den Benutzer-PATH ein. Ein Terminal, das schon vorher offen war, kennt den neuen Pfad erst nach einem Neustart.
 - Gelöst am 2026-10-25: Die Microsoft C++ Build Tools fehlten wieder (kein `vswhere.exe`, kein MSVC-Ordner). Auf Wunsch des Nutzers mit demselben winget-Befehl wie am 2026-10-24 neu installiert (Build Tools 2022, Version 17.14.37806.7, MSVC 14.44.35207).
 - Gelöst am 2026-10-25: Im Projektordner lag eine vollständige Kopie des Projekts im Unterordner `LocalProjekt/` (2,1 GB, eigenes `.git` auf demselben Commit `805e19d`, angelegt am 2026-10-25 um 10:00). Sie enthielt keine eigenen Dateien. Folgen waren `?? LocalProjekt/` in `git status` und ein roter `npm test`: Vitest führte auch `LocalProjekt/src/App.test.tsx` aus, der mit den Bibliotheken der Kopie nicht aufgeräumt wurde. Auf Wunsch des Nutzers nach `C:\Users\emre\Documents\eigen_apps\LocalProjekt-Kopie` verschoben, von dort kann der Nutzer sie selbst löschen. Danach `git status` sauber und `npm test` 2 von 2 grün.
