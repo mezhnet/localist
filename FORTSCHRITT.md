@@ -3,10 +3,15 @@
 ## Aktueller Stand
 - Etappe: 6 – Komfort
 - Zuletzt aktualisiert: 2026-10-25 13:53
-- Nächster Schritt: Fertig-Kriterien der neuen Etappe als Checkliste übernehmen und mit der Umsetzung beginnen.
+- Nächster Schritt: Suchindex in Rust (App-Datenordner), Such- und Backlink-Logik mit Tests, danach Volltextsuche, Strg+P, Vorlagen und Backlinks in der Oberfläche.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- (werden zu Beginn der Etappe eingetragen)
+- [ ] Volltextsuche über alle Seiten des Vaults.
+- [ ] Schnellsuche mit Strg+P zum Öffnen von Seiten.
+- [ ] Vorlagen: Seiten aus dem Ordner `Vorlagen/` lassen sich als Grundlage für neue Seiten nutzen.
+- [ ] Backlinks: Unten auf jeder Seite steht, welche Seiten auf sie verlinken.
+- [ ] Der Suchindex liegt im App-Datenordner, nicht im Vault.
+- [ ] Tests für Suche und Backlinks.
 
 ## Abgeschlossene Etappen
 - Etappe 5 – Kalender (abgeschlossen am 2026-10-25). Nachweise: `npm test` 111 von 111 Tests grün (11 Testdateien, zweimal hintereinander stabil), `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE und Installer wie bei Etappe 1). In der Browser-Vorschau geprüft: Monatsansicht Oktober 2026 mit markiertem heutigen Tag und einem Termin mit Uhrzeit, Liste „Ohne Datum“.
