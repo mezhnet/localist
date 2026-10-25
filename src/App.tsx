@@ -64,7 +64,9 @@ function AppContent() {
   if (!vault) {
     return (
       <main className="welcome">
+        <img className="welcome-logo" src="/localist.svg" alt="" width={72} height={72} />
         <h1>Hallo Vault</h1>
+        <p className="welcome-app">Willkommen bei Localist</p>
         <p>
           Wähle einen Ordner als Vault. Alle Seiten werden dort als normale Markdown-Dateien gespeichert und bleiben auch
           ohne diese App lesbar.

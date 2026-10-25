@@ -12,7 +12,10 @@ use std::time::Duration;
 pub const VIEWS_FILE: &str = "_ansichten.yaml";
 
 /// Ordner mit den Einstellungen eines Vaults (wie `.obsidian`).
-pub const SETTINGS_DIR: &str = ".meinapp";
+pub const SETTINGS_DIR: &str = ".localist";
+
+/// Früherer Name des Einstellungsordners (Arbeitstitel). Wird beim Öffnen automatisch umbenannt.
+pub const LEGACY_SETTINGS_DIRS: [&str; 1] = [".meinapp"];
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -198,8 +201,16 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), String> {
 }
 
 /// Legt den Einstellungsordner an, falls er fehlt (macht den Ordner zum Vault).
+/// Gibt es nur den Ordner unter altem Namen, wird er umbenannt: bestehende Vaults werden übernommen.
 pub fn ensure_settings(root: &Path) -> Result<(), String> {
     let dir = root.join(SETTINGS_DIR);
+    if !dir.exists() {
+        if let Some(legacy) = LEGACY_SETTINGS_DIRS.iter().map(|name| root.join(name)).find(|path| path.is_dir()) {
+            fs::rename(&legacy, &dir).map_err(|e| {
+                format!("Der Einstellungsordner „{}“ konnte nicht in „{SETTINGS_DIR}“ umbenannt werden: {e}", display_name(&legacy))
+            })?;
+        }
+    }
     let file = dir.join("settings.json");
     if file.exists() {
         return Ok(());
@@ -365,7 +376,7 @@ mod tests {
 
     impl TestVault {
         fn new() -> Self {
-            let dir = std::env::temp_dir().join(format!("localprojekt-test-{}", uuid::Uuid::new_v4().simple()));
+            let dir = std::env::temp_dir().join(format!("localist-test-{}", uuid::Uuid::new_v4().simple()));
             fs::create_dir_all(&dir).unwrap();
             TestVault(dir)
         }
@@ -385,7 +396,7 @@ mod tests {
     #[test]
     fn ordnerbaum_zeigt_ordner_und_seiten_ohne_versteckte_eintraege() {
         let vault = TestVault::new();
-        vault.file(".meinapp/settings.json", "{}");
+        vault.file(".localist/settings.json", "{}");
         vault.file(".git/config", "");
         vault.file("Notizen/Ideen.md", "# Ideen");
         vault.file("Notizen/.versteckt.md", "");
@@ -483,11 +494,30 @@ mod tests {
     fn einstellungsordner_wird_angelegt() {
         let vault = TestVault::new();
         ensure_settings(&vault.0).unwrap();
-        assert!(vault.0.join(".meinapp/settings.json").is_file());
+        assert!(vault.0.join(".localist/settings.json").is_file());
         // Vorhandene Einstellungen bleiben unverändert.
-        fs::write(vault.0.join(".meinapp/settings.json"), "{\"version\":1,\"eigenes\":true}").unwrap();
+        fs::write(vault.0.join(".localist/settings.json"), "{\"version\":1,\"eigenes\":true}").unwrap();
         ensure_settings(&vault.0).unwrap();
-        assert_eq!(read_text(&vault.0.join(".meinapp/settings.json")).unwrap(), "{\"version\":1,\"eigenes\":true}");
+        assert_eq!(read_text(&vault.0.join(".localist/settings.json")).unwrap(), "{\"version\":1,\"eigenes\":true}");
+    }
+
+    #[test]
+    fn alter_einstellungsordner_meinapp_wird_uebernommen() {
+        let vault = TestVault::new();
+        vault.file(".meinapp/settings.json", "{\"version\":1,\"eigenschaften\":{\"fällig\":\"datum\"}}");
+        vault.file(".meinapp/weitere-datei.json", "bleibt");
+        ensure_settings(&vault.0).unwrap();
+        assert!(!vault.0.join(".meinapp").exists(), "alter Ordner ist umbenannt");
+        assert_eq!(read_text(&vault.0.join(".localist/settings.json")).unwrap(), "{\"version\":1,\"eigenschaften\":{\"fällig\":\"datum\"}}");
+        assert_eq!(read_text(&vault.0.join(".localist/weitere-datei.json")).unwrap(), "bleibt");
+
+        // Gibt es schon beide Ordner, bleibt alles, wie es ist.
+        let both = TestVault::new();
+        both.file(".meinapp/settings.json", "alt");
+        both.file(".localist/settings.json", "neu");
+        ensure_settings(&both.0).unwrap();
+        assert_eq!(read_text(&both.0.join(".localist/settings.json")).unwrap(), "neu");
+        assert!(both.0.join(".meinapp/settings.json").is_file());
     }
 
     #[test]

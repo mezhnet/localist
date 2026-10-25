@@ -1,5 +1,5 @@
 // Eigenschaftstypen im Vault: für Datenbank-Ordner aus `_ansichten.yaml`, sonst aus
-// `.meinapp/settings.json` (Feld "eigenschaften"). Dieser Hook lädt und speichert beides.
+// `.localist/settings.json` (Feld "eigenschaften"). Dieser Hook lädt und speichert beides.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PropertySchema } from "../components/PropertiesBar";
 import { errorMessage } from "./autosave";
@@ -8,7 +8,7 @@ import { DEFAULT_STATUS_OPTIONS, isPropertyType, type PropertyType } from "./pro
 import { findNode, parentDir } from "./tree";
 import { readPage, writePage, type TreeNode } from "./vault-api";
 
-export const SETTINGS_FILE = ".meinapp/settings.json";
+export const SETTINGS_FILE = ".localist/settings.json";
 
 /** Alle Datenbank-Ordner im Baum. */
 export function databaseFolders(nodes: readonly TreeNode[]): string[] {

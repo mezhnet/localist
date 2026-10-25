@@ -71,12 +71,12 @@ describe("Start und Vault-Auswahl", () => {
 
 describe("Sidebar", () => {
   it("zeigt Ordner und Seiten, versteckte Ordner und andere Dateien fehlen", async () => {
-    vault().externalWrite(".meinapp/geheim.md", "x");
+    vault().externalWrite(".localist/geheim.md", "x");
     const tree = await openVaultFromStart();
     await within(tree).findByText("Notizen");
     const top = within(tree).getAllByRole("treeitem").map((item) => item.querySelector(".tree-name")?.textContent);
     expect(top).toEqual(["Anhänge", "Notizen", "Projekte", "Vorlagen"]);
-    expect(screen.queryByText(".meinapp")).toBeNull();
+    expect(screen.queryByText(".localist")).toBeNull();
 
     fireEvent.click(screen.getByText("Anhänge"));
     expect(await screen.findByText("Leer")).toBeTruthy(); // skizze.png ist keine Seite
@@ -159,7 +159,7 @@ describe("Eigenschaften und Datenbanken", () => {
     const date = await screen.findByLabelText("fällig");
     fireEvent.change(date, { target: { value: "2026-12-24" } });
     await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toContain("erledigt: true\nfällig: 2026-12-24\n---\n"));
-    expect(vault().files.get(".meinapp/settings.json")).toContain('"fällig": "datum"');
+    expect(vault().files.get(".localist/settings.json")).toContain('"fällig": "datum"');
 
     // Mehrfachauswahl als YAML-Liste
     fireEvent.click(screen.getByRole("button", { name: "+ Eigenschaft hinzufügen" }));

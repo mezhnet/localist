@@ -1,6 +1,7 @@
 // Sidebar mit dem Ordnerbaum des Vaults: Seiten öffnen, Ordner auf- und zuklappen,
 // Seiten und Ordner anlegen, umbenennen und löschen (per Rechtsklick, "⋯"-Knopf, F2 oder Entf).
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import packageInfo from "../../package.json";
 import { useTheme, type ThemePreference } from "../lib/theme";
 import { ancestorFolders } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
@@ -221,6 +222,7 @@ function ThemeSwitch() {
           <option value="dark">Dunkel</option>
         </select>
       </label>
+      <span className="app-version">Localist {packageInfo.version}</span>
     </div>
   );
 }

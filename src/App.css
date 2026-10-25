@@ -1574,3 +1574,18 @@ button {
 .vault-missing p {
   margin: 0 0 16px;
 }
+
+.app-version {
+  float: right;
+  line-height: 24px;
+  opacity: 0.7;
+}
+
+.welcome-logo {
+  margin-bottom: 4px;
+}
+
+.welcome .welcome-app {
+  margin: -8px 0 8px;
+  font-weight: 500;
+}

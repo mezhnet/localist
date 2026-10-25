@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "localprojekt",
-  "version": "0.1.0",
-  "identifier": "de.localprojekt.desktop",
+  "productName": "Localist",
+  "version": "1.0.0",
+  "identifier": "de.localist.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "LocalProjekt",
+        "title": "Localist",
         "width": 1200,
         "height": 800,
         "minWidth": 640,
@@ -36,6 +36,21 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "publisher": "Localist",
+    "copyright": "© 2026 Localist",
+    "category": "Productivity",
+    "shortDescription": "Notizen und Projekte als Markdown-Dateien",
+    "longDescription": "Localist ist ein Notiz- und Projektmanager im Stil von Notion. Alle Seiten liegen als normale Markdown-Dateien in einem Ordner auf deinem Rechner – ohne Konto, ohne Server, komplett offline.",
+    "windows": {
+      "nsis": {
+        "languages": [
+          "German"
+        ]
+      },
+      "wix": {
+        "language": "de-DE"
+      }
+    }
   }
 }

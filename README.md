@@ -1,7 +1,11 @@
-# Tauri + React + Typescript
+# Localist
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Localist ist ein Notiz- und Projektmanager im Stil von Notion. Alle Seiten liegen als normale Markdown-Dateien in
+einem Ordner („Vault“), den du selbst wählst – wie bei Obsidian. Kein Konto, kein Server, keine Telemetrie.
 
-## Recommended IDE Setup
+- Block-Editor mit Slash-Menü, Callouts, Toggles und `[[Links]]`
+- Eigenschaften im Frontmatter, Datenbanken mit Tabelle, Kanban und Kalender
+- Volltextsuche, Schnellsuche (Strg+P), Vorlagen und Backlinks
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+Installation, Entwicklung, Tests und Build stehen in [ANLEITUNG.md](ANLEITUNG.md), der Projektstand in
+[FORTSCHRITT.md](FORTSCHRITT.md).

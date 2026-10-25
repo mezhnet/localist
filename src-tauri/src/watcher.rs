@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn versteckte_dateien_und_lesezugriffe_werden_ignoriert() {
-        assert!(classify_test(event(EventKind::Create(CreateKind::File), &[".meinapp/settings.json"])).is_empty());
+        assert!(classify_test(event(EventKind::Create(CreateKind::File), &[".localist/settings.json"])).is_empty());
         assert!(classify_test(event(EventKind::Create(CreateKind::File), &["Notizen/.Ideen.md.1.tmp"])).is_empty());
         assert!(classify_test(event(EventKind::Access(notify::event::AccessKind::Any), &["Ideen.md"])).is_empty());
     }

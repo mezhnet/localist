@@ -110,7 +110,7 @@ mod tests {
     use super::*;
 
     fn temp_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("localprojekt-{name}-{}", uuid::Uuid::new_v4().simple()));
+        let dir = std::env::temp_dir().join(format!("localist-{name}-{}", uuid::Uuid::new_v4().simple()));
         fs::create_dir_all(&dir).unwrap();
         dir
     }
@@ -121,7 +121,7 @@ mod tests {
         let cache = temp_dir("cache");
         fs::create_dir_all(vault.join("Notizen")).unwrap();
         fs::write(vault.join("Notizen/Ideen.md"), "# Ideen\nKanban planen").unwrap();
-        fs::write(vault.join(".meinapp-versteckt.md"), "geheim").unwrap();
+        fs::write(vault.join(".localist-versteckt.md"), "geheim").unwrap();
 
         let file = index_file_for(&cache, &vault);
         let entries = update_index(&vault, &file).unwrap();
@@ -135,7 +135,7 @@ mod tests {
         // Im Vault ist außer den Seiten nichts dazugekommen.
         let mut in_vault: Vec<_> = fs::read_dir(&vault).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
         in_vault.sort();
-        assert_eq!(in_vault, vec![".meinapp-versteckt.md", "Notizen"]);
+        assert_eq!(in_vault, vec![".localist-versteckt.md", "Notizen"]);
 
         let _ = fs::remove_dir_all(&vault);
         let _ = fs::remove_dir_all(&cache);

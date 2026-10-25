@@ -2023,8 +2023,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae"
 
 [[package]]
-name = "localprojekt"
-version = "0.1.0"
+name = "localist"
+version = "1.0.0"
 dependencies = [
  "notify",
  "notify-debouncer-full",

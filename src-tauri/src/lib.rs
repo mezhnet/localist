@@ -52,12 +52,24 @@ fn remembered_file(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join("zustand.json"))
 }
 
+/// Datenordner der App unter ihrem Arbeitstitel (bis Version 0.1.0).
+const LEGACY_IDENTIFIER: &str = "de.localprojekt.desktop";
+
 fn load_remembered(app: &AppHandle) -> Remembered {
-    remembered_file(app)
-        .ok()
-        .and_then(|file| std::fs::read_to_string(file).ok())
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+    let read = |file: PathBuf| -> Option<Remembered> { serde_json::from_str(&std::fs::read_to_string(file).ok()?).ok() };
+    let Ok(file) = remembered_file(app) else { return Remembered::default() };
+    if let Some(remembered) = read(file.clone()) {
+        return remembered;
+    }
+    // Nach der Umbenennung: zuletzt geöffneten Vault aus dem alten Datenordner übernehmen.
+    let legacy = file.parent().and_then(Path::parent).map(|dir| dir.join(LEGACY_IDENTIFIER).join("zustand.json"));
+    match legacy.and_then(read) {
+        Some(remembered) => {
+            let _ = save_remembered(app, &remembered);
+            remembered
+        }
+        None => Remembered::default(),
+    }
 }
 
 fn save_remembered(app: &AppHandle, remembered: &Remembered) -> Result<(), String> {
