@@ -7,7 +7,7 @@
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Slash-Menü (`/`) zum Einfügen von Blöcken.
-- [ ] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
+- [x] Blöcke lassen sich per Griff (Drag-Handle) verschieben.
 - [ ] Callouts und Toggles im Obsidian-Format (siehe Speicherformat).
 - [ ] Icon und Cover pro Seite, gespeichert im Frontmatter (`icon`, `cover`).
 - [ ] Hell- und Dunkelmodus: folgt dem System, manuell umschaltbar.
