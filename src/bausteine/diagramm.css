@@ -1,0 +1,151 @@
+/* Diagramm: <l-diagramm typ="balken|linie|kreis" titel="…"><table>…</table></l-diagramm>
+   Ohne Skript bleibt es eine Tabelle (mit Titel darüber). Mit Skript zeichnet localist.js ein SVG; die Tabelle
+   bleibt dann nur für Bildschirmleser im Dokument. */
+
+l-diagramm {
+  display: block;
+  margin: var(--space-4) 0;
+}
+
+l-diagramm[titel]:not([data-gezeichnet])::before {
+  content: attr(titel);
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+}
+
+.l-diagramm-titel {
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+}
+
+.l-diagramm-bild {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.l-diagramm-achse {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+
+.l-diagramm-gitter {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.l-diagramm-text {
+  fill: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+}
+
+.l-linie {
+  fill: none !important;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.l-punkt {
+  stroke: var(--color-bg) !important;
+  stroke-width: 2;
+}
+
+.l-kreis-stueck {
+  stroke: var(--color-bg) !important;
+  stroke-width: 2;
+}
+
+.l-reihe-1 {
+  fill: var(--color-chart-1);
+  stroke: var(--color-chart-1);
+}
+
+.l-reihe-2 {
+  fill: var(--color-chart-2);
+  stroke: var(--color-chart-2);
+}
+
+.l-reihe-3 {
+  fill: var(--color-chart-3);
+  stroke: var(--color-chart-3);
+}
+
+.l-reihe-4 {
+  fill: var(--color-chart-4);
+  stroke: var(--color-chart-4);
+}
+
+.l-reihe-5 {
+  fill: var(--color-chart-5);
+  stroke: var(--color-chart-5);
+}
+
+.l-reihe-6 {
+  fill: var(--color-chart-6);
+  stroke: var(--color-chart-6);
+}
+
+rect.l-reihe {
+  stroke: none;
+}
+
+.l-diagramm-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1-5) var(--space-4);
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.l-diagramm-legende > span::before {
+  content: "";
+  display: inline-block;
+  width: var(--space-2-5);
+  height: var(--space-2-5);
+  margin-right: var(--space-1-5);
+  border-radius: var(--radius-xs);
+  vertical-align: baseline;
+}
+
+.l-legende-1::before {
+  background: var(--color-chart-1);
+}
+
+.l-legende-2::before {
+  background: var(--color-chart-2);
+}
+
+.l-legende-3::before {
+  background: var(--color-chart-3);
+}
+
+.l-legende-4::before {
+  background: var(--color-chart-4);
+}
+
+.l-legende-5::before {
+  background: var(--color-chart-5);
+}
+
+.l-legende-6::before {
+  background: var(--color-chart-6);
+}
+
+/* Gezeichnet: Tabelle nur noch für Bildschirmleser */
+l-diagramm[data-gezeichnet] > table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

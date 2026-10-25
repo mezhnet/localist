@@ -286,3 +286,41 @@
   font-weight: var(--font-weight-semibold);
   background: var(--color-bg-subtle);
 }
+
+.baustein-formular__karte {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.baustein-formular__nummer {
+  min-width: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: right;
+}
+
+.baustein-formular__quizfrage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.baustein-formular__antwort {
+  padding-left: var(--space-4);
+}
+
+@media (max-width: 600px) {
+  .baustein-formular__karte {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .baustein-formular__nummer {
+    display: none;
+  }
+}

@@ -37,15 +37,32 @@ describe("Bausteine finden", () => {
     for (const html of [beispielSeite, dnsSeite, seite('<l-spalten><l-spalte><l-callout>A</l-callout><table><tr><td>1</td></tr></table></l-spalte></l-spalten><template><hr></template><svg><a class="l-seitenlink"></a></svg>')]) {
       const dom = new DOMParser().parseFromString(html, "text/html");
       const bereich = dom.querySelector("main") ?? dom.body;
-      const imDom = [...bereich.querySelectorAll(BAUSTEIN_SELEKTOR)].map((element) => element.localName);
+      // wie das Brücken-Skript: die Tabelle eines Diagramms zählt nicht als eigener Baustein
+      const imDom = [...bereich.querySelectorAll(BAUSTEIN_SELEKTOR)].filter((element) => element.localName !== "table" || !element.closest("l-diagramm")).map((element) => element.localName);
       expect(bausteinAnzahl(html)).toBe(imDom.length);
       const arten = imDom.map((_, i) => bausteinLesen(html, i)!.art);
       const erwartet = imDom.map((tag) =>
-        ({ "l-callout": "callout", details: "toggle", table: "tabelle", ul: "checkliste", "l-spalten": "spalten", figure: "bild", hr: "trennlinie", pre: "code", a: "seitenlink" })[tag],
+        ({
+          "l-callout": "callout",
+          details: "toggle",
+          table: "tabelle",
+          ul: "checkliste",
+          "l-spalten": "spalten",
+          figure: "bild",
+          hr: "trennlinie",
+          pre: "code",
+          a: "seitenlink",
+          "l-karteikarte": "karteikarte",
+          "l-kartenstapel": "kartenstapel",
+          "l-quiz": "quiz",
+          "l-diagramm": "diagramm",
+        })[tag],
       );
       expect(arten).toEqual(erwartet);
     }
-    expect(bausteinAnzahl(beispielSeite)).toBe(13); // 4 Callouts, Toggle, Tabelle, Checkliste, Spalten, Bild, Linie, Code, 2 Seitenlinks
+    // 4 Callouts, Toggle, Tabelle, Checkliste, Spalten, Bild, Linie, Code, 2 Seitenlinks (Etappe 12),
+    // Karteikarte, Kartenstapel mit 3 Karten, Quiz, 3 Diagramme (Etappe 13; deren Tabellen zählen nicht extra)
+    expect(bausteinAnzahl(beispielSeite)).toBe(22);
   });
 
   it("das Brücken-Skript nutzt dieselben Selektoren", () => {
@@ -215,5 +232,110 @@ describe("Häkchen in Checklisten", () => {
     expect(dom.querySelector("main")!.querySelectorAll(HAEKCHEN_SELEKTOR)).toHaveLength(2);
     expect(haekchenSetzen(html, 0, true)).toBe(html.replace('type="CHECKBOX">', 'type="CHECKBOX" checked>'));
     expect(haekchenSetzen(html, 1, false)).toBe(html.replace('type="checkbox" checked/>', 'type="checkbox"/>'));
+  });
+});
+
+describe("Formulare der Lern-Bausteine und Diagramme (Etappe 13)", () => {
+  // Nummern in der Beispielseite: 13 Karteikarte, 14 Kartenstapel (15–17 seine Karten), 18 Quiz, 19–21 Diagramme
+  it("liest Karteikarte, Kartenstapel, Quiz und Diagramm", () => {
+    expect(bausteinLesen(beispielSeite, 13)).toEqual({ art: "karteikarte", frage: { wert: "Welchen Port nutzt HTTPS?", html: false }, antwort: { wert: "Port 443", html: false } });
+    const stapel = bausteinLesen(beispielSeite, 14) as Extract<BausteinWerte, { art: "kartenstapel" }>;
+    expect(stapel.karten.map((karte) => [karte.quelle, karte.frage.wert])).toEqual([
+      [0, "Was macht ein Router?"],
+      [1, "Wofür steht DNS?"],
+      [2, "Was ist eine MAC-Adresse?"],
+    ]);
+    expect(bausteinLesen(beispielSeite, 15)).toMatchObject({ art: "karteikarte", frage: { wert: "Was macht ein Router?" } });
+    const quiz = bausteinLesen(beispielSeite, 18) as Extract<BausteinWerte, { art: "quiz" }>;
+    expect(quiz.fragen[0].antworten.map((antwort) => [antwort.text.wert, antwort.richtig])).toEqual([
+      ["16", false],
+      ["32", true],
+      ["128", false],
+    ]);
+    const diagramm = bausteinLesen(beispielSeite, 19) as Extract<BausteinWerte, { art: "diagramm" }>;
+    expect([diagramm.typ, diagramm.titel, diagramm.daten.kopfzeile, diagramm.daten.spalten]).toEqual(["balken", "Anfragen pro Tag", true, [0, 1, 2]]);
+    expect(diagramm.daten.zeilen[1].zellen.map((zelle) => zelle.wert)).toEqual(["Mo", "120", "4"]);
+  });
+
+  it("Karteikarte: nur die geänderte Antwort", () => {
+    const neu = bearbeiten<Extract<BausteinWerte, { art: "karteikarte" }>>(beispielSeite, 13, (w) => ({ ...w, antwort: { wert: "Port 443 (TCP)", html: false } }));
+    expect(neu).toBe(beispielSeite.replace("<l-antwort>Port 443</l-antwort>", "<l-antwort>Port 443 (TCP)</l-antwort>"));
+  });
+
+  it("Kartenstapel: Karte ändern, entfernen und hinzufügen; unveränderte Karten bleiben wörtlich", () => {
+    const geaendert = bearbeiten<Extract<BausteinWerte, { art: "kartenstapel" }>>(beispielSeite, 14, (w) => {
+      w.karten[1].antwort = { wert: "Domain Name System (Namensauflösung)", html: false };
+      return w;
+    });
+    expect(geaendert).toBe(beispielSeite.replace("<l-antwort>Domain Name System</l-antwort>", "<l-antwort>Domain Name System (Namensauflösung)</l-antwort>"));
+    const umgebaut = bearbeiten<Extract<BausteinWerte, { art: "kartenstapel" }>>(beispielSeite, 14, (w) => ({
+      ...w,
+      karten: [w.karten[0], w.karten[2], { quelle: null, frage: { wert: "Was ist ein Switch?", html: false }, antwort: { wert: "Verteiler im LAN", html: false } }],
+    }));
+    expect(umgebaut).toContain(
+      [
+        "<l-kartenstapel>",
+        "  <l-karteikarte>",
+        "    <l-frage>Was macht ein Router?</l-frage>",
+        "    <l-antwort>Er verbindet Netzwerke und leitet Pakete weiter.</l-antwort>",
+        "  </l-karteikarte>",
+        "  <l-karteikarte>",
+        "    <l-frage>Was ist eine MAC-Adresse?</l-frage>",
+        "    <l-antwort>Die feste Hardware-Adresse einer Netzwerkkarte.</l-antwort>",
+        "  </l-karteikarte>",
+        "  <l-karteikarte>",
+        "    <l-frage>Was ist ein Switch?</l-frage>",
+        "    <l-antwort>Verteiler im LAN</l-antwort>",
+        "  </l-karteikarte>",
+        "</l-kartenstapel>",
+        "",
+        "<h2>Quiz</h2>",
+      ].join("\n"),
+    );
+    nurDazwischen(beispielSeite, umgebaut, "<h2>Kartenstapel</h2>\n", "\n\n<h2>Quiz</h2>");
+  });
+
+  it("Quiz: richtige Antwort wechseln ändert nur data-richtig, eine neue Frage wird angehängt", () => {
+    const umgestellt = bearbeiten<Extract<BausteinWerte, { art: "quiz" }>>(beispielSeite, 18, (w) => {
+      w.fragen[0].antworten = w.fragen[0].antworten.map((antwort, i) => ({ ...antwort, richtig: i === 0 }));
+      return w;
+    });
+    expect(umgestellt).toBe(beispielSeite.replace("      <li>16</li>\n      <li data-richtig>32</li>", "      <li data-richtig>16</li>\n      <li>32</li>"));
+    const ergaenzt = bearbeiten<Extract<BausteinWerte, { art: "quiz" }>>(beispielSeite, 18, (w) => ({
+      ...w,
+      fragen: [
+        ...w.fragen,
+        {
+          quelle: null,
+          frage: { wert: "Port von SSH?", html: false },
+          antworten: [
+            { quelle: null, text: { wert: "22", html: false }, richtig: true },
+            { quelle: null, text: { wert: "23", html: false }, richtig: false },
+          ],
+        },
+      ],
+    }));
+    expect(ergaenzt).toContain(
+      "    </ul>\n  </l-quizfrage>\n  <l-quizfrage>\n    <l-frage>Port von SSH?</l-frage>\n    <ul>\n      <li data-richtig>22</li>\n      <li>23</li>\n    </ul>\n  </l-quizfrage>\n</l-quiz>",
+    );
+    nurDazwischen(beispielSeite, ergaenzt, "<h2>Quiz</h2>\n", "\n\n<h2>Diagramm</h2>");
+  });
+
+  it("Diagramm: Art, Titel und Daten (Daten-Editor) ändern nur dieses Diagramm", () => {
+    const neu = bearbeiten<Extract<BausteinWerte, { art: "diagramm" }>>(beispielSeite, 19, (w) => {
+      w.daten.zeilen[1].zellen[1] = { wert: "125", html: false };
+      return { ...w, typ: "linie", titel: "Anfragen je Wochentag" };
+    });
+    expect(neu).toBe(
+      beispielSeite
+        .replace('<l-diagramm typ="balken" titel="Anfragen pro Tag">', '<l-diagramm typ="linie" titel="Anfragen je Wochentag">')
+        .replace("<tr><td>Mo</td><td>120</td><td>4</td></tr>", "<tr><td>Mo</td><td>125</td><td>4</td></tr>"),
+    );
+    const zeile = bearbeiten<Extract<BausteinWerte, { art: "diagramm" }>>(beispielSeite, 21, (w) => ({
+      ...w,
+      daten: { ...w.daten, zeilen: [...w.daten.zeilen, { quelle: null, zellen: [{ wert: "Mail", html: false }, { wert: "3", html: false }] }] },
+    }));
+    expect(zeile).toContain("    <tr><td>Sonstiges</td><td>7</td></tr>\n    <tr><td>Mail</td><td>3</td></tr>\n  </table>\n</l-diagramm>");
+    nurDazwischen(beispielSeite, zeile, '<l-diagramm typ="kreis" titel="Datenverkehr nach Art">\n', "</l-diagramm>\n</main>");
   });
 });

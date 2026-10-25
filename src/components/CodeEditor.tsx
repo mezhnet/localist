@@ -231,8 +231,11 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
     if (apiRef) {
       apiRef.current = {
         insert: (vorlage, auswahl) => {
-          // Planen mit "\n" (Positionen wie in CodeMirror), einfügen mit dem Zeilenende der Datei.
-          const plan = planInsert(editor.state.doc.toString(), editor.state.selection.main.head, vorlage, auswahl);
+          // Planen mit "\n" (Positionen wie in CodeMirror), einfügen mit dem Zeilenende der Datei. Ist etwas markiert
+          // (z. B. der Platzhalter des zuletzt eingefügten Bausteins), kommt der neue Baustein hinter diese Zeile.
+          const selection = editor.state.selection.main;
+          const pos = selection.empty ? selection.head : editor.state.doc.lineAt(selection.to).to;
+          const plan = planInsert(editor.state.doc.toString(), pos, vorlage, auswahl);
           editor.dispatch({
             changes: { from: plan.from, to: plan.to, insert: plan.insert.split("\n").join(editor.state.lineBreak) },
             selection: { anchor: plan.anchor, head: plan.head },

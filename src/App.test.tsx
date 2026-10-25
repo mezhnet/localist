@@ -1081,6 +1081,10 @@ describe("Bausteine (Etappe 12)", () => {
       "Trennlinie",
       "Code-Block",
       "Seitenlink",
+      "Karteikarte",
+      "Kartenstapel",
+      "Quiz",
+      "Diagramm",
     ]);
     cursorAt("</l-callout>");
     fireEvent.click(toolbar().getByRole("button", { name: "Checkliste" }));
@@ -1115,7 +1119,7 @@ describe("Bausteine (Etappe 12)", () => {
     await openInCode("Notizen", "DNS");
     cursorAt("</l-callout>\n");
     type("/");
-    await waitFor(() => expect(completions()).toEqual(["Callout", "Toggle", "Tabelle", "Checkliste", "Spalten", "Bild", "Trennlinie", "Code-Block", "Seitenlink"]));
+    await waitFor(() => expect(completions()).toEqual(["Callout", "Toggle", "Tabelle", "Checkliste", "Spalten", "Bild", "Trennlinie", "Code-Block", "Seitenlink", "Karteikarte", "Kartenstapel", "Quiz", "Diagramm"]));
     type("tab");
     await waitFor(() => expect(completions()).toEqual(["Tabelle"]));
     act(() => {
@@ -1170,7 +1174,7 @@ describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
 
   it("Stift am Callout öffnet ein Formular, Speichern ändert nur diesen Baustein", async () => {
     const original = await openBausteine();
-    fromFrame({ typ: "bearbeiten", index: 0, art: "callout", anzahl: 13 });
+    fromFrame({ typ: "bearbeiten", index: 0, art: "callout", anzahl: 22 });
     const dialog = within(await screen.findByRole("dialog", { name: "Callout bearbeiten" }));
     expect((dialog.getByRole("textbox", { name: "Text" }) as HTMLTextAreaElement).value).toBe("Ein Callout hebt einen Hinweis hervor.");
     fireEvent.click(dialog.getByRole("button", { name: "Warnung" }));
@@ -1185,7 +1189,7 @@ describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
 
   it("Tabellen-Editor: Zeile hinzufügen, Spalte entfernen, Überschrift bleibt", async () => {
     const original = await openBausteine();
-    fromFrame({ typ: "bearbeiten", index: 5, art: "tabelle", anzahl: 13 });
+    fromFrame({ typ: "bearbeiten", index: 5, art: "tabelle", anzahl: 22 });
     const dialog = within(await screen.findByRole("dialog", { name: "Tabelle bearbeiten" }));
     expect((dialog.getByRole("textbox", { name: "Zeile 2, Spalte 1" }) as HTMLInputElement).value).toBe("DNS");
     expect(dialog.getByRole("checkbox", { name: "Erste Zeile ist Überschrift" })).toHaveProperty("checked", true);
@@ -1206,7 +1210,7 @@ describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
 
   it("in „Geteilt“: Checkliste im Formular ergänzen, der Code-Editor zeigt die neue Fassung", async () => {
     const original = await openBausteine("geteilt");
-    fromFrame({ typ: "bearbeiten", index: 6, art: "checkliste", anzahl: 13 });
+    fromFrame({ typ: "bearbeiten", index: 6, art: "checkliste", anzahl: 22 });
     const dialog = within(await screen.findByRole("dialog", { name: "Checkliste bearbeiten" }));
     fireEvent.click(dialog.getByRole("button", { name: "Punkt hinzufügen" }));
     fireEvent.change(dialog.getByRole("textbox", { name: "Punkt 4" }), { target: { value: "Mit Freunden teilen" } });
@@ -1223,7 +1227,7 @@ describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
   it("„Baustein entfernen“ fragt nach und entfernt nur diesen Baustein", async () => {
     const original = await openBausteine();
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    fromFrame({ typ: "bearbeiten", index: 9, art: "trennlinie", anzahl: 13 });
+    fromFrame({ typ: "bearbeiten", index: 9, art: "trennlinie", anzahl: 22 });
     const dialog = within(await screen.findByRole("dialog", { name: "Trennlinie bearbeiten" }));
     fireEvent.click(dialog.getByRole("button", { name: "Baustein entfernen" }));
     await waitFor(() => expect(file()).toBe(original.replace("<hr>\n", "")));
@@ -1242,15 +1246,104 @@ describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
 
   it("passt die Seite nicht zur Datei (z. B. ein Skript hat Bausteine erzeugt), ändert das Formular nichts", async () => {
     const original = await openBausteine();
-    fromFrame({ typ: "bearbeiten", index: 0, art: "callout", anzahl: 14 });
+    fromFrame({ typ: "bearbeiten", index: 0, art: "callout", anzahl: 23 });
     expect(await screen.findByText(/lässt sich nicht ohne Code bearbeiten/)).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
     fromFrame({ typ: "haekchen", index: 7, an: true });
     expect(await screen.findByText(/Das Häkchen konnte nicht gespeichert werden/)).toBeTruthy();
     expect(file()).toBe(original);
     // Unbekannte Bausteinarten oder falsche Felder werden gar nicht erst angenommen.
-    fromFrame({ typ: "bearbeiten", index: 0, art: "skript", anzahl: 13 });
+    fromFrame({ typ: "bearbeiten", index: 0, art: "skript", anzahl: 22 });
     fromFrame({ typ: "haekchen", index: -1, an: true });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+describe("Lern-Bausteine und Diagramme bearbeiten (Etappe 13)", () => {
+  const frame = () => [...document.querySelectorAll<HTMLIFrameElement>("iframe.html-frame")].find((element) => !element.classList.contains("is-loading"))!;
+  const fromFrame = (data: unknown) =>
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, ...(data as object) }, source: frame().contentWindow }));
+    });
+  const file = () => vault().files.get("Lernen/Bausteine.html")!;
+  async function openBausteine() {
+    localStorage.setItem("html-ansicht", "lesen");
+    await openVaultFromStart();
+    await openPage("Lernen", "Bausteine");
+    await waitFor(() => expect(frame()).toBeTruthy());
+    return file();
+  }
+
+  it("Werkzeugleiste fügt Karteikarte, Kartenstapel, Quiz und Diagramm nach dem Speicherformat ein", async () => {
+    localStorage.setItem("html-ansicht", "code");
+    await openVaultFromStart();
+    await openPage("Notizen", "DNS");
+    await waitFor(() => expect(document.querySelector(".cm-editor")).toBeTruthy());
+    const view = EditorView.findFromDOM(document.querySelector(".cm-editor") as HTMLElement)!;
+    act(() => view.dispatch({ selection: { anchor: view.state.doc.toString().indexOf("</h1>") + 5 } }));
+    const toolbar = within(screen.getByRole("toolbar", { name: "Baustein einfügen" }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Quiz" }));
+    expect(view.state.sliceDoc()).toContain(
+      '</h1>\n<l-quiz>\n  <l-quizfrage>\n    <l-frage>Frage</l-frage>\n    <ul>\n      <li>Falsche Antwort</li>\n      <li data-richtig>Richtige Antwort</li>\n    </ul>\n  </l-quizfrage>\n</l-quiz>\n',
+    );
+    // Der Platzhalter „Frage“ ist markiert: Der nächste Baustein kommt hinter diese Zeile, nicht mitten hinein.
+    fireEvent.click(toolbar.getByRole("button", { name: "Karteikarte" }));
+    expect(view.state.sliceDoc()).toContain("    <l-frage>Frage</l-frage>\n    <l-karteikarte>\n      <l-frage>Frage</l-frage>\n      <l-antwort>Antwort</l-antwort>\n    </l-karteikarte>\n    <ul>");
+    act(() => view.dispatch({ selection: { anchor: view.state.doc.toString().indexOf("</h1>") + 5 } }));
+    fireEvent.click(toolbar.getByRole("button", { name: "Diagramm" }));
+    expect(view.state.sliceDoc()).toContain('</h1>\n<l-diagramm typ="balken" titel="Titel">\n  <table>\n    <tr><th>Beschriftung</th><th>Wert</th></tr>');
+    await waitFor(() => expect(vault().files.get("Notizen/DNS.html")).toContain('<l-diagramm typ="balken" titel="Titel">'), { timeout: 3000 });
+  });
+
+  it("Kartenstapel-Formular: Karte hinzufügen", async () => {
+    const original = await openBausteine();
+    fromFrame({ typ: "bearbeiten", index: 14, art: "kartenstapel", anzahl: 22 });
+    const dialog = within(await screen.findByRole("dialog", { name: "Kartenstapel bearbeiten" }));
+    expect((dialog.getByRole("textbox", { name: "Karte 2: Frage" }) as HTMLInputElement).value).toBe("Wofür steht DNS?");
+    fireEvent.click(dialog.getByRole("button", { name: "Karte hinzufügen" }));
+    fireEvent.change(dialog.getByRole("textbox", { name: "Karte 4: Frage" }), { target: { value: "Was ist ein Switch?" } });
+    fireEvent.change(dialog.getByRole("textbox", { name: "Karte 4: Antwort" }), { target: { value: "Verteiler im LAN" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() =>
+      expect(file()).toBe(
+        original.replace(
+          "    <l-antwort>Die feste Hardware-Adresse einer Netzwerkkarte.</l-antwort>\n  </l-karteikarte>\n</l-kartenstapel>",
+          "    <l-antwort>Die feste Hardware-Adresse einer Netzwerkkarte.</l-antwort>\n  </l-karteikarte>\n  <l-karteikarte>\n    <l-frage>Was ist ein Switch?</l-frage>\n    <l-antwort>Verteiler im LAN</l-antwort>\n  </l-karteikarte>\n</l-kartenstapel>",
+        ),
+      ),
+    );
+  });
+
+  it("Quiz-Formular: richtige Antwort per Auswahlknopf festlegen", async () => {
+    const original = await openBausteine();
+    fromFrame({ typ: "bearbeiten", index: 18, art: "quiz", anzahl: 22 });
+    const dialog = within(await screen.findByRole("dialog", { name: "Quiz bearbeiten" }));
+    expect(dialog.getByRole("radio", { name: "Frage 1, Antwort 2 ist richtig" })).toHaveProperty("checked", true);
+    fireEvent.click(dialog.getByRole("radio", { name: "Frage 2, Antwort 1 ist richtig" }));
+    fireEvent.change(dialog.getByRole("textbox", { name: "Frage 2, Antwort 1" }), { target: { value: "HTTP (unverschlüsselt)" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() =>
+      expect(file()).toBe(
+        original.replace("      <li>HTTP</li>\n      <li>FTP</li>\n      <li data-richtig>HTTPS</li>", "      <li data-richtig>HTTP (unverschlüsselt)</li>\n      <li>FTP</li>\n      <li>HTTPS</li>"),
+      ),
+    );
+  });
+
+  it("Diagramm-Formular: Art, Titel und Daten-Editor", async () => {
+    const original = await openBausteine();
+    fromFrame({ typ: "bearbeiten", index: 21, art: "diagramm", anzahl: 22 });
+    const dialog = within(await screen.findByRole("dialog", { name: "Diagramm bearbeiten" }));
+    expect(within(dialog.getByRole("group", { name: "Diagrammart" })).getByRole("button", { name: "Kreis" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(within(dialog.getByRole("group", { name: "Diagrammart" })).getByRole("button", { name: "Balken" }));
+    fireEvent.change(dialog.getByRole("textbox", { name: "Titel" }), { target: { value: "Datenverkehr" } });
+    fireEvent.change(dialog.getByRole("textbox", { name: "Zeile 2, Spalte 2" }), { target: { value: "60" } });
+    fireEvent.click(dialog.getByRole("button", { name: "Speichern" }));
+    await waitFor(() =>
+      expect(file()).toBe(
+        original
+          .replace('<l-diagramm typ="kreis" titel="Datenverkehr nach Art">', '<l-diagramm typ="balken" titel="Datenverkehr">')
+          .replace("<tr><td>Video</td><td>58</td></tr>", "<tr><td>Video</td><td>60</td></tr>"),
+      ),
+    );
   });
 });

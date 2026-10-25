@@ -54,8 +54,8 @@ describe("localist.css und localist.js (Build)", () => {
   it("eine Änderung an einer Quelle ändert die Version, CRLF beim Auschecken nicht", () => {
     const geaendert = bausteineBauen({ appVersion: pkg.version, tokens, css: { ...css, "./callout.css": `${css["./callout.css"]}\n/* neu */` }, js, schrift });
     expect(geaendert.version).not.toBe(gebaut.version);
-    const crlf = Object.fromEntries(Object.entries(css).map(([name, text]) => [name, text.replace(/\n/g, "\r\n")]));
-    expect(bausteineBauen({ appVersion: pkg.version, tokens: tokens.replace(/\n/g, "\r\n"), css: crlf, js, schrift }).version).toBe(gebaut.version);
+    const crlf = Object.fromEntries(Object.entries(css).map(([name, text]) => [name, text.replace(/\r?\n/g, "\r\n")]));
+    expect(bausteineBauen({ appVersion: pkg.version, tokens: tokens.replace(/\r?\n/g, "\r\n"), css: crlf, js, schrift }).version).toBe(gebaut.version);
   });
 });
 

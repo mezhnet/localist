@@ -90,7 +90,26 @@ describe("Markup der Bausteine", () => {
     expect(joined("trennlinie")).toBe("<hr>");
     expect(joined("code")).toMatch(/^<pre><code class="language-[\w-]+">[^<]*<\/code><\/pre>$/);
     expect(joined("seitenlink")).toMatch(/^<a class="l-seitenlink" href="[^"]+">[^<]+<\/a>$/);
-    expect(BAUSTEINE.map((info) => info.art)).toEqual(["callout", "toggle", "tabelle", "checkliste", "spalten", "bild", "trennlinie", "code", "seitenlink"]);
+    expect(joined("karteikarte")).toMatch(/^<l-karteikarte>\n\s+<l-frage>[^<]+<\/l-frage>\n\s+<l-antwort>[^<]+<\/l-antwort>\n<\/l-karteikarte>$/);
+    expect(joined("kartenstapel")).toMatch(/^<l-kartenstapel>\n(\s+<l-karteikarte>\n\s+<l-frage>[^<]+<\/l-frage>\n\s+<l-antwort>[^<]+<\/l-antwort>\n\s+<\/l-karteikarte>\n){2,}<\/l-kartenstapel>$/);
+    expect(joined("quiz")).toMatch(/^<l-quiz>\n\s+<l-quizfrage>\n\s+<l-frage>[^<]+<\/l-frage>\n\s+<ul>\n(\s+<li( data-richtig)?>[^<]+<\/li>\n)+\s+<\/ul>\n\s+<\/l-quizfrage>\n<\/l-quiz>$/);
+    expect(joined("quiz")).toContain("<li data-richtig>");
+    expect(joined("diagramm")).toMatch(/^<l-diagramm typ="(balken|linie|kreis)" titel="[^"]*">\n\s+<table>[\s\S]*<\/table>\n<\/l-diagramm>$/);
+    expect(BAUSTEINE.map((info) => info.art)).toEqual([
+      "callout",
+      "toggle",
+      "tabelle",
+      "checkliste",
+      "spalten",
+      "bild",
+      "trennlinie",
+      "code",
+      "seitenlink",
+      "karteikarte",
+      "kartenstapel",
+      "quiz",
+      "diagramm",
+    ]);
   });
 
   it("der Text jedes Bausteins steht ohne Skript lesbar in der Datei (nicht in Attributen)", () => {
@@ -104,6 +123,10 @@ describe("Markup der Bausteine", () => {
       trennlinie: [],
       code: ["Code"],
       seitenlink: ["Ideen"],
+      karteikarte: ["Frage", "Antwort"],
+      kartenstapel: ["Erste Frage", "Zweite Frage", "Antwort"],
+      quiz: ["Frage", "Falsche Antwort", "Richtige Antwort"],
+      diagramm: ["Beschriftung Wert", "A 10", "B 20"],
     };
     for (const info of BAUSTEINE) {
       const text = htmlVisibleText(`<main>${vorlage(info.art).join("\n")}</main>`);
@@ -121,16 +144,41 @@ describe("Markup der Bausteine", () => {
       "Ein kleines Netzwerk",
       '<l-callout typ="tipp">Text</l-callout>',
       "Ideen DNS",
+      "Welchen Port nutzt HTTPS? Port 443",
+      "Was macht ein Router? Er verbindet Netzwerke",
+      "Wie viele Bit hat eine IPv4-Adresse? 16 32 128",
+      "Tag Anfragen Fehler Mo 120 4",
+      "Art Anteil Video 58",
     ]) {
       expect(seite).toContain(part);
     }
-    for (const markup of ["<l-callout", "<details>", "<table>", '<ul class="l-checkliste">', "<l-spalten>", "<figure>", "<hr>", "<pre><code", 'class="l-seitenlink"']) {
+    for (const markup of [
+      "<l-callout",
+      "<details>",
+      "<table>",
+      '<ul class="l-checkliste">',
+      "<l-spalten>",
+      "<figure>",
+      "<hr>",
+      "<pre><code",
+      'class="l-seitenlink"',
+      "<l-karteikarte>",
+      "<l-kartenstapel>",
+      "<l-quiz>",
+      "<li data-richtig>",
+      '<l-diagramm typ="balken"',
+      '<l-diagramm typ="linie"',
+      '<l-diagramm typ="kreis"',
+    ]) {
       expect(beispielSeite).toContain(markup);
     }
   });
 
-  it("localist.css versteckt keinen Inhalt eines Bausteins", () => {
-    const hidden = [...localistCss.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{[^}]*(?:display:\s*none|visibility:\s*hidden)[^}]*\}/g)].map((m) => m[1].trim());
-    expect(hidden).toEqual(["details > summary::-webkit-details-marker"]);
+  it("localist.css versteckt ohne Skript keinen Inhalt eines Bausteins", () => {
+    const hidden = [...localistCss.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{[^}]*(?:display:\s*none|visibility:\s*hidden|clip-path)[^}]*\}/g)].map((m) => m[1].trim());
+    // Erlaubt: das Dreieck von <summary>, leere Rückmeldungen, und was erst mit Skript gilt (:defined, [hidden],
+    // gezeichnetes Diagramm). Ohne localist.js bleibt also alles sichtbar.
+    const nurMitSkript = (selector: string) => selector.split(",").every((part) => /:defined|\[hidden\]|\[data-gezeichnet\]|:empty/.test(part));
+    expect(hidden.filter((selector) => selector !== "details > summary::-webkit-details-marker" && !nurMitSkript(selector))).toEqual([]);
   });
 });

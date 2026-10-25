@@ -56,7 +56,7 @@
   // Bausteine ohne Code bearbeiten: Beim Überfahren erscheint ein Stift, ein Klick meldet der App, welcher
   // Baustein gemeint ist (Nummer in Dokument-Reihenfolge, gezählt wie in src/lib/baustein-formulare.ts).
   // Häkchen in Checklisten meldet die Brücke ebenfalls. Beides nur, wenn die App es erlaubt („stifte“).
-  var BAUSTEINE = "l-callout, details, table, ul.l-checkliste, l-spalten, figure, hr, pre, a.l-seitenlink";
+  var BAUSTEINE = "l-callout, details, table, ul.l-checkliste, l-spalten, figure, hr, pre, a.l-seitenlink, l-karteikarte, l-kartenstapel, l-quiz, l-diagramm";
   var HAEKCHEN = 'ul.l-checkliste input[type="checkbox"]';
   var ARTEN = {
     "l-callout": "callout",
@@ -68,6 +68,14 @@
     hr: "trennlinie",
     pre: "code",
     a: "seitenlink",
+    "l-karteikarte": "karteikarte",
+    "l-kartenstapel": "kartenstapel",
+    "l-quiz": "quiz",
+    "l-diagramm": "diagramm",
+  };
+  // Die Tabelle eines Diagramms gehört zum Diagramm und ist kein eigener Baustein.
+  var zaehlt = function (element) {
+    return element.localName !== "table" || !element.closest("l-diagramm");
   };
   var bearbeitbar = false;
   var werkzeug = null;
@@ -80,7 +88,7 @@
   };
   var alle = function (selektor) {
     var b = bereich();
-    return b ? Array.prototype.slice.call(b.querySelectorAll(selektor)) : [];
+    return b ? Array.prototype.slice.call(b.querySelectorAll(selektor)).filter(zaehlt) : [];
   };
   var werkzeugBauen = function () {
     // Eigenes Element außerhalb von <body> mit geschlossenem Shadow DOM: Die Styles der Seite erreichen es
@@ -148,6 +156,7 @@
       return;
     }
     var element = ziel instanceof Element ? ziel.closest(BAUSTEINE) : null;
+    while (element && !zaehlt(element)) element = element.parentElement ? element.parentElement.closest(BAUSTEINE) : null;
     if (element && !bereich().contains(element)) element = null;
     zeigen(element);
   });

@@ -1,6 +1,21 @@
 // Werkzeugleiste über dem Code-Editor: ein Knopf je Baustein. Ein Klick fügt ihn an der Cursorposition ein
 // (Bild und Seitenlink fragen vorher nach dem Ziel). Auf schmalen Bildschirmen lässt sie sich waagerecht scrollen.
-import { Columns2, Image, Link, ListChecks, ListCollapse, MessageSquareText, Minus, SquareCode, Table, type LucideIcon } from "lucide-react";
+import {
+  ChartColumn,
+  CircleQuestionMark,
+  Columns2,
+  Image,
+  Layers,
+  Link,
+  ListChecks,
+  ListCollapse,
+  MessageSquareText,
+  Minus,
+  SquareCode,
+  StickyNote,
+  Table,
+  type LucideIcon,
+} from "lucide-react";
 import { BAUSTEINE, type BausteinArt } from "../lib/bausteine";
 import { Button } from "./ui";
 
@@ -14,6 +29,10 @@ export const BAUSTEIN_SYMBOLE: Record<BausteinArt, LucideIcon> = {
   trennlinie: Minus,
   code: SquareCode,
   seitenlink: Link,
+  karteikarte: StickyNote,
+  kartenstapel: Layers,
+  quiz: CircleQuestionMark,
+  diagramm: ChartColumn,
 };
 
 export function BausteinLeiste({ onPick }: { onPick: (art: BausteinArt) => void }) {

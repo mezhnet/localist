@@ -1,0 +1,99 @@
+/* Quiz: <l-quiz> mit <l-quizfrage>, darin <l-frage> und eine Liste von Antworten (<li data-richtig> = richtig).
+   Ohne Skript eine normale Liste, mit Skript anklickbare Antworten mit Rückmeldung. */
+
+l-quiz {
+  display: block;
+  margin: var(--space-4) 0;
+}
+
+l-quizfrage {
+  display: block;
+  margin: var(--space-3) 0;
+}
+
+l-quizfrage > l-frage {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+}
+
+l-quiz:defined {
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+l-quiz:defined > l-quizfrage:first-child {
+  margin-top: 0;
+}
+
+l-quiz:defined l-quizfrage > ul,
+l-quiz:defined l-quizfrage > ol {
+  display: grid;
+  gap: var(--space-1-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+l-quiz:defined l-quizfrage li {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+l-quiz:defined l-quizfrage li:hover:not([aria-disabled]) {
+  background: var(--color-hover);
+}
+
+l-quiz:defined l-quizfrage li:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+l-quiz:defined l-quizfrage li[aria-disabled] {
+  cursor: default;
+}
+
+l-quiz:defined l-quizfrage li[data-loesung] {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+l-quiz:defined l-quizfrage li[data-gewaehlt]:not([data-richtig]) {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.l-quiz-rueckmeldung {
+  margin: var(--space-1-5) 0 0;
+  font-size: var(--font-size-sm);
+}
+
+.l-quiz-rueckmeldung:empty {
+  display: none;
+}
+
+l-quizfrage[data-ergebnis="richtig"] > .l-quiz-rueckmeldung {
+  color: var(--color-success);
+}
+
+l-quizfrage[data-ergebnis="falsch"] > .l-quiz-rueckmeldung {
+  color: var(--color-danger);
+}
+
+.l-quiz-fuss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--color-border);
+  font-weight: var(--font-weight-medium);
+}

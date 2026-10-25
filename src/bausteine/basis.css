@@ -129,6 +129,38 @@ video {
   background: var(--color-accent-soft);
 }
 
+/* Von localist.js ausgeblendete Teile (z. B. die übrigen Karten eines Stapels) */
+[hidden] {
+  display: none !important;
+}
+
+/* Knöpfe, die localist.js in Bausteine einfügt (Kartenstapel, Quiz) */
+.l-knopf {
+  padding: var(--space-1-5) var(--space-4);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.l-knopf:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.l-knopf:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.l-knopf:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 @media (max-width: 600px) {
   main {
     padding: var(--space-6) var(--space-4) var(--space-16);

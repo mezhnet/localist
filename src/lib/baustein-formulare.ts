@@ -6,7 +6,8 @@ import type { BausteinArt } from "./bausteine";
 import { applyEdits, attr, escapeAttribute, escapeText, isElement, lineEnding, parseWithPositions, textContent, type Edit, type Element, type Node, type ParentNode } from "./html";
 
 /** Gleiche Auswahl wie im Brücken-Skript (src-tauri/seite/bruecke.js, Variablen BAUSTEINE und HAEKCHEN). */
-export const BAUSTEIN_SELEKTOR = "l-callout, details, table, ul.l-checkliste, l-spalten, figure, hr, pre, a.l-seitenlink";
+export const BAUSTEIN_SELEKTOR =
+  "l-callout, details, table, ul.l-checkliste, l-spalten, figure, hr, pre, a.l-seitenlink, l-karteikarte, l-kartenstapel, l-quiz, l-diagramm";
 export const HAEKCHEN_SELEKTOR = 'ul.l-checkliste input[type="checkbox"]';
 
 /** Text eines Feldes im Formular. `html`: Der Inhalt enthält Markup und wird als HTML gezeigt und gespeichert. */
@@ -32,16 +33,46 @@ export interface Spalte {
   inhalt: Inhalt;
 }
 
+/** Daten einer Tabelle (auch die Daten eines Diagramms). */
+export interface TabellenWerte {
+  kopfzeile: boolean;
+  zeilen: Tabellenzeile[];
+  /** Nummer der Spalte in der Datei je Spalte im Formular (null: neu). */
+  spalten: (number | null)[];
+}
+
+export interface Karte {
+  quelle: number | null;
+  frage: Inhalt;
+  antwort: Inhalt;
+}
+
+export interface Quizantwort {
+  quelle: number | null;
+  text: Inhalt;
+  richtig: boolean;
+}
+
+export interface Quizfrage {
+  quelle: number | null;
+  frage: Inhalt;
+  antworten: Quizantwort[];
+}
+
 export type BausteinWerte =
   | { art: "callout"; typ: string; text: Inhalt }
   | { art: "toggle"; titel: Inhalt; inhalt: Inhalt; offen: boolean }
-  | { art: "tabelle"; kopfzeile: boolean; zeilen: Tabellenzeile[]; spalten: (number | null)[] }
+  | ({ art: "tabelle" } & TabellenWerte)
   | { art: "checkliste"; punkte: Checkpunkt[] }
   | { art: "spalten"; spalten: Spalte[] }
   | { art: "bild"; src: string; alt: string; beschriftung: Inhalt }
   | { art: "trennlinie" }
   | { art: "code"; sprache: string; code: string }
-  | { art: "seitenlink"; href: string; text: Inhalt };
+  | { art: "seitenlink"; href: string; text: Inhalt }
+  | { art: "karteikarte"; frage: Inhalt; antwort: Inhalt }
+  | { art: "kartenstapel"; karten: Karte[] }
+  | { art: "quiz"; fragen: Quizfrage[] }
+  | { art: "diagramm"; typ: string; titel: string; daten: TabellenWerte };
 
 export const LEER: Inhalt = { wert: "", html: false };
 
@@ -98,18 +129,31 @@ export function bausteinArt(element: Element): BausteinArt | null {
       return "code";
     case "a":
       return hasClass(element, "l-seitenlink") ? "seitenlink" : null;
+    case "l-karteikarte":
+      return "karteikarte";
+    case "l-kartenstapel":
+      return "kartenstapel";
+    case "l-quiz":
+      return "quiz";
+    case "l-diagramm":
+      return "diagramm";
     default:
       return null;
   }
 }
 
-function inCheckliste(element: Element): boolean {
+/** Hat das Element einen Vorfahren, auf den `test` zutrifft? */
+function hatVorfahre(element: Element, test: (vorfahre: Element) => boolean): boolean {
   for (let parent = element.parentNode; parent && isElement(parent as Node); parent = (parent as Element).parentNode) {
-    const candidate = parent as Element;
-    if (candidate.tagName === "ul" && hasClass(candidate, "l-checkliste")) return true;
+    if (test(parent as Element)) return true;
   }
   return false;
 }
+
+const inCheckliste = (element: Element) => hatVorfahre(element, (vorfahre) => vorfahre.tagName === "ul" && hasClass(vorfahre, "l-checkliste"));
+
+/** Die Tabelle eines Diagramms gehört zum Diagramm und ist kein eigener Baustein (wie im Brücken-Skript). */
+const zaehltAlsBaustein = (element: Element, art: BausteinArt) => art !== "tabelle" || !hatVorfahre(element, (vorfahre) => vorfahre.tagName === "l-diagramm");
 
 function lesen(html: string): Seite {
   const { document, offset } = parseWithPositions(html);
@@ -121,7 +165,7 @@ function lesen(html: string): Seite {
   if (bereich) {
     for (const element of elements(bereich)) {
       const art = bausteinArt(element);
-      if (art) bausteine.push({ art, element });
+      if (art && zaehltAlsBaustein(element, art)) bausteine.push({ art, element });
       if (element.tagName === "input" && (attr(element, "type") ?? "").toLowerCase() === "checkbox" && inCheckliste(element)) haekchen.push(element);
     }
   }
@@ -298,6 +342,18 @@ function toggleBereich(details: Element): { summary: Element | undefined; nodes:
 const codeElement = (pre: Element) => children(pre, "code")[0] ?? pre;
 const sprachKlasse = (element: Element) => (attr(element, "class") ?? "").split(/\s+/).find((name) => name.startsWith("language-"));
 
+function tabellenWerte(seite: Seite, table: Element | undefined): TabellenWerte {
+  const rows = table ? tabellenZeilen(table) : [];
+  const breite = Math.max(0, ...rows.map((row) => zellen(row).length));
+  return {
+    kopfzeile: rows.length > 0 && zellen(rows[0]).length > 0 && zellen(rows[0]).every((cell) => cell.tagName === "th"),
+    zeilen: rows.map((row, r) => ({ quelle: r, zellen: Array.from({ length: breite }, (_, c) => inhaltVon(seite, zellen(row)[c])) })),
+    spalten: Array.from({ length: breite }, (_, c) => c),
+  };
+}
+
+const quizListe = (frage: Element) => children(frage, "ul")[0] ?? children(frage, "ol")[0];
+
 function werteLesen(seite: Seite, gefunden: Gefunden): BausteinWerte {
   const { element } = gefunden;
   switch (gefunden.art) {
@@ -312,16 +368,8 @@ function werteLesen(seite: Seite, gefunden: Gefunden): BausteinWerte {
         offen: attr(element, "open") !== undefined,
       };
     }
-    case "tabelle": {
-      const rows = tabellenZeilen(element);
-      const breite = Math.max(0, ...rows.map((row) => zellen(row).length));
-      return {
-        art: "tabelle",
-        kopfzeile: rows.length > 0 && zellen(rows[0]).length > 0 && zellen(rows[0]).every((cell) => cell.tagName === "th"),
-        zeilen: rows.map((row, r) => ({ quelle: r, zellen: Array.from({ length: breite }, (_, c) => inhaltVon(seite, zellen(row)[c])) })),
-        spalten: Array.from({ length: breite }, (_, c) => c),
-      };
-    }
+    case "tabelle":
+      return { art: "tabelle", ...tabellenWerte(seite, element) };
     case "checkliste":
       return {
         art: "checkliste",
@@ -348,6 +396,31 @@ function werteLesen(seite: Seite, gefunden: Gefunden): BausteinWerte {
     }
     case "seitenlink":
       return { art: "seitenlink", href: attr(element, "href") ?? "", text: inhaltVon(seite, element) };
+    case "karteikarte":
+      return { art: "karteikarte", frage: inhaltVon(seite, children(element, "l-frage")[0]), antwort: inhaltVon(seite, children(element, "l-antwort")[0]) };
+    case "kartenstapel":
+      return {
+        art: "kartenstapel",
+        karten: children(element, "l-karteikarte").map((karte, i) => ({
+          quelle: i,
+          frage: inhaltVon(seite, children(karte, "l-frage")[0]),
+          antwort: inhaltVon(seite, children(karte, "l-antwort")[0]),
+        })),
+      };
+    case "quiz":
+      return {
+        art: "quiz",
+        fragen: children(element, "l-quizfrage").map((frage, i) => {
+          const liste = quizListe(frage);
+          return {
+            quelle: i,
+            frage: inhaltVon(seite, children(frage, "l-frage")[0]),
+            antworten: liste ? children(liste, "li").map((li, j) => ({ quelle: j, text: inhaltVon(seite, li), richtig: attr(li, "data-richtig") !== undefined })) : [],
+          };
+        }),
+      };
+    case "diagramm":
+      return { art: "diagramm", typ: attr(element, "typ") ?? "balken", titel: attr(element, "titel") ?? "", daten: tabellenWerte(seite, children(element, "table")[0]) };
   }
 }
 
@@ -367,7 +440,7 @@ function ersetzen(seite: Seite, element: Element, text: string): Edit {
   return { start: seite.offset + location.startOffset, end: seite.offset + location.endOffset, text };
 }
 
-function tabelleSchreiben(seite: Seite, table: Element, alt: Extract<BausteinWerte, { art: "tabelle" }>, neu: Extract<BausteinWerte, { art: "tabelle" }>): Edit[] {
+function tabelleSchreiben(seite: Seite, table: Element, alt: TabellenWerte, neu: TabellenWerte): Edit[] {
   const rows = tabellenZeilen(table);
   const sameShape =
     neu.kopfzeile === alt.kopfzeile &&
@@ -518,6 +591,96 @@ function codeSchreiben(seite: Seite, pre: Element, alt: Extract<BausteinWerte, {
   return edits.filter((edit): edit is Edit => edit !== null);
 }
 
+/** Eine Karteikarte neu schreiben (für neue oder geänderte Karten in einem Stapel). */
+function karteText(karte: Karte, einzug: string, eol: string): string {
+  return [
+    `${einzug}<l-karteikarte>`,
+    `${einzug}  <l-frage>${kodieren(karte.frage, eol, `${einzug}    `)}</l-frage>`,
+    `${einzug}  <l-antwort>${kodieren(karte.antwort, eol, `${einzug}    `)}</l-antwort>`,
+    `${einzug}</l-karteikarte>`,
+  ].join(eol);
+}
+
+function kartenstapelSchreiben(seite: Seite, stapel: Element, alt: Extract<BausteinWerte, { art: "kartenstapel" }>, neu: Extract<BausteinWerte, { art: "kartenstapel" }>): Edit[] {
+  const karten = children(stapel, "l-karteikarte");
+  const sameShape = neu.karten.length === karten.length && neu.karten.every((karte, i) => karte.quelle === i);
+  if (sameShape) {
+    const edits: (Edit | null)[] = [];
+    neu.karten.forEach((karte, i) => {
+      const frage = children(karten[i], "l-frage")[0];
+      const antwort = children(karten[i], "l-antwort")[0];
+      if (frage) edits.push(inhaltEditVon(seite, frage, karte.frage, alt.karten[i].frage));
+      if (antwort) edits.push(inhaltEditVon(seite, antwort, karte.antwort, alt.karten[i].antwort));
+    });
+    return edits.filter((edit): edit is Edit => edit !== null);
+  }
+  // Neu aufbauen; unveränderte Karten bleiben wörtlich erhalten.
+  const einzug = einzugAn(seite.html, seite.offset + stapel.sourceCodeLocation!.startOffset);
+  const kartenEinzug = kindEinzug(seite, karten[0], `${einzug}  `);
+  const lines = [
+    startTag(seite, stapel),
+    ...neu.karten.map((karte) => {
+      const quelle = karte.quelle === null ? undefined : karten[karte.quelle];
+      const vorher = karte.quelle === null ? undefined : alt.karten[karte.quelle];
+      if (quelle?.sourceCodeLocation?.endTag && vorher && gleich(karte.frage, vorher.frage) && gleich(karte.antwort, vorher.antwort)) return `${kartenEinzug}${roh(seite, quelle)}`;
+      return karteText(karte, kartenEinzug, seite.eol);
+    }),
+    `${einzug}</l-kartenstapel>`,
+  ];
+  return [ersetzen(seite, stapel, lines.join(seite.eol))];
+}
+
+const frageGleich = (a: Quizfrage, b: Quizfrage) =>
+  gleich(a.frage, b.frage) &&
+  a.antworten.length === b.antworten.length &&
+  a.antworten.every((antwort, i) => antwort.quelle === i && gleich(antwort.text, b.antworten[i].text) && antwort.richtig === b.antworten[i].richtig);
+
+function quizSchreiben(seite: Seite, quiz: Element, alt: Extract<BausteinWerte, { art: "quiz" }>, neu: Extract<BausteinWerte, { art: "quiz" }>): Edit[] {
+  const fragen = children(quiz, "l-quizfrage");
+  const sameShape =
+    neu.fragen.length === fragen.length &&
+    neu.fragen.every((frage, i) => frage.quelle === i && frage.antworten.length === alt.fragen[i].antworten.length && frage.antworten.every((antwort, j) => antwort.quelle === j));
+  if (sameShape) {
+    const edits: (Edit | null)[] = [];
+    neu.fragen.forEach((frage, i) => {
+      const element = children(fragen[i], "l-frage")[0];
+      if (element) edits.push(inhaltEditVon(seite, element, frage.frage, alt.fragen[i].frage));
+      const liste = quizListe(fragen[i]);
+      const optionen = liste ? children(liste, "li") : [];
+      frage.antworten.forEach((antwort, j) => {
+        const option = optionen[j];
+        if (!option) return;
+        edits.push(inhaltEditVon(seite, option, antwort.text, alt.fragen[i].antworten[j].text));
+        if (antwort.richtig !== alt.fragen[i].antworten[j].richtig) edits.push(attrEdit(seite, option, "data-richtig", antwort.richtig ? "" : null, true));
+      });
+    });
+    return edits.filter((edit): edit is Edit => edit !== null);
+  }
+  // Neu aufbauen; unveränderte Fragen bleiben wörtlich erhalten.
+  const eol = seite.eol;
+  const einzug = einzugAn(seite.html, seite.offset + quiz.sourceCodeLocation!.startOffset);
+  const frageEinzug = kindEinzug(seite, fragen[0], `${einzug}  `);
+  const lines = [
+    startTag(seite, quiz),
+    ...neu.fragen.map((frage) => {
+      const quelle = frage.quelle === null ? undefined : fragen[frage.quelle];
+      const vorher = frage.quelle === null ? undefined : alt.fragen[frage.quelle];
+      if (quelle?.sourceCodeLocation?.endTag && vorher && frageGleich(frage, vorher)) return `${frageEinzug}${roh(seite, quelle)}`;
+      const innen = `${frageEinzug}  `;
+      return [
+        `${frageEinzug}<l-quizfrage>`,
+        `${innen}<l-frage>${kodieren(frage.frage, eol, `${innen}  `)}</l-frage>`,
+        `${innen}<ul>`,
+        ...frage.antworten.map((antwort) => `${innen}  <li${antwort.richtig ? " data-richtig" : ""}>${kodieren(antwort.text, eol, `${innen}    `)}</li>`),
+        `${innen}</ul>`,
+        `${frageEinzug}</l-quizfrage>`,
+      ].join(eol);
+    }),
+    `${einzug}</l-quiz>`,
+  ];
+  return [ersetzen(seite, quiz, lines.join(eol))];
+}
+
 function editsFor(seite: Seite, gefunden: Gefunden, alt: BausteinWerte, neu: BausteinWerte): Edit[] {
   const { element } = gefunden;
   const only = (...edits: (Edit | null)[]) => edits.filter((edit): edit is Edit => edit !== null);
@@ -559,6 +722,24 @@ function editsFor(seite: Seite, gefunden: Gefunden, alt: BausteinWerte, neu: Bau
     case "seitenlink": {
       const vorher = alt as typeof neu;
       return only(neu.href !== vorher.href ? attrEdit(seite, element, "href", neu.href) : null, inhaltEditVon(seite, element, neu.text, vorher.text));
+    }
+    case "karteikarte": {
+      const vorher = alt as typeof neu;
+      const frage = children(element, "l-frage")[0];
+      const antwort = children(element, "l-antwort")[0];
+      return only(frage ? inhaltEditVon(seite, frage, neu.frage, vorher.frage) : null, antwort ? inhaltEditVon(seite, antwort, neu.antwort, vorher.antwort) : null);
+    }
+    case "kartenstapel":
+      return kartenstapelSchreiben(seite, element, alt as typeof neu, neu);
+    case "quiz":
+      return quizSchreiben(seite, element, alt as typeof neu, neu);
+    case "diagramm": {
+      const vorher = alt as typeof neu;
+      const table = children(element, "table")[0];
+      return [
+        ...only(neu.typ !== vorher.typ ? attrEdit(seite, element, "typ", neu.typ) : null, neu.titel !== vorher.titel ? attrEdit(seite, element, "titel", neu.titel) : null),
+        ...(table?.sourceCodeLocation ? tabelleSchreiben(seite, table, vorher.daten, neu.daten) : []),
+      ];
     }
   }
 }

@@ -69,6 +69,80 @@
 
 <h2>Seitenlink</h2>
 <p><a class="l-seitenlink" href="../Notizen/Ideen.md">Ideen</a> <a class="l-seitenlink" href="../Notizen/DNS.html">DNS</a></p>
+
+<h2>Karteikarte</h2>
+<l-karteikarte>
+  <l-frage>Welchen Port nutzt HTTPS?</l-frage>
+  <l-antwort>Port 443</l-antwort>
+</l-karteikarte>
+
+<h2>Kartenstapel</h2>
+<l-kartenstapel>
+  <l-karteikarte>
+    <l-frage>Was macht ein Router?</l-frage>
+    <l-antwort>Er verbindet Netzwerke und leitet Pakete weiter.</l-antwort>
+  </l-karteikarte>
+  <l-karteikarte>
+    <l-frage>Wofür steht DNS?</l-frage>
+    <l-antwort>Domain Name System</l-antwort>
+  </l-karteikarte>
+  <l-karteikarte>
+    <l-frage>Was ist eine MAC-Adresse?</l-frage>
+    <l-antwort>Die feste Hardware-Adresse einer Netzwerkkarte.</l-antwort>
+  </l-karteikarte>
+</l-kartenstapel>
+
+<h2>Quiz</h2>
+<l-quiz>
+  <l-quizfrage>
+    <l-frage>Wie viele Bit hat eine IPv4-Adresse?</l-frage>
+    <ul>
+      <li>16</li>
+      <li data-richtig>32</li>
+      <li>128</li>
+    </ul>
+  </l-quizfrage>
+  <l-quizfrage>
+    <l-frage>Welches Protokoll verschlüsselt Webseiten?</l-frage>
+    <ul>
+      <li>HTTP</li>
+      <li>FTP</li>
+      <li data-richtig>HTTPS</li>
+    </ul>
+  </l-quizfrage>
+</l-quiz>
+
+<h2>Diagramm</h2>
+<l-diagramm typ="balken" titel="Anfragen pro Tag">
+  <table>
+    <tr><th>Tag</th><th>Anfragen</th><th>Fehler</th></tr>
+    <tr><td>Mo</td><td>120</td><td>4</td></tr>
+    <tr><td>Di</td><td>95</td><td>2</td></tr>
+    <tr><td>Mi</td><td>140</td><td>7</td></tr>
+    <tr><td>Do</td><td>110</td><td>3</td></tr>
+    <tr><td>Fr</td><td>160</td><td>5</td></tr>
+  </table>
+</l-diagramm>
+
+<l-diagramm typ="linie" titel="Antwortzeit in Millisekunden">
+  <table>
+    <tr><th>Uhrzeit</th><th>Server A</th><th>Server B</th></tr>
+    <tr><td>8 Uhr</td><td>42</td><td>55</td></tr>
+    <tr><td>12 Uhr</td><td>68</td><td>61</td></tr>
+    <tr><td>16 Uhr</td><td>51,5</td><td>73</td></tr>
+    <tr><td>20 Uhr</td><td>38</td><td>49</td></tr>
+  </table>
+</l-diagramm>
+
+<l-diagramm typ="kreis" titel="Datenverkehr nach Art">
+  <table>
+    <tr><th>Art</th><th>Anteil</th></tr>
+    <tr><td>Video</td><td>58</td></tr>
+    <tr><td>Web</td><td>24</td></tr>
+    <tr><td>Spiele</td><td>11</td></tr>
+    <tr><td>Sonstiges</td><td>7</td></tr>
+  </table>
+</l-diagramm>
 </main>
 </body>
 </html>

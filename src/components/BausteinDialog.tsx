@@ -4,7 +4,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { bausteinInfo } from "../lib/bausteine";
-import { LEER, type BausteinWerte, type Inhalt } from "../lib/baustein-formulare";
+import { LEER, type BausteinWerte, type Inhalt, type TabellenWerte } from "../lib/baustein-formulare";
 import { encodePath, relativePath, resolveRelative } from "../lib/html";
 import type { PageRef } from "../lib/links";
 import { pageTitle, parentDir } from "../lib/tree";
@@ -50,7 +50,7 @@ function InhaltFeld({ label, inhalt, onChange, mehrzeilig = false, autoFocus = f
   );
 }
 
-function TabellenEditor({ werte, onChange }: { werte: Werte<"tabelle">; onChange: (werte: Werte<"tabelle">) => void }) {
+function TabellenEditor<T extends TabellenWerte>({ werte, onChange }: { werte: T; onChange: (werte: T) => void }) {
   const breite = werte.spalten.length;
   const setZelle = (r: number, c: number, inhalt: Inhalt) =>
     onChange({ ...werte, zeilen: werte.zeilen.map((zeile, i) => (i === r ? { ...zeile, zellen: zeile.zellen.map((zelle, j) => (j === c ? inhalt : zelle)) } : zeile)) });
@@ -146,6 +146,104 @@ function SpaltenEditor({ werte, onChange }: { werte: Werte<"spalten">; onChange:
       <div className="baustein-formular__knoepfe">
         <Button size="sm" icon={<Plus />} onClick={() => onChange({ ...werte, spalten: [...werte.spalten, { quelle: null, inhalt: LEER }] })}>
           Spalte hinzufügen
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const DIAGRAMM_TYPEN = [
+  { value: "balken", label: "Balken" },
+  { value: "linie", label: "Linie" },
+  { value: "kreis", label: "Kreis" },
+];
+
+function KartenEditor({ werte, onChange }: { werte: Werte<"kartenstapel">; onChange: (werte: Werte<"kartenstapel">) => void }) {
+  const setKarte = (i: number, karte: Werte<"kartenstapel">["karten"][number]) => onChange({ ...werte, karten: werte.karten.map((k, j) => (j === i ? karte : k)) });
+  return (
+    <div className="baustein-formular__liste">
+      {werte.karten.map((karte, i) => (
+        <div key={i} className="baustein-formular__karte">
+          <span className="baustein-formular__nummer">{i + 1}</span>
+          <Input aria-label={`Karte ${i + 1}: Frage`} placeholder="Frage" value={karte.frage.wert} data-autofocus={i === 0 || undefined} onChange={(event) => setKarte(i, { ...karte, frage: { ...karte.frage, wert: event.target.value } })} />
+          <Input aria-label={`Karte ${i + 1}: Antwort`} placeholder="Antwort" value={karte.antwort.wert} onChange={(event) => setKarte(i, { ...karte, antwort: { ...karte.antwort, wert: event.target.value } })} />
+          <IconButton size="sm" label={`Karte ${i + 1} entfernen`} disabled={werte.karten.length <= 1} onClick={() => onChange({ ...werte, karten: werte.karten.filter((_, j) => j !== i) })}>
+            <Trash2 />
+          </IconButton>
+        </div>
+      ))}
+      <div className="baustein-formular__knoepfe">
+        <Button size="sm" icon={<Plus />} onClick={() => onChange({ ...werte, karten: [...werte.karten, { quelle: null, frage: LEER, antwort: LEER }] })}>
+          Karte hinzufügen
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function QuizEditor({ werte, onChange }: { werte: Werte<"quiz">; onChange: (werte: Werte<"quiz">) => void }) {
+  type Frage = Werte<"quiz">["fragen"][number];
+  const setFrage = (i: number, frage: Frage) => onChange({ ...werte, fragen: werte.fragen.map((f, j) => (j === i ? frage : f)) });
+  return (
+    <div className="baustein-formular__liste">
+      {werte.fragen.map((frage, i) => (
+        <fieldset key={i} className="baustein-formular__quizfrage">
+          <div className="baustein-formular__zeile">
+            <Input aria-label={`Frage ${i + 1}`} placeholder="Frage" value={frage.frage.wert} data-autofocus={i === 0 || undefined} onChange={(event) => setFrage(i, { ...frage, frage: { ...frage.frage, wert: event.target.value } })} />
+            <IconButton size="sm" label={`Frage ${i + 1} entfernen`} disabled={werte.fragen.length <= 1} onClick={() => onChange({ ...werte, fragen: werte.fragen.filter((_, j) => j !== i) })}>
+              <Trash2 />
+            </IconButton>
+          </div>
+          {frage.antworten.map((antwort, j) => (
+            <div key={j} className="baustein-formular__zeile baustein-formular__antwort">
+              <input
+                type="radio"
+                className="baustein-formular__haken"
+                name={`richtig-${i}`}
+                aria-label={`Frage ${i + 1}, Antwort ${j + 1} ist richtig`}
+                checked={antwort.richtig}
+                onChange={() => setFrage(i, { ...frage, antworten: frage.antworten.map((a, k) => ({ ...a, richtig: k === j })) })}
+              />
+              <Input
+                inputSize="sm"
+                aria-label={`Frage ${i + 1}, Antwort ${j + 1}`}
+                value={antwort.text.wert}
+                onChange={(event) => setFrage(i, { ...frage, antworten: frage.antworten.map((a, k) => (k === j ? { ...a, text: { ...a.text, wert: event.target.value } } : a)) })}
+              />
+              <IconButton size="sm" label={`Frage ${i + 1}, Antwort ${j + 1} entfernen`} disabled={frage.antworten.length <= 2} onClick={() => setFrage(i, { ...frage, antworten: frage.antworten.filter((_, k) => k !== j) })}>
+                <Trash2 />
+              </IconButton>
+            </div>
+          ))}
+          <div className="baustein-formular__knoepfe baustein-formular__antwort">
+            <Button size="sm" icon={<Plus />} onClick={() => setFrage(i, { ...frage, antworten: [...frage.antworten, { quelle: null, text: LEER, richtig: false }] })}>
+              Antwort hinzufügen
+            </Button>
+          </div>
+        </fieldset>
+      ))}
+      <div className="baustein-formular__knoepfe">
+        <Button
+          size="sm"
+          icon={<Plus />}
+          onClick={() =>
+            onChange({
+              ...werte,
+              fragen: [
+                ...werte.fragen,
+                {
+                  quelle: null,
+                  frage: LEER,
+                  antworten: [
+                    { quelle: null, text: LEER, richtig: true },
+                    { quelle: null, text: LEER, richtig: false },
+                  ],
+                },
+              ],
+            })
+          }
+        >
+          Frage hinzufügen
         </Button>
       </div>
     </div>
@@ -265,6 +363,33 @@ export function BausteinDialog({ werte: start, pagePath, pages, onSave, onRemove
       );
       break;
     }
+    case "karteikarte":
+      felder = (
+        <>
+          <InhaltFeld label="Frage" inhalt={werte.frage} autoFocus onChange={(frage) => set({ ...werte, frage })} />
+          <InhaltFeld label="Antwort" inhalt={werte.antwort} mehrzeilig onChange={(antwort) => set({ ...werte, antwort })} />
+        </>
+      );
+      break;
+    case "kartenstapel":
+      felder = <KartenEditor werte={werte} onChange={set} />;
+      break;
+    case "quiz":
+      felder = <QuizEditor werte={werte} onChange={set} />;
+      break;
+    case "diagramm":
+      felder = (
+        <>
+          <Segmented size="sm" label="Diagrammart" options={DIAGRAMM_TYPEN} value={werte.typ} onChange={(typ) => set({ ...werte, typ })} />
+          <Field label="Titel">
+            <Input aria-label="Titel" value={werte.titel} data-autofocus onChange={(event) => set({ ...werte, titel: event.target.value })} />
+          </Field>
+          <Field label="Daten" hint="Erste Spalte: Beschriftung, weitere Spalten: Werte. Die erste Zeile nennt die Reihen. Beim Kreis zählt die erste Wertespalte.">
+            <TabellenEditor werte={werte.daten} onChange={(daten) => set({ ...werte, daten })} />
+          </Field>
+        </>
+      );
+      break;
   }
 
   return (
@@ -275,7 +400,7 @@ export function BausteinDialog({ werte: start, pagePath, pages, onSave, onRemove
           <Symbol aria-hidden="true" /> {info.name} bearbeiten
         </span>
       }
-      size={werte.art === "tabelle" ? "lg" : "md"}
+      size={["tabelle", "diagramm", "quiz", "kartenstapel"].includes(werte.art) ? "lg" : "md"}
       onClose={onClose}
       className="baustein-dialog"
       footer={

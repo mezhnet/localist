@@ -1,0 +1,86 @@
+/* Kartenstapel: <l-kartenstapel> mit mehreren <l-karteikarte>. Ohne Skript stehen die Karten untereinander,
+   mit Skript ist es ein Lernmodus mit einer Karte nach der anderen. */
+
+l-kartenstapel {
+  display: block;
+  margin: var(--space-4) 0;
+}
+
+l-kartenstapel:defined {
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-subtle);
+}
+
+l-kartenstapel:defined > l-karteikarte {
+  margin: 0;
+}
+
+.l-stapel-kopf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.l-stapel-fortschritt {
+  flex: 1;
+  height: var(--space-1-5);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.l-stapel-fortschritt > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-success);
+  transition: width var(--duration-normal) var(--ease-out);
+}
+
+.l-stapel-knoepfe {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.l-knopf--nochmal:not(:disabled) {
+  border-color: transparent;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.l-knopf--gewusst:not(:disabled) {
+  border-color: transparent;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.l-stapel-hinweis {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.l-stapel-ergebnis {
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.l-stapel-ergebnis > strong {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-2xl);
+}
+
+.l-stapel-ergebnis > ul {
+  display: inline-block;
+  margin: 0 0 var(--space-3);
+  text-align: left;
+}

@@ -2,7 +2,20 @@
 // Code-Editor: Werkzeugleiste und „/“-Menü fügen eine Vorlage sauber eingerückt an der Cursorposition ein.
 // Die Autovervollständigung kennt die Tags und Klassen der Bausteine (BAUSTEIN_TAGS, BAUSTEIN_KLASSEN).
 
-export type BausteinArt = "callout" | "toggle" | "tabelle" | "checkliste" | "spalten" | "bild" | "trennlinie" | "code" | "seitenlink";
+export type BausteinArt =
+  | "callout"
+  | "toggle"
+  | "tabelle"
+  | "checkliste"
+  | "spalten"
+  | "bild"
+  | "trennlinie"
+  | "code"
+  | "seitenlink"
+  | "karteikarte"
+  | "kartenstapel"
+  | "quiz"
+  | "diagramm";
 
 export interface VorlagenWerte {
   /** Bild: Pfad relativ zur Seite (schon kodiert). */
@@ -91,6 +104,63 @@ export const BAUSTEINE: readonly BausteinInfo[] = [
     vorlage: ({ href = "", titel = "" }) => [`<a class="l-seitenlink" href="${attr(href)}">${text(titel)}</a>`],
     ziel: "seite",
   },
+  {
+    art: "karteikarte",
+    name: "Karteikarte",
+    beschreibung: "Frage vorne, Antwort hinten – zum Umdrehen",
+    vorlage: () => ["<l-karteikarte>", "  <l-frage>Frage</l-frage>", "  <l-antwort>Antwort</l-antwort>", "</l-karteikarte>"],
+    auswahl: "Frage",
+  },
+  {
+    art: "kartenstapel",
+    name: "Kartenstapel",
+    beschreibung: "Mehrere Karteikarten mit Lernmodus",
+    vorlage: () => [
+      "<l-kartenstapel>",
+      "  <l-karteikarte>",
+      "    <l-frage>Erste Frage</l-frage>",
+      "    <l-antwort>Antwort</l-antwort>",
+      "  </l-karteikarte>",
+      "  <l-karteikarte>",
+      "    <l-frage>Zweite Frage</l-frage>",
+      "    <l-antwort>Antwort</l-antwort>",
+      "  </l-karteikarte>",
+      "</l-kartenstapel>",
+    ],
+    auswahl: "Erste Frage",
+  },
+  {
+    art: "quiz",
+    name: "Quiz",
+    beschreibung: "Multiple-Choice-Fragen mit Punktzahl",
+    vorlage: () => [
+      "<l-quiz>",
+      "  <l-quizfrage>",
+      "    <l-frage>Frage</l-frage>",
+      "    <ul>",
+      "      <li>Falsche Antwort</li>",
+      "      <li data-richtig>Richtige Antwort</li>",
+      "    </ul>",
+      "  </l-quizfrage>",
+      "</l-quiz>",
+    ],
+    auswahl: "Frage",
+  },
+  {
+    art: "diagramm",
+    name: "Diagramm",
+    beschreibung: "Balken-, Linien- oder Kreisdiagramm aus einer Tabelle",
+    vorlage: () => [
+      '<l-diagramm typ="balken" titel="Titel">',
+      "  <table>",
+      "    <tr><th>Beschriftung</th><th>Wert</th></tr>",
+      "    <tr><td>A</td><td>10</td></tr>",
+      "    <tr><td>B</td><td>20</td></tr>",
+      "  </table>",
+      "</l-diagramm>",
+    ],
+    auswahl: "Titel",
+  },
 ];
 
 export function bausteinInfo(art: BausteinArt): BausteinInfo {
@@ -102,6 +172,13 @@ export const BAUSTEIN_TAGS: Record<string, { attrs?: Record<string, readonly str
   "l-callout": { attrs: { typ: ["info", "tipp", "warnung", "fehler"] } },
   "l-spalten": { children: ["l-spalte"] },
   "l-spalte": {},
+  "l-karteikarte": { children: ["l-frage", "l-antwort"] },
+  "l-kartenstapel": { children: ["l-karteikarte"] },
+  "l-frage": {},
+  "l-antwort": {},
+  "l-quiz": { children: ["l-quizfrage"] },
+  "l-quizfrage": { children: ["l-frage", "ul"] },
+  "l-diagramm": { attrs: { typ: ["balken", "linie", "kreis"], titel: null }, children: ["table"] },
 };
 
 /** Klassen der Bausteine für die Autovervollständigung von `class="…"`. */

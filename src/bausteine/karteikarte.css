@@ -1,0 +1,119 @@
+/* Karteikarte: <l-karteikarte><l-frage>…</l-frage><l-antwort>…</l-antwort></l-karteikarte>
+   Ohne Skript stehen Frage und Antwort untereinander. Mit Skript (:defined) ist es eine Karte zum Umdrehen. */
+
+l-karteikarte {
+  display: block;
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+l-karteikarte > l-frage,
+l-karteikarte > l-antwort {
+  display: block;
+}
+
+l-karteikarte > l-frage {
+  font-weight: var(--font-weight-semibold);
+}
+
+l-karteikarte > l-antwort {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: var(--border-width) dashed var(--color-border-strong);
+}
+
+l-karteikarte:defined {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--space-30) + var(--space-10));
+  padding: var(--space-8) var(--space-6);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+l-karteikarte:defined:hover {
+  border-color: var(--color-accent);
+}
+
+l-karteikarte:defined:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+l-karteikarte:defined > l-frage,
+l-karteikarte:defined > l-antwort {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+}
+
+l-karteikarte:defined > l-antwort,
+l-karteikarte:defined[data-umgedreht] > l-frage {
+  display: none;
+}
+
+l-karteikarte:defined[data-umgedreht] > l-antwort {
+  display: block;
+}
+
+l-karteikarte:defined[data-umgedreht] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-softer);
+  animation: l-wenden var(--duration-normal) var(--ease-out);
+}
+
+l-karteikarte:defined::before,
+l-karteikarte:defined::after {
+  position: absolute;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+l-karteikarte:defined::before {
+  content: "Frage" / "";
+  top: var(--space-2);
+  left: var(--space-3);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+l-karteikarte:defined[data-umgedreht]::before {
+  content: "Antwort" / "";
+  color: var(--color-accent);
+}
+
+l-karteikarte:defined::after {
+  content: "Zum Umdrehen klicken" / "";
+  right: var(--space-3);
+  bottom: var(--space-2);
+  color: var(--color-text-faint);
+}
+
+@keyframes l-wenden {
+  from {
+    transform: perspective(800px) rotateY(-70deg);
+    opacity: 0.4;
+  }
+
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  l-karteikarte:defined[data-umgedreht] {
+    animation: none;
+  }
+}

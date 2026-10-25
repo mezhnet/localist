@@ -65,6 +65,14 @@
   --color-code-gutter: #b0afaa;
   --color-code-selection: rgba(47, 107, 224, 0.18);
 
+  /* Diagramme (Reihen 1–6) */
+  --color-chart-1: #2f6be0;
+  --color-chart-2: #e0803a;
+  --color-chart-3: #2e9a6a;
+  --color-chart-4: #9b59d0;
+  --color-chart-5: #d0475a;
+  --color-chart-6: #c9a227;
+
   /* Schrift */
   --font-sans: "Inter Variable", "Inter", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Cascadia Mono", Consolas, monospace;
@@ -235,6 +243,13 @@
   --color-code-gutter: #6a6965;
   --color-code-selection: rgba(91, 143, 240, 0.3);
 
+  --color-chart-1: #5b8ff0;
+  --color-chart-2: #f0a066;
+  --color-chart-3: #4fc08d;
+  --color-chart-4: #b88be6;
+  --color-chart-5: #ec6b7c;
+  --color-chart-6: #e0c25a;
+
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
@@ -296,6 +311,13 @@
     --color-code-number: #7db8ff;
     --color-code-gutter: #6a6965;
     --color-code-selection: rgba(91, 143, 240, 0.3);
+
+    --color-chart-1: #5b8ff0;
+    --color-chart-2: #f0a066;
+    --color-chart-3: #4fc08d;
+    --color-chart-4: #b88be6;
+    --color-chart-5: #ec6b7c;
+    --color-chart-6: #e0c25a;
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
