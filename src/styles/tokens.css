@@ -198,7 +198,8 @@
   --size-vault-avatar: 18px;
   --size-mode-button-width: 28px;
   --tree-indent: 20px;
-  --content-width: 760px;
+  /* Spalte einer Notiz: Text 598 px breit wie in der Vorlage (plus Rand für „+“ und Ziehgriff) */
+  --content-width: 652px;
   --editor-inset: 54px;
   --wide-width: 1040px;
   --search-width: 560px;
@@ -219,7 +220,20 @@
   --calendar-day-height: 108px;
   --calendar-week-height: 320px;
   --calendar-undated-width: 240px;
-  --property-name-width: 160px;
+  --property-name-width: 118px;
+  /* Notiz (gemessen in der Vorlage 02): Schrift im Editor, Überschriften, Eigenschaften-Zeilen, Häkchen, Menü
+     „Baustein wählen …“ */
+  --font-size-editor: 15px;
+  --font-size-h1: 28px;
+  --font-size-h2: var(--font-size-2xl);
+  --font-size-h3: var(--font-size-xl);
+  --size-property-row: 27px;
+  --size-checkbox: 15px;
+  --size-side-add: 22px;
+  --baustein-menu-width: 250px;
+  --baustein-menu-max-height: 340px;
+  --size-menu-row: 30px;
+  --size-menu-symbol: 22px;
   --code-pane-height: 72vh;
   --code-pane-min-height: 320px;
   /* „Geteilt“: jede Seite mindestens so breit (wie GETEILT_MIN_PX in html-editor.ts), Trennlinie mit Griff */

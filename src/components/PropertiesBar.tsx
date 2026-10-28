@@ -1,6 +1,6 @@
 // Eigenschaften-Leiste oben auf einer Seite (wie bei Notion). Werte stehen im Frontmatter;
 // die Typen kommen aus der Datenbank des Ordners oder aus den Vault-Einstellungen.
-import { Plus, Trash2 } from "lucide-react";
+import { AlignLeft, CalendarDays, CheckSquare, ChevronDownCircle, CircleDot, Hash, Link, Plus, Tag, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
   inferType,
@@ -56,7 +56,7 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
               }}
             >
               <span className="property-icon" aria-hidden="true">
-                {typeInfo(type).icon}
+                <EigenschaftSymbol type={type} />
               </span>
               {name}
             </button>
@@ -107,6 +107,28 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
       )}
     </div>
   );
+}
+
+/** Linien-Symbol je Eigenschaftstyp (Vorlage 02: Schild für Tags, Kalender für Datumswerte …). */
+function EigenschaftSymbol({ type }: { type: PropertyType }) {
+  switch (type) {
+    case "zahl":
+      return <Hash />;
+    case "auswahl":
+      return <ChevronDownCircle />;
+    case "mehrfachauswahl":
+      return <Tag />;
+    case "status":
+      return <CircleDot />;
+    case "datum":
+      return <CalendarDays />;
+    case "checkbox":
+      return <CheckSquare />;
+    case "url":
+      return <Link />;
+    default:
+      return <AlignLeft />;
+  }
 }
 
 function isNested(value: unknown): boolean {

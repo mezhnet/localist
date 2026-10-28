@@ -24,13 +24,14 @@ import {
   useEditorState,
   type DefaultReactSuggestionItem,
 } from "@blocknote/react";
-import { FileCode, FileText, ListIndentDecrease, ListIndentIncrease } from "lucide-react";
-import { useContext, useEffect } from "react";
+import { ChevronRight, FileCode, FileText, Info, ListIndentDecrease, ListIndentIncrease } from "lucide-react";
+import { useContext, useEffect, useMemo } from "react";
 import { markToggleOpen } from "../editor/callout";
 import { darfEinruecken, einruecken, MarkdownEinruecken, type Richtung } from "../editor/einruecken";
 import { schema, type VaultEditor, type VaultPartialBlock } from "../editor/schema";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { useTheme } from "../lib/theme";
+import { abfrageSpeicher, bausteinMenu } from "./BausteinMenu";
 
 interface Props {
   initialBlocks: VaultPartialBlock[];
@@ -102,7 +103,7 @@ export function slashMenuItems(editor: VaultEditor): DefaultReactSuggestionItem[
     subtext: "Hervorgehobener Kasten mit Symbol",
     aliases: ["callout", "hinweis", "info", "kasten", "warnung"],
     group,
-    icon: <span aria-hidden="true">💡</span>,
+    icon: <Info aria-hidden="true" size={18} />,
     onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, { type: "callout", props: { calloutType: "info", fold: "" } }),
   };
   const toggle: DefaultReactSuggestionItem = {
@@ -110,17 +111,25 @@ export function slashMenuItems(editor: VaultEditor): DefaultReactSuggestionItem[
     subtext: "Einklappbarer Abschnitt",
     aliases: ["toggle", "aufklappen", "einklappen", "details"],
     group,
-    icon: <span aria-hidden="true">▸</span>,
+    icon: <ChevronRight aria-hidden="true" size={18} />,
     onItemClick: () => {
       // Ein neuer Toggle ist zum Weiterschreiben offen, in der Datei startet er zugeklappt ("-").
       markToggleOpen(editor.getTextCursorPosition().block.id);
       insertOrUpdateBlockForSlashMenu(editor, { type: "callout", props: { calloutType: "note", fold: "-" } });
     },
   };
-  const quoteIndex = defaults.findIndex((item) => item.title === de.slash_menu.quote.title);
-  const items = [...defaults];
-  items.splice(quoteIndex + 1, 0, callout, toggle);
-  return items;
+  // Namen und Reihenfolge wie im Menü der Vorlage: Text, Überschrift, Checkliste, Callout, Toggle, Tabelle, Bild, …
+  const umbenannt = defaults.map((item) =>
+    item.title === de.slash_menu.paragraph.title
+      ? { ...item, title: "Text", aliases: [...(item.aliases ?? []), "absatz"] }
+      : item.title === de.slash_menu.heading.title
+        ? { ...item, title: "Überschrift", aliases: [...(item.aliases ?? []), "überschrift 1"] }
+        : item,
+  );
+  const zuerst = ["Text", "Überschrift", "Checkliste", "Callout", "Toggle", "Tabelle", "Bild"];
+  const alle = [...umbenannt, callout, toggle];
+  const rang = (titel: string) => (zuerst.includes(titel) ? zuerst.indexOf(titel) : zuerst.length);
+  return alle.map((item, index) => ({ item, index })).sort((a, b) => rang(a.item.title) - rang(b.item.title) || a.index - b.index).map(({ item }) => item);
 }
 
 /** Vorschläge nach "[[": passende Seiten, sonst ein Link auf eine noch fehlende Seite. */
@@ -146,13 +155,19 @@ function linkMenuItems(editor: VaultEditor, links: WikiLinkActions, query: strin
   return items;
 }
 
+/** Deutsche Texte von BlockNote; ein leerer Block zeigt „Baustein wählen …“ (Vorlage 02). */
+export const WOERTERBUCH = { ...de, placeholders: { ...de.placeholders, default: "Baustein wählen …", emptyDocument: "Baustein wählen …" } };
+
 export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }: Props) {
   const { dark } = useTheme();
   const links = useContext(WikiLinkContext);
+  // Was nach „/“ getippt wurde (für die Filterzeile im Menü „Baustein wählen …“).
+  const slashAbfrage = useMemo(abfrageSpeicher, []);
+  const BausteinMenu = useMemo(() => bausteinMenu(slashAbfrage), [slashAbfrage]);
   const editor = useCreateBlockNote(
     {
       schema,
-      dictionary: de,
+      dictionary: WOERTERBUCH,
       initialContent: initialBlocks.length > 0 ? initialBlocks : undefined,
       resolveFileUrl,
       // Tab rückt immer ein (eigene Regeln in MarkdownEinruecken), statt in die Formatierungsleiste zu springen.
@@ -179,7 +194,11 @@ export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }
       <SideMenuController sideMenu={(props) => <SideMenu {...props} dragHandleMenu={MarkdownDragHandleMenu} />} />
       <SuggestionMenuController
         triggerCharacter="/"
-        getItems={async (query) => filterSuggestionItems(slashMenuItems(editor), query)}
+        suggestionMenuComponent={BausteinMenu}
+        getItems={async (query) => {
+          slashAbfrage.setzen(query);
+          return filterSuggestionItems(slashMenuItems(editor), query);
+        }}
       />
       <SuggestionMenuController triggerCharacter="[[" getItems={async (query) => linkMenuItems(editor, links, query)} />
     </BlockNoteView>

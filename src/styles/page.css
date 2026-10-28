@@ -138,7 +138,7 @@
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
-  letter-spacing: var(--letter-spacing-tight);
+  letter-spacing: var(--letter-spacing-display);
 }
 
 .page-title::placeholder {
@@ -147,9 +147,7 @@
 
 /* ---------- Eigenschaften-Leiste ---------- */
 .properties {
-  margin: 0 0 var(--space-3) var(--editor-inset);
-  padding-bottom: var(--space-3);
-  border-bottom: var(--border-width) solid var(--color-border);
+  margin: 0 0 var(--space-5) var(--editor-inset);
 }
 
 .properties .property-name {
@@ -161,7 +159,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--size-control-md);
+  min-height: var(--size-property-row);
 }
 
 .property-name {
@@ -187,10 +185,28 @@
 }
 
 .property-icon {
-  width: var(--size-icon-md);
+  display: inline-flex;
   flex-shrink: 0;
-  color: var(--color-text-faint);
-  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.property-icon svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.property-value {
+  font-size: var(--font-size-md);
+}
+
+/* Datumswerte in Monospace (Vorlage 02) */
+.properties .prop-date .ui-input {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.property-add.ui-button {
+  color: var(--color-text-muted);
 }
 
 .property-value {
@@ -263,16 +279,24 @@
   gap: var(--space-1);
 }
 
+/* Mehrfachwerte als Chips: der erste Wert in Akzentfarbe, die weiteren schlicht mit feiner Linie (Vorlage 02). */
 .prop-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-0-5);
   padding: 0 var(--space-0-5) 0 var(--space-2);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-accent-soft);
+  background: var(--color-bg-subtle);
   color: var(--color-text);
   font-size: var(--font-size-sm);
   white-space: nowrap;
+}
+
+.prop-chip:first-child {
+  border-color: transparent;
+  background: var(--color-accent-chip);
+  color: var(--color-accent-chip-text);
 }
 
 .prop-chip button {
@@ -343,8 +367,182 @@
 }
 
 .bn-container .bn-editor {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-editor);
   line-height: var(--line-height-normal);
+}
+
+/* ---------- Notiz nach der Vorlage 02 (Etappe 19) ---------- */
+/* Überschriften fett mit enger Laufweite */
+.block-editor .bn-block-content[data-content-type="heading"] {
+  padding-top: var(--space-5);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.block-editor .bn-block-content[data-content-type="heading"][data-level="1"] {
+  --level: var(--font-size-h1);
+}
+
+.block-editor .bn-block-content[data-content-type="heading"][data-level="2"] {
+  --level: var(--font-size-h2);
+}
+
+.block-editor .bn-block-content[data-content-type="heading"][data-level="3"] {
+  --level: var(--font-size-h3);
+}
+
+/* Checkliste: Häkchen in Akzentfarbe, Erledigtes durchgestrichen und gedämpft */
+.block-editor .bn-block-content[data-content-type="checkListItem"] > div > input {
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
+  margin: 0 var(--space-2-5) 0 0;
+  accent-color: var(--color-accent);
+}
+
+.block-editor .bn-block-content[data-content-type="checkListItem"][data-checked="true"] .bn-inline-content {
+  color: var(--color-text-muted);
+}
+
+/* Zitat: feine Linie links, Text gedämpft */
+.block-editor .bn-block-content[data-content-type="quote"] blockquote {
+  margin: 0;
+  padding-left: var(--space-4);
+  border-left: var(--border-width-strong) solid var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+/* Code: Fläche mit feiner Linie, Monospace */
+.block-editor .bn-block-content[data-content-type="codeBlock"] {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
+}
+
+.block-editor .bn-block-content[data-content-type="codeBlock"] > pre {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.block-editor .bn-inline-content code {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+/* Leerer Block: „Baustein wählen …“ */
+.block-editor .bn-inline-content:has(> .ProseMirror-trailingBreak:only-child)::before {
+  color: var(--color-text-muted);
+}
+
+/* „+“ und Ziehgriff links neben dem Block: „+“ als kleines Kästchen mit feiner Linie */
+.bn-side-menu .bn-button:has([data-test="dragHandleAdd"]) {
+  width: var(--size-side-add);
+  height: var(--size-side-add);
+  margin-right: var(--space-1);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.bn-side-menu .bn-button:has([data-test="dragHandleAdd"]) svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+/* Menü „Baustein wählen …“ (src/components/BausteinMenu.tsx) */
+.baustein-menu {
+  position: relative;
+  z-index: var(--z-menu);
+  display: flex;
+  flex-direction: column;
+  width: var(--baustein-menu-width);
+  max-height: var(--baustein-menu-max-height);
+  padding: var(--space-1-5);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+.baustein-menu-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-menu-row);
+  padding: 0 var(--space-2);
+  margin-bottom: var(--space-1);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.baustein-menu-filter svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  color: var(--color-text-muted);
+}
+
+.baustein-menu-filter .is-leer {
+  color: var(--color-text-muted);
+}
+
+.baustein-menu-liste {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.baustein-menu-eintrag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  min-height: var(--size-menu-row);
+  padding: var(--space-0-5) var(--space-2) var(--space-0-5) var(--space-1);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+}
+
+.baustein-menu-eintrag.is-markiert {
+  background: var(--color-menu-selected);
+}
+
+.baustein-menu-symbol {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--size-menu-symbol);
+  height: var(--size-menu-symbol);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.baustein-menu-symbol svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.baustein-menu-titel {
+  flex: 1;
+  min-width: 0;
+}
+
+.baustein-menu-enter {
+  width: var(--size-icon-xs);
+  height: var(--size-icon-xs);
+  color: var(--color-text-muted);
+}
+
+.baustein-menu-leer {
+  padding: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 /* Ein- und Ausrücken (Tab/Shift+Tab): Einzug und Führungslinie kommen aus tokens.css, den Übergang
@@ -406,30 +604,36 @@
   gap: var(--space-2);
   width: 100%;
   margin: var(--space-0-5) 0;
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-2-5);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-muted);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-callout);
+  --callout-farbe: var(--color-accent-text);
 }
 
-.callout-frame[data-callout-type="info"],
-.callout-frame[data-callout-type="note"],
-.callout-frame[data-callout-type="abstract"],
-.callout-frame[data-callout-type="todo"] {
-  background: var(--color-info-soft);
-}
-
-.callout-frame[data-callout-type="tip"],
 .callout-frame[data-callout-type="success"] {
   background: var(--color-success-soft);
+  --callout-farbe: var(--color-success);
 }
 
 .callout-frame[data-callout-type="warning"] {
   background: var(--color-warning-soft);
+  --callout-farbe: var(--color-warning);
 }
 
 .callout-frame[data-callout-type="danger"],
 .callout-frame[data-callout-type="bug"] {
   background: var(--color-danger-soft);
+  --callout-farbe: var(--color-danger);
+}
+
+/* Toggle: ohne Fläche, nur Pfeil und Titel (wie in Notion) */
+.callout-frame.callout-foldable[data-callout-type="note"] {
+  padding: 0;
+  background: none;
+}
+
+.callout-frame.callout-foldable[data-callout-type="note"] > .callout-icon {
+  display: none;
 }
 
 .callout-icon {
@@ -441,9 +645,14 @@
   flex-shrink: 0;
   margin-top: var(--border-width);
   border-radius: var(--radius-sm);
-  font-size: var(--font-size-xl);
+  color: var(--callout-farbe);
   line-height: 1;
   cursor: pointer;
+}
+
+.callout-icon svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
 }
 
 .callout-icon:hover {
@@ -464,7 +673,7 @@
 }
 
 .callout-title {
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-regular);
 }
 
 .callout-foldable .callout-title {

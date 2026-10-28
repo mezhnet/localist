@@ -2236,6 +2236,47 @@ describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
   });
 });
 
+describe("Notiz nach der Vorlage 02 (Etappe 19)", () => {
+  it("Eigenschaften mit Linien-Symbolen, Callout mit Linien-Symbol statt Emoji, Checkliste und „Eigenschaft hinzufügen“", async () => {
+    await openVaultFromStart();
+    await openPage("Projekte", "Website-Relaunch");
+    await screen.findByText("Domain prüfen");
+    const eigenschaften = screen.getByLabelText("Eigenschaften");
+    const namen = [...eigenschaften.querySelectorAll(".property-name")];
+    expect(namen.map((name) => name.textContent)).toEqual(["status", "fällig", "priorität"]);
+    // Jede Eigenschaft hat ein Linien-Symbol (SVG), kein Schriftzeichen
+    expect(namen.every((name) => name.querySelector(".property-icon svg") && name.querySelector(".property-icon")?.textContent === "")).toBe(true);
+    expect(within(eigenschaften).getByRole("button", { name: "Eigenschaft hinzufügen" })).toBeTruthy();
+    // Callout: Linien-Symbol, Typ weiter über die Auswahl änderbar
+    const callout = document.querySelector<HTMLElement>(".callout-frame")!;
+    expect(callout.dataset.calloutType).toBe("info");
+    expect(callout.querySelector(".callout-icon svg")).toBeTruthy();
+    expect(callout.querySelector(".callout-icon")?.firstChild?.nodeName.toLowerCase()).toBe("svg"); // sichtbar nur das Symbol (die Auswahl darüber ist unsichtbar)
+    expect(within(callout).getByLabelText("Callout-Typ")).toBeTruthy();
+    // Checkliste
+    expect(document.querySelectorAll('[data-content-type="checkListItem"] input[type="checkbox"]')).toHaveLength(2);
+  });
+
+  it("CSS: Titel, Chips, Datum in Monospace, Callout, Checkliste, Zitat, Code, „+“ neben dem Block und Menü „Baustein wählen …“ wie in der Vorlage", async () => {
+    const { default: css } = await import("./styles/page.css?raw");
+    const { default: tokens } = await import("./styles/tokens.css?raw");
+    const text = css.replace(/\r\n/g, "\n");
+    expect(text).toMatch(/\.page-title \{[^}]*font-size: var\(--font-size-4xl\);[^}]*font-weight: var\(--font-weight-bold\);[^}]*letter-spacing: var\(--letter-spacing-display\);/);
+    expect(text).toMatch(/\.prop-chip:first-child \{\s*border-color: transparent;\s*background: var\(--color-accent-chip\);\s*color: var\(--color-accent-chip-text\);/);
+    expect(text).toMatch(/\.properties \.prop-date \.ui-input \{\s*font-family: var\(--font-mono\);/);
+    expect(text).toMatch(/\.callout-frame \{[^}]*background: var\(--color-accent-callout\);[^}]*--callout-farbe: var\(--color-accent-text\);/);
+    expect(text).toMatch(/checkListItem"\] > div > input \{[^}]*accent-color: var\(--color-accent\);/);
+    expect(text).toMatch(/checkListItem"\]\[data-checked="true"\] \.bn-inline-content \{\s*color: var\(--color-text-muted\);/);
+    expect(text).toMatch(/\[data-content-type="quote"\] blockquote \{[^}]*border-left: var\(--border-width-strong\) solid/);
+    expect(text).toMatch(/\[data-content-type="codeBlock"\] \{[^}]*border-radius: var\(--radius-lg\);/);
+    expect(text).toMatch(/\.bn-side-menu \.bn-button:has\(\[data-test="dragHandleAdd"\]\) \{[^}]*border: var\(--border-width\) solid var\(--color-border-strong\);/);
+    expect(text).toMatch(/\.baustein-menu-eintrag\.is-markiert \{\s*background: var\(--color-menu-selected\);/);
+    expect(text).toMatch(/\.baustein-menu-symbol \{[^}]*border: var\(--border-width\) solid var\(--color-border\);/);
+    expect(tokens).toMatch(/--content-width: 652px;/);
+    expect(tokens).toMatch(/--font-size-editor: 15px;/);
+  });
+});
+
 describe("Seitenkopf (Etappe 19)", () => {
   it("Pfad „Ordner / Seite“, Speicherstatus (Speichert …, gerade eben, vor 3 Min., Fehler deutlich), Stern und „…“ mit den Aktionen des Kontextmenüs", async () => {
     await openVaultFromStart();
