@@ -1,235 +1,22 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 17 – Bedienung verbessern (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
-- Zuletzt aktualisiert: 2026-10-28 21:42
-- Nächster Schritt: Alle Kriterien von Etappe 17 sind abgehakt. Zum Abschluss: Arbeitsregel 6 (`npm test`, `cargo test`, `npx tsc --noEmit`, `npm run tauri build` mit dem letzten Stand), Klicklisten 1.0 und 2.0, Tab-Messung noch einmal, Abschluss-Commit. Danach Etappe 18.
+- Etappe: 18 – Neues Design, Teil 1: Grundlagen, Fenster und Seitenleiste (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
+- Zuletzt aktualisiert: 2026-10-28 21:40
+- Nächster Schritt: Etappe 17 ist abgeschlossen. Etappe 18 beginnen: Auftrag (Abschnitt „Etappe 18“ und „Design-Vorlage“) und die Bilder in `docs/design/` genau ansehen, Fertig-Kriterien aus `CLAUDE.md` wörtlich hier übernehmen, dann mit `tokens.css` (Farben Hell/Dunkel/Schwarz, vier Akzentfarben, Kontrast-Test) anfangen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-**Tab und Shift+Tab**
-- [x] Zuerst nachgestellt (Browser-Vorschau, echte Tastatur): Was passiert heute bei Tab und Shift+Tab in Absatz, Überschrift, Liste, Checkliste, nummerierter Liste, Callout und Toggle, mit und ohne Markierung, im ersten Block und im Code-Editor? Das Ergebnis steht als Tabelle in `FORTSCHRITT.md`.
-- [x] Notizen: Tab rückt den aktuellen bzw. alle markierten Blöcke ein, Shift+Tab rückt aus, auch bei offener Formatierungsleiste. Der Fokus verlässt den Editor nie (auch nicht im ersten Block oder ganz links). Cursor und Markierung bleiben an derselben Textstelle, die Seite scrollt nicht.
-  - Umgesetzt in `src/editor/einruecken.ts` (`tabBehavior: "prefer-indent"`, eigene Tastenbelegung vor BlockNote). Vorschau: Tabelle „nach der Umsetzung“ oben (Fokus in jeder Zeile „Editor“, Cursor/Markierung und Scroll „gleich“, „Liste, Text markiert“ und „zwei Punkte markiert“ rücken bei offener Formatierungsleiste ein). Tests in `src/editor/einruecken.test.ts`: „mehrere markierte Listenpunkte rücken zusammen ein“, „auch bei offener Formatierungsleiste, Markierung und Cursor bleiben an derselben Textstelle“, „erster Block“, „bleibt stehen: ganz links“.
-- [x] Notizen: Eingerückt wird nur, was Markdown auch speichern kann (Listenpunkte, Checklisten, nummerierte Listen und Absätze unter einem Listenpunkt). In allen anderen Fällen bleibt der Block ruhig stehen, ohne Sprung und ohne Fokusverlust. Alles Eingerückte ist nach Speichern und Neuladen genauso eingerückt. Dafür gibt es Roundtrip-Tests.
-  - Vorschau: Absatz, Überschrift, Callout, Toggle und Absatz nach Toggle „0 px, keine Bewegung“, gespeichert unverändert; Zeile „Nach Speichern und Neuladen“ zeigt `1+1+1+1 → 1+1+1+1`. Roundtrip-Tests in `src/markdown/roundtrip.test.ts` („Einrückung bleibt erhalten: …“ für 9 Fälle, „Kinder eines Absatzes speichert Markdown nicht eingerückt …“), in `src/editor/einruecken.test.ts` prüft jeder Einrück-Fall zusätzlich `neuGeladen(nachher)`; „Tab lässt alles andere ruhig stehen …“ (10 Fälle).
-- [x] Notizen: Ein- und Ausrücken hat einen kurzen, ruhigen Übergang (höchstens 150 ms, Werte aus `tokens.css`, aus bei `prefers-reduced-motion`). Einzug und Führungslinie kommen aus `tokens.css`.
-  - `--duration-indent: 140ms`, `--ease-indent`, `--editor-indent`, `--editor-guide-offset` in `src/styles/tokens.css`; abgespielt mit `element.animate` (siehe „Entscheidungen“). Vorschau: „Übergang 129–132 ms (Schritte 9·10·4·1 px)“, mit `prefers-reduced-motion: reduce` „Sprung ohne Übergang“. Tests „Übergang beim Ein- und Ausrücken“ in `src/editor/einruecken.test.ts` (140 ms und Kurve aus den Tokens, Richtung, mehrere Blöcke, nichts bei stehenden Blöcken und bei „Bewegung reduzieren“).
-- [x] HTML-Seiten: Tab rückt die Zeile bzw. alle markierten Zeilen um eine Stufe ein (dieselbe Einrückung wie bei eingefügten Bausteinen), Shift+Tab rückt aus, auch wenn der Cursor mitten in der Zeile steht. Escape und danach Tab verlässt den Editor, wie es CodeMirror für die Tastaturbedienung vorsieht.
-  - `indentUnit.of(EINRUECKUNG)` in `src/components/CodeEditor.tsx`, `EINRUECKUNG = "  "` in `src/lib/bausteine.ts` (gleich den Vorlagen). Vorschau: Zeilen „Code-Editor: …“ der Tabelle (2 Leerzeichen je Stufe, mitten in der Zeile und über drei markierte Zeilen, Escape und Tab → Fokus auf dem nächsten Knopf).
-- [x] Tests für beide Editoren.
-  - Notizen: `src/editor/einruecken.test.ts` (Ein-/Ausrücken, Stehenbleiben, Code-Block, Strg+Tab frei, Übergang). Code-Editor: neue Datei `src/components/CodeEditor.test.tsx` (8 Tests: Tab mitten in der Zeile, Shift+Tab ohne Einrückung, mehrere Zeilen, dieselbe Einrückung wie eingefügte Bausteine, CRLF, Escape und danach Tab, Ende des Modus nach 2 s oder anderer Taste, Escape mit Markierung) und in `src/lib/bausteine.test.ts` „Vorlagen und Beispiele sind in Stufen von EINRUECKUNG eingerückt …“.
-**„Im Explorer öffnen“**
-- [x] Rechtsklick auf eine Seite (Notiz oder HTML-Seite) → „Im Explorer öffnen“: Der Windows-Explorer zeigt den Ordner und markiert die Datei. Auf einem Ordner öffnet derselbe Eintrag den Ordner selbst. Im Menü „Vault“ gibt es „Vault im Explorer öffnen“.
-  - In der gebauten `localist.exe` mit echtem Rechtsklick (Notiz „Ideen“, Ordner „Projekte“), über das Menü „…“ der HTML-Seite „DNS“ und über das Menü „Vault“ geprüft, Nachweis siehe nächstes Kriterium.
-- [x] Umgesetzt über einen neuen Rust-Befehl, der den Pfad wie `vault::resolve` prüft (nur Pfade im geöffneten Vault) und dann den Explorer öffnet. Die Capabilities werden dafür nicht erweitert. `cargo test` prüft die Pfadprüfung.
-  - Befehl `im_explorer_zeigen` in `src-tauri/src/lib.rs`, Pfadprüfung `vault::explorer_ziel` in `src-tauri/src/vault.rs` (erst `resolve`, dann Existenz, dazu Schutz gegen Verknüpfungen aus dem Vault heraus). `src-tauri/capabilities/default.json` unverändert (`git diff --stat src-tauri/capabilities` leer). `cargo test`: 44 von 44 grün, neu `vault::tests::im_explorer_nur_eintraege_im_vault` und `vault::tests::im_explorer_keine_verknuepfung_aus_dem_vault_heraus`.
-- [x] Auf Android ist der Eintrag ausgeblendet. In der Browser-Vorschau zeigt `src/lib/dev-backend.ts` stattdessen eine Meldung. Ein Vitest-Test prüft den Menüeintrag.
-  - `Workspace` bekommt die Plattform aus `App.tsx`; auf `android`/`ios` fehlt `onRevealInExplorer`, damit fehlen beide Einträge. Die Vorschau meldet „Browser-Vorschau: Hier gibt es keinen Explorer. In der App öffnet sich jetzt der Windows-Explorer und zeigt …“. Tests in `src/App.test.tsx`, Abschnitt „Bedienung: Im Explorer öffnen (Etappe 17)“: „„Im Explorer öffnen“ für Notiz, HTML-Seite und Ordner, „Vault im Explorer öffnen“ im Vault-Menü; die Vorschau zeigt einen Hinweis“, „ein verschwundener Eintrag wird verständlich gemeldet“, „auf Android gibt es „Im Explorer öffnen“ nicht“.
-- [x] In der gebauten `localist.exe` geprüft: Ein Explorer-Fenster mit markierter Datei öffnet sich (Nachweis z. B. über den Fenstertitel aus einem Skript).
-  - `npm run tauri build` (EXIT=0) am 2026-10-28 21:25, dann `node scripts/app-pruefung.mjs src-tauri/target/release/localist.exe <Kopie von beispiel-vault> docs/screenshots/etappe-17/app` (21:28). Welches Explorer-Fenster welchen Ordner zeigt und was markiert ist, liest `scripts/explorer-pruefen.ps1` über `Shell.Application` (Fenstertitel = `LocationName`); danach schließt es genau dieses Fenster. Ausgabe (Auszug, die übrigen Zeilen der App-Prüfung wie in Etappe 15 bestanden, Screenshots in `docs/screenshots/etappe-17/app/`):
-    ```
-    Im Explorer öffnen, Rechtsklick auf die Notiz „Ideen“: ja – Explorer-Fenster „Notizen“ (HWND 2295686), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17\Notizen, markiert: Ideen.md
-    Im Explorer öffnen, Menü der HTML-Seite „DNS“: ja – Explorer-Fenster „Notizen“ (HWND 461954), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17\Notizen, markiert: DNS.html
-    Im Explorer öffnen, Rechtsklick auf den Ordner „Projekte“: ja – Explorer-Fenster „Projekte“ (HWND 1706872), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17\Projekte, markiert: -
-    Menü „Vault“ → „Vault im Explorer öffnen“: ja – Explorer-Fenster „pruef-vault-e17“ (HWND 723598), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17, markiert: -
-    Fehlermeldung nach „Im Explorer öffnen“: keine
-    Konsole: keine Fehler und keine CSP-Verstöße.
-    ```
-  - Sicherheitstest derselben EXE: `localist.exe --sicherheitstest` → „Ergebnis: 21 von 21 Prüfungen bestanden – die Seite hat keinen Zugriff auf App, Dateien außerhalb des Vaults oder Netzwerk.“ (Exit-Code 0).
-  - Erster Lauf scheiterte am Prüfskript selbst: PowerShell liest „ “ als Anführungszeichen; Texte damit stehen jetzt in einfachen Anführungszeichen. Die Explorer-Fenster hatten sich dabei schon richtig geöffnet (Notizen mit markierter `DNS.html`, Projekte, Vault-Ordner) und wurden gezielt geschlossen.
-**HTML-Seiten: Code links oder rechts, verschiebbare Trennlinie**
-- [x] Einstellung „Code-Editor links / rechts“ in den Einstellungen und als kleiner Knopf „Seiten tauschen“ in der Ansicht „Geteilt“. Sie wirkt sofort und wird gemerkt. Auf schmalen Bildschirmen (untereinander) bedeutet links „oben“ und rechts „unten“.
-  - Einstellungen → Abschnitt „HTML-Seiten“ mit dem Umschalter „Code-Editor“ (Links/Rechts), Knopf „Seiten tauschen“ (Symbol ⇄) neben dem Ansichts-Umschalter, nur in „Geteilt“. Gemerkt im App-Speicher unter `html-code-seite` (`useCodeSeite` in `src/lib/html-editor.ts`, wirkt sofort auch bei offenem Dialog). Getauscht wird nur die Anzeige-Reihenfolge (CSS `order`), Editor und Vorschau bleiben im DOM: Die Vorschau lädt nicht neu. Unter 768 px untereinander, „rechts“ = unten (Prüfskript: „Handy 360 × 740 … Code darunter … unten: ja“, Screenshot `docs/screenshots/etappe-17/geteilt-handy-code-unten.png`).
-- [x] In „Geteilt“ lässt sich die Trennlinie mit Maus und Finger verschieben. Jede Seite bleibt mindestens etwa 280 px breit, ein Doppelklick setzt auf 50 : 50 zurück. Mit der Tastatur bedienbar (Fokus, Pfeiltasten, `role="separator"` mit `aria-valuenow`). Das Verhältnis wird gemerkt.
-  - Neue Komponente `src/components/GeteiltTrenner.tsx` (Pointer Capture, `touch-action: none`), Tokens `--split-pane-min-width` (280 px), `--split-divider-width`, `--split-divider-line`, `--split-divider-grip-height`. Tastatur: ←/→ 2 %, mit Umschalt 10 %, Pos1/Ende, Enter = 50 : 50. Gemerkt unter `html-geteilt-anteil` (Anteil des Code-Editors). Nachweis: `node scripts/trennlinie-pruefung.mjs http://localhost:1420 docs/screenshots/etappe-17` (Ausgabe unten).
-- [x] Beim Ziehen ruckelt nichts, es wird kein Text markiert, und die Vorschau behält ihre Scrollposition.
-  - Beim Ziehen rendert nur die Trennlinie neu, die Breiten kommen als CSS-Variablen an die Fläche, höchstens einmal je Bild. Messung: Bilder während des Ziehens im Mittel 35 ms auseinander (Edge ohne Fenster zeichnet etwa 30 Bilder/s), die zwei „langen Bilder“ mit 0 ms Blockierung, 0 ms Stil/Layout und ohne Skript; 0 Zeichen markiert; dasselbe iframe mit derselben Adresse; oben in der Vorschau bleibt „Absatz 43“ sichtbar (scrollY ändert sich nur, weil der Text beim Schmalerwerden umbricht und der Browser den sichtbaren Absatz festhält).
-  - Ausgabe des Prüfskripts (2026-10-28 21:12):
-    ```
-    Trennlinie in „Geteilt“, Vorschau http://localhost:1420 (Edge, echte Maus, Finger und Tastatur):
-    Start (1280 × 800): Code 463 px, Vorschau 463 px, aria-valuenow 50, Vorschau gescrollt: Lang.html: scrollY 1500, oben „Absatz 43:“
-    Maus: um 250 px nach rechts gezogen (über der Vorschau): Code 463 → 646 px, Vorschau 463 → 280 px, aria-valuenow 50 → 70, gemerkt „0.698“
-      während des Ziehens: Klasse is-ziehen ja, iframe pointer-events „none“, unter dem Zeiger liegt DIV
-      Text markiert: 0 Zeichen; iframes vorher/nachher 1/1, gleiche Adresse: ja; Scrollposition Lang.html: scrollY 1500, oben „Absatz 43:“ → Lang.html: scrollY 2256, oben „Absatz 43:“
-      Ruckeln (nur während des Ziehens): 28 Bilder, Abstand im Mittel 35 ms, höchstens 66 ms, lange Bilder (> 50 ms): 60 ms (blockiert 0 ms, Stil/Layout 0 ms, Skripte 0), 62 ms (blockiert 0 ms, Stil/Layout 0 ms, Skripte 0) (docs\screenshots\etappe-17\geteilt-gezogen.png)
-    Begrenzung: ganz nach rechts → Vorschau 280 px (aria-valuenow 70); ganz nach links → Code 280 px (aria-valuenow 30)
-    Doppelklick: aria-valuenow 30 → 50, Code 463 px, Vorschau 463 px, gemerkt „0.5“
-    Tastatur (Fokus: separator): → 50 → 52, Umschalt+← → 42, Enter → 50
-    „Seiten tauschen“: Code links bei x = 775, Vorschau bei x = 296 (Code rechts: ja), gemerkt „rechts“, gleiche Vorschau-Adresse: ja, iframes 1, Scrollposition Lang.html: scrollY 1500, oben „Absatz 43:“ (docs\screenshots\etappe-17\geteilt-code-rechts.png)
-    Finger: um 100 px nach links gewischt (Code rechts wird breiter): aria-valuenow 50 → 61, Code 463 → 563 px, gemerkt „0.608“, Text markiert: 0
-    Handy 360 × 740, Code „rechts“: Vorschau oben bei y = 214, Code darunter bei y = 550 (unten: ja), Trennlinie sichtbar: NEIN (docs\screenshots\etappe-17\geteilt-handy-code-unten.png)
-    ```
-- [x] Tests für Einstellung, Begrenzung und Speicherung des Verhältnisses und die Tastatur, dazu ein Prüfskript mit echter Maus wie `scripts/vorschau-scroll-pruefung.mjs`.
-  - `src/lib/html-editor.test.ts`, Abschnitt „„Geteilt“: Seite des Code-Editors und Trennlinie (Etappe 17)“: 6 Tests (Code-Seite gemerkt und ohne Speicher, Verhältnis gemerkt und kaputte Werte, Begrenzung auf 280 px, Zeigerposition, Tastatur). `src/App.test.tsx`, Abschnitt „„Geteilt“: Code links oder rechts, verschiebbare Trennlinie (Etappe 17)“: „Einstellung „Code-Editor rechts“ wirkt sofort, lädt die Vorschau nicht neu und wird gemerkt“, „„Seiten tauschen“ gibt es nur in „Geteilt“ …“, „Trennlinie mit der Tastatur …“, „Trennlinie ziehen: Pointer Capture, iframes ohne Mausereignisse, Begrenzung, kein Neuladen der Vorschau“. Prüfskript mit echter Maus, Finger und Tastatur: `scripts/trennlinie-pruefung.mjs`.
-**Seite „Bausteine“ breiter**
-- [x] Auf dem PC nutzt die Seite „Bausteine“ (Bibliothek und Hilfe) die verfügbare Breite: Liste links, die Vorschau füllt den Rest und die Fensterhöhe. Eine Höchstbreite greift erst bei sehr breiten Fenstern. Die Hilfe stellt Erklärung und Beispielcode nebeneinander, wenn Platz ist.
-  - Ursache der schmalen Seite: `.page` mit `margin: 0 auto` in der Flex-Spalte `.main` schrumpfte auf ihren Inhalt (≈ 660 px). Jetzt `.page.bibliothek-seite { width: 100%; max-width: var(--library-max-width) }` (1760 px, greift erst ab etwa 2030 px Fensterbreite), in der Bibliothek füllt die Seite die Resthöhe (`flex: 1 1 0; min-height: 0`, Raster mit `minmax(var(--code-pane-min-height), 1fr)`), die Liste scrollt für sich (`--library-list-width` 340 px). Hilfe: Erklärung (`.hilfe-text`) und Code (`.hilfe-code`) nebeneinander ab 820 px Breite der Hilfe (Container-Abfrage), sonst untereinander. Auf dem Handy holt ein Tipp auf einen Eintrag die Vorschau ins Bild (`scrollIntoView`).
-  - Gemessen mit `node scripts/bausteine-seite-pruefung.mjs http://localhost:1420 docs/screenshots/etappe-17` (2026-10-28 21:21): 1280 × 800 Vorschau 596 × 612 px, 32 px rechts und 24 px unten frei, nichts scrollt; 1920 × 1080 Vorschau 1236 × 892 px (vorher ≈ 300 × 576 px); Hilfe nebeneinander (367 | 551 px bzw. 623 | 935 px). Tests in `src/App.test.tsx`: „Seite „Bausteine“ breiter (Etappe 17)“ (3 Tests) und „CSS: Seite „Bausteine“ nutzt die Breite …“; die bestehenden Tests „Bereich „Bausteine“ …“ und „Hilfe: alle eingebauten Bausteine …“ laufen unverändert.
-- [x] Screenshots bei 1280 × 800, 1920 × 1080 und 360 × 740.
-  - `docs/screenshots/etappe-17/`: `pc-bibliothek-hell.png`, `pc-bibliothek-dunkel.png`, `pc-hilfe-hell.png`, `pc-hilfe-dunkel.png`, `breit-bibliothek-hell.png`, `breit-bibliothek-dunkel.png`, `breit-hilfe-hell.png`, `breit-hilfe-dunkel.png`, `handy-bibliothek-hell.png`, `handy-bibliothek-dunkel.png`, `handy-bibliothek-vorschau-hell.png`, `handy-hilfe-hell.png`, `handy-hilfe-dunkel.png`. Ausgabe des Skripts:
-    ```
-    Seite „Bausteine“, Vorschau http://localhost:1420 (Edge):
-    1280 × 800 hell, Bibliothek: Arbeitsbereich 1016 px, Seite 1016 px, Liste 340 px, Vorschau 596 × 612 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\pc-bibliothek-hell.png
-    1280 × 800 hell, Hilfe: Seite 1006 px, Erklärung und Code nebeneinander (367 px | 551 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\pc-hilfe-hell.png
-    1280 × 800 dunkel, Bibliothek: Arbeitsbereich 1016 px, Seite 1016 px, Liste 340 px, Vorschau 596 × 612 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\pc-bibliothek-dunkel.png
-    1280 × 800 dunkel, Hilfe: Seite 1006 px, Erklärung und Code nebeneinander (367 px | 551 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\pc-hilfe-dunkel.png
-    1920 × 1080 hell, Bibliothek: Arbeitsbereich 1656 px, Seite 1656 px, Liste 340 px, Vorschau 1236 × 892 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\breit-bibliothek-hell.png
-    1920 × 1080 hell, Hilfe: Seite 1646 px, Erklärung und Code nebeneinander (623 px | 935 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\breit-hilfe-hell.png
-    1920 × 1080 dunkel, Bibliothek: Arbeitsbereich 1656 px, Seite 1656 px, Liste 340 px, Vorschau 1236 × 892 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\breit-bibliothek-dunkel.png
-    1920 × 1080 dunkel, Hilfe: Seite 1646 px, Erklärung und Code nebeneinander (623 px | 935 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\breit-hilfe-dunkel.png
-    360 × 740 hell, Bibliothek: Arbeitsbereich 360 px, Seite 360 px, Liste 336 px, Vorschau 336 × 426 px, Abstand rechts 12 px, unten -660 px, Arbeitsbereich scrollt: ja, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\handy-bibliothek-hell.png
-      Handy: „Quiz“ angetippt (aktiv: „Quiz“), Vorschau jetzt bei y = 250 bis 676 (im Bild: ja): docs\screenshots\etappe-17\handy-bibliothek-vorschau-hell.png
-    360 × 740 hell, Hilfe: Seite 360 px, Erklärung und Code untereinander (336 px breit), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\handy-hilfe-hell.png
-    360 × 740 dunkel, Bibliothek: Arbeitsbereich 360 px, Seite 360 px, Liste 336 px, Vorschau 336 × 426 px, Abstand rechts 12 px, unten -660 px, Arbeitsbereich scrollt: ja, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\handy-bibliothek-dunkel.png
-    360 × 740 dunkel, Hilfe: Seite 360 px, Erklärung und Code untereinander (336 px breit), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\handy-hilfe-dunkel.png
-    ```
-- [x] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
-  - APK: `npx tauri android build --debug --apk --target aarch64 --target x86_64` (EXIT=0) → `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk`. Eigener Emulator „Medium_Phone_API_37.0“ (Android 17, 1080 × 2400) als `emulator-5556`, angesprochen mit `ANDROID_SERIAL=emulator-5556` (der zweite laufende Emulator „Kartei_Test“ gehört nicht zu Localist und blieb unberührt). `scripts/android-pruefung.mjs` hat den neuen Schritt 7 „Seite Bausteine“ (Bibliothek, Fingertipp auf einen Eintrag, Wischen in der Vorschau, Reiter „Hilfe“, „Kopieren“).
-  - Gefundener und behobener Fehler: In der Hilfe lag „Kopieren“ (oben rechts im Code-Kasten) auf dem Handy über einzeiligem Code, lange Zeilen scrollten quer. Jetzt brechen die Code-Beispiele um (`white-space: pre-wrap`), und unter 768 px steht „Kopieren“ über dem Code (`src/styles/page.css`). Beide Prüfskripte zählen seitdem „„Kopieren“ über Code-Text“ und „Code-Kästen mit Querscrollen“ (überall 0). APK danach neu gebaut, Lauf wiederholt (Ausgabe unten), Screenshots in `docs/screenshots/etappe-17/android/` (`10-bibliothek.png` bis `13-hilfe-kopiert.png`).
-  - Beobachtet, nicht Teil dieser Etappe: Die Gesten-Leiste von Android liegt unten über der WebView (die WebView reicht bis zum unteren Rand). Das gehört zu `safe-area-inset-bottom` in Etappe 20 (Navigationsleiste).
-  - Ausgabe (2026-10-28 21:41):
-    ```
-    > adb devices
-          List of devices attached
-          emulator-5554	device
-          emulator-5556	device
-    > adb install -r src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
-          Performing Streamed Install
-          Success
-    > adb shell dumpsys package de.localist.desktop | grep versionName
-          versionName=2.0.0
-    > adb push C:\Users\emre\AppData\Local\Temp\localist-android-XZYg7z\Localist-Pruefung /sdcard/Documents/Localist-Pruefung
-          C:\Users\emre\AppData\Local\Temp\localist-android-XZYg7z\Localist-Pruefung\: 17 files pushed, 0 skipped. 0.4 MB/s (138463 bytes in 0.376s)
-    > adb shell appops set de.localist.desktop MANAGE_EXTERNAL_STORAGE allow
-          
-        …(Schritte 1–6 wie in Etappe 15: HTML-Seite, Notizbuch, Karteikarte, Kartenstapel, Quiz, Code-Ansicht – alle bestanden)…
-    Seite „Bausteine“, Bibliothek: WebView 411 px breit, Liste 387 px, Vorschau 387 × 527 px, quer scrollbar: nein, Elemente über den Rand: 0
-    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\10-bibliothek.png
-    > adb shell input tap 540 1201   (Eintrag „Quiz“ in der Liste)
-    Nach dem Fingertipp: aktiv „Quiz“, Vorschau im Bild bei y = 324 bis 850 von 914 (ganz sichtbar: ja), „Quiz“ steht in der Vorschau bei y = 16
-    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\11-bibliothek-vorschau.png
-    > adb shell input swipe 540 1887 540 1196 400   (in der Vorschau nach oben wischen)
-    Vorschau nach dem Wischen: scrollY 2517 → 2866
-    > adb shell input tap 329 412   (Reiter „Hilfe“)
-    Hilfe: Erklärung und Code untereinander, Code-Kästen über den Rand: 0, „Kopieren“ über Code-Text: 0, Code-Kästen mit Querscrollen: 0, quer scrollbar: nein, Elemente über den Rand: 0
-    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\12-hilfe.png
-    > adb shell input tap 929 1175   („Kopieren“ beim Callout)
-    Nach dem Fingertipp auf „Kopieren“: Knopf zeigt „Kopiert“, keine Fehlermeldung
-    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\13-hilfe-kopiert.png
-    Konsole: keine Fehler.
-    Screenshots in docs/screenshots/etappe-17/android (android).
-    EXIT=0
-    ```
-
-### Tab und Shift+Tab im Stand 2.0 (nachgestellt am 2026-10-28)
-Mit `scripts/tab-pruefung.mjs` (Edge im Hintergrund, echte Tastatur über das DevTools-Protokoll, 1280 × 800, Testnotiz `Notizen/Tab-Test.md` nur im Arbeitsspeicher der Vorschau). Je Fall erst Tab, dann Shift+Tab; „gespeichert“ zeigt die Zeile in der Datei nach dem automatischen Speichern (führende Leerzeichen als „·“). Ergebnis:
-- Der Fokus verlässt den Editor in BlockNote 0.56 nie, auch nicht im ersten Block oder ganz links; Cursor und Scrollposition bleiben gleich.
-- Mit Markierung (Formatierungsleiste offen, auch bei zwei markierten Listenpunkten) passiert bei Tab und Shift+Tab nichts: BlockNote gibt die Taste bei `tabBehavior: "prefer-navigate-ui"` an die Leiste ab, eingerückt wird nicht.
-- Absatz und Überschrift rücken sichtbar um 24 px ein, gespeichert wird aber ohne Einrückung (nach dem Neuladen weg).
-- Callout, Toggle und ein Absatz nach einem Toggle rutschen in den vorigen Block: Der Callout landet im Listenpunkt davor, das Toggle im Callout (`> > [!note]-`), der Absatz im Toggle (`> Letzter Absatz`). Das ändert den Inhalt, nicht nur die Einrückung.
-- Liste, Checkliste, nummerierte Liste und ein Absatz direkt nach einer Liste werden richtig eingerückt gespeichert.
-- Bewegung (in jedem Bild gemessen): BlockNote animiert das Ein- und Ausrücken mit etwa 196 ms, also über der Grenze von 150 ms. Dabei springt der Block zuerst um 4 px, weil die Animation mit 20 px rechnet, der Einzug aber 24 px beträgt (im Toggle 22 px von 42 px). Callouts springen ganz ohne Übergang.
-- Code-Editor: Tab/Shift+Tab rücken die ganze Zeile um 2 Leerzeichen ein bzw. aus, auch mitten in der Zeile und über mehrere markierte Zeilen; der Cursor bleibt an derselben Textstelle. Escape und danach Tab verlässt den Editor (Fokus auf dem nächsten Knopf).
-
-Tab und Shift+Tab, Vorschau http://localhost:1420 (Edge, echte Tastatur, 1280 × 800):
-
-| Fall | Taste | Einrückung (Tiefe) | Versatz und Bewegung | Fokus danach | Cursor/Markierung | Scroll | gespeichert |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Erster Block (Absatz) | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
-| Erster Block (Absatz) | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
-| Absatz | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz | Shift+Tab | 1 → 0 | -24 px, Übergang 197 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
-| Überschrift | Tab | 0 → 1 | 24 px, Übergang 221 ms (4 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `## Überschrift` |
-| Überschrift | Shift+Tab | 1 → 0 | -24 px, Übergang 195 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `## Überschrift` |
-| Liste | Tab | 0 → 1 | 24 px, Übergang 195 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··- Punkt B` |
-| Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 195 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `- Punkt B` |
-| Liste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` |
-| Liste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` |
-| Liste, zwei Punkte markiert | Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
-| Liste, zwei Punkte markiert | Shift+Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
-| Absatz direkt nach Liste | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··Absatz nach Liste` |
-| Absatz direkt nach Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `Absatz nach Liste` |
-| Checkliste | Tab | 0 → 1 | 24 px, Übergang 194 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
-| Checkliste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Checkliste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Checkliste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Nummerierte Liste | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `···1. Schritt B` |
-| Nummerierte Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `2. Schritt B` |
-| Callout | Tab | 0 → 1 | 24 px, Sprung ohne Übergang | Editor | gleich | gleich | `···> [!info] Callout A` |
-| Callout | Shift+Tab | 1 → 0 | -24 px, Sprung ohne Übergang | Editor | gleich | gleich | `> [!info] Callout A` |
-| Toggle | Tab | 0 → 1 | 42 px, Sprung ohne Übergang | Editor | gleich | gleich | `> > [!note]- Toggle A` |
-| Toggle | Shift+Tab | 1 → 0 | -42 px, Übergang 197 ms (6 Bilder, erst -22 px Sprung) | Editor | gleich | gleich | `> [!note]- Toggle A` |
-| Absatz nach Toggle | Tab | 0 → 1 | 42 px, Übergang 196 ms (6 Bilder, erst 22 px Sprung) | Editor | gleich | gleich | `> Letzter Absatz` |
-| Absatz nach Toggle | Shift+Tab | 1 → 0 | -42 px, Übergang 197 ms (6 Bilder, erst -22 px Sprung) | Editor | gleich | gleich | `Letzter Absatz` |
-| Code-Editor: Cursor mitten in der Zeile | Tab | 0 → 2 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 44 | – | – |
-| Code-Editor: Cursor mitten in der Zeile | Shift+Tab | 2 → 0 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 43 → „<l-callout typ“ Spalte 41 | – | – |
-| Code-Editor: Cursor mitten in eingerückter Zeile | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-frage>Welch“ Spalte 23 → „<l-frage>Welch“ Spalte 21 | – | – |
-| Code-Editor: drei Zeilen markiert (Einzug der ersten) | Tab | 2 → 4 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) → „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) | – | – |
-| Code-Editor: drei Zeilen markiert, zurück | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) → „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) | – | – |
-| Code-Editor: Escape, dann Tab | Escape, Tab | 0 → 0 Leerzeichen | – | button „🧱BausteineLink „DNS““ | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 42 | – | – |
-
-### Tab und Shift+Tab nach der Umsetzung (gemessen am 2026-10-28 um 21:00)
-Gleiches Skript `scripts/tab-pruefung.mjs`, jetzt zusätzlich mit „Speichern und Neuladen“ und `prefers-reduced-motion` (über `Emulation.setEmulatedMedia`; Windows hat auf diesem PC die Animationseffekte aus, siehe „Entscheidungen“). „Schritte“ ist die Bewegung je Bild (Edge im Hintergrund zeichnet etwa 30 Bilder pro Sekunde). Ergebnis:
-- Absatz, Überschrift, Callout, Toggle, Absatz nach Toggle und der erste Block bleiben stehen (0 px, keine Bewegung), auch mit Markierung. Gespeichert bleibt alles unverändert, kein Block rutscht mehr in einen anderen.
-- Liste, Checkliste, nummerierte Liste und ein Absatz direkt nach einer Liste rücken ein und aus, jetzt auch mit Markierung bei offener Formatierungsleiste und mit zwei markierten Punkten. Gespeichert eingerückt, nach dem Schließen und erneuten Öffnen der Seite genauso eingerückt.
-- Übergang: etwa 130 ms in gleichmäßigen Schritten (9·10·4·1 px), ohne Anfangssprung. Einmal (nummerierte Liste, Tab) kamen in 0,5 s nur 4 Bilder: Der Hauptthread war in dem Moment belegt, die Messung per `requestAnimationFrame` sieht dann weniger Zwischenbilder. Bei `prefers-reduced-motion: reduce` springt der Block ohne Übergang.
-- Fokus immer „Editor“, Cursor und Markierung bleiben an derselben Textstelle, die Seite scrollt nicht. Code-Editor unverändert wie vorher (eine Stufe = 2 Leerzeichen, Escape und danach Tab verlässt den Editor).
-
-Tab und Shift+Tab, Vorschau http://localhost:1420 (Edge, echte Tastatur, 1280 × 800, prefers-reduced-motion: no-preference außer wo genannt; Windows meldet „Animationseffekte aus“ (reduce)):
-
-| Fall | Taste | Einrückung (Tiefe) | Versatz und Bewegung | Fokus danach | Cursor/Markierung | Scroll | gespeichert |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Erster Block (Absatz) | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
-| Erster Block (Absatz) | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
-| Absatz | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
-| Überschrift | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `## Überschrift` |
-| Überschrift | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `## Überschrift` |
-| Liste | Tab | 0 → 1 | 24 px, Übergang 131 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- Punkt B` |
-| Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 130 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `- Punkt B` |
-| Liste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 1 | 24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- Punkt B` |
-| Liste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 1 → 0 | -24 px, Übergang 129 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `- Punkt B` |
-| Liste, zwei Punkte markiert | Tab (Formatierungsleiste offen) | 0+0 → 1+1 | 24 px, Übergang 129 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `··- Punkt B` `··- Punkt C` |
-| Liste, zwei Punkte markiert | Shift+Tab (Formatierungsleiste offen) | 1+1 → 0+0 | -24 px, Übergang 132 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
-| Absatz direkt nach Liste | Tab | 0 → 1 | 24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··Absatz nach Liste` |
-| Absatz direkt nach Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `Absatz nach Liste` |
-| Checkliste | Tab | 0 → 1 | 24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
-| Checkliste | Shift+Tab | 1 → 0 | -24 px, Übergang 131 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Checkliste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 1 | 24 px, Übergang 132 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
-| Checkliste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 1 → 0 | -24 px, Übergang 131 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Nummerierte Liste | Tab | 0 → 1 | 24 px, Übergang 503 ms (4 Bilder, Schritte 1·11·8·3·1 px) | Editor | gleich | gleich | `···1. Schritt B` |
-| Nummerierte Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 131 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `2. Schritt B` |
-| Callout | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!info] Callout A` |
-| Callout | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!info] Callout A` |
-| Toggle | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!note]- Toggle A` |
-| Toggle | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!note]- Toggle A` |
-| Absatz nach Toggle | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Letzter Absatz` |
-| Absatz nach Toggle | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Letzter Absatz` |
-| Nach Speichern und Neuladen (Seite geschlossen, neu geöffnet) | Tab in „Punkt B“, „Absatz nach Liste“, „Aufgabe B“, „Schritt B“ | 1+1+1+1 → 1+1+1+1 | – | – | – | – | `··- Punkt B` `··Absatz nach Liste` `··- [ ] Aufgabe B` `···1. Schritt B` |
-| Liste (prefers-reduced-motion: reduce) | Tab | 0 → 1 | 24 px, Sprung ohne Übergang | Editor | gleich | gleich | `··- Punkt B` |
-| Liste (prefers-reduced-motion: reduce) | Shift+Tab | 1 → 0 | -24 px, Sprung ohne Übergang | Editor | gleich | gleich | `- Punkt B` |
-| Absatz direkt nach Liste (prefers-reduced-motion: reduce) | Tab | 0 → 1 | 24 px, Sprung ohne Übergang | Editor | gleich | gleich | `··Absatz nach Liste` |
-| Absatz direkt nach Liste (prefers-reduced-motion: reduce) | Shift+Tab | 1 → 0 | -24 px, Sprung ohne Übergang | Editor | gleich | gleich | `Absatz nach Liste` |
-| Code-Editor: Cursor mitten in der Zeile | Tab | 0 → 2 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 44 | – | – |
-| Code-Editor: Cursor mitten in der Zeile | Shift+Tab | 2 → 0 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 43 → „<l-callout typ“ Spalte 41 | – | – |
-| Code-Editor: Cursor mitten in eingerückter Zeile | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-frage>Welch“ Spalte 23 → „<l-frage>Welch“ Spalte 21 | – | – |
-| Code-Editor: drei Zeilen markiert (Einzug der ersten) | Tab | 2 → 4 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) → „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) | – | – |
-| Code-Editor: drei Zeilen markiert, zurück | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) → „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) | – | – |
-| Code-Editor: Escape, dann Tab | Escape, Tab | 0 → 0 Leerzeichen | – | button „🧱BausteineLink „DNS““ | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 42 | – | – |
+- Etappe 18: Die Fertig-Kriterien werden zu Beginn der Etappe wörtlich aus `CLAUDE.md` hier übernommen (Arbeitsregel 3).
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
 
-Stand: am 2026-10-28 um 20:45 mit dem Stand von Commit `ed13549` (Etappe 16 plus Tab/Shift+Tab aus Etappe 17) in der Browser-Vorschau (Port 1420) durchgeklickt, alle 12 Punkte bestanden. Der Vite-Server lief nachweislich aus dem neuen Ordner (`Get-CimInstance Win32_Process -Filter "Name='node.exe'"` → `"node" "C:\Users\emre\Documents\eigen_apps\Localist\node_modules\.bin\\..\vite\bin\vite.js"`, PID 28940, lauscht auf Port 1420). Das erledigt `scripts/klickliste.mjs` mit echter Tastatur und Maus in Microsoft Edge (Aufruf `node scripts/klickliste.mjs http://localhost:1420 "Etappe 16" 1.0`); nur die Kanban-Karte wird mit Drag-Ereignissen per Skript gezogen. Ausgabe:
+Stand: am 2026-10-28 um 21:33 mit dem Abschluss-Stand von Etappe 17 in der Browser-Vorschau (Port 1420, Vite aus dem Ordner `Localist`) durchgeklickt, alle 12 Punkte bestanden. Das erledigt `scripts/klickliste.mjs` mit echter Tastatur und Maus in Microsoft Edge (Aufruf `node scripts/klickliste.mjs http://localhost:1420 "Etappe 17" 1.0`); nur die Kanban-Karte wird mit Drag-Ereignissen per Skript gezogen. Ausgabe:
     ```
-    Klickliste „Version 1.0“ (Etappe 16), Vorschau http://localhost:1420:
-    [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 16.“
+    Klickliste „Version 1.0“ (Etappe 17), Vorschau http://localhost:1420:
+    [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 17.“
     [x] 2. Callout über das „/“-Menü: eingefügt
-    [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 16 [[Formatierung]]“, Klick öffnet „Formatierung“
+    [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 17 [[Formatierung]]“, Klick öffnet „Formatierung“
     [x] 4. Eigenschaft: `kategorie: Lernen` im Frontmatter
     [x] 5. Tabelle: Zelle, Sortierung, Filter: priorität: mittel; absteigend: Umzug, Website-Relaunch; Filter status ist Geplant: Umzug
     [x] 6. Kanban: „Umzug“ nach „Erledigt“ (status: Erledigt)
@@ -256,16 +43,16 @@ Stand: am 2026-10-28 um 20:45 mit dem Stand von Commit `ed13549` (Etappe 16 plus
 ## Klickliste „Version 2.0“
 Feste Liste für Version 2.0 (Etappe 15). Sie wird wie die Liste „Version 1.0“ in der Browser-Vorschau geprüft, ebenfalls mit `scripts/klickliste.mjs` (echte Tastatur und Maus in Microsoft Edge, Aufruf `node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" 2.0`). Rückfragen der Seite beantwortet das Skript wie ein Mensch mit „OK“.
 
-Stand: am 2026-10-28 um 20:46 mit dem Stand von Commit `ed13549` (Vite-Server aus dem neuen Ordner `Localist`, siehe Klickliste 1.0, Port 1420, Aufruf `node scripts/klickliste.mjs http://localhost:1420 "Etappe 16" 2.0`) durchgeklickt, alle 7 Punkte bestanden. Ausgabe:
+Stand: am 2026-10-28 um 21:34 mit dem Abschluss-Stand von Etappe 17 (Port 1420, Aufruf `node scripts/klickliste.mjs http://localhost:1420 "Etappe 17" 2.0`) durchgeklickt, alle 7 Punkte bestanden. Ausgabe:
     ```
-    Klickliste „Version 2.0“ (Etappe 16), Vorschau http://localhost:1420:
-    [x] 1. HTML-Seite anlegen: Unbenannt.html mit localist-id eb1340fd-699f-4150-9fb8-fe3f364ff30b, <title>Unbenannt</title> und Verweisen auf .localist/bausteine/, geöffnet in „Geteilt“
+    Klickliste „Version 2.0“ (Etappe 17), Vorschau http://localhost:1420:
+    [x] 1. HTML-Seite anlegen: Unbenannt.html mit localist-id 0efe8901-d517-4368-80d0-606efb296df9, <title>Unbenannt</title> und Verweisen auf .localist/bausteine/, geöffnet in „Geteilt“
     [x] 2. Code bearbeiten: getippt, gespeichert (nur diese Zeile neu, Rest der Datei Zeichen für Zeichen gleich), Vorschau zeigt „Klickliste Version 2.0“
     [x] 3. Jeder Baustein (Werkzeugleiste, dann „Lesen“): 13 Bausteine eingefügt (13 Markups in der Datei); in „Lesen“: {"callout":"Info","bild":1,"code":null,"stapel":"0 von 2 gewusst","quiz":"Punkte: 0 von 1","diagramm":1,"spalten":"grid"}, Karteikarte per Klick umgedreht
     [x] 4. Eigener Baustein: .localist/bausteine/eigene/Klickliste-Box.html: "<!-- beschreibung: Aus der Klickliste 2.0 -->\n<l-callout typ=\"info\">Text</l-callout>\n"; in der Werkzeugleiste, Klick fügt ihn ein (1 → 2)
     [x] 5. Notizbuch: _notizbuch.yaml "titel: Notizen\nseiten:\n  - DNS.html\n  - Formatierung.md\n  - Ideen.md\n", Inhaltsverzeichnis 1DNS, 2Formatierung, 3Ideen, „Weiter“ → Formatierung
     [x] 6. Umwandeln: Rückfrage „„Ideen“ in eine HTML-Seite umwandeln? Die Notiz kommt in den Papierkorb, Links im Vault werden angepasst.“ mit OK beantwortet; Notizen/Ideen.html angelegt, Ideen.md im Papierkorb, Website-Relaunch verlinkt [[Ideen.html]], Notizbuch-Eintrag Ideen.html
-    [x] 7. Export: C:/Export/DNS.html (128284 Zeichen): CSS und Skript eingebettet, keine Verweise auf .localist/
+    [x] 7. Export: C:/Export/DNS.html (128373 Zeichen): CSS und Skript eingebettet, keine Verweise auf .localist/
     ```
 - [x] HTML-Seite anlegen: „Neu“ → „HTML-Seite“ legt `Unbenannt.html` nach dem Speicherformat an (mit `localist-id`) und öffnet sie in „Geteilt“.
 - [x] Code bearbeiten: Im Code-Editor tippen; gespeichert wird nur die geänderte Stelle, die Vorschau zeigt den neuen Text.
@@ -276,6 +63,221 @@ Stand: am 2026-10-28 um 20:46 mit dem Stand von Commit `ed13549` (Vite-Server au
 - [x] Export: „DNS“ als eigenständige HTML-Datei exportieren (CSS und Skript eingebettet).
 
 ## Abgeschlossene Etappen
+- Etappe 17 – Bedienung verbessern (abgeschlossen am 2026-10-28). Nachweise: Tab/Shift+Tab in Notizen nach den Markdown-Regeln mit Übergang 129–132 ms (`scripts/tab-pruefung.mjs`), Code-Editor mit `EINRUECKUNG` = Bausteine, „Im Explorer öffnen“ in der gebauten `localist.exe` (Datei markiert, Ordner, Vault; `scripts/explorer-pruefen.ps1`), „Geteilt“ mit Code links/rechts und verschiebbarer Trennlinie (`scripts/trennlinie-pruefung.mjs`), Seite „Bausteine“ in voller Breite und Höhe (`scripts/bausteine-seite-pruefung.mjs`, Android im Emulator mit `scripts/android-pruefung.mjs`, ein Fehler behoben). Arbeitsregel 6 am Ende: `npm test` 361 von 361 grün (29 Testdateien), `cargo test` 44 von 44 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,38 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,65 MiB)), Sicherheitstest der EXE 21/21. Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) abgehakt. Screenshots in `docs/screenshots/etappe-17/`.
+  - **Tab und Shift+Tab**
+  - [x] Zuerst nachgestellt (Browser-Vorschau, echte Tastatur): Was passiert heute bei Tab und Shift+Tab in Absatz, Überschrift, Liste, Checkliste, nummerierter Liste, Callout und Toggle, mit und ohne Markierung, im ersten Block und im Code-Editor? Das Ergebnis steht als Tabelle in `FORTSCHRITT.md`.
+  - [x] Notizen: Tab rückt den aktuellen bzw. alle markierten Blöcke ein, Shift+Tab rückt aus, auch bei offener Formatierungsleiste. Der Fokus verlässt den Editor nie (auch nicht im ersten Block oder ganz links). Cursor und Markierung bleiben an derselben Textstelle, die Seite scrollt nicht.
+    - Umgesetzt in `src/editor/einruecken.ts` (`tabBehavior: "prefer-indent"`, eigene Tastenbelegung vor BlockNote). Vorschau: Tabelle „nach der Umsetzung“ oben (Fokus in jeder Zeile „Editor“, Cursor/Markierung und Scroll „gleich“, „Liste, Text markiert“ und „zwei Punkte markiert“ rücken bei offener Formatierungsleiste ein). Tests in `src/editor/einruecken.test.ts`: „mehrere markierte Listenpunkte rücken zusammen ein“, „auch bei offener Formatierungsleiste, Markierung und Cursor bleiben an derselben Textstelle“, „erster Block“, „bleibt stehen: ganz links“.
+  - [x] Notizen: Eingerückt wird nur, was Markdown auch speichern kann (Listenpunkte, Checklisten, nummerierte Listen und Absätze unter einem Listenpunkt). In allen anderen Fällen bleibt der Block ruhig stehen, ohne Sprung und ohne Fokusverlust. Alles Eingerückte ist nach Speichern und Neuladen genauso eingerückt. Dafür gibt es Roundtrip-Tests.
+    - Vorschau: Absatz, Überschrift, Callout, Toggle und Absatz nach Toggle „0 px, keine Bewegung“, gespeichert unverändert; Zeile „Nach Speichern und Neuladen“ zeigt `1+1+1+1 → 1+1+1+1`. Roundtrip-Tests in `src/markdown/roundtrip.test.ts` („Einrückung bleibt erhalten: …“ für 9 Fälle, „Kinder eines Absatzes speichert Markdown nicht eingerückt …“), in `src/editor/einruecken.test.ts` prüft jeder Einrück-Fall zusätzlich `neuGeladen(nachher)`; „Tab lässt alles andere ruhig stehen …“ (10 Fälle).
+  - [x] Notizen: Ein- und Ausrücken hat einen kurzen, ruhigen Übergang (höchstens 150 ms, Werte aus `tokens.css`, aus bei `prefers-reduced-motion`). Einzug und Führungslinie kommen aus `tokens.css`.
+    - `--duration-indent: 140ms`, `--ease-indent`, `--editor-indent`, `--editor-guide-offset` in `src/styles/tokens.css`; abgespielt mit `element.animate` (siehe „Entscheidungen“). Vorschau: „Übergang 129–132 ms (Schritte 9·10·4·1 px)“, mit `prefers-reduced-motion: reduce` „Sprung ohne Übergang“. Tests „Übergang beim Ein- und Ausrücken“ in `src/editor/einruecken.test.ts` (140 ms und Kurve aus den Tokens, Richtung, mehrere Blöcke, nichts bei stehenden Blöcken und bei „Bewegung reduzieren“).
+  - [x] HTML-Seiten: Tab rückt die Zeile bzw. alle markierten Zeilen um eine Stufe ein (dieselbe Einrückung wie bei eingefügten Bausteinen), Shift+Tab rückt aus, auch wenn der Cursor mitten in der Zeile steht. Escape und danach Tab verlässt den Editor, wie es CodeMirror für die Tastaturbedienung vorsieht.
+    - `indentUnit.of(EINRUECKUNG)` in `src/components/CodeEditor.tsx`, `EINRUECKUNG = "  "` in `src/lib/bausteine.ts` (gleich den Vorlagen). Vorschau: Zeilen „Code-Editor: …“ der Tabelle (2 Leerzeichen je Stufe, mitten in der Zeile und über drei markierte Zeilen, Escape und Tab → Fokus auf dem nächsten Knopf).
+  - [x] Tests für beide Editoren.
+    - Notizen: `src/editor/einruecken.test.ts` (Ein-/Ausrücken, Stehenbleiben, Code-Block, Strg+Tab frei, Übergang). Code-Editor: neue Datei `src/components/CodeEditor.test.tsx` (8 Tests: Tab mitten in der Zeile, Shift+Tab ohne Einrückung, mehrere Zeilen, dieselbe Einrückung wie eingefügte Bausteine, CRLF, Escape und danach Tab, Ende des Modus nach 2 s oder anderer Taste, Escape mit Markierung) und in `src/lib/bausteine.test.ts` „Vorlagen und Beispiele sind in Stufen von EINRUECKUNG eingerückt …“.
+  - **„Im Explorer öffnen“**
+  - [x] Rechtsklick auf eine Seite (Notiz oder HTML-Seite) → „Im Explorer öffnen“: Der Windows-Explorer zeigt den Ordner und markiert die Datei. Auf einem Ordner öffnet derselbe Eintrag den Ordner selbst. Im Menü „Vault“ gibt es „Vault im Explorer öffnen“.
+    - In der gebauten `localist.exe` mit echtem Rechtsklick (Notiz „Ideen“, Ordner „Projekte“), über das Menü „…“ der HTML-Seite „DNS“ und über das Menü „Vault“ geprüft, Nachweis siehe nächstes Kriterium.
+  - [x] Umgesetzt über einen neuen Rust-Befehl, der den Pfad wie `vault::resolve` prüft (nur Pfade im geöffneten Vault) und dann den Explorer öffnet. Die Capabilities werden dafür nicht erweitert. `cargo test` prüft die Pfadprüfung.
+    - Befehl `im_explorer_zeigen` in `src-tauri/src/lib.rs`, Pfadprüfung `vault::explorer_ziel` in `src-tauri/src/vault.rs` (erst `resolve`, dann Existenz, dazu Schutz gegen Verknüpfungen aus dem Vault heraus). `src-tauri/capabilities/default.json` unverändert (`git diff --stat src-tauri/capabilities` leer). `cargo test`: 44 von 44 grün, neu `vault::tests::im_explorer_nur_eintraege_im_vault` und `vault::tests::im_explorer_keine_verknuepfung_aus_dem_vault_heraus`.
+  - [x] Auf Android ist der Eintrag ausgeblendet. In der Browser-Vorschau zeigt `src/lib/dev-backend.ts` stattdessen eine Meldung. Ein Vitest-Test prüft den Menüeintrag.
+    - `Workspace` bekommt die Plattform aus `App.tsx`; auf `android`/`ios` fehlt `onRevealInExplorer`, damit fehlen beide Einträge. Die Vorschau meldet „Browser-Vorschau: Hier gibt es keinen Explorer. In der App öffnet sich jetzt der Windows-Explorer und zeigt …“. Tests in `src/App.test.tsx`, Abschnitt „Bedienung: Im Explorer öffnen (Etappe 17)“: „„Im Explorer öffnen“ für Notiz, HTML-Seite und Ordner, „Vault im Explorer öffnen“ im Vault-Menü; die Vorschau zeigt einen Hinweis“, „ein verschwundener Eintrag wird verständlich gemeldet“, „auf Android gibt es „Im Explorer öffnen“ nicht“.
+  - [x] In der gebauten `localist.exe` geprüft: Ein Explorer-Fenster mit markierter Datei öffnet sich (Nachweis z. B. über den Fenstertitel aus einem Skript).
+    - `npm run tauri build` (EXIT=0) am 2026-10-28 21:25, dann `node scripts/app-pruefung.mjs src-tauri/target/release/localist.exe <Kopie von beispiel-vault> docs/screenshots/etappe-17/app` (21:28). Welches Explorer-Fenster welchen Ordner zeigt und was markiert ist, liest `scripts/explorer-pruefen.ps1` über `Shell.Application` (Fenstertitel = `LocationName`); danach schließt es genau dieses Fenster. Ausgabe (Auszug, die übrigen Zeilen der App-Prüfung wie in Etappe 15 bestanden, Screenshots in `docs/screenshots/etappe-17/app/`):
+      ```
+      Im Explorer öffnen, Rechtsklick auf die Notiz „Ideen“: ja – Explorer-Fenster „Notizen“ (HWND 2295686), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17\Notizen, markiert: Ideen.md
+      Im Explorer öffnen, Menü der HTML-Seite „DNS“: ja – Explorer-Fenster „Notizen“ (HWND 461954), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17\Notizen, markiert: DNS.html
+      Im Explorer öffnen, Rechtsklick auf den Ordner „Projekte“: ja – Explorer-Fenster „Projekte“ (HWND 1706872), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17\Projekte, markiert: -
+      Menü „Vault“ → „Vault im Explorer öffnen“: ja – Explorer-Fenster „pruef-vault-e17“ (HWND 723598), Ordner C:\Users\emre\AppData\Local\Temp\claude\C--Users-emre-Documents-eigen-apps-Localist\38a95ef6-4254-4c75-b69b-cea4547e4b6a\scratchpad\pruef-vault-e17, markiert: -
+      Fehlermeldung nach „Im Explorer öffnen“: keine
+      Konsole: keine Fehler und keine CSP-Verstöße.
+      ```
+    - Sicherheitstest derselben EXE: `localist.exe --sicherheitstest` → „Ergebnis: 21 von 21 Prüfungen bestanden – die Seite hat keinen Zugriff auf App, Dateien außerhalb des Vaults oder Netzwerk.“ (Exit-Code 0).
+    - Erster Lauf scheiterte am Prüfskript selbst: PowerShell liest „ “ als Anführungszeichen; Texte damit stehen jetzt in einfachen Anführungszeichen. Die Explorer-Fenster hatten sich dabei schon richtig geöffnet (Notizen mit markierter `DNS.html`, Projekte, Vault-Ordner) und wurden gezielt geschlossen.
+  - **HTML-Seiten: Code links oder rechts, verschiebbare Trennlinie**
+  - [x] Einstellung „Code-Editor links / rechts“ in den Einstellungen und als kleiner Knopf „Seiten tauschen“ in der Ansicht „Geteilt“. Sie wirkt sofort und wird gemerkt. Auf schmalen Bildschirmen (untereinander) bedeutet links „oben“ und rechts „unten“.
+    - Einstellungen → Abschnitt „HTML-Seiten“ mit dem Umschalter „Code-Editor“ (Links/Rechts), Knopf „Seiten tauschen“ (Symbol ⇄) neben dem Ansichts-Umschalter, nur in „Geteilt“. Gemerkt im App-Speicher unter `html-code-seite` (`useCodeSeite` in `src/lib/html-editor.ts`, wirkt sofort auch bei offenem Dialog). Getauscht wird nur die Anzeige-Reihenfolge (CSS `order`), Editor und Vorschau bleiben im DOM: Die Vorschau lädt nicht neu. Unter 768 px untereinander, „rechts“ = unten (Prüfskript: „Handy 360 × 740 … Code darunter … unten: ja“, Screenshot `docs/screenshots/etappe-17/geteilt-handy-code-unten.png`).
+  - [x] In „Geteilt“ lässt sich die Trennlinie mit Maus und Finger verschieben. Jede Seite bleibt mindestens etwa 280 px breit, ein Doppelklick setzt auf 50 : 50 zurück. Mit der Tastatur bedienbar (Fokus, Pfeiltasten, `role="separator"` mit `aria-valuenow`). Das Verhältnis wird gemerkt.
+    - Neue Komponente `src/components/GeteiltTrenner.tsx` (Pointer Capture, `touch-action: none`), Tokens `--split-pane-min-width` (280 px), `--split-divider-width`, `--split-divider-line`, `--split-divider-grip-height`. Tastatur: ←/→ 2 %, mit Umschalt 10 %, Pos1/Ende, Enter = 50 : 50. Gemerkt unter `html-geteilt-anteil` (Anteil des Code-Editors). Nachweis: `node scripts/trennlinie-pruefung.mjs http://localhost:1420 docs/screenshots/etappe-17` (Ausgabe unten).
+  - [x] Beim Ziehen ruckelt nichts, es wird kein Text markiert, und die Vorschau behält ihre Scrollposition.
+    - Beim Ziehen rendert nur die Trennlinie neu, die Breiten kommen als CSS-Variablen an die Fläche, höchstens einmal je Bild. Messung: Bilder während des Ziehens im Mittel 35 ms auseinander (Edge ohne Fenster zeichnet etwa 30 Bilder/s), die zwei „langen Bilder“ mit 0 ms Blockierung, 0 ms Stil/Layout und ohne Skript; 0 Zeichen markiert; dasselbe iframe mit derselben Adresse; oben in der Vorschau bleibt „Absatz 43“ sichtbar (scrollY ändert sich nur, weil der Text beim Schmalerwerden umbricht und der Browser den sichtbaren Absatz festhält).
+    - Ausgabe des Prüfskripts (2026-10-28 21:12):
+      ```
+      Trennlinie in „Geteilt“, Vorschau http://localhost:1420 (Edge, echte Maus, Finger und Tastatur):
+      Start (1280 × 800): Code 463 px, Vorschau 463 px, aria-valuenow 50, Vorschau gescrollt: Lang.html: scrollY 1500, oben „Absatz 43:“
+      Maus: um 250 px nach rechts gezogen (über der Vorschau): Code 463 → 646 px, Vorschau 463 → 280 px, aria-valuenow 50 → 70, gemerkt „0.698“
+        während des Ziehens: Klasse is-ziehen ja, iframe pointer-events „none“, unter dem Zeiger liegt DIV
+        Text markiert: 0 Zeichen; iframes vorher/nachher 1/1, gleiche Adresse: ja; Scrollposition Lang.html: scrollY 1500, oben „Absatz 43:“ → Lang.html: scrollY 2256, oben „Absatz 43:“
+        Ruckeln (nur während des Ziehens): 28 Bilder, Abstand im Mittel 35 ms, höchstens 66 ms, lange Bilder (> 50 ms): 60 ms (blockiert 0 ms, Stil/Layout 0 ms, Skripte 0), 62 ms (blockiert 0 ms, Stil/Layout 0 ms, Skripte 0) (docs\screenshots\etappe-17\geteilt-gezogen.png)
+      Begrenzung: ganz nach rechts → Vorschau 280 px (aria-valuenow 70); ganz nach links → Code 280 px (aria-valuenow 30)
+      Doppelklick: aria-valuenow 30 → 50, Code 463 px, Vorschau 463 px, gemerkt „0.5“
+      Tastatur (Fokus: separator): → 50 → 52, Umschalt+← → 42, Enter → 50
+      „Seiten tauschen“: Code links bei x = 775, Vorschau bei x = 296 (Code rechts: ja), gemerkt „rechts“, gleiche Vorschau-Adresse: ja, iframes 1, Scrollposition Lang.html: scrollY 1500, oben „Absatz 43:“ (docs\screenshots\etappe-17\geteilt-code-rechts.png)
+      Finger: um 100 px nach links gewischt (Code rechts wird breiter): aria-valuenow 50 → 61, Code 463 → 563 px, gemerkt „0.608“, Text markiert: 0
+      Handy 360 × 740, Code „rechts“: Vorschau oben bei y = 214, Code darunter bei y = 550 (unten: ja), Trennlinie sichtbar: NEIN (docs\screenshots\etappe-17\geteilt-handy-code-unten.png)
+      ```
+  - [x] Tests für Einstellung, Begrenzung und Speicherung des Verhältnisses und die Tastatur, dazu ein Prüfskript mit echter Maus wie `scripts/vorschau-scroll-pruefung.mjs`.
+    - `src/lib/html-editor.test.ts`, Abschnitt „„Geteilt“: Seite des Code-Editors und Trennlinie (Etappe 17)“: 6 Tests (Code-Seite gemerkt und ohne Speicher, Verhältnis gemerkt und kaputte Werte, Begrenzung auf 280 px, Zeigerposition, Tastatur). `src/App.test.tsx`, Abschnitt „„Geteilt“: Code links oder rechts, verschiebbare Trennlinie (Etappe 17)“: „Einstellung „Code-Editor rechts“ wirkt sofort, lädt die Vorschau nicht neu und wird gemerkt“, „„Seiten tauschen“ gibt es nur in „Geteilt“ …“, „Trennlinie mit der Tastatur …“, „Trennlinie ziehen: Pointer Capture, iframes ohne Mausereignisse, Begrenzung, kein Neuladen der Vorschau“. Prüfskript mit echter Maus, Finger und Tastatur: `scripts/trennlinie-pruefung.mjs`.
+  - **Seite „Bausteine“ breiter**
+  - [x] Auf dem PC nutzt die Seite „Bausteine“ (Bibliothek und Hilfe) die verfügbare Breite: Liste links, die Vorschau füllt den Rest und die Fensterhöhe. Eine Höchstbreite greift erst bei sehr breiten Fenstern. Die Hilfe stellt Erklärung und Beispielcode nebeneinander, wenn Platz ist.
+    - Ursache der schmalen Seite: `.page` mit `margin: 0 auto` in der Flex-Spalte `.main` schrumpfte auf ihren Inhalt (≈ 660 px). Jetzt `.page.bibliothek-seite { width: 100%; max-width: var(--library-max-width) }` (1760 px, greift erst ab etwa 2030 px Fensterbreite), in der Bibliothek füllt die Seite die Resthöhe (`flex: 1 1 0; min-height: 0`, Raster mit `minmax(var(--code-pane-min-height), 1fr)`), die Liste scrollt für sich (`--library-list-width` 340 px). Hilfe: Erklärung (`.hilfe-text`) und Code (`.hilfe-code`) nebeneinander ab 820 px Breite der Hilfe (Container-Abfrage), sonst untereinander. Auf dem Handy holt ein Tipp auf einen Eintrag die Vorschau ins Bild (`scrollIntoView`).
+    - Gemessen mit `node scripts/bausteine-seite-pruefung.mjs http://localhost:1420 docs/screenshots/etappe-17` (2026-10-28 21:21): 1280 × 800 Vorschau 596 × 612 px, 32 px rechts und 24 px unten frei, nichts scrollt; 1920 × 1080 Vorschau 1236 × 892 px (vorher ≈ 300 × 576 px); Hilfe nebeneinander (367 | 551 px bzw. 623 | 935 px). Tests in `src/App.test.tsx`: „Seite „Bausteine“ breiter (Etappe 17)“ (3 Tests) und „CSS: Seite „Bausteine“ nutzt die Breite …“; die bestehenden Tests „Bereich „Bausteine“ …“ und „Hilfe: alle eingebauten Bausteine …“ laufen unverändert.
+  - [x] Screenshots bei 1280 × 800, 1920 × 1080 und 360 × 740.
+    - `docs/screenshots/etappe-17/`: `pc-bibliothek-hell.png`, `pc-bibliothek-dunkel.png`, `pc-hilfe-hell.png`, `pc-hilfe-dunkel.png`, `breit-bibliothek-hell.png`, `breit-bibliothek-dunkel.png`, `breit-hilfe-hell.png`, `breit-hilfe-dunkel.png`, `handy-bibliothek-hell.png`, `handy-bibliothek-dunkel.png`, `handy-bibliothek-vorschau-hell.png`, `handy-hilfe-hell.png`, `handy-hilfe-dunkel.png`. Ausgabe des Skripts:
+      ```
+      Seite „Bausteine“, Vorschau http://localhost:1420 (Edge):
+      1280 × 800 hell, Bibliothek: Arbeitsbereich 1016 px, Seite 1016 px, Liste 340 px, Vorschau 596 × 612 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\pc-bibliothek-hell.png
+      1280 × 800 hell, Hilfe: Seite 1006 px, Erklärung und Code nebeneinander (367 px | 551 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\pc-hilfe-hell.png
+      1280 × 800 dunkel, Bibliothek: Arbeitsbereich 1016 px, Seite 1016 px, Liste 340 px, Vorschau 596 × 612 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\pc-bibliothek-dunkel.png
+      1280 × 800 dunkel, Hilfe: Seite 1006 px, Erklärung und Code nebeneinander (367 px | 551 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\pc-hilfe-dunkel.png
+      1920 × 1080 hell, Bibliothek: Arbeitsbereich 1656 px, Seite 1656 px, Liste 340 px, Vorschau 1236 × 892 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\breit-bibliothek-hell.png
+      1920 × 1080 hell, Hilfe: Seite 1646 px, Erklärung und Code nebeneinander (623 px | 935 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\breit-hilfe-hell.png
+      1920 × 1080 dunkel, Bibliothek: Arbeitsbereich 1656 px, Seite 1656 px, Liste 340 px, Vorschau 1236 × 892 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\breit-bibliothek-dunkel.png
+      1920 × 1080 dunkel, Hilfe: Seite 1646 px, Erklärung und Code nebeneinander (623 px | 935 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\breit-hilfe-dunkel.png
+      360 × 740 hell, Bibliothek: Arbeitsbereich 360 px, Seite 360 px, Liste 336 px, Vorschau 336 × 426 px, Abstand rechts 12 px, unten -660 px, Arbeitsbereich scrollt: ja, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\handy-bibliothek-hell.png
+        Handy: „Quiz“ angetippt (aktiv: „Quiz“), Vorschau jetzt bei y = 250 bis 676 (im Bild: ja): docs\screenshots\etappe-17\handy-bibliothek-vorschau-hell.png
+      360 × 740 hell, Hilfe: Seite 360 px, Erklärung und Code untereinander (336 px breit), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\handy-hilfe-hell.png
+      360 × 740 dunkel, Bibliothek: Arbeitsbereich 360 px, Seite 360 px, Liste 336 px, Vorschau 336 × 426 px, Abstand rechts 12 px, unten -660 px, Arbeitsbereich scrollt: ja, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\handy-bibliothek-dunkel.png
+      360 × 740 dunkel, Hilfe: Seite 360 px, Erklärung und Code untereinander (336 px breit), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\handy-hilfe-dunkel.png
+      ```
+  - [x] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
+    - APK: `npx tauri android build --debug --apk --target aarch64 --target x86_64` (EXIT=0) → `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk`. Eigener Emulator „Medium_Phone_API_37.0“ (Android 17, 1080 × 2400) als `emulator-5556`, angesprochen mit `ANDROID_SERIAL=emulator-5556` (der zweite laufende Emulator „Kartei_Test“ gehört nicht zu Localist und blieb unberührt). `scripts/android-pruefung.mjs` hat den neuen Schritt 7 „Seite Bausteine“ (Bibliothek, Fingertipp auf einen Eintrag, Wischen in der Vorschau, Reiter „Hilfe“, „Kopieren“).
+    - Gefundener und behobener Fehler: In der Hilfe lag „Kopieren“ (oben rechts im Code-Kasten) auf dem Handy über einzeiligem Code, lange Zeilen scrollten quer. Jetzt brechen die Code-Beispiele um (`white-space: pre-wrap`), und unter 768 px steht „Kopieren“ über dem Code (`src/styles/page.css`). Beide Prüfskripte zählen seitdem „„Kopieren“ über Code-Text“ und „Code-Kästen mit Querscrollen“ (überall 0). APK danach neu gebaut, Lauf wiederholt (Ausgabe unten), Screenshots in `docs/screenshots/etappe-17/android/` (`10-bibliothek.png` bis `13-hilfe-kopiert.png`).
+    - Beobachtet, nicht Teil dieser Etappe: Die Gesten-Leiste von Android liegt unten über der WebView (die WebView reicht bis zum unteren Rand). Das gehört zu `safe-area-inset-bottom` in Etappe 20 (Navigationsleiste).
+    - Ausgabe (2026-10-28 21:41):
+      ```
+      > adb devices
+            List of devices attached
+            emulator-5554	device
+            emulator-5556	device
+      > adb install -r src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+            Performing Streamed Install
+            Success
+      > adb shell dumpsys package de.localist.desktop | grep versionName
+            versionName=2.0.0
+      > adb push C:\Users\emre\AppData\Local\Temp\localist-android-XZYg7z\Localist-Pruefung /sdcard/Documents/Localist-Pruefung
+            C:\Users\emre\AppData\Local\Temp\localist-android-XZYg7z\Localist-Pruefung\: 17 files pushed, 0 skipped. 0.4 MB/s (138463 bytes in 0.376s)
+      > adb shell appops set de.localist.desktop MANAGE_EXTERNAL_STORAGE allow
+
+          …(Schritte 1–6 wie in Etappe 15: HTML-Seite, Notizbuch, Karteikarte, Kartenstapel, Quiz, Code-Ansicht – alle bestanden)…
+      Seite „Bausteine“, Bibliothek: WebView 411 px breit, Liste 387 px, Vorschau 387 × 527 px, quer scrollbar: nein, Elemente über den Rand: 0
+      > adb exec-out screencap -p > docs\screenshots\etappe-17\android\10-bibliothek.png
+      > adb shell input tap 540 1201   (Eintrag „Quiz“ in der Liste)
+      Nach dem Fingertipp: aktiv „Quiz“, Vorschau im Bild bei y = 324 bis 850 von 914 (ganz sichtbar: ja), „Quiz“ steht in der Vorschau bei y = 16
+      > adb exec-out screencap -p > docs\screenshots\etappe-17\android\11-bibliothek-vorschau.png
+      > adb shell input swipe 540 1887 540 1196 400   (in der Vorschau nach oben wischen)
+      Vorschau nach dem Wischen: scrollY 2517 → 2866
+      > adb shell input tap 329 412   (Reiter „Hilfe“)
+      Hilfe: Erklärung und Code untereinander, Code-Kästen über den Rand: 0, „Kopieren“ über Code-Text: 0, Code-Kästen mit Querscrollen: 0, quer scrollbar: nein, Elemente über den Rand: 0
+      > adb exec-out screencap -p > docs\screenshots\etappe-17\android\12-hilfe.png
+      > adb shell input tap 929 1175   („Kopieren“ beim Callout)
+      Nach dem Fingertipp auf „Kopieren“: Knopf zeigt „Kopiert“, keine Fehlermeldung
+      > adb exec-out screencap -p > docs\screenshots\etappe-17\android\13-hilfe-kopiert.png
+      Konsole: keine Fehler.
+      Screenshots in docs/screenshots/etappe-17/android (android).
+      EXIT=0
+      ```
+
+  - **Tab und Shift+Tab im Stand 2.0 (nachgestellt am 2026-10-28)**
+  Mit `scripts/tab-pruefung.mjs` (Edge im Hintergrund, echte Tastatur über das DevTools-Protokoll, 1280 × 800, Testnotiz `Notizen/Tab-Test.md` nur im Arbeitsspeicher der Vorschau). Je Fall erst Tab, dann Shift+Tab; „gespeichert“ zeigt die Zeile in der Datei nach dem automatischen Speichern (führende Leerzeichen als „·“). Ergebnis:
+  - Der Fokus verlässt den Editor in BlockNote 0.56 nie, auch nicht im ersten Block oder ganz links; Cursor und Scrollposition bleiben gleich.
+  - Mit Markierung (Formatierungsleiste offen, auch bei zwei markierten Listenpunkten) passiert bei Tab und Shift+Tab nichts: BlockNote gibt die Taste bei `tabBehavior: "prefer-navigate-ui"` an die Leiste ab, eingerückt wird nicht.
+  - Absatz und Überschrift rücken sichtbar um 24 px ein, gespeichert wird aber ohne Einrückung (nach dem Neuladen weg).
+  - Callout, Toggle und ein Absatz nach einem Toggle rutschen in den vorigen Block: Der Callout landet im Listenpunkt davor, das Toggle im Callout (`> > [!note]-`), der Absatz im Toggle (`> Letzter Absatz`). Das ändert den Inhalt, nicht nur die Einrückung.
+  - Liste, Checkliste, nummerierte Liste und ein Absatz direkt nach einer Liste werden richtig eingerückt gespeichert.
+  - Bewegung (in jedem Bild gemessen): BlockNote animiert das Ein- und Ausrücken mit etwa 196 ms, also über der Grenze von 150 ms. Dabei springt der Block zuerst um 4 px, weil die Animation mit 20 px rechnet, der Einzug aber 24 px beträgt (im Toggle 22 px von 42 px). Callouts springen ganz ohne Übergang.
+  - Code-Editor: Tab/Shift+Tab rücken die ganze Zeile um 2 Leerzeichen ein bzw. aus, auch mitten in der Zeile und über mehrere markierte Zeilen; der Cursor bleibt an derselben Textstelle. Escape und danach Tab verlässt den Editor (Fokus auf dem nächsten Knopf).
+
+  Tab und Shift+Tab, Vorschau http://localhost:1420 (Edge, echte Tastatur, 1280 × 800):
+
+  | Fall | Taste | Einrückung (Tiefe) | Versatz und Bewegung | Fokus danach | Cursor/Markierung | Scroll | gespeichert |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Erster Block (Absatz) | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
+  | Erster Block (Absatz) | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
+  | Absatz | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Absatz | Shift+Tab | 1 → 0 | -24 px, Übergang 197 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Absatz, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Absatz, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Überschrift | Tab | 0 → 1 | 24 px, Übergang 221 ms (4 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `## Überschrift` |
+  | Überschrift | Shift+Tab | 1 → 0 | -24 px, Übergang 195 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `## Überschrift` |
+  | Liste | Tab | 0 → 1 | 24 px, Übergang 195 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··- Punkt B` |
+  | Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 195 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `- Punkt B` |
+  | Liste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` |
+  | Liste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` |
+  | Liste, zwei Punkte markiert | Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
+  | Liste, zwei Punkte markiert | Shift+Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
+  | Absatz direkt nach Liste | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··Absatz nach Liste` |
+  | Absatz direkt nach Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `Absatz nach Liste` |
+  | Checkliste | Tab | 0 → 1 | 24 px, Übergang 194 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
+  | Checkliste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+  | Checkliste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+  | Checkliste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+  | Nummerierte Liste | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `···1. Schritt B` |
+  | Nummerierte Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `2. Schritt B` |
+  | Callout | Tab | 0 → 1 | 24 px, Sprung ohne Übergang | Editor | gleich | gleich | `···> [!info] Callout A` |
+  | Callout | Shift+Tab | 1 → 0 | -24 px, Sprung ohne Übergang | Editor | gleich | gleich | `> [!info] Callout A` |
+  | Toggle | Tab | 0 → 1 | 42 px, Sprung ohne Übergang | Editor | gleich | gleich | `> > [!note]- Toggle A` |
+  | Toggle | Shift+Tab | 1 → 0 | -42 px, Übergang 197 ms (6 Bilder, erst -22 px Sprung) | Editor | gleich | gleich | `> [!note]- Toggle A` |
+  | Absatz nach Toggle | Tab | 0 → 1 | 42 px, Übergang 196 ms (6 Bilder, erst 22 px Sprung) | Editor | gleich | gleich | `> Letzter Absatz` |
+  | Absatz nach Toggle | Shift+Tab | 1 → 0 | -42 px, Übergang 197 ms (6 Bilder, erst -22 px Sprung) | Editor | gleich | gleich | `Letzter Absatz` |
+  | Code-Editor: Cursor mitten in der Zeile | Tab | 0 → 2 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 44 | – | – |
+  | Code-Editor: Cursor mitten in der Zeile | Shift+Tab | 2 → 0 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 43 → „<l-callout typ“ Spalte 41 | – | – |
+  | Code-Editor: Cursor mitten in eingerückter Zeile | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-frage>Welch“ Spalte 23 → „<l-frage>Welch“ Spalte 21 | – | – |
+  | Code-Editor: drei Zeilen markiert (Einzug der ersten) | Tab | 2 → 4 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) → „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) | – | – |
+  | Code-Editor: drei Zeilen markiert, zurück | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) → „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) | – | – |
+  | Code-Editor: Escape, dann Tab | Escape, Tab | 0 → 0 Leerzeichen | – | button „🧱BausteineLink „DNS““ | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 42 | – | – |
+
+  - **Tab und Shift+Tab nach der Umsetzung (gemessen am 2026-10-28 um 21:00)**
+  Gleiches Skript `scripts/tab-pruefung.mjs`, jetzt zusätzlich mit „Speichern und Neuladen“ und `prefers-reduced-motion` (über `Emulation.setEmulatedMedia`; Windows hat auf diesem PC die Animationseffekte aus, siehe „Entscheidungen“). „Schritte“ ist die Bewegung je Bild (Edge im Hintergrund zeichnet etwa 30 Bilder pro Sekunde). Ergebnis:
+  - Absatz, Überschrift, Callout, Toggle, Absatz nach Toggle und der erste Block bleiben stehen (0 px, keine Bewegung), auch mit Markierung. Gespeichert bleibt alles unverändert, kein Block rutscht mehr in einen anderen.
+  - Liste, Checkliste, nummerierte Liste und ein Absatz direkt nach einer Liste rücken ein und aus, jetzt auch mit Markierung bei offener Formatierungsleiste und mit zwei markierten Punkten. Gespeichert eingerückt, nach dem Schließen und erneuten Öffnen der Seite genauso eingerückt.
+  - Übergang: etwa 130 ms in gleichmäßigen Schritten (9·10·4·1 px), ohne Anfangssprung. Einmal (nummerierte Liste, Tab) kamen in 0,5 s nur 4 Bilder: Der Hauptthread war in dem Moment belegt, die Messung per `requestAnimationFrame` sieht dann weniger Zwischenbilder. Bei `prefers-reduced-motion: reduce` springt der Block ohne Übergang.
+  - Fokus immer „Editor“, Cursor und Markierung bleiben an derselben Textstelle, die Seite scrollt nicht. Code-Editor unverändert wie vorher (eine Stufe = 2 Leerzeichen, Escape und danach Tab verlässt den Editor).
+
+  Tab und Shift+Tab, Vorschau http://localhost:1420 (Edge, echte Tastatur, 1280 × 800, prefers-reduced-motion: no-preference außer wo genannt; Windows meldet „Animationseffekte aus“ (reduce)):
+
+  | Fall | Taste | Einrückung (Tiefe) | Versatz und Bewegung | Fokus danach | Cursor/Markierung | Scroll | gespeichert |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Erster Block (Absatz) | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
+  | Erster Block (Absatz) | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
+  | Absatz | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Absatz | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Absatz, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Absatz, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+  | Überschrift | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `## Überschrift` |
+  | Überschrift | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `## Überschrift` |
+  | Liste | Tab | 0 → 1 | 24 px, Übergang 131 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- Punkt B` |
+  | Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 130 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `- Punkt B` |
+  | Liste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 1 | 24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- Punkt B` |
+  | Liste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 1 → 0 | -24 px, Übergang 129 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `- Punkt B` |
+  | Liste, zwei Punkte markiert | Tab (Formatierungsleiste offen) | 0+0 → 1+1 | 24 px, Übergang 129 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `··- Punkt B` `··- Punkt C` |
+  | Liste, zwei Punkte markiert | Shift+Tab (Formatierungsleiste offen) | 1+1 → 0+0 | -24 px, Übergang 132 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
+  | Absatz direkt nach Liste | Tab | 0 → 1 | 24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··Absatz nach Liste` |
+  | Absatz direkt nach Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `Absatz nach Liste` |
+  | Checkliste | Tab | 0 → 1 | 24 px, Übergang 130 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
+  | Checkliste | Shift+Tab | 1 → 0 | -24 px, Übergang 131 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+  | Checkliste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 1 | 24 px, Übergang 132 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
+  | Checkliste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 1 → 0 | -24 px, Übergang 131 ms (3 Bilder, Schritte 9·9·4·1 px) | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+  | Nummerierte Liste | Tab | 0 → 1 | 24 px, Übergang 503 ms (4 Bilder, Schritte 1·11·8·3·1 px) | Editor | gleich | gleich | `···1. Schritt B` |
+  | Nummerierte Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 131 ms (3 Bilder, Schritte 9·10·4·1 px) | Editor | gleich | gleich | `2. Schritt B` |
+  | Callout | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!info] Callout A` |
+  | Callout | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!info] Callout A` |
+  | Toggle | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!note]- Toggle A` |
+  | Toggle | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `> [!note]- Toggle A` |
+  | Absatz nach Toggle | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Letzter Absatz` |
+  | Absatz nach Toggle | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Letzter Absatz` |
+  | Nach Speichern und Neuladen (Seite geschlossen, neu geöffnet) | Tab in „Punkt B“, „Absatz nach Liste“, „Aufgabe B“, „Schritt B“ | 1+1+1+1 → 1+1+1+1 | – | – | – | – | `··- Punkt B` `··Absatz nach Liste` `··- [ ] Aufgabe B` `···1. Schritt B` |
+  | Liste (prefers-reduced-motion: reduce) | Tab | 0 → 1 | 24 px, Sprung ohne Übergang | Editor | gleich | gleich | `··- Punkt B` |
+  | Liste (prefers-reduced-motion: reduce) | Shift+Tab | 1 → 0 | -24 px, Sprung ohne Übergang | Editor | gleich | gleich | `- Punkt B` |
+  | Absatz direkt nach Liste (prefers-reduced-motion: reduce) | Tab | 0 → 1 | 24 px, Sprung ohne Übergang | Editor | gleich | gleich | `··Absatz nach Liste` |
+  | Absatz direkt nach Liste (prefers-reduced-motion: reduce) | Shift+Tab | 1 → 0 | -24 px, Sprung ohne Übergang | Editor | gleich | gleich | `Absatz nach Liste` |
+  | Code-Editor: Cursor mitten in der Zeile | Tab | 0 → 2 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 44 | – | – |
+  | Code-Editor: Cursor mitten in der Zeile | Shift+Tab | 2 → 0 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 43 → „<l-callout typ“ Spalte 41 | – | – |
+  | Code-Editor: Cursor mitten in eingerückter Zeile | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-frage>Welch“ Spalte 23 → „<l-frage>Welch“ Spalte 21 | – | – |
+  | Code-Editor: drei Zeilen markiert (Einzug der ersten) | Tab | 2 → 4 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) → „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) | – | – |
+  | Code-Editor: drei Zeilen markiert, zurück | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) → „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) | – | – |
+  | Code-Editor: Escape, dann Tab | Escape, Tab | 0 → 0 Leerzeichen | – | button „🧱BausteineLink „DNS““ | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 42 | – | – |
 - Etappe 16 – Ordnername „Localist“ (abgeschlossen am 2026-10-28). Nachweise: `git grep -n -i "localprojekt"` geprüft (übrig nur die Übernahme-Kennung, Auftrag/Kriterien und historische Einträge, begründet unter „Entscheidungen“), `ANLEITUNG.md` zeigt auf `C:\Users\emre\Documents\eigen_apps\Localist`, keine absoluten Pfade mit `LocalProjekt` in versionierten Dateien und unter `src-tauri/gen/android/` (außer Build-Ausgaben). Im neuen Ordner: `npm test` 297 von 297 grün, `cargo test` 42 von 42 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXE, MSI, Setup 2.0.0), Android-APK gebaut, `npm run dev` startet. Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) abgehakt.
   - [x] `git grep -n -i "localprojekt"` ist geprüft, die Ausgabe steht im Chat. Jede Stelle, die den Ordner- oder Projektnamen meint, sagt jetzt „Localist“. Übrig sind nur die Übernahme-Kennungen und historische Einträge in `FORTSCHRITT.md`, jeweils begründet.
     - Geändert: `ANLEITUNG.md` Zeile 40 (Pfad zum Projektordner) und Zeile 425 (Beispiel einer doppelten Kopie `Localist/src/App.test.tsx`). Begründung der übrigen Treffer siehe „Entscheidungen“ (2026-10-28).
@@ -290,7 +292,34 @@ Stand: am 2026-10-28 um 20:46 mit dem Stand von Commit `ed13549` (Vite-Server au
     - `npm run tauri build` ohne Fehler: `src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,64 MiB). Sicherheitstest der neuen EXE (`localist.exe --sicherheitstest`, temporärer Vault): „Ergebnis: 21 von 21 Prüfungen bestanden“, Exit-Code 0.
     - Android: `npx tauri android build --debug --apk --target aarch64 --target x86_64` (Exit 0) → `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk` (298.758.674 Bytes). Die neu angelegten Verknüpfungen in `jniLibs/` zeigen auf `…/eigen_apps/Localist/src-tauri/target/…`. In den Build-Ausgaben passt „localprojekt“ nur noch auf die einkompilierte Übernahme-Kennung `de.localprojekt.desktop`, kein Pfad (`grep -a -i -E "eigen_apps.{1,2}LocalProjekt"` über `src-tauri/gen/android`: 0 Dateien).
     - `npm run dev` startet (Vite 8.3.5, `http://localhost:1420/`), die Vorschau öffnet den Beispiel-Vault mit Startseite, „Zuletzt bearbeitet“ und Favoriten.
-    - Korrektur vom 2026-10-28 20:45: Der erste Nachweis dieses Punkts und die Klicklisten liefen versehentlich gegen einen Vite-Server aus dem alten Ordner (siehe „Offene Probleme“). In einer neuen Sitzung im Ordner `Localist` wiederholt: Vorschau „vorschau“ gestartet, Ausgabe `> localist@2.0.0 dev` / `> vite` / `VITE v8.3.5 ready in 324 ms` / `Local: http://localhost:1420/`. Prozess geprüft mit `Get-CimInstance Win32_Process -Filter "Name='node.exe'"`: `CommandLine : "node" "C:\Users\emre\Documents\eigen_apps\Localist\node_modules\.bin\\..\vite\bin\vite.js"` (PID 28940), `Get-NetTCPConnection -LocalPort 1420` → `OwningProcess 28940`. Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) gegen diesen Server bestanden (Ausgaben oben bei den Klicklisten).
+    - Korrektur vom 2026-10-28 20:45: Der erste Nachweis dieses Punkts und die Klicklisten liefen versehentlich gegen einen Vite-Server aus dem alten Ordner (siehe „Offene Probleme“). In einer neuen Sitzung im Ordner `Localist` wiederholt: Vorschau „vorschau“ gestartet, Ausgabe `> localist@2.0.0 dev` / `> vite` / `VITE v8.3.5 ready in 324 ms` / `Local: http://localhost:1420/`. Prozess geprüft mit `Get-CimInstance Win32_Process -Filter "Name='node.exe'"`: `CommandLine : "node" "C:\Users\emre\Documents\eigen_apps\Localist\node_modules\.bin\\..\vite\bin\vite.js"` (PID 28940), `Get-NetTCPConnection -LocalPort 1420` → `OwningProcess 28940`. Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) gegen diesen Server bestanden (Ausgaben hier darunter).
+      - am 2026-10-28 um 20:45 mit dem Stand von Commit `ed13549` (Etappe 16 plus Tab/Shift+Tab aus Etappe 17) in der Browser-Vorschau (Port 1420) durchgeklickt, alle 12 Punkte bestanden. Der Vite-Server lief nachweislich aus dem neuen Ordner (`Get-CimInstance Win32_Process -Filter "Name='node.exe'"` → `"node" "C:\Users\emre\Documents\eigen_apps\Localist\node_modules\.bin\\..\vite\bin\vite.js"`, PID 28940, lauscht auf Port 1420). Das erledigt `scripts/klickliste.mjs` mit echter Tastatur und Maus in Microsoft Edge (Aufruf `node scripts/klickliste.mjs http://localhost:1420 "Etappe 16" 1.0`); nur die Kanban-Karte wird mit Drag-Ereignissen per Skript gezogen. Ausgabe:
+        ```
+        Klickliste „Version 1.0“ (Etappe 16), Vorschau http://localhost:1420:
+        [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 16.“
+        [x] 2. Callout über das „/“-Menü: eingefügt
+        [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 16 [[Formatierung]]“, Klick öffnet „Formatierung“
+        [x] 4. Eigenschaft: `kategorie: Lernen` im Frontmatter
+        [x] 5. Tabelle: Zelle, Sortierung, Filter: priorität: mittel; absteigend: Umzug, Website-Relaunch; Filter status ist Geplant: Umzug
+        [x] 6. Kanban: „Umzug“ nach „Erledigt“ (status: Erledigt)
+        [x] 7. Kalender: Woche „KW 44 · 26.10.–01.11.2026“, Monat, Klick auf einen Tag legt Projekte/Unbenannt.md → fällig: 2026-10-14 an
+        [x] 8. Volltextsuche „Wochenplanung“: Treffer: Ideen (markiert: „Wochenplanung“)
+        [x] 9. Strg+P: „relaunch“ + Enter öffnet „Website-Relaunch“
+        [x] 10. Vorlage „Projekt“: `Unbenannt.md` mit neuer id, Eigenschaften und Inhalt der Vorlage
+        [x] 11. Backlinks unter „Ideen“: Verlinkt von 3🧱BausteineLink „Ideen“🧠DNSLink „Ideen“🚀Website-RelaunchSiehe auch [[Ideen]].
+        [x] 12. Hell/Dunkel bleibt nach dem Neuladen: sofort „dark“, nach dem Neuladen „dark“
+        ```
+      - am 2026-10-28 um 20:46 mit dem Stand von Commit `ed13549` (Vite-Server aus dem neuen Ordner `Localist`, siehe Klickliste 1.0, Port 1420, Aufruf `node scripts/klickliste.mjs http://localhost:1420 "Etappe 16" 2.0`) durchgeklickt, alle 7 Punkte bestanden. Ausgabe:
+        ```
+        Klickliste „Version 2.0“ (Etappe 16), Vorschau http://localhost:1420:
+        [x] 1. HTML-Seite anlegen: Unbenannt.html mit localist-id eb1340fd-699f-4150-9fb8-fe3f364ff30b, <title>Unbenannt</title> und Verweisen auf .localist/bausteine/, geöffnet in „Geteilt“
+        [x] 2. Code bearbeiten: getippt, gespeichert (nur diese Zeile neu, Rest der Datei Zeichen für Zeichen gleich), Vorschau zeigt „Klickliste Version 2.0“
+        [x] 3. Jeder Baustein (Werkzeugleiste, dann „Lesen“): 13 Bausteine eingefügt (13 Markups in der Datei); in „Lesen“: {"callout":"Info","bild":1,"code":null,"stapel":"0 von 2 gewusst","quiz":"Punkte: 0 von 1","diagramm":1,"spalten":"grid"}, Karteikarte per Klick umgedreht
+        [x] 4. Eigener Baustein: .localist/bausteine/eigene/Klickliste-Box.html: "<!-- beschreibung: Aus der Klickliste 2.0 -->\n<l-callout typ=\"info\">Text</l-callout>\n"; in der Werkzeugleiste, Klick fügt ihn ein (1 → 2)
+        [x] 5. Notizbuch: _notizbuch.yaml "titel: Notizen\nseiten:\n  - DNS.html\n  - Formatierung.md\n  - Ideen.md\n", Inhaltsverzeichnis 1DNS, 2Formatierung, 3Ideen, „Weiter“ → Formatierung
+        [x] 6. Umwandeln: Rückfrage „„Ideen“ in eine HTML-Seite umwandeln? Die Notiz kommt in den Papierkorb, Links im Vault werden angepasst.“ mit OK beantwortet; Notizen/Ideen.html angelegt, Ideen.md im Papierkorb, Website-Relaunch verlinkt [[Ideen.html]], Notizbuch-Eintrag Ideen.html
+        [x] 7. Export: C:/Export/DNS.html (128284 Zeichen): CSS und Skript eingebettet, keine Verweise auf .localist/
+        ```
 - Version 2.0 ist abgeschlossen (Etappen 9–15). Seit dem 2026-10-28 läuft Version 2.1 (Etappen 16–20) nach `docs/design/auftrag-version-2.1.md`; die Kriterien stehen auch in `CLAUDE.md`.
 - Etappe 15 – Version 2.0 (abgeschlossen am 2026-10-25). Nachweise: `npm test` 297 von 297 Tests grün (27 Testdateien, neu der Test „Cursor ganz am Anfang, der Inhalt beginnt mit einem Zeilenumbruch (wie meist in <main>)“ in `src/lib/bausteine.test.ts`; geändert der Oberflächen-Test „Werkzeugleiste fügt Karteikarte, Kartenstapel, Quiz und Diagramm nach dem Speicherformat ein“, siehe „Entscheidungen“), `cargo test` 42 von 42 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,64 MiB)). Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) abgehakt (siehe oben).
   - Gebaute `localist.exe` 2.0.0 erneut geprüft: Sicherheitstest „Ergebnis: 21 von 21 Prüfungen bestanden – die Seite hat keinen Zugriff auf App, Dateien außerhalb des Vaults oder Netzwerk.“ (Exit-Code 0). App-Prüfung (`node scripts/app-pruefung.mjs …`, Screenshots in `docs/screenshots/etappe-15/app/`):
