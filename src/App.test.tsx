@@ -1762,3 +1762,68 @@ describe("„Geteilt“: Code links oder rechts, verschiebbare Trennlinie (Etapp
     expect(localStorage.getItem("html-geteilt-anteil")).toBe("0.72");
   });
 });
+
+describe("Seite „Bausteine“ breiter (Etappe 17)", () => {
+  async function openBausteine() {
+    await openVaultFromStart();
+    fireEvent.click(screen.getByRole("button", { name: "Bausteine" }));
+    await screen.findByTitle("Vorschau der Bausteine");
+    return document.querySelector(".bibliothek-seite") as HTMLElement;
+  }
+
+  it("die Seite kennzeichnet Bibliothek und Hilfe (nur die Bibliothek füllt die Fensterhöhe)", async () => {
+    const seite = await openBausteine();
+    expect(seite.classList.contains("is-bibliothek")).toBe(true);
+    fireEvent.click(screen.getByRole("tab", { name: "Hilfe" }));
+    await waitFor(() => expect(seite.classList.contains("is-hilfe")).toBe(true));
+    expect(seite.classList.contains("is-bibliothek")).toBe(false);
+  });
+
+  it("Hilfe: Erklärung und Beispielcode sind zwei Bereiche, die nebeneinander stehen können", async () => {
+    await openBausteine();
+    fireEvent.click(screen.getByRole("tab", { name: "Hilfe" }));
+    const quiz = await screen.findByRole("region", { name: "Quiz" });
+    const [text, code] = [...quiz.children];
+    expect(text.className).toBe("hilfe-text");
+    expect(text.querySelector("h2")?.textContent).toContain("Quiz");
+    expect(text.querySelector("p")?.textContent).toContain("data-richtig");
+    expect(code.className).toBe("hilfe-code");
+    expect(code.querySelector("pre")).toBeTruthy();
+    expect(within(code as HTMLElement).getByRole("button", { name: "Beispielcode „Quiz“ kopieren" })).toBeTruthy();
+  });
+
+  it("Handy: ein Tipp auf einen Eintrag holt die Vorschau ins Bild, auf dem PC nicht", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { value: scroll, configurable: true, writable: true });
+    try {
+      await openBausteine();
+      fireEvent.click(screen.getByRole("button", { name: /^Quiz/ }));
+      expect(scroll).not.toHaveBeenCalled();
+
+      vi.spyOn(window, "matchMedia").mockImplementation((query) => ({ matches: query === "(max-width: 767px)" }) as MediaQueryList);
+      fireEvent.click(screen.getByRole("button", { name: /^Diagramm/ }));
+      expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+      expect(scroll.mock.contexts[0]).toBe(document.querySelector(".bibliothek-vorschau"));
+    } finally {
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+});
+
+describe("CSS: Seite „Bausteine“ nutzt die Breite (jsdom misst kein Layout)", () => {
+  it("volle Breite bis --library-max-width, Bibliothek füllt die Höhe, Hilfe nebeneinander per Container-Abfrage", async () => {
+    const { default: css } = await import("./styles/page.css?raw");
+    /** Inhalt der ersten Regel, die genau mit diesem Selektor am Zeilenanfang beginnt. */
+    const text = css.replace(/\r\n/g, "\n");
+    const regel = (selektor: string) => {
+      const start = text.indexOf(`\n${selektor} {`);
+      return start < 0 ? "" : text.slice(start, text.indexOf("}", start));
+    };
+    expect(regel(".page.bibliothek-seite")).toMatch(/width: 100%;[\s\S]*max-width: var\(--library-max-width\);/);
+    expect(regel(".page.bibliothek-seite.is-bibliothek")).toMatch(/flex: 1 1 0;[\s\S]*min-height: 0;/);
+    expect(regel(".bibliothek")).toContain("grid-template-columns: minmax(0, var(--library-list-width)) minmax(0, 1fr);");
+    expect(regel(".bibliothek-vorschau")).not.toContain("--code-pane-height");
+    expect(regel(".hilfe")).toContain("container-type: inline-size;");
+    expect(text).toMatch(/@container \(min-width: 820px\) \{\s*\.hilfe-eintrag \{\s*display: grid;/);
+  });
+});

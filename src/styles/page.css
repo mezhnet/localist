@@ -877,15 +877,34 @@
   letter-spacing: var(--letter-spacing-tight);
 }
 
+/* Die Seite nutzt die ganze Breite des Arbeitsbereichs (bis --library-max-width). In der Bibliothek füllt sie
+   außerdem die Fensterhöhe: Die Liste scrollt für sich, die Vorschau nimmt den Rest. Reicht die Höhe nicht für
+   --code-pane-min-height, scrollt der Arbeitsbereich, statt etwas abzuschneiden. */
+.page.bibliothek-seite {
+  width: 100%;
+  max-width: var(--library-max-width);
+}
+
+.page.bibliothek-seite.is-bibliothek {
+  flex: 1 1 0;
+  /* Ohne min-height: 0 wüchse die Seite auf die volle Höhe der Liste. */
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(var(--code-pane-min-height), 1fr);
+  padding-bottom: var(--space-6);
+}
+
 .bibliothek {
   display: grid;
-  grid-template-columns: minmax(0, var(--popover-width)) minmax(0, 1fr);
+  grid-template-columns: minmax(0, var(--library-list-width)) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
   gap: var(--space-4);
   margin-top: var(--space-4);
 }
 
 .bibliothek-liste {
-  max-height: var(--code-pane-height);
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -970,8 +989,7 @@
 }
 
 .bibliothek-vorschau {
-  height: var(--code-pane-height);
-  min-height: var(--code-pane-min-height);
+  min-height: 0;
   overflow: hidden;
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -982,13 +1000,25 @@
   padding: 0;
 }
 
+/* Hilfe: Erklärung und Beispielcode nebeneinander, wenn die Fläche breit genug ist (Container-Abfrage, wirkt
+   also auch, wenn sich die Breite des Arbeitsbereichs ändert), sonst untereinander. */
 .hilfe {
-  max-width: var(--content-width);
   margin-top: var(--space-4);
+  container-type: inline-size;
 }
 
 .hilfe-einleitung {
+  max-width: var(--content-width);
   color: var(--color-text-muted);
+}
+
+@container (min-width: 820px) {
+  .hilfe-eintrag {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--space-6);
+    align-items: start;
+  }
 }
 
 .hilfe-eintrag {
@@ -1037,16 +1067,25 @@
 }
 
 @media (max-width: 767px) {
+  .page.bibliothek-seite.is-bibliothek {
+    display: block;
+    flex: none;
+    padding-bottom: var(--space-16);
+  }
+
   .bibliothek {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
   }
 
   .bibliothek-liste {
-    max-height: none;
+    overflow-y: visible;
   }
 
   .bibliothek-vorschau {
     height: calc(var(--code-pane-height) * 0.8);
+    min-height: var(--code-pane-min-height);
+    scroll-margin-top: var(--space-4);
   }
 }
 

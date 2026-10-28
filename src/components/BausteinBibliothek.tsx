@@ -23,6 +23,9 @@ interface Props {
 
 type Bereich = "bibliothek" | "hilfe";
 
+/** Ab hier stehen Liste und Vorschau untereinander (wie die Media-Query in page.css). */
+const SCHMAL = "(max-width: 767px)";
+
 /** Kopiert Text in die Zwischenablage (mit Ausweichweg für ältere Umgebungen). */
 async function kopieren(text: string): Promise<void> {
   try {
@@ -61,10 +64,12 @@ function Hilfe({ onError }: { onError: (message: string) => void }) {
         const Symbol = BAUSTEIN_SYMBOLE[info.art];
         return (
           <section key={info.art} className="hilfe-eintrag" aria-labelledby={`hilfe-${info.art}`}>
-            <h2 id={`hilfe-${info.art}`}>
-              <Symbol aria-hidden="true" /> {info.name}
-            </h2>
-            <p>{info.hilfe}</p>
+            <div className="hilfe-text">
+              <h2 id={`hilfe-${info.art}`}>
+                <Symbol aria-hidden="true" /> {info.name}
+              </h2>
+              <p>{info.hilfe}</p>
+            </div>
             <div className="hilfe-code">
               <pre>
                 <code>{info.beispiel.join("\n")}</code>
@@ -87,6 +92,7 @@ export function BausteinBibliothek({ eigene, onEigeneChanged, onError }: Props) 
   /** Neu laden, wenn sich die eigenen Bausteine geändert haben. */
   const [version, setVersion] = useState(1);
   const frame = useRef<HTMLIFrameElement>(null);
+  const vorschau = useRef<HTMLDivElement>(null);
   const { resolved } = useTheme();
   const resolvedRef = useRef(resolved);
   resolvedRef.current = resolved;
@@ -119,6 +125,11 @@ export function BausteinBibliothek({ eigene, onEigeneChanged, onError }: Props) 
   const zeigen = (id: string) => {
     setAuswahl(id);
     frame.current?.contentWindow?.postMessage(ankerMessage(id), "*");
+    // Auf dem Handy steht die Vorschau unter der Liste: ins Bild holen, sonst sieht man den Baustein nicht.
+    if (window.matchMedia?.(SCHMAL).matches) {
+      const ruhig = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      vorschau.current?.scrollIntoView?.({ block: "start", behavior: ruhig ? "auto" : "smooth" });
+    }
   };
 
   const loeschen = async (baustein: EigenerBaustein) => {
@@ -132,7 +143,7 @@ export function BausteinBibliothek({ eigene, onEigeneChanged, onError }: Props) 
   };
 
   return (
-    <div className="page is-wide bibliothek-seite">
+    <div className={cx("page is-wide bibliothek-seite", `is-${bereich}`)}>
       <h1 className="bibliothek-titel">Bausteine</h1>
       <TabList label="Bereich">
         <Tab selected={bereich === "bibliothek"} onClick={() => setBereich("bibliothek")}>
@@ -197,7 +208,7 @@ export function BausteinBibliothek({ eigene, onEigeneChanged, onError }: Props) 
               </ul>
             )}
           </nav>
-          <div className="bibliothek-vorschau">
+          <div ref={vorschau} className="bibliothek-vorschau">
             <iframe ref={frame} className="html-frame" title="Vorschau der Bausteine" sandbox="allow-scripts" referrerPolicy="no-referrer" src={pageUrl(BIBLIOTHEK_PFAD, version)} />
           </div>
         </div>

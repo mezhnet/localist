@@ -168,6 +168,9 @@
   --split-divider-width: var(--space-4);
   --split-divider-line: var(--border-width-accent);
   --split-divider-grip-height: var(--space-8);
+  /* Seite „Bausteine“: Breite der Liste und Höchstbreite (greift erst bei sehr breiten Fenstern) */
+  --library-list-width: 340px;
+  --library-max-width: 1760px;
 
   /* Radien */
   --radius-xs: 3px;

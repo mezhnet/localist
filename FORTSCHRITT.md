@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 17 – Bedienung verbessern (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
-- Zuletzt aktualisiert: 2026-10-28 21:16
-- Nächster Schritt: „Tab und Shift+Tab“ und „Geteilt“ sind erledigt, „Im Explorer öffnen“ bis auf die Prüfung in der gebauten `localist.exe` (Kriterien 1 und 4, `scripts/app-pruefung.mjs` mit `scripts/explorer-pruefen.ps1`). Weiter mit „Seite Bausteine breiter“ (Screenshots 1280 × 800, 1920 × 1080, 360 × 740, Android im Emulator), danach einmal `npm run tauri build` und die App-Prüfung.
+- Zuletzt aktualisiert: 2026-10-28 21:22
+- Nächster Schritt: Offen sind nur noch Prüfungen mit gebauten Programmen: `npm run tauri build`, dann `node scripts/app-pruefung.mjs <localist.exe> <Vault-Kopie> docs/screenshots/etappe-17/app` („Im Explorer öffnen“, Kriterien 1 und 4) und die Android-APK im Emulator (Seite „Bausteine“, `scripts/android-pruefung.mjs`). Danach Arbeitsregel 6, Klicklisten 1.0 und 2.0, Abschluss-Commit.
 
 ## Fertig-Kriterien der aktuellen Etappe
 **Tab und Shift+Tab**
@@ -50,8 +50,27 @@
 - [x] Tests für Einstellung, Begrenzung und Speicherung des Verhältnisses und die Tastatur, dazu ein Prüfskript mit echter Maus wie `scripts/vorschau-scroll-pruefung.mjs`.
   - `src/lib/html-editor.test.ts`, Abschnitt „„Geteilt“: Seite des Code-Editors und Trennlinie (Etappe 17)“: 6 Tests (Code-Seite gemerkt und ohne Speicher, Verhältnis gemerkt und kaputte Werte, Begrenzung auf 280 px, Zeigerposition, Tastatur). `src/App.test.tsx`, Abschnitt „„Geteilt“: Code links oder rechts, verschiebbare Trennlinie (Etappe 17)“: „Einstellung „Code-Editor rechts“ wirkt sofort, lädt die Vorschau nicht neu und wird gemerkt“, „„Seiten tauschen“ gibt es nur in „Geteilt“ …“, „Trennlinie mit der Tastatur …“, „Trennlinie ziehen: Pointer Capture, iframes ohne Mausereignisse, Begrenzung, kein Neuladen der Vorschau“. Prüfskript mit echter Maus, Finger und Tastatur: `scripts/trennlinie-pruefung.mjs`.
 **Seite „Bausteine“ breiter**
-- [ ] Auf dem PC nutzt die Seite „Bausteine“ (Bibliothek und Hilfe) die verfügbare Breite: Liste links, die Vorschau füllt den Rest und die Fensterhöhe. Eine Höchstbreite greift erst bei sehr breiten Fenstern. Die Hilfe stellt Erklärung und Beispielcode nebeneinander, wenn Platz ist.
-- [ ] Screenshots bei 1280 × 800, 1920 × 1080 und 360 × 740.
+- [x] Auf dem PC nutzt die Seite „Bausteine“ (Bibliothek und Hilfe) die verfügbare Breite: Liste links, die Vorschau füllt den Rest und die Fensterhöhe. Eine Höchstbreite greift erst bei sehr breiten Fenstern. Die Hilfe stellt Erklärung und Beispielcode nebeneinander, wenn Platz ist.
+  - Ursache der schmalen Seite: `.page` mit `margin: 0 auto` in der Flex-Spalte `.main` schrumpfte auf ihren Inhalt (≈ 660 px). Jetzt `.page.bibliothek-seite { width: 100%; max-width: var(--library-max-width) }` (1760 px, greift erst ab etwa 2030 px Fensterbreite), in der Bibliothek füllt die Seite die Resthöhe (`flex: 1 1 0; min-height: 0`, Raster mit `minmax(var(--code-pane-min-height), 1fr)`), die Liste scrollt für sich (`--library-list-width` 340 px). Hilfe: Erklärung (`.hilfe-text`) und Code (`.hilfe-code`) nebeneinander ab 820 px Breite der Hilfe (Container-Abfrage), sonst untereinander. Auf dem Handy holt ein Tipp auf einen Eintrag die Vorschau ins Bild (`scrollIntoView`).
+  - Gemessen mit `node scripts/bausteine-seite-pruefung.mjs http://localhost:1420 docs/screenshots/etappe-17` (2026-10-28 21:21): 1280 × 800 Vorschau 596 × 612 px, 32 px rechts und 24 px unten frei, nichts scrollt; 1920 × 1080 Vorschau 1236 × 892 px (vorher ≈ 300 × 576 px); Hilfe nebeneinander (367 | 551 px bzw. 623 | 935 px). Tests in `src/App.test.tsx`: „Seite „Bausteine“ breiter (Etappe 17)“ (3 Tests) und „CSS: Seite „Bausteine“ nutzt die Breite …“; die bestehenden Tests „Bereich „Bausteine“ …“ und „Hilfe: alle eingebauten Bausteine …“ laufen unverändert.
+- [x] Screenshots bei 1280 × 800, 1920 × 1080 und 360 × 740.
+  - `docs/screenshots/etappe-17/`: `pc-bibliothek-hell.png`, `pc-bibliothek-dunkel.png`, `pc-hilfe-hell.png`, `pc-hilfe-dunkel.png`, `breit-bibliothek-hell.png`, `breit-bibliothek-dunkel.png`, `breit-hilfe-hell.png`, `breit-hilfe-dunkel.png`, `handy-bibliothek-hell.png`, `handy-bibliothek-dunkel.png`, `handy-bibliothek-vorschau-hell.png`, `handy-hilfe-hell.png`, `handy-hilfe-dunkel.png`. Ausgabe des Skripts:
+    ```
+    Seite „Bausteine“, Vorschau http://localhost:1420 (Edge):
+    1280 × 800 hell, Bibliothek: Arbeitsbereich 1016 px, Seite 1016 px, Liste 340 px, Vorschau 596 × 612 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\pc-bibliothek-hell.png
+    1280 × 800 hell, Hilfe: Seite 1006 px, Erklärung und Code nebeneinander (367 px | 551 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\pc-hilfe-hell.png
+    1280 × 800 dunkel, Bibliothek: Arbeitsbereich 1016 px, Seite 1016 px, Liste 340 px, Vorschau 596 × 612 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\pc-bibliothek-dunkel.png
+    1280 × 800 dunkel, Hilfe: Seite 1006 px, Erklärung und Code nebeneinander (367 px | 551 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\pc-hilfe-dunkel.png
+    1920 × 1080 hell, Bibliothek: Arbeitsbereich 1656 px, Seite 1656 px, Liste 340 px, Vorschau 1236 × 892 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\breit-bibliothek-hell.png
+    1920 × 1080 hell, Hilfe: Seite 1646 px, Erklärung und Code nebeneinander (623 px | 935 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\breit-hilfe-hell.png
+    1920 × 1080 dunkel, Bibliothek: Arbeitsbereich 1656 px, Seite 1656 px, Liste 340 px, Vorschau 1236 × 892 px, Abstand rechts 32 px, unten 24 px, Arbeitsbereich scrollt: nein, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\breit-bibliothek-dunkel.png
+    1920 × 1080 dunkel, Hilfe: Seite 1646 px, Erklärung und Code nebeneinander (623 px | 935 px), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\breit-hilfe-dunkel.png
+    360 × 740 hell, Bibliothek: Arbeitsbereich 360 px, Seite 360 px, Liste 336 px, Vorschau 336 × 426 px, Abstand rechts 12 px, unten -660 px, Arbeitsbereich scrollt: ja, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\handy-bibliothek-hell.png
+      Handy: „Quiz“ angetippt (aktiv: „Quiz“), Vorschau jetzt bei y = 250 bis 676 (im Bild: ja): docs\screenshots\etappe-17\handy-bibliothek-vorschau-hell.png
+    360 × 740 hell, Hilfe: Seite 360 px, Erklärung und Code untereinander (336 px breit), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\handy-hilfe-hell.png
+    360 × 740 dunkel, Bibliothek: Arbeitsbereich 360 px, Seite 360 px, Liste 336 px, Vorschau 336 × 426 px, Abstand rechts 12 px, unten -660 px, Arbeitsbereich scrollt: ja, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\handy-bibliothek-dunkel.png
+    360 × 740 dunkel, Hilfe: Seite 360 px, Erklärung und Code untereinander (336 px breit), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\handy-hilfe-dunkel.png
+    ```
 - [ ] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
 
 ### Tab und Shift+Tab im Stand 2.0 (nachgestellt am 2026-10-28)

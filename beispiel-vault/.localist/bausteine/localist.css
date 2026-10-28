@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+769171c0 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+235fbe1a – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus der Schrift Inter, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -278,6 +278,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --split-divider-width: var(--space-4);
   --split-divider-line: var(--border-width-accent);
   --split-divider-grip-height: var(--space-8);
+  /* Seite „Bausteine“: Breite der Liste und Höchstbreite (greift erst bei sehr breiten Fenstern) */
+  --library-list-width: 340px;
+  --library-max-width: 1760px;
 
   /* Radien */
   --radius-xs: 3px;
