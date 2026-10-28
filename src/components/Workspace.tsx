@@ -51,7 +51,7 @@ import { BausteinBibliothek } from "./BausteinBibliothek";
 import { HtmlPageView } from "./HtmlPageView";
 import { NotizbuchView } from "./NotizbuchView";
 import { PageView } from "./PageView";
-import { Fensterleiste } from "./Fenster";
+import { Fensterleiste, hatFensterrahmen } from "./Fenster";
 import { Sidebar, type CreateKind } from "./Sidebar";
 import { Button, cx, IconButton } from "./ui";
 
@@ -676,7 +676,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
 
   return (
-    <div className="workspace">
+    <div className={cx("workspace", hatFensterrahmen(platform) && "hat-fensterleiste")}>
       {menuOpen && <div className="drawer-backdrop" aria-hidden="true" onClick={() => setMenuOpen(false)} />}
       <div className={cx("sidebar-shell", menuOpen && "open")}>
         <Sidebar

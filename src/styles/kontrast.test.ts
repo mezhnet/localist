@@ -91,6 +91,8 @@ const PAARE: [string, string[], number][] = [
   ["--color-text-faint", ["--color-window", "--color-bg", "--color-bg-subtle"], 3],
   ["--color-accent-text", ["--color-accent-callout", "--color-accent-chip"], 3],
   ["--color-code-gutter", ["--color-bg-subtle"], 3],
+  // Fensterrahmen (Etappe 18): Symbol auf dem roten Schließen-Knopf
+  ["--color-window-close-text", ["--color-window-close"], 4.5],
 ];
 
 describe("Kontraste (WCAG AA) in allen Modi und Akzentfarben", () => {

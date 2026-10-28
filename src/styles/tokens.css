@@ -26,6 +26,8 @@
   /* Linien und Zustände */
   --color-border: #ebebe9;
   --color-border-strong: #d9d9d6;
+  /* Feine Linie um die Inhaltsfläche und den aktiven Eintrag der Seitenleiste (gemessen in der Vorlage) */
+  --color-frame-line: #e3e3e1;
   --color-hover: rgba(19, 19, 17, 0.045);
   --color-active: rgba(19, 19, 17, 0.075);
   /* Fensterrahmen: Schließen-Knopf beim Überfahren (wie Windows) */
@@ -168,6 +170,9 @@
   --size-window-button-width: 40px;
   --size-window-button-height: 30px;
   --window-icon-stroke: 1.5;
+  /* Inhaltsfläche: schmaler Rand ringsum zum Fensterhintergrund, großer Radius */
+  --window-gap: 6px;
+  --radius-content: var(--radius-xl);
   --sidebar-width: 264px;
   --sidebar-drawer-width: 300px;
   --tree-indent: 14px;
@@ -297,6 +302,7 @@
 
   --color-border: #2a2a28;
   --color-border-strong: #3a3a37;
+  --color-frame-line: #2e2e2c;
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-active: rgba(255, 255, 255, 0.085);
   --color-window-close: #c42b1c;
@@ -413,6 +419,7 @@
 
   --color-border: #1b1b1b;
   --color-border-strong: #2e2e2e;
+  --color-frame-line: #242424;
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-active: rgba(255, 255, 255, 0.085);
   --color-window-close: #c42b1c;
@@ -530,6 +537,7 @@
 
     --color-border: #2a2a28;
     --color-border-strong: #3a3a37;
+    --color-frame-line: #2e2e2c;
     --color-hover: rgba(255, 255, 255, 0.05);
     --color-active: rgba(255, 255, 255, 0.085);
     --color-window-close: #c42b1c;

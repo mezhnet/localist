@@ -10,7 +10,8 @@
     "seitenleiste inhalt";
   height: 100vh;
   overflow: hidden;
-  background: var(--color-bg);
+  /* Seitenleiste und obere Leiste liegen auf dem Fensterhintergrund, der Inhalt ist eine abgesetzte Fläche. */
+  background: var(--color-window);
 }
 
 .sidebar-shell {
@@ -100,8 +101,7 @@
   flex-direction: column;
   gap: var(--space-1);
   overflow-y: auto;
-  background: var(--color-bg-subtle);
-  border-right: var(--border-width) solid var(--color-border);
+  background: var(--color-window);
   user-select: none;
 }
 
@@ -382,7 +382,7 @@ button.tree-toggle:hover {
   gap: var(--space-1);
   padding: var(--space-2);
   padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
-  background: var(--color-bg-subtle);
+  background: var(--color-window);
 }
 
 .sidebar-footer-zeile {
@@ -445,6 +445,21 @@ button.tree-toggle:hover {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  background: var(--color-bg);
+}
+
+/* PC: Der Inhalt ist eine abgesetzte Fläche mit großem Radius und feiner Linie, ringsum ein schmaler Rand
+   (zur Seitenleiste hin genügt deren Innenabstand). Ohne Fensterleiste (Tablet) gibt es auch oben einen Rand. */
+@media (min-width: 769px) {
+  .main {
+    margin: 0 var(--window-gap) var(--window-gap) 0;
+    border: var(--border-width) solid var(--color-frame-line);
+    border-radius: var(--radius-content);
+  }
+
+  .workspace:not(.hat-fensterleiste) .main {
+    margin-top: var(--window-gap);
+  }
 }
 
 .topbar {

@@ -1956,3 +1956,29 @@ describe("Fensterrahmen ohne Windows-Titelleiste (Etappe 18)", () => {
     ]);
   });
 });
+
+describe("CSS: Inhalt als abgesetzte Fläche (Etappe 18, jsdom misst kein Layout)", () => {
+  it("Fensterhintergrund für Seitenleiste und Leiste, Inhalt mit Radius, feiner Linie und schmalem Rand ringsum", async () => {
+    const { default: css } = await import("./styles/layout.css?raw");
+    const { default: tokens } = await import("./styles/tokens.css?raw");
+    const text = css.replace(/\r\n/g, "\n");
+    /** Inhalt der ersten Regel mit genau diesem Selektor (am Zeilenanfang, auch eingerückt in @media). */
+    const regel = (selektor: string, ab = 0) => {
+      const start = text.slice(ab).search(new RegExp(`\\n\\s*${selektor.replace(/[.()[\]]/g, "\\$&")} \\{`));
+      return start < 0 ? "" : text.slice(ab + start, text.indexOf("}", ab + start));
+    };
+    expect(regel(".workspace")).toContain("background: var(--color-window);");
+    expect(regel(".sidebar")).toContain("background: var(--color-window);");
+    expect(regel(".sidebar")).not.toContain("border-right");
+    expect(regel(".main")).toContain("background: var(--color-bg);");
+    const pc = text.indexOf("@media (min-width: 769px)");
+    expect(pc).toBeGreaterThan(0);
+    const karte = regel(".main", pc);
+    expect(karte).toContain("margin: 0 var(--window-gap) var(--window-gap) 0;");
+    expect(karte).toContain("border: var(--border-width) solid var(--color-frame-line);");
+    expect(karte).toContain("border-radius: var(--radius-content);");
+    expect(regel(".workspace:not(.hat-fensterleiste) .main", pc)).toContain("margin-top: var(--window-gap);");
+    expect(tokens).toMatch(/--window-gap: 6px;/);
+    expect(tokens).toMatch(/--radius-content: var\(--radius-xl\);/);
+  });
+});

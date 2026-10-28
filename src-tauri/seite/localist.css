@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+50013cff – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+a56d1601 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -241,8 +241,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* Linien und Zustände */
   --color-border: #ebebe9;
   --color-border-strong: #d9d9d6;
+  /* Feine Linie um die Inhaltsfläche und den aktiven Eintrag der Seitenleiste (gemessen in der Vorlage) */
+  --color-frame-line: #e3e3e1;
   --color-hover: rgba(19, 19, 17, 0.045);
   --color-active: rgba(19, 19, 17, 0.075);
+  /* Fensterrahmen: Schließen-Knopf beim Überfahren (wie Windows) */
+  --color-window-close: #c42b1c;
+  --color-window-close-text: #ffffff;
 
   /* Akzentfarbe (die einzige kräftige Farbe der Oberfläche; Standard Orange, siehe data-accent unten):
      Füllung, Text in Akzentfarbe, getönte Flächen für Auswahl, Chips und Callouts */
@@ -375,6 +380,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* Block-Editor: Einzug verschachtelter Blöcke, Führungslinie mittig unter dem Listenzeichen darüber */
   --editor-indent: var(--space-6);
   --editor-guide-offset: calc(var(--editor-indent) * -0.5);
+  /* Fenster (PC): obere Leiste auf dem Fensterhintergrund und Fensterknöpfe oben rechts */
+  --size-titlebar: 38px;
+  --size-window-button-width: 40px;
+  --size-window-button-height: 30px;
+  --window-icon-stroke: 1.5;
+  /* Inhaltsfläche: schmaler Rand ringsum zum Fensterhintergrund, großer Radius */
+  --window-gap: 6px;
+  --radius-content: var(--radius-xl);
   --sidebar-width: 264px;
   --sidebar-drawer-width: 300px;
   --tree-indent: 14px;
@@ -504,8 +517,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
   --color-border: #2a2a28;
   --color-border-strong: #3a3a37;
+  --color-frame-line: #2e2e2c;
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-active: rgba(255, 255, 255, 0.085);
+  --color-window-close: #c42b1c;
+  --color-window-close-text: #ffffff;
 
   --color-accent: #c2410c;
   --color-accent-hover: #ab390b;
@@ -618,8 +634,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
   --color-border: #1b1b1b;
   --color-border-strong: #2e2e2e;
+  --color-frame-line: #242424;
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-active: rgba(255, 255, 255, 0.085);
+  --color-window-close: #c42b1c;
+  --color-window-close-text: #ffffff;
 
   --color-accent: #c2410c;
   --color-accent-hover: #ab390b;
@@ -733,8 +752,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
     --color-border: #2a2a28;
     --color-border-strong: #3a3a37;
+    --color-frame-line: #2e2e2c;
     --color-hover: rgba(255, 255, 255, 0.05);
     --color-active: rgba(255, 255, 255, 0.085);
+    --color-window-close: #c42b1c;
+    --color-window-close-text: #ffffff;
 
     --color-accent: #c2410c;
     --color-accent-hover: #ab390b;
