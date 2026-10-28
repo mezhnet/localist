@@ -3,7 +3,7 @@
 ## Aktueller Stand
 - Etappe: 18 – Neues Design, Teil 1: Grundlagen, Fenster und Seitenleiste (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
 - Zuletzt aktualisiert: 2026-10-28 23:10
-- Nächster Schritt: Etappe 18, Kriterien 1–9 sind erledigt und committet. Weiter mit Kriterium 10 (Screenshots), danach Arbeitsregel 6 und 7 und Abschluss. Hinweise für die Umsetzung: (a) Tokens gibt es schon: `--color-window` (Fenster, Seitenleiste, Rand), `--color-bg` (Inhaltsfläche), `--color-menu-selected`, `--color-surface-selected` (aktiver Eintrag im Hellen weiß); die Seitenleiste nutzt heute noch `--color-bg-subtle`. (b) `scripts/etappe18-screenshots.mjs` existiert und setzt schon die App-Speicher-Schlüssel `seitenleiste-seite` (links/rechts) und `seitenleiste-eingeklappt` (true/false) – diese Namen bitte verwenden; es erzeugt alle Screenshots von Kriterium 10. (c) Für Kriterium 5 sind voraussichtlich `core:window:allow-minimize`, `allow-toggle-maximize`, `allow-start-dragging`, `allow-is-maximized` (und vorhanden `allow-destroy`, `allow-show`) nötig; Ziehen über `data-tauri-drag-region`; prüfen in der gebauten EXE (Fenstergröße/Position per PowerShell `GetWindowRect`, Doppelklick, Rand ziehen, Win+Pfeiltasten). (d) Tests und Klickliste erwarten: Knopf „Einstellungen“ mit genau diesem Namen (Versionsnummer außerhalb des Knopfs), Gruppe „Darstellung“ nur einmal (im Einstellungsdialog; die Seitenleiste nutzt die Gruppe „Modus“), Ordnerbaum `[role="tree"]` mit `.tree-row` und `title`-Attributen, Knopf „Neu“ (Test-Helfer `createNew`) – „Neue Seite“ öffnet das bisherige „Neu“-Menü, also Namen und Rollen der Tests beachten oder Selektoren begründet anpassen. (e) Vite liefert nach Änderungen an `tokens.css` manchmal eine alte Fassung aus: dann `touch src/styles/tokens.css src/styles/index.css`. (f) Ein fremder Android-Emulator „Kartei_Test“ kann laufen – nicht anfassen.
+- Nächster Schritt: Etappe 18, alle 10 Kriterien sind erledigt und committet. Jetzt Arbeitsregel 6 (`npm test`, `cargo test`, `npx tsc --noEmit`, `npm run tauri build`, Fensterprüfung und App-Prüfung der EXE) und 7 (Klicklisten 1.0 und 2.0), dann Abschluss-Commit und Etappe 19. Hinweise für die Umsetzung: (a) Tokens gibt es schon: `--color-window` (Fenster, Seitenleiste, Rand), `--color-bg` (Inhaltsfläche), `--color-menu-selected`, `--color-surface-selected` (aktiver Eintrag im Hellen weiß); die Seitenleiste nutzt heute noch `--color-bg-subtle`. (b) `scripts/etappe18-screenshots.mjs` existiert und setzt schon die App-Speicher-Schlüssel `seitenleiste-seite` (links/rechts) und `seitenleiste-eingeklappt` (true/false) – diese Namen bitte verwenden; es erzeugt alle Screenshots von Kriterium 10. (c) Für Kriterium 5 sind voraussichtlich `core:window:allow-minimize`, `allow-toggle-maximize`, `allow-start-dragging`, `allow-is-maximized` (und vorhanden `allow-destroy`, `allow-show`) nötig; Ziehen über `data-tauri-drag-region`; prüfen in der gebauten EXE (Fenstergröße/Position per PowerShell `GetWindowRect`, Doppelklick, Rand ziehen, Win+Pfeiltasten). (d) Tests und Klickliste erwarten: Knopf „Einstellungen“ mit genau diesem Namen (Versionsnummer außerhalb des Knopfs), Gruppe „Darstellung“ nur einmal (im Einstellungsdialog; die Seitenleiste nutzt die Gruppe „Modus“), Ordnerbaum `[role="tree"]` mit `.tree-row` und `title`-Attributen, Knopf „Neu“ (Test-Helfer `createNew`) – „Neue Seite“ öffnet das bisherige „Neu“-Menü, also Namen und Rollen der Tests beachten oder Selektoren begründet anpassen. (e) Vite liefert nach Änderungen an `tokens.css` manchmal eine alte Fassung aus: dann `touch src/styles/tokens.css src/styles/index.css`. (f) Ein fremder Android-Emulator „Kartei_Test“ kann laufen – nicht anfassen.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] `tokens.css` nach der Vorlage, mit allen Farben für Hell, Dunkel und Schwarz und den vier Akzentfarben (je mit abgeleiteten Tönen für Flächen, Chips, Callouts und Text auf Akzent). Text und Bedienelemente erreichen in allen Kombinationen mindestens WCAG AA; ein Test rechnet die Kontraste nach. Der Farbtest aus Etappe 9 bleibt grün.
@@ -82,7 +82,27 @@
     Nach dem Neuladen: eingeklappt ja, Seitenleiste 0 px, Seite rechts ja
     ```
     „fertig nach“ ist das erste Bild mit der Endbreite; Edge ohne Fenster zeichnet nur etwa alle 31 ms, das erste Bild kommt etwa 60 ms nach dem Klick. Der Übergang selbst dauert 180 ms.
-- [ ] Screenshots in Hell, Dunkel und Schwarz (Seitenleiste links, rechts und eingeklappt; Einstellungen → Darstellung) in `docs/screenshots/etappe-18/`.
+- [x] Screenshots in Hell, Dunkel und Schwarz (Seitenleiste links, rechts und eingeklappt; Einstellungen → Darstellung) in `docs/screenshots/etappe-18/`.
+  - Erzeugt am 2026-10-28 um 23:12 mit `node scripts/etappe18-screenshots.mjs http://localhost:1420 docs/screenshots/etappe-18` (Edge, 1280 × 800, Notiz „Ideen“; Handy 360 × 740 wie Android ohne Fensterleiste). Ausgabe:
+    ```
+    Screenshots Etappe 18, Vorschau http://localhost:1420:
+    hell, Seitenleiste links: docs\screenshots\etappe-18\hell-seitenleiste-links.png
+    hell, Seitenleiste rechts: docs\screenshots\etappe-18\hell-seitenleiste-rechts.png
+    hell, Seitenleiste eingeklappt: docs\screenshots\etappe-18\hell-seitenleiste-eingeklappt.png
+    hell, Einstellungen → Darstellung: docs\screenshots\etappe-18\hell-einstellungen-darstellung.png
+    hell, Handy 360 × 740: docs\screenshots\etappe-18\hell-handy.png
+    dunkel, Seitenleiste links: docs\screenshots\etappe-18\dunkel-seitenleiste-links.png
+    dunkel, Seitenleiste rechts: docs\screenshots\etappe-18\dunkel-seitenleiste-rechts.png
+    dunkel, Seitenleiste eingeklappt: docs\screenshots\etappe-18\dunkel-seitenleiste-eingeklappt.png
+    dunkel, Einstellungen → Darstellung: docs\screenshots\etappe-18\dunkel-einstellungen-darstellung.png
+    dunkel, Handy 360 × 740: docs\screenshots\etappe-18\dunkel-handy.png
+    schwarz, Seitenleiste links: docs\screenshots\etappe-18\schwarz-seitenleiste-links.png
+    schwarz, Seitenleiste rechts: docs\screenshots\etappe-18\schwarz-seitenleiste-rechts.png
+    schwarz, Seitenleiste eingeklappt: docs\screenshots\etappe-18\schwarz-seitenleiste-eingeklappt.png
+    schwarz, Einstellungen → Darstellung: docs\screenshots\etappe-18\schwarz-einstellungen-darstellung.png
+    schwarz, Handy 360 × 740: docs\screenshots\etappe-18\schwarz-handy.png
+    ```
+  - Dazu `docs/screenshots/etappe-18/schriftvergleich.png` (Kriterium 2) und echte Bildschirmaufnahmen der gebauten `localist.exe` in `docs/screenshots/etappe-18/app/` (`fenster-rahmen.png`, `fenster-maximiert.png`, `fenster-links-angedockt.png`, Kriterium 5).
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
