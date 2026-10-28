@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+235fbe1a – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+bd0c8659 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus der Schrift Inter, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -117,63 +117,70 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 :root {
   color-scheme: light;
 
-  /* Flächen */
+  /* Flächen: Fenster (Seitenleiste, Rand), Inhaltsfläche, Flächen darauf (Eingabefeld, Tabellenkopf, Menü, Karten) */
+  --color-window: #f0f0ee;
   --color-bg: #ffffff;
-  --color-bg-subtle: #f9f9f8;
-  --color-bg-muted: #f3f3f1;
+  --color-bg-subtle: #f5f5f3;
+  --color-bg-muted: #efefed;
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
   --color-surface-selected: #ffffff;
-  --color-backdrop: rgba(18, 18, 17, 0.32);
+  --color-menu-selected: #efefed;
+  --color-backdrop: rgba(19, 19, 17, 0.32);
 
   /* Text */
-  --color-text: #2b2a27;
-  --color-text-muted: #75746f;
-  --color-text-faint: #a8a7a2;
-  --color-text-on-accent: #ffffff;
+  --color-text: #131311;
+  --color-text-muted: #5d5d5b;
+  --color-text-faint: #868683;
 
   /* Linien und Zustände */
-  --color-border: rgba(43, 42, 39, 0.1);
-  --color-border-strong: rgba(43, 42, 39, 0.18);
-  --color-hover: rgba(43, 42, 39, 0.05);
-  --color-active: rgba(43, 42, 39, 0.085);
+  --color-border: #ebebe9;
+  --color-border-strong: #d9d9d6;
+  --color-hover: rgba(19, 19, 17, 0.045);
+  --color-active: rgba(19, 19, 17, 0.075);
 
-  /* Akzentfarbe (die einzige kräftige Farbe der Oberfläche) */
-  --color-accent: #2f6be0;
-  --color-accent-hover: #2459c4;
-  --color-accent-soft: rgba(47, 107, 224, 0.1);
-  --color-accent-softer: rgba(47, 107, 224, 0.06);
-  --color-focus-ring: rgba(47, 107, 224, 0.4);
+  /* Akzentfarbe (die einzige kräftige Farbe der Oberfläche; Standard Orange, siehe data-accent unten):
+     Füllung, Text in Akzentfarbe, getönte Flächen für Auswahl, Chips und Callouts */
+  --color-accent: #c2410c;
+  --color-accent-hover: #ab390b;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #c2410c;
+  --color-accent-soft: #f9ece7;
+  --color-accent-softer: #fcf6f3;
+  --color-accent-chip: #f8e8e2;
+  --color-accent-chip-text: #bc3f0c;
+  --color-accent-callout: #fbf2ee;
+  --color-focus-ring: #c2410c;
 
   /* Rückmeldungen, zurückhaltend eingesetzt */
-  --color-danger: #c9423a;
+  --color-danger: #b93a32;
   --color-danger-soft: rgba(201, 66, 58, 0.09);
-  --color-success: #2e8456;
+  --color-success: #23704a;
   --color-success-soft: rgba(46, 132, 86, 0.12);
-  --color-warning: #b26f08;
+  --color-warning: #8c5a06;
   --color-warning-soft: rgba(210, 140, 20, 0.14);
-  --color-info: #2f6be0;
-  --color-info-soft: rgba(47, 107, 224, 0.09);
-  --color-neutral-soft: rgba(43, 42, 39, 0.07);
+  --color-info: #2a65db;
+  --color-info-soft: rgba(42, 101, 219, 0.09);
+  --color-neutral-soft: rgba(19, 19, 17, 0.07);
 
   /* Inhalte */
-  --color-link-underline: rgba(43, 42, 39, 0.32);
-  --color-unresolved: #a8a7a2;
+  --color-link-underline: rgba(19, 19, 17, 0.32);
+  --color-unresolved: #868683;
   --color-highlight: rgba(255, 207, 51, 0.45);
   --color-code-bg: rgba(135, 131, 120, 0.12);
   --color-on-image: rgba(255, 255, 255, 0.92);
-  --color-on-image-text: #2b2a27;
-  --color-scrollbar: rgba(43, 42, 39, 0.16);
+  --color-on-image-text: #131311;
+  --color-scrollbar: rgba(19, 19, 17, 0.16);
 
   /* Code-Editor (Syntaxhervorhebung) */
   --color-code-tag: #b42d5c;
-  --color-code-attribute: #8a5a00;
-  --color-code-string: #1d7a4a;
-  --color-code-comment: #8b8a85;
+  --color-code-attribute: #855600;
+  --color-code-string: #1a7144;
+  --color-code-comment: #6e6d68;
   --color-code-keyword: #6b46c1;
   --color-code-number: #1c63c4;
-  --color-code-gutter: #b0afaa;
-  --color-code-selection: rgba(47, 107, 224, 0.18);
+  --color-code-gutter: #8c8b86;
+  --color-code-selection: rgba(42, 101, 219, 0.18);
 
   /* Diagramme (Reihen 1–6) */
   --color-chart-1: #2f6be0;
@@ -182,7 +189,6 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-chart-4: #9b59d0;
   --color-chart-5: #d0475a;
   --color-chart-6: #c9a227;
-
   /* Schrift */
   --font-sans: "Inter Variable", "Inter", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Cascadia Mono", Consolas, monospace;
@@ -296,7 +302,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --shadow-md: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 4px 12px rgba(18, 18, 17, 0.1);
   --shadow-lg: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 12px 40px rgba(18, 18, 17, 0.18);
   --shadow-drawer: 4px 0 24px rgba(18, 18, 17, 0.18);
-  --shadow-focus: 0 0 0 3px var(--color-focus-ring);
+  --shadow-focus: 0 0 0 2px var(--color-focus-ring);
 
   /* Bewegung und Ebenen */
   --duration-fast: 120ms;
@@ -312,33 +318,79 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --z-dialog: 200;
 }
 
-/* Dunkelmodus (Werte doppelt, damit beide Wege dieselben Farben liefern) */
+/* Akzentfarben im Modus Hell (Orange steht oben im :root). Die App setzt data-accent am <html>. */
+:root[data-accent="blau"] {
+  --color-accent: #2a65db;
+  --color-accent-hover: #2559c1;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #2a65db;
+  --color-accent-soft: #eaf0fb;
+  --color-accent-softer: #f4f7fd;
+  --color-accent-chip: #e5edfb;
+  --color-accent-chip-text: #2a64d9;
+  --color-accent-callout: #f0f4fc;
+  --color-focus-ring: #2a65db;
+}
+
+:root[data-accent="gruen"] {
+  --color-accent: #1d6a58;
+  --color-accent-hover: #1a5d4d;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #1d6a58;
+  --color-accent-soft: #e8f0ee;
+  --color-accent-softer: #f4f8f7;
+  --color-accent-chip: #e4edeb;
+  --color-accent-chip-text: #1d6a58;
+  --color-accent-callout: #eff5f3;
+  --color-focus-ring: #1d6a58;
+}
+
+:root[data-accent="lila"] {
+  --color-accent: #6a4ed7;
+  --color-accent-hover: #5d45bd;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #6a4ed7;
+  --color-accent-soft: #f0edfb;
+  --color-accent-softer: #f8f6fd;
+  --color-accent-chip: #edeafa;
+  --color-accent-chip-text: #6a4ed7;
+  --color-accent-callout: #f5f3fc;
+  --color-focus-ring: #6a4ed7;
+}
+
+/* Modus Dunkel: Werte doppelt (hier und unten für das System ohne App), damit beide Wege dieselben Farben liefern */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-bg: #1a1a19;
-  --color-bg-subtle: #202020;
-  --color-bg-muted: #262625;
-  --color-surface: #222221;
-  --color-surface-raised: #2a2a29;
-  --color-surface-selected: #3a3a38;
+  --color-window: #131313;
+  --color-bg: #191918;
+  --color-bg-subtle: #1f1f1d;
+  --color-bg-muted: #262624;
+  --color-surface: #1f1f1d;
+  --color-surface-raised: #252523;
+  --color-surface-selected: #2e2e2c;
+  --color-menu-selected: #2e2e2c;
   --color-backdrop: rgba(0, 0, 0, 0.55);
 
-  --color-text: #e8e7e3;
-  --color-text-muted: #9e9d98;
-  --color-text-faint: #6d6c68;
-  --color-text-on-accent: #ffffff;
+  --color-text: #ececea;
+  --color-text-muted: #a3a3a0;
+  --color-text-faint: #7c7c78;
 
-  --color-border: rgba(255, 255, 255, 0.085);
-  --color-border-strong: rgba(255, 255, 255, 0.15);
+  --color-border: #2a2a28;
+  --color-border-strong: #3a3a37;
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-active: rgba(255, 255, 255, 0.085);
 
-  --color-accent: #5b8ff0;
-  --color-accent-hover: #7aa5f3;
-  --color-accent-soft: rgba(91, 143, 240, 0.16);
-  --color-accent-softer: rgba(91, 143, 240, 0.09);
-  --color-focus-ring: rgba(91, 143, 240, 0.5);
+  --color-accent: #c2410c;
+  --color-accent-hover: #ab390b;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #cf693f;
+  --color-accent-soft: #3b2116;
+  --color-accent-softer: #2a1d17;
+  --color-accent-chip: #5d2913;
+  --color-accent-chip-text: #dd9577;
+  --color-accent-callout: #311f16;
+  --color-focus-ring: #cf693f;
 
   --color-danger: #f0776d;
   --color-danger-soft: rgba(240, 119, 109, 0.13);
@@ -346,25 +398,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-success-soft: rgba(92, 192, 138, 0.14);
   --color-warning: #e3a542;
   --color-warning-soft: rgba(227, 165, 66, 0.15);
-  --color-info: #5b8ff0;
+  --color-info: #6c9bf2;
   --color-info-soft: rgba(91, 143, 240, 0.14);
   --color-neutral-soft: rgba(255, 255, 255, 0.08);
 
   --color-link-underline: rgba(255, 255, 255, 0.35);
-  --color-unresolved: #6d6c68;
+  --color-unresolved: #7c7c78;
   --color-highlight: rgba(255, 196, 0, 0.32);
   --color-code-bg: rgba(255, 255, 255, 0.07);
   --color-on-image: rgba(32, 32, 32, 0.88);
-  --color-on-image-text: #e8e7e3;
+  --color-on-image-text: #ececea;
   --color-scrollbar: rgba(255, 255, 255, 0.16);
 
   --color-code-tag: #f08dab;
   --color-code-attribute: #e2b96a;
   --color-code-string: #86cf9f;
-  --color-code-comment: #7f7e7a;
+  --color-code-comment: #8d8c87;
   --color-code-keyword: #c3a6f4;
   --color-code-number: #7db8ff;
-  --color-code-gutter: #6a6965;
+  --color-code-gutter: #7a7974;
   --color-code-selection: rgba(91, 143, 240, 0.3);
 
   --color-chart-1: #5b8ff0;
@@ -381,33 +433,193 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
 }
 
+:root[data-theme="dark"][data-accent="blau"] {
+  --color-accent: #2a65db;
+  --color-accent-hover: #2559c1;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #5584e2;
+  --color-accent-soft: #1c283f;
+  --color-accent-softer: #1b212c;
+  --color-accent-chip: #203766;
+  --color-accent-chip-text: #86a7ea;
+  --color-accent-callout: #1b2433;
+  --color-focus-ring: #5584e2;
+}
+
+:root[data-theme="dark"][data-accent="gruen"] {
+  --color-accent: #2f7665;
+  --color-accent-hover: #296859;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #589183;
+  --color-accent-soft: #1a2925;
+  --color-accent-softer: #19211e;
+  --color-accent-chip: #1b3932;
+  --color-accent-chip-text: #7eaaa0;
+  --color-accent-callout: #1a2421;
+  --color-focus-ring: #589183;
+}
+
+:root[data-theme="dark"][data-accent="lila"] {
+  --color-accent: #6d52d8;
+  --color-accent-hover: #6048be;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #8c77e0;
+  --color-accent-soft: #29243e;
+  --color-accent-softer: #211e2b;
+  --color-accent-chip: #392e64;
+  --color-accent-chip-text: #aa9ae8;
+  --color-accent-callout: #242033;
+  --color-focus-ring: #8c77e0;
+}
+
+/* Modus Schwarz: echtes Schwarz als Fensterhintergrund (OLED), Inhaltsfläche knapp darüber */
+:root[data-theme="black"] {
+  color-scheme: dark;
+
+  --color-window: #000000;
+  --color-bg: #0a0a0a;
+  --color-bg-subtle: #141414;
+  --color-bg-muted: #1b1b1b;
+  --color-surface: #141414;
+  --color-surface-raised: #1a1a1a;
+  --color-surface-selected: #262626;
+  --color-menu-selected: #262626;
+  --color-backdrop: rgba(0, 0, 0, 0.55);
+
+  --color-text: #f4f4f4;
+  --color-text-muted: #a1a1a1;
+  --color-text-faint: #767676;
+
+  --color-border: #1b1b1b;
+  --color-border-strong: #2e2e2e;
+  --color-hover: rgba(255, 255, 255, 0.05);
+  --color-active: rgba(255, 255, 255, 0.085);
+
+  --color-accent: #c2410c;
+  --color-accent-hover: #ab390b;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #cb5e30;
+  --color-accent-soft: #2f150a;
+  --color-accent-softer: #1c100a;
+  --color-accent-chip: #54200b;
+  --color-accent-chip-text: #d98968;
+  --color-accent-callout: #20110a;
+  --color-focus-ring: #cb5e30;
+
+  --color-danger: #f0776d;
+  --color-danger-soft: rgba(240, 119, 109, 0.13);
+  --color-success: #5cc08a;
+  --color-success-soft: rgba(92, 192, 138, 0.14);
+  --color-warning: #e3a542;
+  --color-warning-soft: rgba(227, 165, 66, 0.15);
+  --color-info: #6c9bf2;
+  --color-info-soft: rgba(91, 143, 240, 0.14);
+  --color-neutral-soft: rgba(255, 255, 255, 0.08);
+
+  --color-link-underline: rgba(255, 255, 255, 0.35);
+  --color-unresolved: #767676;
+  --color-highlight: rgba(255, 196, 0, 0.32);
+  --color-code-bg: rgba(255, 255, 255, 0.07);
+  --color-on-image: rgba(32, 32, 32, 0.88);
+  --color-on-image-text: #f4f4f4;
+  --color-scrollbar: rgba(255, 255, 255, 0.16);
+
+  --color-code-tag: #f08dab;
+  --color-code-attribute: #e2b96a;
+  --color-code-string: #86cf9f;
+  --color-code-comment: #8d8c87;
+  --color-code-keyword: #c3a6f4;
+  --color-code-number: #7db8ff;
+  --color-code-gutter: #7a7974;
+  --color-code-selection: rgba(91, 143, 240, 0.3);
+
+  --color-chart-1: #5b8ff0;
+  --color-chart-2: #f0a066;
+  --color-chart-3: #4fc08d;
+  --color-chart-4: #b88be6;
+  --color-chart-5: #ec6b7c;
+  --color-chart-6: #e0c25a;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="black"][data-accent="blau"] {
+  --color-accent: #2a65db;
+  --color-accent-hover: #2559c1;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #487be0;
+  --color-accent-soft: #101c34;
+  --color-accent-softer: #0d131f;
+  --color-accent-chip: #172e5e;
+  --color-accent-chip-text: #779ce8;
+  --color-accent-callout: #0e1523;
+  --color-focus-ring: #487be0;
+}
+
+:root[data-theme="black"][data-accent="gruen"] {
+  --color-accent: #246e5d;
+  --color-accent-hover: #206152;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #4c897b;
+  --color-accent-soft: #0e1d1a;
+  --color-accent-softer: #0c1412;
+  --color-accent-chip: #123029;
+  --color-accent-chip-text: #6ea094;
+  --color-accent-callout: #0c1613;
+  --color-focus-ring: #4c897b;
+}
+
+:root[data-theme="black"][data-accent="lila"] {
+  --color-accent: #6a4ed7;
+  --color-accent-hover: #5d45bd;
+  --color-text-on-accent: #ffffff;
+  --color-accent-text: #836cde;
+  --color-accent-soft: #1d1833;
+  --color-accent-softer: #14111f;
+  --color-accent-chip: #30255c;
+  --color-accent-chip-text: #a08ee5;
+  --color-accent-callout: #161223;
+  --color-focus-ring: #836cde;
+}
+
+/* Ohne App (z. B. HTML-Seite per Doppelklick im Browser): dunkles System = Modus Dunkel mit Orange */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
 
-    --color-bg: #1a1a19;
-    --color-bg-subtle: #202020;
-    --color-bg-muted: #262625;
-    --color-surface: #222221;
-    --color-surface-raised: #2a2a29;
-    --color-surface-selected: #3a3a38;
+    --color-window: #131313;
+    --color-bg: #191918;
+    --color-bg-subtle: #1f1f1d;
+    --color-bg-muted: #262624;
+    --color-surface: #1f1f1d;
+    --color-surface-raised: #252523;
+    --color-surface-selected: #2e2e2c;
+    --color-menu-selected: #2e2e2c;
     --color-backdrop: rgba(0, 0, 0, 0.55);
 
-    --color-text: #e8e7e3;
-    --color-text-muted: #9e9d98;
-    --color-text-faint: #6d6c68;
-    --color-text-on-accent: #ffffff;
+    --color-text: #ececea;
+    --color-text-muted: #a3a3a0;
+    --color-text-faint: #7c7c78;
 
-    --color-border: rgba(255, 255, 255, 0.085);
-    --color-border-strong: rgba(255, 255, 255, 0.15);
+    --color-border: #2a2a28;
+    --color-border-strong: #3a3a37;
     --color-hover: rgba(255, 255, 255, 0.05);
     --color-active: rgba(255, 255, 255, 0.085);
 
-    --color-accent: #5b8ff0;
-    --color-accent-hover: #7aa5f3;
-    --color-accent-soft: rgba(91, 143, 240, 0.16);
-    --color-accent-softer: rgba(91, 143, 240, 0.09);
-    --color-focus-ring: rgba(91, 143, 240, 0.5);
+    --color-accent: #c2410c;
+    --color-accent-hover: #ab390b;
+    --color-text-on-accent: #ffffff;
+    --color-accent-text: #cf693f;
+    --color-accent-soft: #3b2116;
+    --color-accent-softer: #2a1d17;
+    --color-accent-chip: #5d2913;
+    --color-accent-chip-text: #dd9577;
+    --color-accent-callout: #311f16;
+    --color-focus-ring: #cf693f;
 
     --color-danger: #f0776d;
     --color-danger-soft: rgba(240, 119, 109, 0.13);
@@ -415,25 +627,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --color-success-soft: rgba(92, 192, 138, 0.14);
     --color-warning: #e3a542;
     --color-warning-soft: rgba(227, 165, 66, 0.15);
-    --color-info: #5b8ff0;
+    --color-info: #6c9bf2;
     --color-info-soft: rgba(91, 143, 240, 0.14);
     --color-neutral-soft: rgba(255, 255, 255, 0.08);
 
     --color-link-underline: rgba(255, 255, 255, 0.35);
-    --color-unresolved: #6d6c68;
+    --color-unresolved: #7c7c78;
     --color-highlight: rgba(255, 196, 0, 0.32);
     --color-code-bg: rgba(255, 255, 255, 0.07);
     --color-on-image: rgba(32, 32, 32, 0.88);
-    --color-on-image-text: #e8e7e3;
+    --color-on-image-text: #ececea;
     --color-scrollbar: rgba(255, 255, 255, 0.16);
 
     --color-code-tag: #f08dab;
     --color-code-attribute: #e2b96a;
     --color-code-string: #86cf9f;
-    --color-code-comment: #7f7e7a;
+    --color-code-comment: #8d8c87;
     --color-code-keyword: #c3a6f4;
     --color-code-number: #7db8ff;
-    --color-code-gutter: #6a6965;
+    --color-code-gutter: #7a7974;
     --color-code-selection: rgba(91, 143, 240, 0.3);
 
     --color-chart-1: #5b8ff0;
@@ -1018,7 +1230,7 @@ l-karteikarte:defined::before {
 
 l-karteikarte:defined[data-umgedreht]::before {
   content: "Antwort" / "";
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 l-karteikarte:defined::after {

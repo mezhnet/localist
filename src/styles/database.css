@@ -30,7 +30,7 @@
   flex-shrink: 0;
   border-radius: var(--radius-lg);
   background: var(--color-accent-softer);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .database-icon svg {
@@ -507,7 +507,7 @@ button.column-header:hover {
 
 .calendar-time {
   margin-right: var(--space-1);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-weight: var(--font-weight-medium);
 }
 

@@ -70,7 +70,7 @@
 
 .ui-button--ghost.is-active {
   background: var(--color-accent-softer);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .ui-button--danger {
@@ -136,7 +136,7 @@
 
 .ui-icon-button.ui-button--ghost.is-active {
   background: transparent;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .ui-icon-button.is-active svg {
@@ -175,7 +175,7 @@
 
 .ui-badge--accent {
   background: var(--color-accent-soft);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* ---------- Eingabefelder ---------- */
@@ -477,7 +477,7 @@
 
 .ui-menu__check {
   display: inline-flex;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .ui-menu__check svg {

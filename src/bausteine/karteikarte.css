@@ -90,7 +90,7 @@ l-karteikarte:defined::before {
 
 l-karteikarte:defined[data-umgedreht]::before {
   content: "Antwort" / "";
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 l-karteikarte:defined::after {

@@ -866,7 +866,7 @@
 }
 
 .baustein-leiste__eigen .ui-button__icon {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* ---------- Bereich „Bausteine“: Bibliothek mit Vorschau und Hilfe ---------- */
@@ -1129,7 +1129,7 @@
 .notizbuch-kopf svg {
   width: var(--size-icon-xl);
   height: var(--size-icon-xl);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .notizbuch-kopf h1 {

@@ -184,7 +184,7 @@ h3 {
   margin: 0;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .welcome-text {
@@ -225,7 +225,7 @@ h3 {
 .welcome-points svg {
   width: var(--size-icon-sm);
   height: var(--size-icon-sm);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 @media (max-width: 768px) {
