@@ -80,8 +80,8 @@
   --color-chart-5: #d0475a;
   --color-chart-6: #c9a227;
   /* Schrift */
-  --font-sans: "Inter Variable", "Inter", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
   --font-size-2xs: 11px;
   --font-size-xs: 12px;
   --font-size-sm: 13px;

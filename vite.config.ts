@@ -22,8 +22,11 @@ const PAGE_PREFIX = "/__localist-seite/";
  * Geschrieben wird nur, wenn sich etwas geändert hat. In Tests nicht: Dort prüft ein Test, dass alles aktuell ist.
  */
 function localistBausteine(): Plugin {
-  /** Schrift Inter (SIL Open Font License 1.1), wird in localist.css eingebettet. */
-  const INTER = "node_modules/@fontsource-variable/inter";
+  /** Schriften (SIL Open Font License 1.1), nur lateinische Zeichen, werden in localist.css eingebettet. */
+  const SCHRIFTEN = [
+    { familie: "Plus Jakarta Sans Variable", paket: "plus-jakarta-sans", gewichte: "200 800" },
+    { familie: "JetBrains Mono Variable", paket: "jetbrains-mono", gewichte: "100 800" },
+  ];
   const quellen = (ext: string) =>
     Object.fromEntries(
       (readdirSync("src/bausteine") as string[]).filter((name) => name.endsWith(ext)).map((name) => [name, readFileSync(`src/bausteine/${name}`, "utf8") as string]),
@@ -34,10 +37,12 @@ function localistBausteine(): Plugin {
       tokens: readFileSync("src/styles/tokens.css", "utf8"),
       css: quellen(".css"),
       js: quellen(".js"),
-      schrift: {
-        base64: readFileSync(`${INTER}/files/inter-latin-wght-normal.woff2`).toString("base64"),
-        lizenz: readFileSync(`${INTER}/LICENSE`, "utf8"),
-      },
+      schriften: SCHRIFTEN.map(({ familie, paket, gewichte }) => ({
+        familie,
+        gewichte,
+        base64: readFileSync(`node_modules/@fontsource-variable/${paket}/files/${paket}-latin-wght-normal.woff2`).toString("base64"),
+        lizenz: readFileSync(`node_modules/@fontsource-variable/${paket}/LICENSE`, "utf8"),
+      })),
     });
     // Vorlage der Bibliotheksseite (eingebaute Bausteine mit Beispiel), nur für das Schema der App
     const vorlage = bibliothekVorlage();

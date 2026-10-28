@@ -58,7 +58,7 @@ describe("Design-System (tokens.css)", () => {
       [...text.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/(?:https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}[^\s"')]*/gi)].map((m) => `${path} → ${m[0]}`),
     );
     expect(external).toEqual([]);
-    expect(tokens).toMatch(/--font-sans: "Inter Variable"/);
+    expect(tokens).toMatch(/--font-sans: "Plus Jakarta Sans Variable"/);
   });
 
   it("außer tokens.css enthält keine CSS-Datei unter src/ feste Farbwerte", () => {

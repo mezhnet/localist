@@ -1,9 +1,13 @@
 // localist.css und localist.js: entstehen aus tokens.css und src/bausteine/, die erzeugten Dateien sind aktuell
 // und tragen eine Version, und das Skript macht die Grundbausteine interaktiv, ohne die Seite umzubauen.
 import { afterEach, describe, expect, it } from "vitest";
-import interLizenz from "../../node_modules/@fontsource-variable/inter/LICENSE?raw";
-import interSchrift from "../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?inline";
+import jetbrainsLizenz from "../../node_modules/@fontsource-variable/jetbrains-mono/LICENSE?raw";
+import jetbrainsSchrift from "../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?inline";
+import jakartaLizenz from "../../node_modules/@fontsource-variable/plus-jakarta-sans/LICENSE?raw";
+import jakartaSchrift from "../../node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2?inline";
 import pkg from "../../package.json";
+import jetbrainsApp from "../../public/lizenzen/JetBrainsMono-OFL.txt?raw";
+import jakartaApp from "../../public/lizenzen/PlusJakartaSans-OFL.txt?raw";
 import vaultCss from "../../beispiel-vault/.localist/bausteine/localist.css?raw";
 import vaultJs from "../../beispiel-vault/.localist/bausteine/localist.js?raw";
 import gebautesCss from "../../src-tauri/seite/localist.css?raw";
@@ -14,8 +18,12 @@ import { bausteineBauen, bausteinVersion } from "./bauen";
 const css = import.meta.glob("./*.css", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const js = import.meta.glob("./*.js", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 const lf = (text: string) => text.replace(/\r\n/g, "\n");
-const schrift = { base64: interSchrift.slice(interSchrift.indexOf("base64,") + "base64,".length), lizenz: interLizenz };
-const gebaut = bausteineBauen({ appVersion: pkg.version, tokens, css, js, schrift });
+const base64 = (url: string) => url.slice(url.indexOf("base64,") + "base64,".length);
+const schriften = [
+  { familie: "Plus Jakarta Sans Variable", gewichte: "200 800", base64: base64(jakartaSchrift), lizenz: jakartaLizenz },
+  { familie: "JetBrains Mono Variable", gewichte: "100 800", base64: base64(jetbrainsSchrift), lizenz: jetbrainsLizenz },
+];
+const gebaut = bausteineBauen({ appVersion: pkg.version, tokens, css, js, schriften });
 
 describe("localist.css und localist.js (Build)", () => {
   it("die erzeugten Dateien passen zum Quellcode (sonst: npm run build oder npm run dev ausführen)", () => {
@@ -35,7 +43,7 @@ describe("localist.css und localist.js (Build)", () => {
 
   it("enthält tokens.css und alle Grundbausteine, basis zuerst", () => {
     const order = [...gebaut.css.matchAll(/\/\* ---- ([\w.-]+) ---- \*\//g)].map((m) => m[1]);
-    expect(order.slice(0, 3)).toEqual(["schrift", "tokens.css", "basis.css"]);
+    expect(order.slice(0, 4)).toEqual(["schrift", "schrift", "tokens.css", "basis.css"]);
     for (const name of ["callout", "toggle", "tabelle", "checkliste", "spalten", "bild", "trennlinie", "code", "seitenlink"]) {
       expect(order, name).toContain(`${name}.css`);
     }
@@ -44,18 +52,26 @@ describe("localist.css und localist.js (Build)", () => {
     }
   });
 
-  it("bettet die Schrift Inter samt Lizenz ein, damit Seiten in App und Browser gleich aussehen", () => {
-    expect(gebaut.css).toContain('font-family: "Inter Variable";');
-    expect(gebaut.css).toMatch(/src: url\(data:font\/woff2;base64,[A-Za-z0-9+/=]{60000,}\) format\("woff2-variations"\);/);
-    expect(gebaut.css).toContain("SIL Open Font License, Version 1.1");
-    expect(tokens).toContain('--font-sans: "Inter Variable"');
+  it("bettet die Schriften Plus Jakarta Sans und JetBrains Mono samt Lizenz ein, damit Seiten in App und Browser gleich aussehen", () => {
+    expect(gebaut.css).toContain('font-family: "Plus Jakarta Sans Variable";');
+    expect(gebaut.css).toContain('font-family: "JetBrains Mono Variable";');
+    expect(gebaut.css.match(/src: url\(data:font\/woff2;base64,[A-Za-z0-9+/=]{30000,}\) format\("woff2-variations"\);/g)).toHaveLength(2);
+    expect(gebaut.css.match(/SIL Open Font License, Version 1.1/g)?.length).toBeGreaterThanOrEqual(2);
+    // Nur lateinische Zeichen (mit Umlauten und deutschen Anführungszeichen), keine weiteren Zeichensätze, kein Kursivschnitt.
+    expect(gebaut.css.match(/@font-face/g)).toHaveLength(2);
+    expect(gebaut.css).not.toContain("font-style: italic");
+    expect(tokens).toContain('--font-sans: "Plus Jakarta Sans Variable"');
+    expect(tokens).toContain('--font-mono: "JetBrains Mono Variable"');
+    // Die App liefert die Lizenztexte mit (public/lizenzen/, landen beim Build in der App).
+    expect(lf(jakartaApp)).toBe(lf(jakartaLizenz));
+    expect(lf(jetbrainsApp)).toBe(lf(jetbrainsLizenz));
   });
 
   it("eine Änderung an einer Quelle ändert die Version, CRLF beim Auschecken nicht", () => {
-    const geaendert = bausteineBauen({ appVersion: pkg.version, tokens, css: { ...css, "./callout.css": `${css["./callout.css"]}\n/* neu */` }, js, schrift });
+    const geaendert = bausteineBauen({ appVersion: pkg.version, tokens, css: { ...css, "./callout.css": `${css["./callout.css"]}\n/* neu */` }, js, schriften });
     expect(geaendert.version).not.toBe(gebaut.version);
     const crlf = Object.fromEntries(Object.entries(css).map(([name, text]) => [name, text.replace(/\r?\n/g, "\r\n")]));
-    expect(bausteineBauen({ appVersion: pkg.version, tokens: tokens.replace(/\r?\n/g, "\r\n"), css: crlf, js, schrift }).version).toBe(gebaut.version);
+    expect(bausteineBauen({ appVersion: pkg.version, tokens: tokens.replace(/\r?\n/g, "\r\n"), css: crlf, js, schriften }).version).toBe(gebaut.version);
   });
 });
 

@@ -1,5 +1,7 @@
-// Schrift Inter, mit der App gebündelt (OFL-Lizenz) – es wird nichts aus dem Internet geladen.
-import "@fontsource-variable/inter";
+// Schriften Plus Jakarta Sans (Text) und JetBrains Mono (Datum, Kürzel, Code), mit der App gebündelt (OFL-Lizenz) –
+// es wird nichts aus dem Internet geladen.
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource-variable/plus-jakarta-sans";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import React from "react";
 import ReactDOM from "react-dom/client";
