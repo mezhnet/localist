@@ -37,7 +37,7 @@ unangetastet.
 ## Für Entwicklerinnen und Entwickler
 
 Alle folgenden Befehle gibst du in einem Terminal (PowerShell oder Eingabeaufforderung) **im Projektordner** ein,
-also in `C:\Users\emre\Documents\eigen_apps\LocalProjekt`.
+also in `C:\Users\emre\Documents\eigen_apps\Localist`.
 
 ## 1. Voraussetzungen
 
@@ -422,6 +422,6 @@ Localist benennt den Ordner in `.localist` um. Auch der zuletzt geöffnete Vault
 - **`Port 1420 is already in use`**: Ein anderer Entwicklungsserver läuft noch. Das andere Terminal mit
   `npm run dev` oder `npm run tauri dev` beenden.
 - **`npm install` schlägt fehl**: Internetverbindung prüfen und den Befehl erneut ausführen.
-- **`npm test` zeigt Testdateien doppelt** (zum Beispiel `LocalProjekt/src/App.test.tsx` zusätzlich zu `src/App.test.tsx`)
+- **`npm test` zeigt Testdateien doppelt** (zum Beispiel `Localist/src/App.test.tsx` zusätzlich zu `src/App.test.tsx`)
   **oder `git status` zeigt einen unbekannten Unterordner**: Im Projektordner liegt eine Kopie des Projekts. Vitest
   findet deren Tests mit, und diese schlagen fehl. Die Kopie aus dem Projektordner heraus verschieben.
