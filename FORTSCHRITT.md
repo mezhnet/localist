@@ -2,11 +2,20 @@
 
 ## Aktueller Stand
 - Etappe: 18 – Neues Design, Teil 1: Grundlagen, Fenster und Seitenleiste (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
-- Zuletzt aktualisiert: 2026-10-28 21:40
-- Nächster Schritt: Etappe 17 ist abgeschlossen. Etappe 18 beginnen: Auftrag (Abschnitt „Etappe 18“ und „Design-Vorlage“) und die Bilder in `docs/design/` genau ansehen, Fertig-Kriterien aus `CLAUDE.md` wörtlich hier übernehmen, dann mit `tokens.css` (Farben Hell/Dunkel/Schwarz, vier Akzentfarben, Kontrast-Test) anfangen.
+- Zuletzt aktualisiert: 2026-10-28 21:45
+- Nächster Schritt: Design-Vorlage (`docs/design/*.png`) und Auftrag (Abschnitte „Was die Vorlage festlegt“, „Gemessene Farben“, „Schrift“, „Etappe 18“) genau ansehen, dann Kriterium 1: `tokens.css` mit Hell/Dunkel/Schwarz und vier Akzentfarben, Kontrast-Test (WCAG AA) neu, Farbtest aus Etappe 9 bleibt grün.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- Etappe 18: Die Fertig-Kriterien werden zu Beginn der Etappe wörtlich aus `CLAUDE.md` hier übernommen (Arbeitsregel 3).
+- [ ] `tokens.css` nach der Vorlage, mit allen Farben für Hell, Dunkel und Schwarz und den vier Akzentfarben (je mit abgeleiteten Tönen für Flächen, Chips, Callouts und Text auf Akzent). Text und Bedienelemente erreichen in allen Kombinationen mindestens WCAG AA; ein Test rechnet die Kontraste nach. Der Farbtest aus Etappe 9 bleibt grün.
+- [ ] Schriften nach der Vorlage (siehe „Schrift“), lokal eingebunden, mit Lizenztexten. Sie ersetzen Inter in der App und in `localist.css`. In `localist.css` nur die Zeichensätze und Schnitte, die die Seiten brauchen; die Dateigröße steht in `FORTSCHRITT.md`.
+- [ ] Modi Hell, Dunkel und Schwarz plus „Wie System“: Ist das System hell, gilt Hell; ist es dunkel, gilt der zuletzt gewählte dunkle Modus (Dunkel oder Schwarz). Umschalter unten in der Seitenleiste (drei Knöpfe; ein Klick schaltet „Wie System“ aus) und Einstellungen → „Darstellung“ wie in `05-handy-darstellung-dunkel.png` (Vorschaukarten, Schalter „Wie System“, Erklärung zu Schwarz, Akzentfarbe). Alte gespeicherte Werte werden übernommen. Der Wechsel wirkt sofort und ohne Flackern, auch beim Start.
+- [ ] HTML-Seiten, Notizbuch und Vorschauen folgen Modus und Akzentfarbe sofort. Die Brücke ist um Schwarz und Akzent erweitert, die Prüfung der `postMessage`-Nachrichten und ihre Tests sind angepasst. Ohne App (Doppelklick im Browser) gilt `prefers-color-scheme` mit Orange.
+- [ ] Fensterrahmen wie in der Vorlage: keine Windows-Titelleiste (`decorations: false`), eigene Knöpfe für Minimieren, Maximieren/Wiederherstellen und Schließen oben rechts. Ziehen an freien Stellen der oberen Leiste verschiebt das Fenster, Doppelklick maximiert, die Fenstergröße lässt sich am Rand ändern, Andocken mit Win+Pfeiltasten geht. In `capabilities/default.json` kommen nur die dafür nötigen Rechte dazu. Geprüft in der gebauten `localist.exe`. Lässt sich etwas davon nicht zuverlässig umsetzen, bleibt die Windows-Titelleiste; dann notierst du die Abwägung unter „Entscheidungen“ und sagst es mir.
+- [ ] Der Inhalt ist eine abgesetzte Fläche (Radius, feine Linie, schmaler Rand ringsum) wie in der Vorlage.
+- [ ] Seitenleiste neu nach der Vorlage (Aufbau siehe „Was die Vorlage festlegt“). „Neue Seite“ öffnet das bisherige „Neu“-Menü. Alles aus Version 2.0 bleibt erhalten: Drag & Drop, Umbenennen, Kontextmenü, Markierung gleichnamiger Seiten, Emoji-Icons, Symbole für Datenbank und Notizbuch.
+- [ ] Seitenleiste links oder rechts: Einstellung unter „Darstellung“, wirkt sofort, wird gemerkt. Rechts ist alles gespiegelt (Rahmenlinie, Einklapp-Knopf, Menüs bleiben im Fenster). Die Fensterknöpfe bleiben immer oben rechts.
+- [ ] Seitenleiste ein- und ausklappbar: ein Knopf mit Seitenleisten-Symbol in der oberen Leiste und ein Tastenkürzel, das auf deutscher Tastatur ohne AltGr geht und kein Kürzel von BlockNote oder CodeMirror überschreibt (im Tooltip angezeigt). Eingeklappt nutzt der Inhalt die volle Breite. Kurzer Übergang (aus bei `prefers-reduced-motion`), der Zustand wird gemerkt.
+- [ ] Screenshots in Hell, Dunkel und Schwarz (Seitenleiste links, rechts und eingeklappt; Einstellungen → Darstellung) in `docs/screenshots/etappe-18/`.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
