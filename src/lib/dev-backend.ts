@@ -44,6 +44,8 @@ interface DevVault {
   /** Exportierte Dateien (Ziel → Inhalt) und fertig dargestellte Notizen (Pfad → HTML). */
   exporte: Map<string, string>;
   darstellungen: Map<string, string>;
+  /** Pfade, für die „Im Explorer öffnen“ gewählt wurde ("" = Vault). */
+  explorer: string[];
 }
 
 declare global {
@@ -159,6 +161,7 @@ export function installDevBackend(): void {
   /** Exportierte Dateien (nur Vorschau) und fertig dargestellte Notizen für das Notizbuch. */
   const exporte = new Map<string, string>();
   const darstellungen = new Map<string, string>();
+  const explorer: string[] = [];
 
   let missing = false;
   // Simulierter Gerätespeicher für die Ordnerauswahl auf Android (localStorage "dev-platform" = "android").
@@ -308,6 +311,14 @@ export function installDevBackend(): void {
           syncPreview(pfad, null);
           return null;
         }
+        case "im_explorer_zeigen": {
+          // Wie in Rust: nur vorhandene Einträge im Vault. Statt des Explorers ein Hinweis für die Vorschau.
+          const pfad = String(a.path);
+          if (pfad !== "" && !files.has(pfad) && !folders.has(pfad)) throw "Der Eintrag existiert nicht mehr.";
+          explorer.push(pfad);
+          const was = pfad === "" ? "den Vault-Ordner" : folders.has(pfad) ? `den Ordner „${pfad}“` : `„${pfad}“ markiert in seinem Ordner`;
+          return `Browser-Vorschau: Hier gibt es keinen Explorer. In der App öffnet sich jetzt der Windows-Explorer und zeigt ${was}.`;
+        }
         case "sicherheitstest_info":
           return null;
         case "app_platform":
@@ -369,6 +380,7 @@ export function installDevBackend(): void {
     folders,
     exporte,
     darstellungen,
+    explorer,
     externalWrite(path, content) {
       const isNew = !files.has(path);
       files.set(path, content);

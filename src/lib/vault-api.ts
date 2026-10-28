@@ -168,6 +168,14 @@ export function deleteEntry(path: string): Promise<void> {
   return invoke<void>("delete_entry", { path });
 }
 
+/**
+ * „Im Explorer öffnen“: zeigt eine Seite markiert in ihrem Ordner bzw. öffnet einen Ordner ("" = Vault). Nur PC.
+ * Die App liefert null, die Browser-Vorschau statt dessen einen Hinweistext (dort gibt es keinen Explorer).
+ */
+export function imExplorerZeigen(path: string): Promise<string | null> {
+  return invoke<string | null>("im_explorer_zeigen", { path });
+}
+
 /** Absoluter Pfad eines Bildes, das in einer Seite verlinkt ist (relativ zur Seite oder zum Vault), oder null. */
 export function resolveAttachment(page: string, target: string): Promise<string | null> {
   return invoke<string | null>("resolve_attachment", { page, target });

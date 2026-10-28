@@ -152,6 +152,31 @@ pub fn to_rel(root: &Path, path: &Path) -> Option<String> {
     Some(parts.join("/"))
 }
 
+/// Was „Im Explorer öffnen“ zeigt: eine Datei markiert in ihrem Ordner oder einen Ordner selbst.
+#[derive(Debug, PartialEq)]
+pub enum ExplorerZiel {
+    Datei(PathBuf),
+    Ordner(PathBuf),
+}
+
+/// Ziel für „Im Explorer öffnen“ ("" = Vault). Der Pfad wird wie bei `resolve` geprüft und muss existieren.
+/// Zusätzlich darf er auch über Verknüpfungen (Junctions, symbolische Links) nicht aus dem Vault führen.
+pub fn explorer_ziel(root: &Path, rel: &str) -> Result<ExplorerZiel, String> {
+    let path = resolve(root, rel)?;
+    let echt = fs::canonicalize(&path).map_err(|_| "Der Eintrag existiert nicht mehr.".to_string())?;
+    let echte_wurzel = fs::canonicalize(root).map_err(|e| format!("Vault nicht gefunden: {e}"))?;
+    if !echt.starts_with(&echte_wurzel) {
+        return Err(format!("Ungültiger Pfad im Vault: „{rel}“"));
+    }
+    if echt.is_dir() {
+        Ok(ExplorerZiel::Ordner(path))
+    } else if echt.is_file() {
+        Ok(ExplorerZiel::Datei(path))
+    } else {
+        Err("Der Eintrag existiert nicht mehr.".into())
+    }
+}
+
 /// Prüft einen Datei- oder Ordnernamen auf Zeichen und Namen, die Windows nicht erlaubt.
 pub fn validate_name(name: &str) -> Result<String, String> {
     let name = name.trim();
@@ -639,6 +664,40 @@ mod tests {
         assert!(resolve(root, "a\\b.md").is_err());
         assert_eq!(resolve(root, "Notizen/Ideen.md").unwrap(), root.join("Notizen").join("Ideen.md"));
         assert_eq!(resolve(root, "").unwrap(), root.to_path_buf());
+    }
+
+    #[test]
+    fn im_explorer_nur_eintraege_im_vault() {
+        let vault = TestVault::new();
+        vault.file("Notizen/Ideen.md", "# Ideen");
+        vault.file("Notizen/DNS.html", "<main></main>");
+        let root = &vault.0;
+        assert_eq!(explorer_ziel(root, "Notizen/Ideen.md").unwrap(), ExplorerZiel::Datei(root.join("Notizen").join("Ideen.md")));
+        assert_eq!(explorer_ziel(root, "Notizen/DNS.html").unwrap(), ExplorerZiel::Datei(root.join("Notizen").join("DNS.html")));
+        assert_eq!(explorer_ziel(root, "Notizen").unwrap(), ExplorerZiel::Ordner(root.join("Notizen")));
+        assert_eq!(explorer_ziel(root, "").unwrap(), ExplorerZiel::Ordner(root.clone()));
+        for falsch in ["../geheim.md", "Notizen/../../x", "C:/Windows", "C:\\Windows", "Notizen\\Ideen.md", "/Windows", "./Notizen", "Notizen//Ideen.md"] {
+            assert!(explorer_ziel(root, falsch).unwrap_err().starts_with("Ungültiger Pfad"), "{falsch}");
+        }
+        assert_eq!(explorer_ziel(root, "Notizen/Fehlt.md").unwrap_err(), "Der Eintrag existiert nicht mehr.");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn im_explorer_keine_verknuepfung_aus_dem_vault_heraus() {
+        let vault = TestVault::new();
+        let draussen = TestVault::new();
+        draussen.file("geheim.md", "");
+        // Eine Junction braucht unter Windows keine besonderen Rechte (anders als ein symbolischer Link).
+        let status = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(vault.0.join("Ausgang"))
+            .arg(&draussen.0)
+            .output()
+            .unwrap();
+        assert!(status.status.success(), "{}", String::from_utf8_lossy(&status.stderr));
+        assert!(explorer_ziel(&vault.0, "Ausgang").unwrap_err().starts_with("Ungültiger Pfad"));
+        assert!(explorer_ziel(&vault.0, "Ausgang/geheim.md").unwrap_err().starts_with("Ungültiger Pfad"));
     }
 
     #[test]

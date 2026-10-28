@@ -7,7 +7,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 const [exe, vault, outDir] = process.argv.slice(2);
 if (!exe || !vault || !outDir) {
@@ -414,6 +414,35 @@ try {
   );
   await sleep(500);
   report.push(`Hinweis nach dem Export: „${await evaluate(`document.querySelector('.notice')?.textContent ?? ""`)}“`);
+
+  // Etappe 17: „Im Explorer öffnen“ (echter Rechtsklick auf Seite und Ordner, Menü „…“, Menü „Vault“). Welches
+  // Explorer-Fenster welchen Ordner zeigt und was darin markiert ist, liest scripts/explorer-pruefen.ps1 aus.
+  const explorer = (...args) => {
+    const ergebnis = spawnSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/explorer-pruefen.ps1", ...args], { encoding: "utf8" });
+    return `${ergebnis.status === 0 ? "ja" : "NEIN"} – ${(ergebnis.stdout || ergebnis.stderr).trim()}`;
+  };
+  const rechtsklick = async (selector) => {
+    const r = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({ block: "center" }); const b = el.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+    for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: r.x, y: r.y, button: type === "mouseMoved" ? "none" : "right", clickCount: 1 });
+  };
+  const menuepunkt = async (punkt) => {
+    await waitFor(`[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === ${JSON.stringify(punkt)})`, `Menüpunkt ${punkt}`);
+    await evaluate(`[...document.querySelectorAll('[role="menuitem"]')].find((m) => m.textContent.trim() === ${JSON.stringify(punkt)}).click()`);
+  };
+  await evaluate(`document.querySelector('.tree [title="Notizen/Ideen.md"]') || document.querySelector('.tree [title="Notizen"]').click()`);
+  await waitFor(`document.querySelector('.tree [title="Notizen/Ideen.md"]')`, "Ideen im Ordnerbaum");
+  await rechtsklick('.tree [title="Notizen/Ideen.md"]');
+  await menuepunkt("Im Explorer öffnen");
+  report.push(`Im Explorer öffnen, Rechtsklick auf die Notiz „Ideen“: ${explorer("-Ordner", resolve(vault, "Notizen"), "-Datei", "Ideen.md", "-Schliessen")}`);
+  await menue("DNS", "Im Explorer öffnen");
+  report.push(`Im Explorer öffnen, Menü der HTML-Seite „DNS“: ${explorer("-Ordner", resolve(vault, "Notizen"), "-Datei", "DNS.html", "-Schliessen")}`);
+  await rechtsklick('.tree [title="Projekte"]');
+  await menuepunkt("Im Explorer öffnen");
+  report.push(`Im Explorer öffnen, Rechtsklick auf den Ordner „Projekte“: ${explorer("-Ordner", resolve(vault, "Projekte"), "-Schliessen")}`);
+  await evaluate(`document.querySelector('.vault-switcher').click()`);
+  await menuepunkt("Vault im Explorer öffnen");
+  report.push(`Menü „Vault“ → „Vault im Explorer öffnen“: ${explorer("-Ordner", resolve(vault), "-Schliessen")}`);
+  report.push(`Fehlermeldung nach „Im Explorer öffnen“: ${await evaluate(`document.querySelector('.notice[role="alert"]')?.textContent ?? "keine"`)}`);
 
   report.push(problems.length === 0 ? "Konsole: keine Fehler und keine CSP-Verstöße." : `Konsole: ${problems.length} Meldungen:\n  ${problems.join("\n  ")}`);
 } catch (error) {

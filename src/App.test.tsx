@@ -1584,3 +1584,49 @@ describe("Notizbücher, Umwandeln und Export (Etappe 14)", () => {
     expect(vault().files.has("Notizen/Formatierung.md")).toBe(true);
   });
 });
+
+describe("Bedienung: Im Explorer öffnen (Etappe 17)", () => {
+  it("„Im Explorer öffnen“ für Notiz, HTML-Seite und Ordner, „Vault im Explorer öffnen“ im Vault-Menü; die Vorschau zeigt einen Hinweis", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.contextMenu(await (await inTree()).findByText("Ideen"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Im Explorer öffnen" }));
+    expect((await screen.findByRole("status")).textContent).toBe(
+      "Browser-Vorschau: Hier gibt es keinen Explorer. In der App öffnet sich jetzt der Windows-Explorer und zeigt „Notizen/Ideen.md“ markiert in seinem Ordner.",
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „DNS“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Im Explorer öffnen" }));
+    fireEvent.contextMenu((await inTree()).getByText("Notizen"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Im Explorer öffnen" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("zeigt den Ordner „Notizen“"));
+
+    fireEvent.click(screen.getByTitle("Vault wechseln oder Einstellungen öffnen"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Vault im Explorer öffnen" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("zeigt den Vault-Ordner"));
+    expect(vault().explorer).toEqual(["Notizen/Ideen.md", "Notizen/DNS.html", "Notizen", ""]);
+  });
+
+  it("ein verschwundener Eintrag wird verständlich gemeldet", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.contextMenu(await (await inTree()).findByText("Ideen"));
+    vault().files.delete("Notizen/Ideen.md");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Im Explorer öffnen" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Der Eintrag existiert nicht mehr.");
+    expect(vault().explorer).toEqual([]);
+  });
+
+  it("auf Android gibt es „Im Explorer öffnen“ nicht", async () => {
+    localStorage.setItem("dev-platform", "android");
+    await openVaultFromStart();
+    fireEvent.contextMenu(await (await inTree()).findByText("Notizen"));
+    expect(screen.getByRole("menuitem", { name: "Umbenennen" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "Im Explorer öffnen" })).toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.click(screen.getByTitle("Vault wechseln oder Einstellungen öffnen"));
+    expect(screen.getByRole("menuitem", { name: "Anderen Vault öffnen …" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "Vault im Explorer öffnen" })).toBeNull();
+    expect(vault().explorer).toEqual([]);
+  });
+});

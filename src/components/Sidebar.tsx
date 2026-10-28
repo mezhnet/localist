@@ -14,6 +14,7 @@ import {
   FolderInput,
   Folder,
   FolderOpen,
+  FolderSearch,
   House,
   LayoutTemplate,
   MoreHorizontal,
@@ -55,6 +56,8 @@ export interface SidebarActions {
   onConvertToHtml: (node: TreeNode) => void;
   /** Seite als eigenständige HTML-Datei exportieren. */
   onExport: (node: TreeNode) => void;
+  /** „Im Explorer öffnen“ ("" = Vault). Fehlt auf dem Handy, dann gibt es die Einträge nicht. */
+  onRevealInExplorer?: (path: string) => void;
   onToggleFavorite: (path: string) => void;
   onQuickOpen: () => void;
   onSearch: () => void;
@@ -411,6 +414,11 @@ export function Sidebar(props: Props) {
           <MenuItem icon={<FolderOpen />} onSelect={props.onSwitchVault}>
             Anderen Vault öffnen …
           </MenuItem>
+          {props.onRevealInExplorer && (
+            <MenuItem icon={<FolderSearch />} onSelect={() => props.onRevealInExplorer?.("")}>
+              Vault im Explorer öffnen
+            </MenuItem>
+          )}
           <MenuItem icon={<Settings />} onSelect={props.onOpenSettings}>
             Einstellungen
           </MenuItem>
@@ -431,6 +439,7 @@ export function Sidebar(props: Props) {
             onNotebook={() => (menu.node.notebook ? props.onOpenNotebook(menu.node.path) : props.onConvertToNotebook(menu.node.path))}
             onConvertToHtml={() => props.onConvertToHtml(menu.node)}
             onExport={() => props.onExport(menu.node)}
+            onReveal={props.onRevealInExplorer && (() => props.onRevealInExplorer?.(menu.node.path))}
           />
         </Menu>
       )}
@@ -477,9 +486,11 @@ interface NodeItemsProps {
   onNotebook: () => void;
   onConvertToHtml: () => void;
   onExport: () => void;
+  /** „Im Explorer öffnen“ (fehlt auf dem Handy). */
+  onReveal?: () => void;
 }
 
-function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase, onNotebook, onConvertToHtml, onExport }: NodeItemsProps) {
+function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase, onNotebook, onConvertToHtml, onExport, onReveal }: NodeItemsProps) {
   const isFolder = node.kind === "folder";
   // Ein Ordner ist entweder Datenbank oder Notizbuch (liegen beide Dateien darin, gilt er als Datenbank).
   const notebook = node.notebook && !node.database;
@@ -525,6 +536,11 @@ function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete,
       <MenuItem icon={<FolderInput />} onSelect={onMove}>
         Verschieben nach …
       </MenuItem>
+      {onReveal && (
+        <MenuItem icon={<FolderSearch />} onSelect={onReveal}>
+          Im Explorer öffnen
+        </MenuItem>
+      )}
       <MenuSeparator />
       <MenuItem icon={<Trash2 />} hint="Entf" danger onSelect={onDelete}>
         Löschen …

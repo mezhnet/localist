@@ -30,6 +30,7 @@ import {
   dateiBase64,
   deleteEntry,
   exportSchreiben,
+  imExplorerZeigen,
   listEigeneBausteine,
   pickExportTarget,
   listTree,
@@ -55,6 +56,8 @@ import { Button, cx, IconButton } from "./ui";
 
 interface Props {
   vault: VaultInfo;
+  /** Betriebssystem ("windows", "android", …); auf dem Handy gibt es z. B. keinen Explorer. */
+  platform: string;
   onSwitchVault: () => void;
 }
 
@@ -72,7 +75,8 @@ interface Notice {
 
 let nextPageKey = 1;
 
-export function Workspace({ vault, onSwitchVault }: Props) {
+export function Workspace({ vault, platform, onSwitchVault }: Props) {
+  const explorer = platform !== "android" && platform !== "ios";
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [page, setPage] = useState<OpenPage | null>(null);
   const [externalVersion, setExternalVersion] = useState(0);
@@ -423,6 +427,17 @@ export function Workspace({ vault, onSwitchVault }: Props) {
     }
   };
 
+  /** „Im Explorer öffnen“ ("" = Vault). Vorher speichern, damit der Explorer den aktuellen Stand zeigt. */
+  const revealInExplorer = async (path: string) => {
+    try {
+      await saverRef.current?.flush();
+      const hinweis = await imExplorerZeigen(path);
+      if (hinweis) setNotice({ kind: "info", text: hinweis });
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
+
   /**
    * Neue Seite in `dir` aus einer Vorlage (Notiz oder HTML-Seite): Inhalt der Vorlage, eigene id, bei
    * HTML-Seiten Titel und relative Pfade für den Zielordner neu.
@@ -684,6 +699,7 @@ export function Workspace({ vault, onSwitchVault }: Props) {
           onConvertToNotebook={(path) => void convertToNotebook(path)}
           onConvertToHtml={(node) => void convertToHtml(node)}
           onExport={(node) => void exportPage(node)}
+          onRevealInExplorer={explorer ? (path) => void revealInExplorer(path) : undefined}
           onToggleFavorite={(path) => void updateFavorites((list) => toggleFavorite(list, path))}
           onQuickOpen={() => setDialog({ kind: "quick" })}
           onSearch={() => setDialog({ kind: "search" })}

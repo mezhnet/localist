@@ -143,7 +143,7 @@ function AppContent() {
 
   return (
     <>
-      <Workspace key={vault.root} vault={vault} onSwitchVault={() => void chooseVault()} />
+      <Workspace key={vault.root} vault={vault} platform={platform} onSwitchVault={() => void chooseVault()} />
       {picker}
     </>
   );

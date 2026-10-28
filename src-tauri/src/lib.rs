@@ -228,6 +228,30 @@ async fn delete_entry(state: State<'_, AppState>, path: String) -> Result<(), St
     vault::delete_entry(&state.root()?, &path)
 }
 
+/// „Im Explorer öffnen“: zeigt eine Seite markiert in ihrem Ordner bzw. öffnet einen Ordner ("" = Vault).
+/// Nur Pfade im geöffneten Vault (`vault::explorer_ziel`). Dateien gehen nur an `reveal_item_in_dir`, nie an
+/// `open_path`, sonst würde Windows sie mit ihrem Programm starten.
+#[tauri::command]
+async fn im_explorer_zeigen(state: State<'_, AppState>, path: String) -> Result<(), String> {
+    let ziel = vault::explorer_ziel(&state.root()?, &path)?;
+    #[cfg(desktop)]
+    {
+        // Der Explorer-Aufruf blockiert (COM), deshalb in einem eigenen Thread.
+        tauri::async_runtime::spawn_blocking(move || match ziel {
+            vault::ExplorerZiel::Datei(datei) => tauri_plugin_opener::reveal_item_in_dir(datei),
+            vault::ExplorerZiel::Ordner(ordner) => tauri_plugin_opener::open_path(ordner, None::<&str>),
+        })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| format!("Der Explorer konnte nicht geöffnet werden: {e}"))
+    }
+    #[cfg(mobile)]
+    {
+        let _ = ziel;
+        Err("Auf dem Handy gibt es keinen Explorer.".into())
+    }
+}
+
 /// Absoluter Pfad eines Bildes, das in einer Seite verlinkt ist, oder null.
 #[tauri::command]
 async fn resolve_attachment(state: State<'_, AppState>, page: String, target: String) -> Result<Option<String>, String> {
@@ -397,6 +421,7 @@ pub fn run() {
             rename_entry,
             move_entry,
             delete_entry,
+            im_explorer_zeigen,
             resolve_attachment,
             import_attachment,
             vault_index,
