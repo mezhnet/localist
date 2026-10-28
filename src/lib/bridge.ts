@@ -20,7 +20,8 @@ export type BridgeMessage =
   | { typ: "groesse"; hoehe: number }
   | { typ: "link"; pfad: string; anker: string }
   | { typ: "extern"; url: string }
-  | { typ: "taste"; taste: "p" | "f" | "e"; umschalt: boolean }
+  /** Tastenkürzel der App aus der Seite: Strg+P, Strg+Umschalt+F, Strg+E und Strg+. (Seitenleiste ein-/ausklappen). */
+  | { typ: "taste"; taste: "p" | "f" | "e" | "."; umschalt: boolean }
   | { typ: "position"; y: number }
   /** Stift-Symbol eines Bausteins geklickt (Nummer und Anzahl wie im iframe gezählt). */
   | { typ: "bearbeiten"; index: number; art: BausteinArt; anzahl: number }
@@ -61,7 +62,7 @@ export function parseBridgeMessage(data: unknown): BridgeMessage | null {
         ? { typ: "position", y: Math.min(Math.round(message.y), 10_000_000) }
         : null;
     case "taste":
-      if ((message.taste === "p" || message.taste === "f" || message.taste === "e") && typeof message.umschalt === "boolean") {
+      if ((message.taste === "p" || message.taste === "f" || message.taste === "e" || message.taste === ".") && typeof message.umschalt === "boolean") {
         return { typ: "taste", taste: message.taste, umschalt: message.umschalt };
       }
       return null;

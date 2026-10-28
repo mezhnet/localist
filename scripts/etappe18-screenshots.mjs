@@ -1,7 +1,7 @@
 // Screenshots für Etappe 18 (neues Design, Teil 1) in Microsoft Edge (unsichtbar im Hintergrund): für jeden Modus
 // (Hell, Dunkel, Schwarz) die Notiz „Ideen“ mit Seitenleiste links, rechts und eingeklappt sowie Einstellungen →
-// Darstellung; dazu die Handy-Ansicht (360 × 740). Modus, Seitenleiste und Akzent kommen wie in der App aus dem
-// App-Speicher. Szene „schnell“ macht nur je einen Screenshot pro Modus (zum Nachsehen während der Arbeit).
+// Darstellung; dazu die Handy-Ansicht (360 × 740, wie Android ohne Fensterleiste). Modus, Seitenleiste und Akzent
+// kommen wie in der App aus dem App-Speicher. Szene „schnell“ macht nur je einen Screenshot pro Modus (zum Nachsehen während der Arbeit).
 //
 // Aufruf, während die Vorschau läuft: node scripts/etappe18-screenshots.mjs http://localhost:1420 docs/screenshots/etappe-18 [schnell]
 import { spawn, spawnSync } from "node:child_process";
@@ -66,7 +66,8 @@ async function oeffnen({ modus, akzent = "orange", seite = "links", eingeklappt 
   await waitFor("document.body");
   await ev(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)");
     localStorage.setItem("theme", ${JSON.stringify(modus)}); localStorage.setItem("akzent", ${JSON.stringify(akzent)});
-    localStorage.setItem("seitenleiste-seite", ${JSON.stringify(seite)}); localStorage.setItem("seitenleiste-eingeklappt", ${JSON.stringify(String(eingeklappt))}); true`);
+    localStorage.setItem("seitenleiste-seite", ${JSON.stringify(seite)}); localStorage.setItem("seitenleiste-eingeklappt", ${JSON.stringify(String(eingeklappt))});
+    ${mobil ? 'localStorage.setItem("dev-platform", "android");' : ""} true`);
   await send("Page.navigate", { url: base });
   await waitFor(`document.querySelector('[role="tree"] .tree-row')`);
   await ev(`document.querySelector('.tree [title="Notizen"]').click(); true`);

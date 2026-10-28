@@ -2081,3 +2081,125 @@ describe("Seitenleiste links oder rechts (Etappe 18)", () => {
     expect(text).toMatch(/\.seitenleiste-rechts \.sidebar-shell\.open \{\s*transform: none;\s*box-shadow: var\(--shadow-drawer-right\);/);
   });
 });
+
+describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
+  const arbeitsbereich = () => document.querySelector(".workspace")!;
+  const knopf = () => document.querySelector<HTMLButtonElement>(".workspace-leiste .seitenleiste-knopf")!;
+
+  it("Knopf mit Seitenleisten-Symbol in der oberen Leiste, Tastenkürzel im Tooltip; der Zustand wird gemerkt", async () => {
+    await openVaultFromStart();
+    expect(knopf().getAttribute("aria-label")).toBe("Seitenleiste einklappen");
+    expect(knopf().title).toBe("Seitenleiste einklappen (Strg+.)");
+    expect(knopf().getAttribute("aria-controls")).toBe("seitenleiste");
+    expect(knopf().getAttribute("aria-expanded")).toBe("true");
+    expect(knopf().querySelector(".lucide-panel-left-close")).toBeTruthy();
+    // vor den freien Stellen und den Fensterknöpfen, also links am Inhalt
+    expect(knopf().parentElement?.firstElementChild).toBe(knopf());
+    fireEvent.click(knopf());
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
+    expect(localStorage.getItem("seitenleiste-eingeklappt")).toBe("true");
+    expect(knopf().getAttribute("aria-label")).toBe("Seitenleiste ausklappen");
+    expect(knopf().getAttribute("aria-expanded")).toBe("false");
+    expect(knopf().querySelector(".lucide-panel-left-open")).toBeTruthy();
+
+    cleanup();
+    await openVaultFromStart();
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
+    fireEvent.click(knopf());
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+    expect(localStorage.getItem("seitenleiste-eingeklappt")).toBe("false");
+  });
+
+  it("Strg+. klappt ein und aus, auch im Block-Editor (ändert dort nichts), im Code-Editor und aus einer HTML-Seite", async () => {
+    await openVaultFromStart();
+    await openPage("Notizen", "Ideen");
+    const editor = await waitFor(() => {
+      const el = document.querySelector<HTMLElement>(".bn-editor [contenteditable='true'], .bn-editor[contenteditable='true']");
+      expect(el).toBeTruthy();
+      return el!;
+    });
+    const vorher = vault().files.get("Notizen/Ideen.md");
+    editor.focus();
+    const strgPunkt = fireEvent.keyDown(editor, { key: ".", code: "Period", ctrlKey: true });
+    expect(strgPunkt).toBe(false); // preventDefault: der Editor bekommt die Taste nicht
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
+    fireEvent.keyDown(editor, { key: ".", code: "Period", ctrlKey: true });
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+    await new Promise((fertig) => setTimeout(fertig, 700));
+    expect(vault().files.get("Notizen/Ideen.md")).toBe(vorher);
+    // Mit Umschalt oder Alt (AltGr) passiert nichts
+    fireEvent.keyDown(editor, { key: ".", ctrlKey: true, shiftKey: true });
+    fireEvent.keyDown(editor, { key: ".", ctrlKey: true, altKey: true });
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+
+    // HTML-Seite: aus der Seite (Brücke) und im Code-Editor
+    fireEvent.click(await (await inTree()).findByText("DNS"));
+    const frame = await waitFor(() => {
+      const f = document.querySelector<HTMLIFrameElement>("iframe.html-frame");
+      expect(f).toBeTruthy();
+      return f!;
+    });
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, typ: "taste", taste: ".", umschalt: false }, source: frame.contentWindow }));
+    });
+    await waitFor(() => expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true));
+    fireEvent.click(await screen.findByRole("button", { name: "Code" }));
+    const code = await waitFor(() => {
+      const el = document.querySelector<HTMLElement>(".cm-content");
+      expect(el).toBeTruthy();
+      return el!;
+    });
+    fireEvent.keyDown(code, { key: ".", ctrlKey: true });
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+  });
+
+  it("Liegt der Fokus in der Seitenleiste, wandert er beim Einklappen auf den Knopf; auf Android gibt es kein Einklappen", async () => {
+    await openVaultFromStart();
+    const startseite = screen.getByRole("button", { name: "Startseite" });
+    startseite.focus();
+    fireEvent.keyDown(startseite, { key: ".", ctrlKey: true });
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
+    expect(document.activeElement).toBe(knopf());
+    cleanup();
+
+    localStorage.setItem("dev-platform", "android");
+    await openVaultFromStart();
+    expect(document.querySelector(".seitenleiste-knopf")).toBeNull();
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+    fireEvent.keyDown(window, { key: ".", ctrlKey: true });
+    expect(localStorage.getItem("seitenleiste-eingeklappt")).toBe("true");
+    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+  });
+
+  it("kein Kürzel von CodeMirror oder BlockNote auf Strg+.", async () => {
+    const { defaultKeymap, historyKeymap } = await import("@codemirror/commands");
+    const { searchKeymap } = await import("@codemirror/search");
+    const { foldKeymap } = await import("@codemirror/language");
+    const { completionKeymap, closeBracketsKeymap } = await import("@codemirror/autocomplete");
+    const tasten = [...defaultKeymap, ...historyKeymap, ...searchKeymap, ...foldKeymap, ...completionKeymap, ...closeBracketsKeymap].flatMap((k) => [k.key, k.win, k.linux, k.mac]);
+    expect(tasten.filter((t) => t && /(^|-)\.$/.test(t))).toEqual([]);
+    // BlockNote und TipTap: alle Tastenkürzel stehen als "Mod-…"-Texte in den Paketen
+    const pakete = {
+      ...import.meta.glob("../node_modules/@blocknote/core/dist/*.js", { query: "?raw", import: "default" }),
+      ...import.meta.glob("../node_modules/@tiptap/*/dist/index.js", { query: "?raw", import: "default" }),
+    };
+    const quellen = (await Promise.all(Object.values(pakete).map((laden) => laden() as Promise<string>))).join("\n");
+    expect(quellen).toMatch(/"Mod-b"/); // Fett (TipTap)
+    expect(quellen).toMatch(/"Mod-Alt-1"/); // Überschrift (BlockNote)
+    expect(quellen).not.toMatch(/["'](Mod|Ctrl)-\.["']/);
+  });
+
+  it("CSS: eingeklappt volle Breite mit kurzem Übergang (aus bei „Bewegung reduzieren“), rechts gespiegelt, auf dem Handy kein Knopf", async () => {
+    const { default: css } = await import("./styles/layout.css?raw");
+    const { default: tokens } = await import("./styles/tokens.css?raw");
+    const text = css.replace(/\r\n/g, "\n");
+    expect(text).toMatch(/@property --seitenleiste-breite \{\s*syntax: "<length>";/);
+    expect(text).toMatch(/\.workspace \{\s*transition: --seitenleiste-breite var\(--duration-sidebar\) var\(--ease-out\);/);
+    expect(text).toMatch(/\.workspace\.is-eingeklappt \{\s*--seitenleiste-breite: 0px;/);
+    expect(text).toMatch(/\.workspace\.is-eingeklappt \.sidebar-shell \{\s*visibility: hidden;/);
+    expect(text).toMatch(/@media \(min-width: 769px\) and \(prefers-reduced-motion: reduce\) \{\s*\.workspace,\s*\.workspace\.is-eingeklappt \.sidebar-shell \{\s*transition: none;/);
+    expect(text).toMatch(/\.seitenleiste-rechts \.seitenleiste-knopf\.ui-icon-button \{\s*margin-left: 0;\s*margin-right: max\(/);
+    expect(text).toMatch(/\.seitenleiste-knopf\.ui-icon-button \{\s*display: none;/);
+    expect(tokens).toMatch(/--duration-sidebar: 180ms;/);
+  });
+});

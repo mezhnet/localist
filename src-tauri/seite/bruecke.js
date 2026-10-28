@@ -42,13 +42,13 @@
     }
   });
 
-  // Tastenkürzel der App (Strg+P, Strg+Umschalt+F, Strg+E) wirken auch, wenn die Seite den Fokus hat.
+  // Tastenkürzel der App (Strg+P, Strg+Umschalt+F, Strg+E, Strg+.) wirken auch, wenn die Seite den Fokus hat.
   document.addEventListener(
     "keydown",
     function (event) {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
       var taste = (event.key || "").toLowerCase();
-      if ((taste === "p" && !event.shiftKey) || (taste === "f" && event.shiftKey) || (taste === "e" && !event.shiftKey)) {
+      if ((taste === "p" && !event.shiftKey) || (taste === "f" && event.shiftKey) || (taste === "e" && !event.shiftKey) || (taste === "." && !event.shiftKey)) {
         event.preventDefault();
         senden({ typ: "taste", taste: taste, umschalt: event.shiftKey });
       }

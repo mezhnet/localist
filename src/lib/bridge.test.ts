@@ -13,6 +13,7 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
     expect(parseBridgeMessage({ localist: 1, typ: "extern", url: "https://example.com/" })).toEqual({ typ: "extern", url: "https://example.com/" });
     expect(parseBridgeMessage({ localist: 1, typ: "taste", taste: "p", umschalt: false })).toEqual({ typ: "taste", taste: "p", umschalt: false });
     expect(parseBridgeMessage({ localist: 1, typ: "taste", taste: "e", umschalt: false })).toEqual({ typ: "taste", taste: "e", umschalt: false });
+    expect(parseBridgeMessage({ localist: 1, typ: "taste", taste: ".", umschalt: false })).toEqual({ typ: "taste", taste: ".", umschalt: false });
     expect(parseBridgeMessage({ localist: 1, typ: "position", y: 420.6 })).toEqual({ typ: "position", y: 421 });
     expect(parseBridgeMessage({ localist: 1, typ: "bearbeiten", index: 3, art: "tabelle", anzahl: 13 })).toEqual({ typ: "bearbeiten", index: 3, art: "tabelle", anzahl: 13 });
     expect(parseBridgeMessage({ localist: 1, typ: "haekchen", index: 0, an: true })).toEqual({ typ: "haekchen", index: 0, an: true });
@@ -34,6 +35,7 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
       { localist: 1, typ: "extern", url: "file:///C:/Windows/win.ini" },
       { localist: 1, typ: "extern", url: "ipc://localhost/plugin" },
       { localist: 1, typ: "taste", taste: "w", umschalt: false },
+      { localist: 1, typ: "taste", taste: ",", umschalt: false },
       { localist: 1, typ: "position", y: -5 },
       { localist: 1, typ: "position", y: "10" },
       { localist: 1, typ: "sicherheitstest", ergebnisse: [{ pruefung: "x" }] },

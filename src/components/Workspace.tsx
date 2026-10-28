@@ -2,7 +2,7 @@
 // Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen, anheften) und die Meldungen des Dateiwächters.
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { ChevronRight, Menu as MenuIcon, Search, Star, X } from "lucide-react";
+import { ChevronRight, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Search, Star, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage } from "../lib/autosave";
@@ -14,7 +14,7 @@ import { readFavorites, removeFromFavorites, renameInFavorites, toggleFavorite, 
 import { pageIcons } from "../lib/home";
 import { DEFAULT_STATUS_OPTIONS } from "../lib/properties";
 import { instantiateTemplate, TEMPLATES_DIR, type IndexEntry } from "../lib/search";
-import { useSeitenleisteSeite } from "../lib/seitenleiste";
+import { storedEingeklappt, storeEingeklappt, useEingeklappt, useSeitenleisteSeite } from "../lib/seitenleiste";
 import { useVaultSettings } from "../lib/settings";
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
 import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
@@ -105,8 +105,21 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const [vaultVersion, setVaultVersion] = useState(0);
   /** Auf dem Handy ist die Sidebar ein ausklappbares Menü. */
   const [menuOpen, setMenuOpen] = useState(false);
-  /** Seitenleiste links oder rechts (Einstellungen → Darstellung). */
+  /** Seitenleiste links oder rechts (Einstellungen → Darstellung) und eingeklappt (nur auf dem PC). */
   const [seitenleisteSeite] = useSeitenleisteSeite();
+  const fensterrahmen = hatFensterrahmen(platform);
+  const fensterrahmenRef = useRef(fensterrahmen);
+  fensterrahmenRef.current = fensterrahmen;
+  const [eingeklapptGemerkt] = useEingeklappt();
+  const eingeklappt = fensterrahmen && eingeklapptGemerkt;
+  const seitenleisteKnopf = useRef<HTMLButtonElement>(null);
+  /** Ein- oder ausklappen; liegt der Fokus in der Seitenleiste, wandert er auf den Knopf (sonst ginge er verloren). */
+  const seitenleisteUmschalten = useCallback(() => {
+    if (!fensterrahmenRef.current) return;
+    const zu = !storedEingeklappt();
+    if (zu && document.getElementById("seitenleiste")?.contains(document.activeElement)) seitenleisteKnopf.current?.focus();
+    storeEingeklappt(zu);
+  }, []);
   const [dialog, setDialog] = useState<
     | { kind: "quick" }
     | { kind: "search"; query?: string }
@@ -230,7 +243,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   // Nach dem Öffnen einer Seite oder Datenbank klappt das Menü auf dem Handy wieder zu.
   useEffect(() => setMenuOpen(false), [page?.path, database]);
 
-  // Tastenkürzel: Strg+P Schnellsuche, Strg+Umschalt+F Volltextsuche.
+  // Tastenkürzel: Strg+P Schnellsuche, Strg+Umschalt+F Volltextsuche, Strg+. Seitenleiste ein-/ausklappen (auf
+  // deutscher Tastatur ohne AltGr; weder BlockNote noch CodeMirror belegen es).
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
@@ -241,11 +255,14 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       } else if (key === "f" && event.shiftKey) {
         event.preventDefault();
         setDialog({ kind: "search" });
+      } else if (key === "." && !event.shiftKey) {
+        event.preventDefault();
+        seitenleisteUmschalten();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [seitenleisteUmschalten]);
 
   const loadIndex = useCallback(() => vaultIndex(), []);
 
@@ -679,9 +696,9 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
 
   return (
-    <div className={cx("workspace", `seitenleiste-${seitenleisteSeite}`, hatFensterrahmen(platform) && "hat-fensterleiste")}>
+    <div className={cx("workspace", `seitenleiste-${seitenleisteSeite}`, fensterrahmen && "hat-fensterleiste", eingeklappt && "is-eingeklappt")}>
       {menuOpen && <div className="drawer-backdrop" aria-hidden="true" onClick={() => setMenuOpen(false)} />}
-      <div className={cx("sidebar-shell", menuOpen && "open")}>
+      <div id="seitenleiste" className={cx("sidebar-shell", menuOpen && "open")}>
         <Sidebar
           vaultName={vault.name}
           tree={tree}
@@ -693,7 +710,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           icons={icons}
           renamingPath={renamingPath}
           onRenamingDone={() => setRenamingPath(null)}
-          fensterrahmen={hatFensterrahmen(platform)}
+          fensterrahmen={fensterrahmen}
           seite={seitenleisteSeite}
           onOpen={(path) => void openPage(path)}
           onOpenDatabase={(path) => void openDatabase(path)}
@@ -721,7 +738,19 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           }}
         />
       </div>
-      <Fensterleiste platform={platform} className="workspace-leiste" />
+      <Fensterleiste platform={platform} className="workspace-leiste">
+        <IconButton
+          ref={seitenleisteKnopf}
+          className="seitenleiste-knopf"
+          label={eingeklappt ? "Seitenleiste ausklappen" : "Seitenleiste einklappen"}
+          title={`${eingeklappt ? "Seitenleiste ausklappen" : "Seitenleiste einklappen"} (Strg+.)`}
+          aria-expanded={!eingeklappt}
+          aria-controls="seitenleiste"
+          onClick={seitenleisteUmschalten}
+        >
+          {seitenleisteSeite === "rechts" ? eingeklappt ? <PanelRightOpen /> : <PanelRightClose /> : eingeklappt ? <PanelLeftOpen /> : <PanelLeftClose />}
+        </IconButton>
+      </Fensterleiste>
       <main className="main">
         <header className="topbar">
           <IconButton className="topbar-menu" label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>

@@ -1,9 +1,18 @@
 /* Aufbau des Arbeitsbereichs: Sidebar links, rechts oben die Fensterleiste (PC), darunter Kopfleiste und Inhalt.
    Unter 768 px wird die Sidebar zum ausklappbaren Menü. */
 
+/* Breite der Seitenleiste im Raster; als eigene Eigenschaft registriert, damit sie beim Ein- und Ausklappen gleitet
+   (Raster, Einklapp-Knopf und Inhalt folgen demselben Wert). */
+@property --seitenleiste-breite {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
 .workspace {
+  --seitenleiste-breite: var(--sidebar-width);
   display: grid;
-  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-columns: var(--seitenleiste-breite) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "seitenleiste leiste"
@@ -17,7 +26,7 @@
 /* Seitenleiste rechts (Einstellungen → Darstellung): alles gespiegelt. Die obere Leiste reicht dann über die ganze
    Breite, damit die Fensterknöpfe oben rechts bleiben; der Vault-Umschalter steht oben in der Seitenleiste. */
 .workspace.seitenleiste-rechts {
-  grid-template-columns: minmax(0, 1fr) var(--sidebar-width);
+  grid-template-columns: minmax(0, 1fr) var(--seitenleiste-breite);
   grid-template-areas:
     "leiste leiste"
     "inhalt seitenleiste";
@@ -26,11 +35,40 @@
 .sidebar-shell {
   grid-area: seitenleiste;
   display: flex;
+  justify-content: flex-end;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+.seitenleiste-rechts .sidebar-shell {
+  justify-content: flex-start;
 }
 
 .workspace-leiste {
   grid-area: leiste;
+}
+
+/* Knopf zum Ein- und Ausklappen: an der Kante zur Seitenleiste (links am Inhalt bzw. rechts gespiegelt) */
+.seitenleiste-knopf.ui-icon-button {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.workspace.is-eingeklappt:not(.seitenleiste-rechts) .seitenleiste-knopf.ui-icon-button {
+  margin-left: var(--window-gap);
+}
+
+.seitenleiste-rechts .workspace-leiste .fensterleiste-frei {
+  order: -1;
+}
+
+/* Rechts steht der Knopf über der linken Kante der Seitenleiste, eingeklappt neben den Fensterknöpfen. */
+.seitenleiste-rechts .seitenleiste-knopf.ui-icon-button {
+  margin-left: 0;
+  margin-right: max(var(--space-1), calc(var(--seitenleiste-breite) - var(--size-window-buttons) + var(--space-1)));
 }
 
 /* ---------- Fensterleiste und Fensterknöpfe (PC, ohne Windows-Titelleiste) ---------- */
@@ -100,6 +138,43 @@
   left: 0;
   right: 0;
   z-index: var(--z-sticky);
+}
+
+/* ---------- Seitenleiste eingeklappt (PC): Der Inhalt nutzt die volle Breite ---------- */
+@media (min-width: 769px) {
+  .workspace {
+    transition: --seitenleiste-breite var(--duration-sidebar) var(--ease-out);
+  }
+
+  .workspace.is-eingeklappt {
+    --seitenleiste-breite: 0px;
+  }
+
+  .sidebar-shell .sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+  }
+
+  /* Nach dem Einklappen nicht mehr erreichbar (Tab, Bildschirmleser), erst am Ende des Übergangs unsichtbar */
+  .workspace.is-eingeklappt .sidebar-shell {
+    visibility: hidden;
+    transition: visibility 0s linear var(--duration-sidebar);
+  }
+
+  .workspace.is-eingeklappt .main {
+    margin-left: var(--window-gap);
+  }
+
+  .workspace.seitenleiste-rechts.is-eingeklappt .main {
+    margin-right: var(--window-gap);
+  }
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: reduce) {
+  .workspace,
+  .workspace.is-eingeklappt .sidebar-shell {
+    transition: none;
+  }
 }
 
 /* ---------- Sidebar (Vorlage 01/02) ----------
@@ -653,6 +728,11 @@ button.tree-toggle:hover {
     gap: var(--space-1);
     padding: env(safe-area-inset-top) var(--space-1) 0;
     border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  /* Auf dem Handy ist die Seitenleiste eine Schublade (Menü-Knopf oben), Einklappen gibt es dort nicht. */
+  .seitenleiste-knopf.ui-icon-button {
+    display: none;
   }
 
   .topbar-menu.ui-icon-button,

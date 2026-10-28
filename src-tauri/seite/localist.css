@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+2d1fdc19 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+9f93f3fa – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -384,6 +384,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --size-titlebar: 38px;
   --size-window-button-width: 40px;
   --size-window-button-height: 30px;
+  --size-window-buttons: calc(3 * var(--size-window-button-width));
   --window-icon-stroke: 1.5;
   /* Inhaltsfläche: schmaler Rand ringsum zum Fensterhintergrund, großer Radius */
   --window-gap: 6px;
@@ -454,6 +455,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* Bewegung und Ebenen */
   --duration-fast: 120ms;
   --duration-normal: 200ms;
+  /* Seitenleiste ein- und ausklappen */
+  --duration-sidebar: 180ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   /* Ein- und Ausrücken im Block-Editor (höchstens 150 ms); gleichmäßige Kurve, damit der Block nicht anspringt */
   --duration-indent: 140ms;
