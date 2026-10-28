@@ -51,6 +51,7 @@ import { BausteinBibliothek } from "./BausteinBibliothek";
 import { HtmlPageView } from "./HtmlPageView";
 import { NotizbuchView } from "./NotizbuchView";
 import { PageView } from "./PageView";
+import { Fensterleiste } from "./Fenster";
 import { Sidebar, type CreateKind } from "./Sidebar";
 import { Button, cx, IconButton } from "./ui";
 
@@ -715,6 +716,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           }}
         />
       </div>
+      <Fensterleiste platform={platform} className="workspace-leiste" />
       <main className="main">
         <header className="topbar">
           <IconButton className="topbar-menu" label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>

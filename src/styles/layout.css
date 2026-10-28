@@ -1,20 +1,100 @@
-/* Aufbau des Arbeitsbereichs: Sidebar links, rechts Kopfleiste und Inhalt.
+/* Aufbau des Arbeitsbereichs: Sidebar links, rechts oben die Fensterleiste (PC), darunter Kopfleiste und Inhalt.
    Unter 768 px wird die Sidebar zum ausklappbaren Menü. */
 
 .workspace {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "seitenleiste leiste"
+    "seitenleiste inhalt";
   height: 100vh;
   overflow: hidden;
   background: var(--color-bg);
 }
 
 .sidebar-shell {
-  display: contents;
+  grid-area: seitenleiste;
+  display: flex;
+  min-height: 0;
+}
+
+.workspace-leiste {
+  grid-area: leiste;
+}
+
+/* ---------- Fensterleiste und Fensterknöpfe (PC, ohne Windows-Titelleiste) ---------- */
+.fensterleiste {
+  display: flex;
+  align-items: flex-start;
+  height: var(--size-titlebar);
+  min-width: 0;
+  user-select: none;
+}
+
+.fensterleiste-frei {
+  flex: 1;
+  align-self: stretch;
+}
+
+/* Bleiben auch über einem offenen Dialog bedienbar, wie die Knöpfe von Windows. */
+.fenster-knoepfe {
+  position: relative;
+  z-index: calc(var(--z-dialog) + 1);
+  display: flex;
+  flex-shrink: 0;
+}
+
+.fenster-knopf {
+  display: grid;
+  place-items: center;
+  width: var(--size-window-button-width);
+  height: var(--size-window-button-height);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text-muted);
+}
+
+.fenster-knopf svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  stroke-width: var(--window-icon-stroke);
+}
+
+.fenster-knopf:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.fenster-knopf:active {
+  background: var(--color-active);
+}
+
+.fenster-knopf.is-schliessen:hover,
+.fenster-knopf.is-schliessen:active {
+  background: var(--color-window-close);
+  color: var(--color-window-close-text);
+}
+
+/* Lucide „Copy“ gespiegelt: vorderes Fenster unten links wie bei Windows */
+.fenster-symbol-wiederherstellen {
+  transform: scaleX(-1);
+}
+
+/* Auf Startbildschirm und Vault-Auswahl liegt die Leiste über dem Inhalt. */
+.app-leiste {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-sticky);
 }
 
 /* ---------- Sidebar ---------- */
 .sidebar {
-  width: var(--sidebar-width);
+  width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -358,9 +438,10 @@ button.tree-toggle:hover {
 
 /* ---------- Inhalt mit Kopfleiste ---------- */
 .main {
+  grid-area: inhalt;
   position: relative;
-  flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -458,6 +539,15 @@ button.tree-toggle:hover {
 
 /* ---------- Handy ---------- */
 @media (max-width: 768px) {
+  .workspace {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main {
+    flex: 1;
+  }
+
   .sidebar-shell {
     position: fixed;
     top: 0;

@@ -2,6 +2,7 @@ import { FileText, FolderOpen, Lock, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import "./styles/index.css";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Fensterleiste } from "./components/Fenster";
 import { FolderPicker } from "./components/FolderPicker";
 import { SecurityTestRunner } from "./components/SecurityTestRunner";
 import { Button } from "./components/ui";
@@ -108,6 +109,7 @@ function AppContent() {
   if (!vault) {
     return (
       <main className="welcome">
+        <Fensterleiste platform={platform} className="app-leiste" />
         <div className="welcome-card">
           <img className="welcome-logo" src="/localist.svg" alt="" width={56} height={56} />
           <p className="welcome-app">Willkommen bei Localist</p>

@@ -28,6 +28,9 @@
   --color-border-strong: #d9d9d6;
   --color-hover: rgba(19, 19, 17, 0.045);
   --color-active: rgba(19, 19, 17, 0.075);
+  /* Fensterrahmen: Schließen-Knopf beim Überfahren (wie Windows) */
+  --color-window-close: #c42b1c;
+  --color-window-close-text: #ffffff;
 
   /* Akzentfarbe (die einzige kräftige Farbe der Oberfläche; Standard Orange, siehe data-accent unten):
      Füllung, Text in Akzentfarbe, getönte Flächen für Auswahl, Chips und Callouts */
@@ -160,6 +163,11 @@
   /* Block-Editor: Einzug verschachtelter Blöcke, Führungslinie mittig unter dem Listenzeichen darüber */
   --editor-indent: var(--space-6);
   --editor-guide-offset: calc(var(--editor-indent) * -0.5);
+  /* Fenster (PC): obere Leiste auf dem Fensterhintergrund und Fensterknöpfe oben rechts */
+  --size-titlebar: 38px;
+  --size-window-button-width: 40px;
+  --size-window-button-height: 30px;
+  --window-icon-stroke: 1.5;
   --sidebar-width: 264px;
   --sidebar-drawer-width: 300px;
   --tree-indent: 14px;
@@ -291,6 +299,8 @@
   --color-border-strong: #3a3a37;
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-active: rgba(255, 255, 255, 0.085);
+  --color-window-close: #c42b1c;
+  --color-window-close-text: #ffffff;
 
   --color-accent: #c2410c;
   --color-accent-hover: #ab390b;
@@ -405,6 +415,8 @@
   --color-border-strong: #2e2e2e;
   --color-hover: rgba(255, 255, 255, 0.05);
   --color-active: rgba(255, 255, 255, 0.085);
+  --color-window-close: #c42b1c;
+  --color-window-close-text: #ffffff;
 
   --color-accent: #c2410c;
   --color-accent-hover: #ab390b;
@@ -520,6 +532,8 @@
     --color-border-strong: #3a3a37;
     --color-hover: rgba(255, 255, 255, 0.05);
     --color-active: rgba(255, 255, 255, 0.085);
+    --color-window-close: #c42b1c;
+    --color-window-close-text: #ffffff;
 
     --color-accent: #c2410c;
     --color-accent-hover: #ab390b;

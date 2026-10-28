@@ -3,7 +3,7 @@
 // Änderungen gehen beim Neuladen der Seite verloren; echte Dateien werden nie verändert.
 // In der gebauten App ist diese Datei nicht enthalten (siehe main.tsx).
 import { emit } from "@tauri-apps/api/event";
-import { mockIPC } from "@tauri-apps/api/mocks";
+import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import bundledCss from "../../src-tauri/seite/localist.css?raw";
 import bundledJs from "../../src-tauri/seite/localist.js?raw";
 import { EIGENE_DIR, eigenerBausteinDatei, eigenerBausteinLesen, eigenerBausteinName } from "./eigene-bausteine";
@@ -46,6 +46,8 @@ interface DevVault {
   darstellungen: Map<string, string>;
   /** Pfade, für die „Im Explorer öffnen“ gewählt wurde ("" = Vault). */
   explorer: string[];
+  /** Fensterbefehle der eigenen Fensterknöpfe und der Fensterleiste (z. B. "minimize"); in der Vorschau ohne Wirkung. */
+  fenster: string[];
 }
 
 declare global {
@@ -162,6 +164,8 @@ export function installDevBackend(): void {
   const exporte = new Map<string, string>();
   const darstellungen = new Map<string, string>();
   const explorer: string[] = [];
+  const fenster: string[] = [];
+  let maximiert = false;
 
   let missing = false;
   // Simulierter Gerätespeicher für die Ordnerauswahl auf Android (localStorage "dev-platform" = "android").
@@ -319,6 +323,19 @@ export function installDevBackend(): void {
           const was = pfad === "" ? "den Vault-Ordner" : folders.has(pfad) ? `den Ordner „${pfad}“` : `„${pfad}“ markiert in seinem Ordner`;
           return `Browser-Vorschau: Hier gibt es keinen Explorer. In der App öffnet sich jetzt der Windows-Explorer und zeigt ${was}.`;
         }
+        // Eigener Fensterrahmen: Die Vorschau merkt sich nur die Befehle (ein Browser-Tab hat kein eigenes Fenster).
+        case "plugin:window|minimize":
+        case "plugin:window|close":
+        case "plugin:window|start_dragging":
+          fenster.push(cmd.slice("plugin:window|".length));
+          return null;
+        case "plugin:window|toggle_maximize":
+        case "plugin:window|internal_toggle_maximize":
+          fenster.push(cmd.slice("plugin:window|".length));
+          maximiert = !maximiert;
+          return null;
+        case "plugin:window|is_maximized":
+          return maximiert;
         case "sicherheitstest_info":
           return null;
         case "app_platform":
@@ -366,6 +383,8 @@ export function installDevBackend(): void {
     },
     { shouldMockEvents: true },
   );
+  // Ein Fenster „main“ wie in der App, damit getCurrentWindow() funktioniert.
+  mockWindows("main");
 
   // Bilder: Die Browser-Vorschau liefert schon fertige Adressen des Vite-Servers.
   (window as unknown as { __TAURI_INTERNALS__: Record<string, unknown> }).__TAURI_INTERNALS__.convertFileSrc = (
@@ -381,6 +400,7 @@ export function installDevBackend(): void {
     exporte,
     darstellungen,
     explorer,
+    fenster,
     externalWrite(path, content) {
       const isNew = !files.has(path);
       files.set(path, content);

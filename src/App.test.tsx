@@ -1905,3 +1905,54 @@ describe("Modi Hell, Dunkel, Schwarz und Akzentfarbe (Etappe 18)", () => {
     await waitFor(() => expect(nachrichten).toContainEqual({ localist: 1, typ: "thema", wert: "schwarz", akzent: "blau" }));
   });
 });
+
+describe("Fensterrahmen ohne Windows-Titelleiste (Etappe 18)", () => {
+  const knoepfe = () => within(screen.getByRole("group", { name: "Fenster" }));
+
+  it("Minimieren, Maximieren/Wiederherstellen und Schließen oben rechts; freie Stellen der Leiste ziehen das Fenster", async () => {
+    await openVaultFromStart();
+    const leiste = document.querySelector(".workspace-leiste")!;
+    expect(leiste.getAttribute("data-tauri-drag-region")).toBe("deep");
+    expect([...knoepfe().getAllByRole("button")].map((b) => b.getAttribute("aria-label"))).toEqual(["Fenster minimieren", "Fenster maximieren", "Fenster schließen"]);
+    // Wie die Knöpfe von Windows nicht in der Tab-Reihenfolge
+    expect(knoepfe().getAllByRole("button").every((b) => b.tabIndex === -1)).toBe(true);
+
+    fireEvent.click(knoepfe().getByRole("button", { name: "Fenster minimieren" }));
+    fireEvent.click(knoepfe().getByRole("button", { name: "Fenster maximieren" }));
+    expect(await knoepfe().findByRole("button", { name: "Fenster wiederherstellen" })).toBeTruthy();
+    fireEvent.click(knoepfe().getByRole("button", { name: "Fenster wiederherstellen" }));
+    expect(await knoepfe().findByRole("button", { name: "Fenster maximieren" })).toBeTruthy();
+    fireEvent.click(knoepfe().getByRole("button", { name: "Fenster schließen" }));
+    await waitFor(() => expect(vault().fenster).toEqual(["minimize", "toggle_maximize", "toggle_maximize", "close"]));
+  });
+
+  it("auch vor der Vault-Auswahl gibt es Leiste und Knöpfe, auf Android nicht", async () => {
+    render(<App />);
+    await screen.findByRole("button", { name: "Vault-Ordner öffnen …" });
+    expect(document.querySelector(".app-leiste")?.getAttribute("data-tauri-drag-region")).toBe("deep");
+    expect(knoepfe().getAllByRole("button")).toHaveLength(3);
+    cleanup();
+
+    localStorage.setItem("dev-platform", "android");
+    await openVaultFromStart();
+    expect(screen.queryByRole("group", { name: "Fenster" })).toBeNull();
+    expect(document.querySelector("[data-tauri-drag-region]")).toBeNull();
+  });
+
+  it("tauri.conf.json ohne Titelleiste, Capabilities nur um die Fensterrechte erweitert", async () => {
+    const { default: conf } = await import("../src-tauri/tauri.conf.json");
+    const { default: capability } = await import("../src-tauri/capabilities/default.json");
+    expect(conf.app.windows[0].decorations).toBe(false);
+    expect(capability.permissions).toEqual([
+      "core:default",
+      "core:window:allow-destroy",
+      "core:window:allow-show",
+      "core:window:allow-start-dragging",
+      "core:window:allow-minimize",
+      "core:window:allow-toggle-maximize",
+      "core:window:allow-close",
+      "opener:default",
+      "dialog:default",
+    ]);
+  });
+});
