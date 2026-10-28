@@ -3,10 +3,30 @@
 ## Aktueller Stand
 - Etappe: 17 – Bedienung verbessern (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
 - Zuletzt aktualisiert: 2026-10-28 19:30
-- Nächster Schritt: Etappe 17 beginnen (Kriterien übernehmen, dann Tab/Shift+Tab zuerst in der Vorschau nachstellen).
+- Nächster Schritt: Tab und Shift+Tab im heutigen Stand in der Vorschau nachstellen (echte Tastatur) und als Tabelle hier eintragen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- Etappe 17 beginnt (Kriterien folgen beim Start der Etappe).
+**Tab und Shift+Tab**
+- [ ] Zuerst nachgestellt (Browser-Vorschau, echte Tastatur): Was passiert heute bei Tab und Shift+Tab in Absatz, Überschrift, Liste, Checkliste, nummerierter Liste, Callout und Toggle, mit und ohne Markierung, im ersten Block und im Code-Editor? Das Ergebnis steht als Tabelle in `FORTSCHRITT.md`.
+- [ ] Notizen: Tab rückt den aktuellen bzw. alle markierten Blöcke ein, Shift+Tab rückt aus, auch bei offener Formatierungsleiste. Der Fokus verlässt den Editor nie (auch nicht im ersten Block oder ganz links). Cursor und Markierung bleiben an derselben Textstelle, die Seite scrollt nicht.
+- [ ] Notizen: Eingerückt wird nur, was Markdown auch speichern kann (Listenpunkte, Checklisten, nummerierte Listen und Absätze unter einem Listenpunkt). In allen anderen Fällen bleibt der Block ruhig stehen, ohne Sprung und ohne Fokusverlust. Alles Eingerückte ist nach Speichern und Neuladen genauso eingerückt. Dafür gibt es Roundtrip-Tests.
+- [ ] Notizen: Ein- und Ausrücken hat einen kurzen, ruhigen Übergang (höchstens 150 ms, Werte aus `tokens.css`, aus bei `prefers-reduced-motion`). Einzug und Führungslinie kommen aus `tokens.css`.
+- [ ] HTML-Seiten: Tab rückt die Zeile bzw. alle markierten Zeilen um eine Stufe ein (dieselbe Einrückung wie bei eingefügten Bausteinen), Shift+Tab rückt aus, auch wenn der Cursor mitten in der Zeile steht. Escape und danach Tab verlässt den Editor, wie es CodeMirror für die Tastaturbedienung vorsieht.
+- [ ] Tests für beide Editoren.
+**„Im Explorer öffnen“**
+- [ ] Rechtsklick auf eine Seite (Notiz oder HTML-Seite) → „Im Explorer öffnen“: Der Windows-Explorer zeigt den Ordner und markiert die Datei. Auf einem Ordner öffnet derselbe Eintrag den Ordner selbst. Im Menü „Vault“ gibt es „Vault im Explorer öffnen“.
+- [ ] Umgesetzt über einen neuen Rust-Befehl, der den Pfad wie `vault::resolve` prüft (nur Pfade im geöffneten Vault) und dann den Explorer öffnet. Die Capabilities werden dafür nicht erweitert. `cargo test` prüft die Pfadprüfung.
+- [ ] Auf Android ist der Eintrag ausgeblendet. In der Browser-Vorschau zeigt `src/lib/dev-backend.ts` stattdessen eine Meldung. Ein Vitest-Test prüft den Menüeintrag.
+- [ ] In der gebauten `localist.exe` geprüft: Ein Explorer-Fenster mit markierter Datei öffnet sich (Nachweis z. B. über den Fenstertitel aus einem Skript).
+**HTML-Seiten: Code links oder rechts, verschiebbare Trennlinie**
+- [ ] Einstellung „Code-Editor links / rechts“ in den Einstellungen und als kleiner Knopf „Seiten tauschen“ in der Ansicht „Geteilt“. Sie wirkt sofort und wird gemerkt. Auf schmalen Bildschirmen (untereinander) bedeutet links „oben“ und rechts „unten“.
+- [ ] In „Geteilt“ lässt sich die Trennlinie mit Maus und Finger verschieben. Jede Seite bleibt mindestens etwa 280 px breit, ein Doppelklick setzt auf 50 : 50 zurück. Mit der Tastatur bedienbar (Fokus, Pfeiltasten, `role="separator"` mit `aria-valuenow`). Das Verhältnis wird gemerkt.
+- [ ] Beim Ziehen ruckelt nichts, es wird kein Text markiert, und die Vorschau behält ihre Scrollposition.
+- [ ] Tests für Einstellung, Begrenzung und Speicherung des Verhältnisses und die Tastatur, dazu ein Prüfskript mit echter Maus wie `scripts/vorschau-scroll-pruefung.mjs`.
+**Seite „Bausteine“ breiter**
+- [ ] Auf dem PC nutzt die Seite „Bausteine“ (Bibliothek und Hilfe) die verfügbare Breite: Liste links, die Vorschau füllt den Rest und die Fensterhöhe. Eine Höchstbreite greift erst bei sehr breiten Fenstern. Die Hilfe stellt Erklärung und Beispielcode nebeneinander, wenn Platz ist.
+- [ ] Screenshots bei 1280 × 800, 1920 × 1080 und 360 × 740.
+- [ ] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
