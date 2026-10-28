@@ -80,6 +80,16 @@ const HELFER = `window.__tab = {
   tiefe(text) { const el = this.block(text); if (!el) return null; let d = 0; let n = el.closest('.bn-block-outer');
     while ((n = n.parentElement?.closest('.bn-block-outer'))) d++; return d; },
   links(text) { const el = this.block(text); return el ? Math.round(el.getBoundingClientRect().left) : null; },
+  /** Misst 450 ms lang in jedem Bild die linke Kante des Blocks (für den Übergang beim Ein- und Ausrücken). */
+  sampeln(text) { const start = performance.now(); const werte = [];
+    this.probe = new Promise((fertig) => { const schritt = () => { const t = performance.now() - start; const el = this.block(text);
+      werte.push([t, el ? el.getBoundingClientRect().left : null]); if (t < 450) requestAnimationFrame(schritt); else fertig(werte); };
+      requestAnimationFrame(schritt); }); return true; },
+  uebergang(werte) { const erst = werte[0][1]; const end = werte.at(-1)[1]; if (erst === end) return 'keine Bewegung';
+    const beginn = werte.find(([, x]) => x !== erst); const ziel = werte.find(([t, x]) => t >= beginn[0] && Math.abs(x - end) < 0.5);
+    const zwischen = werte.filter(([t, x]) => t >= beginn[0] && t < ziel[0]).length;
+    const sprung = Math.round(beginn[1] - erst);
+    return zwischen <= 1 ? 'Sprung ohne Übergang' : 'Übergang ' + Math.round(ziel[0] - beginn[0]) + ' ms (' + zwischen + ' Bilder' + (Math.abs(sprung) > 2 ? ', erst ' + sprung + ' px Sprung' : '') + ')'; },
   fokus() { const a = document.activeElement;
     if (!a || a === document.body) return 'nichts (body)';
     if (a.closest('.bn-formatting-toolbar')) return 'Formatierungsleiste (' + (a.getAttribute('aria-label') || a.getAttribute('data-test') || a.textContent.trim() || a.tagName) + ')';
@@ -168,8 +178,9 @@ async function notizFall(name, texte, markieren) {
   });
   for (const [label, mod] of [["Tab", 0], ["Shift+Tab", SHIFT]]) {
     const vorher = await messen();
+    await evaluate(`window.__tab.sampeln(${JSON.stringify(texte[0])})`);
     await taste("Tab", mod);
-    await sleep(300);
+    const bewegung = await evaluate(`window.__tab.probe.then((werte) => window.__tab.uebergang(werte))`);
     const nachher = await messen();
     const fokus = await evaluate(`window.__tab.fokus()`);
     await sleep(1500);
@@ -178,7 +189,7 @@ async function notizFall(name, texte, markieren) {
       name,
       label + (vorher.leiste ? " (Formatierungsleiste offen)" : ""),
       `${vorher.tiefe} → ${nachher.tiefe}`,
-      `${nachher.links - vorher.links} px`,
+      `${nachher.links - vorher.links} px, ${bewegung}`,
       fokus,
       vorher.markierung === nachher.markierung ? "gleich" : `${vorher.markierung} → ${nachher.markierung}`,
       vorher.scroll === nachher.scroll ? "gleich" : `${vorher.scroll} → ${nachher.scroll}`,
@@ -228,7 +239,7 @@ try {
   await klickAuf(`document.querySelector('.tree [title="${NOTIZ}"]')`);
   await waitFor(`window.__tab.block("Letzter Absatz")`);
 
-  zeile("Fall", "Taste", "Einrückung (Tiefe)", "Versatz", "Fokus danach", "Cursor/Markierung", "Scroll", "gespeichert");
+  zeile("Fall", "Taste", "Einrückung (Tiefe)", "Versatz und Bewegung", "Fokus danach", "Cursor/Markierung", "Scroll", "gespeichert");
   zeile("---", "---", "---", "---", "---", "---", "---", "---");
   await notizFall("Erster Block (Absatz)", ["Erster Absatz"], false);
   await notizFall("Absatz", ["Zweiter Absatz"], false);

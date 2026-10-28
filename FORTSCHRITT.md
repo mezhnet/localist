@@ -34,41 +34,42 @@ Mit `scripts/tab-pruefung.mjs` (Edge im Hintergrund, echte Tastatur über das De
 - Mit Markierung (Formatierungsleiste offen, auch bei zwei markierten Listenpunkten) passiert bei Tab und Shift+Tab nichts: BlockNote gibt die Taste bei `tabBehavior: "prefer-navigate-ui"` an die Leiste ab, eingerückt wird nicht.
 - Absatz und Überschrift rücken sichtbar um 24 px ein, gespeichert wird aber ohne Einrückung (nach dem Neuladen weg).
 - Callout, Toggle und ein Absatz nach einem Toggle rutschen in den vorigen Block: Der Callout landet im Listenpunkt davor, das Toggle im Callout (`> > [!note]-`), der Absatz im Toggle (`> Letzter Absatz`). Das ändert den Inhalt, nicht nur die Einrückung.
-- Liste, Checkliste, nummerierte Liste und ein Absatz direkt nach einer Liste werden richtig eingerückt gespeichert. Der Block springt ohne Übergang (24 px, im Toggle 42 px).
+- Liste, Checkliste, nummerierte Liste und ein Absatz direkt nach einer Liste werden richtig eingerückt gespeichert.
+- Bewegung (in jedem Bild gemessen): BlockNote animiert das Ein- und Ausrücken mit etwa 196 ms, also über der Grenze von 150 ms. Dabei springt der Block zuerst um 4 px, weil die Animation mit 20 px rechnet, der Einzug aber 24 px beträgt (im Toggle 22 px von 42 px). Callouts springen ganz ohne Übergang.
 - Code-Editor: Tab/Shift+Tab rücken die ganze Zeile um 2 Leerzeichen ein bzw. aus, auch mitten in der Zeile und über mehrere markierte Zeilen; der Cursor bleibt an derselben Textstelle. Escape und danach Tab verlässt den Editor (Fokus auf dem nächsten Knopf).
 
 Tab und Shift+Tab, Vorschau http://localhost:1420 (Edge, echte Tastatur, 1280 × 800):
 
-| Fall | Taste | Einrückung (Tiefe) | Versatz | Fokus danach | Cursor/Markierung | Scroll | gespeichert |
+| Fall | Taste | Einrückung (Tiefe) | Versatz und Bewegung | Fokus danach | Cursor/Markierung | Scroll | gespeichert |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Erster Block (Absatz) | Tab | 0 → 0 | 0 px | Editor | gleich | gleich | `Erster Absatz` |
-| Erster Block (Absatz) | Shift+Tab | 0 → 0 | 0 px | Editor | gleich | gleich | `Erster Absatz` |
-| Absatz | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `Zweiter Absatz` |
-| Absatz, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `Zweiter Absatz` |
-| Überschrift | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `## Überschrift` |
-| Überschrift | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `## Überschrift` |
-| Liste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `··- Punkt B` |
-| Liste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `- Punkt B` |
-| Liste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- Punkt B` |
-| Liste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- Punkt B` |
-| Liste, zwei Punkte markiert | Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
-| Liste, zwei Punkte markiert | Shift+Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
-| Absatz direkt nach Liste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `··Absatz nach Liste` |
-| Absatz direkt nach Liste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `Absatz nach Liste` |
-| Checkliste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
-| Checkliste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Checkliste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Checkliste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- [ ] Aufgabe B` |
-| Nummerierte Liste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `···1. Schritt B` |
-| Nummerierte Liste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `2. Schritt B` |
-| Callout | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `···> [!info] Callout A` |
-| Callout | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `> [!info] Callout A` |
-| Toggle | Tab | 0 → 1 | 42 px | Editor | gleich | gleich | `> > [!note]- Toggle A` |
-| Toggle | Shift+Tab | 1 → 0 | -42 px | Editor | gleich | gleich | `> [!note]- Toggle A` |
-| Absatz nach Toggle | Tab | 0 → 1 | 42 px | Editor | gleich | gleich | `> Letzter Absatz` |
-| Absatz nach Toggle | Shift+Tab | 1 → 0 | -42 px | Editor | gleich | gleich | `Letzter Absatz` |
+| Erster Block (Absatz) | Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
+| Erster Block (Absatz) | Shift+Tab | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Erster Absatz` |
+| Absatz | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `Zweiter Absatz` |
+| Absatz | Shift+Tab | 1 → 0 | -24 px, Übergang 197 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `Zweiter Absatz` |
+| Absatz, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+| Absatz, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `Zweiter Absatz` |
+| Überschrift | Tab | 0 → 1 | 24 px, Übergang 221 ms (4 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `## Überschrift` |
+| Überschrift | Shift+Tab | 1 → 0 | -24 px, Übergang 195 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `## Überschrift` |
+| Liste | Tab | 0 → 1 | 24 px, Übergang 195 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··- Punkt B` |
+| Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 195 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `- Punkt B` |
+| Liste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` |
+| Liste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` |
+| Liste, zwei Punkte markiert | Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
+| Liste, zwei Punkte markiert | Shift+Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
+| Absatz direkt nach Liste | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··Absatz nach Liste` |
+| Absatz direkt nach Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `Absatz nach Liste` |
+| Checkliste | Tab | 0 → 1 | 24 px, Übergang 194 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
+| Checkliste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+| Checkliste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+| Checkliste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px, keine Bewegung | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+| Nummerierte Liste | Tab | 0 → 1 | 24 px, Übergang 196 ms (6 Bilder, erst 4 px Sprung) | Editor | gleich | gleich | `···1. Schritt B` |
+| Nummerierte Liste | Shift+Tab | 1 → 0 | -24 px, Übergang 196 ms (6 Bilder, erst -4 px Sprung) | Editor | gleich | gleich | `2. Schritt B` |
+| Callout | Tab | 0 → 1 | 24 px, Sprung ohne Übergang | Editor | gleich | gleich | `···> [!info] Callout A` |
+| Callout | Shift+Tab | 1 → 0 | -24 px, Sprung ohne Übergang | Editor | gleich | gleich | `> [!info] Callout A` |
+| Toggle | Tab | 0 → 1 | 42 px, Sprung ohne Übergang | Editor | gleich | gleich | `> > [!note]- Toggle A` |
+| Toggle | Shift+Tab | 1 → 0 | -42 px, Übergang 197 ms (6 Bilder, erst -22 px Sprung) | Editor | gleich | gleich | `> [!note]- Toggle A` |
+| Absatz nach Toggle | Tab | 0 → 1 | 42 px, Übergang 196 ms (6 Bilder, erst 22 px Sprung) | Editor | gleich | gleich | `> Letzter Absatz` |
+| Absatz nach Toggle | Shift+Tab | 1 → 0 | -42 px, Übergang 197 ms (6 Bilder, erst -22 px Sprung) | Editor | gleich | gleich | `Letzter Absatz` |
 | Code-Editor: Cursor mitten in der Zeile | Tab | 0 → 2 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 44 | – | – |
 | Code-Editor: Cursor mitten in der Zeile | Shift+Tab | 2 → 0 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 43 → „<l-callout typ“ Spalte 41 | – | – |
 | Code-Editor: Cursor mitten in eingerückter Zeile | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-frage>Welch“ Spalte 23 → „<l-frage>Welch“ Spalte 21 | – | – |
