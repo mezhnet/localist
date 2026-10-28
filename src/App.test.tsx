@@ -1971,7 +1971,8 @@ describe("CSS: Inhalt als abgesetzte Fläche (Etappe 18, jsdom misst kein Layout
     expect(regel(".sidebar")).toContain("background: var(--color-window);");
     expect(regel(".sidebar")).not.toContain("border-right");
     expect(regel(".main")).toContain("background: var(--color-bg);");
-    const pc = text.indexOf("@media (min-width: 769px)");
+    // der Abschnitt „PC“, der die Inhaltsfläche gestaltet (davor steht einer fürs Einklappen)
+    const pc = text.indexOf("@media (min-width: 769px) {\n  .main {");
     expect(pc).toBeGreaterThan(0);
     const karte = regel(".main", pc);
     expect(karte).toContain("margin: 0 var(--window-gap) var(--window-gap) 0;");
@@ -2057,7 +2058,7 @@ describe("Seitenleiste links oder rechts (Etappe 18)", () => {
     expect(seite.getByRole("button", { name: "Links" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(seite.getByRole("button", { name: "Rechts" }));
     // sofort, noch bei offenem Dialog
-    expect(arbeitsbereich().classList.contains("seitenleiste-rechts")).toBe(true);
+    await waitFor(() => expect(arbeitsbereich().classList.contains("seitenleiste-rechts")).toBe(true));
     expect(seite.getByRole("button", { name: "Rechts" }).getAttribute("aria-pressed")).toBe("true");
     expect(localStorage.getItem("seitenleiste-seite")).toBe("rechts");
     const leiste = document.querySelector(".workspace-leiste")!;
@@ -2075,7 +2076,9 @@ describe("Seitenleiste links oder rechts (Etappe 18)", () => {
   it("CSS: rechts gespiegelt (Raster, Rand der Inhaltsfläche, Schublade von rechts), obere Leiste über die ganze Breite", async () => {
     const { default: css } = await import("./styles/layout.css?raw");
     const text = css.replace(/\r\n/g, "\n");
-    expect(text).toMatch(/\.workspace\.seitenleiste-rechts \{\s*grid-template-columns: minmax\(0, 1fr\) var\(--sidebar-width\);\s*grid-template-areas:\s*"leiste leiste"\s*"inhalt seitenleiste";/);
+    // Breite über --seitenleiste-breite (= --sidebar-width, eingeklappt 0, siehe „Seitenleiste ein- und ausklappen“)
+    expect(text).toMatch(/\.workspace\.seitenleiste-rechts \{\s*grid-template-columns: minmax\(0, 1fr\) var\(--seitenleiste-breite\);\s*grid-template-areas:\s*"leiste leiste"\s*"inhalt seitenleiste";/);
+    expect(text).toMatch(/\.workspace \{\s*--seitenleiste-breite: var\(--sidebar-width\);/);
     expect(text).toMatch(/\.workspace\.seitenleiste-rechts \.main \{\s*margin-right: 0;\s*margin-left: var\(--window-gap\);/);
     expect(text).toMatch(/\.seitenleiste-rechts \.sidebar-shell \{\s*right: 0;\s*left: auto;\s*transform: translateX\(100%\);/);
     expect(text).toMatch(/\.seitenleiste-rechts \.sidebar-shell\.open \{\s*transform: none;\s*box-shadow: var\(--shadow-drawer-right\);/);
@@ -2085,9 +2088,14 @@ describe("Seitenleiste links oder rechts (Etappe 18)", () => {
 describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
   const arbeitsbereich = () => document.querySelector(".workspace")!;
   const knopf = () => document.querySelector<HTMLButtonElement>(".workspace-leiste .seitenleiste-knopf")!;
+  /** Vault offen und Ordnerbaum geladen: Erst dann hat React die Tastenkürzel und den gemerkten Wert angemeldet. */
+  const bereit = async () => {
+    await openVaultFromStart();
+    await (await inTree()).findByText("Notizen");
+  };
 
   it("Knopf mit Seitenleisten-Symbol in der oberen Leiste, Tastenkürzel im Tooltip; der Zustand wird gemerkt", async () => {
-    await openVaultFromStart();
+    await bereit();
     expect(knopf().getAttribute("aria-label")).toBe("Seitenleiste einklappen");
     expect(knopf().title).toBe("Seitenleiste einklappen (Strg+.)");
     expect(knopf().getAttribute("aria-controls")).toBe("seitenleiste");
@@ -2096,17 +2104,18 @@ describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
     // vor den freien Stellen und den Fensterknöpfen, also links am Inhalt
     expect(knopf().parentElement?.firstElementChild).toBe(knopf());
     fireEvent.click(knopf());
-    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
+    // Direkt nach dem Anzeigen meldet sich React erst einen Augenblick später am gemerkten Wert an: darauf warten.
+    await waitFor(() => expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true));
     expect(localStorage.getItem("seitenleiste-eingeklappt")).toBe("true");
     expect(knopf().getAttribute("aria-label")).toBe("Seitenleiste ausklappen");
     expect(knopf().getAttribute("aria-expanded")).toBe("false");
     expect(knopf().querySelector(".lucide-panel-left-open")).toBeTruthy();
 
     cleanup();
-    await openVaultFromStart();
+    await bereit();
     expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
     fireEvent.click(knopf());
-    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+    await waitFor(() => expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false));
     expect(localStorage.getItem("seitenleiste-eingeklappt")).toBe("false");
   });
 
@@ -2122,9 +2131,9 @@ describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
     editor.focus();
     const strgPunkt = fireEvent.keyDown(editor, { key: ".", code: "Period", ctrlKey: true });
     expect(strgPunkt).toBe(false); // preventDefault: der Editor bekommt die Taste nicht
-    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
+    await waitFor(() => expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true));
     fireEvent.keyDown(editor, { key: ".", code: "Period", ctrlKey: true });
-    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+    await waitFor(() => expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false));
     await new Promise((fertig) => setTimeout(fertig, 700));
     expect(vault().files.get("Notizen/Ideen.md")).toBe(vorher);
     // Mit Umschalt oder Alt (AltGr) passiert nichts
@@ -2150,20 +2159,20 @@ describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
       return el!;
     });
     fireEvent.keyDown(code, { key: ".", ctrlKey: true });
-    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
+    await waitFor(() => expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false));
   });
 
   it("Liegt der Fokus in der Seitenleiste, wandert er beim Einklappen auf den Knopf; auf Android gibt es kein Einklappen", async () => {
-    await openVaultFromStart();
+    await bereit();
     const startseite = screen.getByRole("button", { name: "Startseite" });
     startseite.focus();
     fireEvent.keyDown(startseite, { key: ".", ctrlKey: true });
-    expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true);
     expect(document.activeElement).toBe(knopf());
+    await waitFor(() => expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(true));
     cleanup();
 
     localStorage.setItem("dev-platform", "android");
-    await openVaultFromStart();
+    await bereit();
     expect(document.querySelector(".seitenleiste-knopf")).toBeNull();
     expect(arbeitsbereich().classList.contains("is-eingeklappt")).toBe(false);
     fireEvent.keyDown(window, { key: ".", ctrlKey: true });

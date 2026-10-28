@@ -230,7 +230,11 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
         setVaultVersion((version) => version + 1);
       }, 150);
     }).then(
-      (stop) => (disposed ? stop() : (unlisten = stop)),
+      (stop) => {
+        if (!disposed) unlisten = stop;
+        // Schon abgebaut (z. B. in Tests nach dem Entfernen der Tauri-Attrappe): Das Abmelden darf dann scheitern.
+        else void Promise.resolve().then(stop).catch(() => {});
+      },
       (error) => showError(`Der Dateiwächter ist nicht verfügbar: ${errorMessage(error)}`),
     );
     return () => {

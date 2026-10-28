@@ -33,12 +33,17 @@ function useMaximiert(): [boolean, () => void] {
     let stop: (() => void) | undefined;
     let vorbei = false;
     pruefen();
+    // Abmelden darf nie scheitern (z. B. wenn beim Beenden die Ereignis-Schnittstelle schon fort ist); Tauri meldet
+    // asynchron ab, deshalb über ein Versprechen.
+    const abmelden = (ende?: () => void) => {
+      if (ende) void Promise.resolve().then(ende).catch(() => {});
+    };
     fenster()
       ?.onResized(pruefen)
-      .then((ende) => (vorbei ? ende() : (stop = ende)), () => {});
+      .then((ende) => (vorbei ? abmelden(ende) : (stop = ende)), () => {});
     return () => {
       vorbei = true;
-      stop?.();
+      abmelden(stop);
     };
   }, [pruefen]);
   return [maximiert, pruefen];
