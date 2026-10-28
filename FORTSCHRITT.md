@@ -1,12 +1,15 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 15 – Version 2.0 (abgeschlossen, Version 2.0.0 ist fertig)
-- Zuletzt aktualisiert: 2026-10-25 22:15
-- Nächster Schritt: keiner offen. Alle Etappen aus `CLAUDE.md` sind umgesetzt; neue Wünsche (z. B. aus „Zukunft“) erst nach Absprache mit dem Nutzer.
+- Etappe: 16 – Ordnername „Localist“ (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
+- Zuletzt aktualisiert: 2026-10-28 18:55
+- Nächster Schritt: alten Ordnernamen in `ANLEITUNG.md` ersetzen und absolute Pfade unter `src-tauri/gen/android/` entfernen.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- Alle Etappen 0–15 sind abgeschlossen. Ideen für später stehen in `CLAUDE.md` unter „Zukunft (noch nicht umsetzen)“.
+- [ ] `git grep -n -i "localprojekt"` ist geprüft, die Ausgabe steht im Chat. Jede Stelle, die den Ordner- oder Projektnamen meint, sagt jetzt „Localist“. Übrig sind nur die Übernahme-Kennungen und historische Einträge in `FORTSCHRITT.md`, jeweils begründet.
+- [ ] Keine versionierte Datei und keine Datei unter `src-tauri/gen/android/` (außer Build-Ausgaben) enthält einen absoluten Pfad mit `LocalProjekt`.
+- [ ] Die Vorbereitung ist committet. Danach hältst du an und erklärst mir Schritt für Schritt, was ich tun muss: alles schließen, was den Ordner benutzt (Claude Code, VS Code, Terminals, `npm run dev`, Localist, Android-Emulator), den Ordner im Explorer umbenennen, den Ordner in der Claude-App neu verbinden und Claude Code im neuen Ordner starten. Notiere das unter „Offene Probleme“.
+- [ ] Nach dem Umbenennen läuft alles im neuen Ordner: `npm test`, `cargo test`, `npx tsc --noEmit`, `npm run tauri build` (Rust baut einmal komplett neu, weil sich die Pfade geändert haben), die Android-APK baut wie in Etappe 15, und `npm run dev` startet. Die alten Build-Reste `localprojekt*` sind entfernt (`cargo clean` ist erlaubt).
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
@@ -63,6 +66,7 @@ Stand: am 2026-10-25 mit Version 2.0.0 durchgeklickt, alle 7 Punkte bestanden. A
 - [x] Export: „DNS“ als eigenständige HTML-Datei exportieren (CSS und Skript eingebettet).
 
 ## Abgeschlossene Etappen
+- Version 2.0 ist abgeschlossen (Etappen 9–15). Seit dem 2026-10-28 läuft Version 2.1 (Etappen 16–20) nach `docs/design/auftrag-version-2.1.md`; die Kriterien stehen auch in `CLAUDE.md`.
 - Etappe 15 – Version 2.0 (abgeschlossen am 2026-10-25). Nachweise: `npm test` 297 von 297 Tests grün (27 Testdateien, neu der Test „Cursor ganz am Anfang, der Inhalt beginnt mit einem Zeilenumbruch (wie meist in <main>)“ in `src/lib/bausteine.test.ts`; geändert der Oberflächen-Test „Werkzeugleiste fügt Karteikarte, Kartenstapel, Quiz und Diagramm nach dem Speicherformat ein“, siehe „Entscheidungen“), `cargo test` 42 von 42 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (`src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,64 MiB)). Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) abgehakt (siehe oben).
   - Gebaute `localist.exe` 2.0.0 erneut geprüft: Sicherheitstest „Ergebnis: 21 von 21 Prüfungen bestanden – die Seite hat keinen Zugriff auf App, Dateien außerhalb des Vaults oder Netzwerk.“ (Exit-Code 0). App-Prüfung (`node scripts/app-pruefung.mjs …`, Screenshots in `docs/screenshots/etappe-15/app/`):
     ```
