@@ -1,9 +1,10 @@
 // Markdown (ohne Frontmatter) <-> BlockNote-Blöcke.
 //
 // Unterstützt: Überschriften, Absätze, Aufzählungen, nummerierte Listen, Checklisten, Zitate,
-// Code-Blöcke, Bilder und Trennlinien. Alles andere (Tabellen, HTML …) wird als "rawMarkdown"-Block
-// wörtlich übernommen, damit beim Speichern nichts verloren geht.
-import type { Code, Image, List, Paragraph, PhrasingContent, RootContent } from "mdast";
+// Code-Blöcke, Bilder, Trennlinien und Tabellen (GFM, auf oberster Ebene). Alles andere (HTML, Tabellen, die der
+// Editor nicht verlustfrei abbilden kann …) wird als "rawMarkdown"-Block wörtlich übernommen, damit beim Speichern
+// nichts verloren geht.
+import type { Code, Image, List, Paragraph, PhrasingContent, RootContent, Table } from "mdast";
 import type { VaultBlock, VaultPartialBlock } from "../editor/schema";
 import {
   inlineToMarkdown,
@@ -42,8 +43,14 @@ function convertFlow(nodes: readonly RootContent[], source: string, topLevel: bo
       const gap = (node.position?.start.line ?? 0) - (previous.position?.end.line ?? 0) - 1;
       for (let i = 1; i < gap; i++) out.push({ type: "paragraph", content: [] });
     }
-    if (!topLevel || isSupported(node)) {
-      out.push(...convertNode(node, source));
+    if (!topLevel || isSupported(node, source)) {
+      const blocks = convertNode(node, source);
+      // Tabelle direkt nach einer Textzeile (ohne Leerzeile): so merken, damit sie beim Speichern dort bleibt.
+      if (node.type === "table" && index > 0 && nodes[index - 1].type === "paragraph") {
+        const gap = (node.position?.start.line ?? 0) - (nodes[index - 1].position?.end.line ?? 0) - 1;
+        if (gap === 0) tabelleMerken(blocks[0], sliceSource(node, source), true);
+      }
+      out.push(...blocks);
     } else {
       out.push(rawBlock(sliceSource(node, source)));
     }
@@ -51,9 +58,14 @@ function convertFlow(nodes: readonly RootContent[], source: string, topLevel: bo
   return out;
 }
 
-/** Kann der Knoten samt Inhalt verlustfrei als Editor-Blöcke dargestellt werden? */
-function isSupported(node: RootContent): boolean {
+/**
+ * Kann der Knoten samt Inhalt verlustfrei als Editor-Blöcke dargestellt werden? Tabellen nur auf oberster Ebene
+ * (`source` ist dann gesetzt), nicht in Listen, Zitaten oder Callouts.
+ */
+function isSupported(node: RootContent, source?: string): boolean {
   switch (node.type) {
+    case "table":
+      return source !== undefined && tabelleVerlustfrei(node, source);
     case "heading":
     case "paragraph":
     case "code":
@@ -62,9 +74,9 @@ function isSupported(node: RootContent): boolean {
     case "list":
       // Nummerierte Checklisten ("1. [ ] …") kennt der Editor nicht.
       if (node.ordered && node.children.some((item) => item.checked !== null && item.checked !== undefined)) return false;
-      return node.children.every((item) => item.children.every(isSupported));
+      return node.children.every((item) => item.children.every((child) => isSupported(child)));
     case "blockquote":
-      return node.children[0]?.type === "paragraph" && node.children.every(isSupported);
+      return node.children[0]?.type === "paragraph" && node.children.every((child) => isSupported(child));
     default:
       return false;
   }
@@ -111,9 +123,116 @@ function convertNode(node: RootContent, source: string): LooseBlock[] {
       return [{ type: "codeBlock", props: { language: codeLanguage(node) }, content: node.value }];
     case "thematicBreak":
       return [{ type: "divider" }];
+    case "table": {
+      const block = tabelleAlsBlock(node, source);
+      tabelleMerken(block, sliceSource(node, source), false);
+      return [block];
+    }
     default:
       return [rawBlock(sliceSource(node, source))];
   }
+}
+
+// ---------------------------------------------------------------------------
+// Tabellen (GFM) <-> BlockNote-Tabelle
+//
+// Gespeichert wird eine normale Markdown-Tabelle: Kopfzeile, Trennzeile mit Ausrichtung (`---`, `:---:`, `---:`),
+// Zellen mit `\|` für senkrechte Striche. Eine unveränderte Tabelle wird Zeichen für Zeichen wie in der Datei
+// geschrieben (auch mit ausgerichteten Spalten oder `:---`); erst nach einer Änderung in der einheitlichen Form.
+
+type Ausrichtung = "left" | "center" | "right";
+
+interface TabellenZelle {
+  props?: { textAlignment?: string };
+  content?: unknown;
+}
+
+/** Unveränderte Tabellen: einheitliche Form → Text aus der Datei (und ob sie direkt nach Text stand). */
+const tabellenQuelle = new Map<string, { quelle: string; direkt: boolean }>();
+const TABELLEN_MERKEN = 500;
+
+function tabelleMerken(block: LooseBlock, quelle: string, direkt: boolean): void {
+  const text = tabelleMarkdown(block);
+  if (tabellenQuelle.size >= TABELLEN_MERKEN) tabellenQuelle.delete(tabellenQuelle.keys().next().value!);
+  tabellenQuelle.set(text, { quelle: quelle.replace(/\n+$/, ""), direkt: direkt || (tabellenQuelle.get(text)?.direkt ?? false) });
+}
+
+function tabelleAlsBlock(node: Table, source: string): LooseBlock {
+  const ausrichtung = node.align ?? [];
+  return {
+    type: "table",
+    content: {
+      type: "tableContent",
+      columnWidths: node.children[0].children.map(() => undefined),
+      headerRows: 1,
+      rows: node.children.map((row) => ({
+        cells: row.children.map((cell, spalte) => ({
+          type: "tableCell",
+          props: { textAlignment: ausrichtung[spalte] ?? "left" },
+          content: phrasingToInline(cell.children, source),
+        })),
+      })),
+    },
+  };
+}
+
+/** Zeilen der Tabelle als Zellen (Editor-Blöcke haben TableCell-Objekte, Teil-Blöcke manchmal nur Inhalt). */
+function tabellenZeilen(block: LooseBlock): TabellenZelle[][] {
+  const content = block.content as { rows?: { cells?: unknown[] }[] } | undefined;
+  return (content?.rows ?? []).map((row) =>
+    (row.cells ?? []).map((cell) =>
+      cell !== null && typeof cell === "object" && (cell as { type?: unknown }).type === "tableCell" ? (cell as TabellenZelle) : { content: cell },
+    ),
+  );
+}
+
+function zellenText(zelle: TabellenZelle): string {
+  // Eine Zelle hat genau eine Zeile; senkrechte Striche brauchen in Tabellen immer ein \ davor (auch in Code).
+  return inlineToMarkdown(zelle.content as InlineInput, "heading").replace(/\|/g, "\\|");
+}
+
+function ausrichtungVon(zelle: TabellenZelle | undefined): Ausrichtung {
+  const wert = zelle?.props?.textAlignment;
+  return wert === "center" || wert === "right" ? wert : "left";
+}
+
+/** Die Tabelle in einheitlicher Form: `| a | b |`, Trennzeile `| --- | :---: | ---: |`. */
+function tabelleMarkdown(block: LooseBlock): string {
+  const zeilen = tabellenZeilen(block);
+  if (zeilen.length === 0 || zeilen[0].length === 0) return "";
+  const spalten = Math.max(...zeilen.map((zeile) => zeile.length));
+  const zeile = (zellen: string[]) => `| ${zellen.join(" | ")} |`;
+  const trenner = Array.from({ length: spalten }, (_, i) => {
+    const ausrichtung = ausrichtungVon(zeilen[0][i]);
+    return ausrichtung === "center" ? ":---:" : ausrichtung === "right" ? "---:" : "---";
+  });
+  const text = zeilen.map((zellen) => zeile(Array.from({ length: spalten }, (_, i) => (zellen[i] ? zellenText(zellen[i]) : ""))));
+  return [text[0], zeile(trenner), ...text.slice(1)].join("\n");
+}
+
+function tabelleText(block: LooseBlock): { text: string; direkt: boolean } {
+  const text = tabelleMarkdown(block);
+  const gemerkt = tabellenQuelle.get(text);
+  return gemerkt ? { text: gemerkt.quelle, direkt: gemerkt.direkt } : { text, direkt: false };
+}
+
+/** Ohne Lage und Ausrichtung „links“ = keine Angabe (beides sieht gleich aus). */
+function tabellenVergleich(node: Table): string {
+  return JSON.stringify({ ...node, position: undefined, align: (node.align ?? []).map((a) => (a === "left" ? null : a)) }, (key, value) =>
+    key === "position" ? undefined : value,
+  );
+}
+
+/**
+ * Lässt sich die Tabelle verlustfrei bearbeiten? Ja, wenn alle Zeilen gleich viele Zellen haben und die
+ * einheitliche Form beim erneuten Einlesen dieselbe Tabelle ergibt (Inhalt, Formatierung, Ausrichtung).
+ */
+function tabelleVerlustfrei(node: Table, source: string): boolean {
+  const spalten = node.children[0]?.children.length ?? 0;
+  if (spalten === 0 || node.children.some((row) => row.children.length !== spalten)) return false;
+  const text = tabelleMarkdown(tabelleAlsBlock(node, source));
+  const neu = parseMarkdown(text).children;
+  return neu.length === 1 && neu[0].type === "table" && tabellenVergleich(neu[0]) === tabellenVergleich(node);
 }
 
 // Obsidian-Callout: "> [!info] Titel", einklappbar mit "-" (zu) oder "+" (offen) direkt nach "]".
@@ -224,13 +343,15 @@ function serializeFlow(blocks: readonly LooseBlock[], topLevel: boolean): string
     }
 
     const continuesList = previous !== null && emptyParagraphs === 0 && sameList(previous, block);
+    // Eine unveränderte Tabelle, die direkt unter einer Textzeile stand, bleibt dort (ohne Leerzeile).
+    const direkt = block.type === "table" && previous?.type === "paragraph" && emptyParagraphs === 0 && tabelleText(block).direkt;
     if (block.type === "numberedListItem") {
       number = continuesList ? number + 1 : startNumber(block);
     }
     const chunk = serializeBlock(block, number);
     if (chunk === "") continue;
 
-    if (previous !== null) out += continuesList ? "\n" : "\n\n" + "\n".repeat(emptyParagraphs);
+    if (previous !== null) out += continuesList || direkt ? "\n" : "\n\n" + "\n".repeat(emptyParagraphs);
     out += chunk;
     previous = block;
     emptyParagraphs = 0;
@@ -272,6 +393,8 @@ function serializeBlock(block: LooseBlock, number: number): string {
       return appendSiblings("---", children);
     case "rawMarkdown":
       return appendSiblings(String(props.source ?? "").replace(/\n+$/, ""), children);
+    case "table":
+      return appendSiblings(tabelleText(block).text, children);
     default:
       return appendSiblings(inlineToMarkdown(block.content as InlineInput, "paragraph"), children);
   }

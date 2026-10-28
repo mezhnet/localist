@@ -171,11 +171,12 @@ describe("Roundtrip Markdown → Editor → Markdown", () => {
     expect(markdownToBlocks(markdown)[0].content).toContainEqual({ type: "wikilink", props: { target: "Ideen", alias: "" } });
   });
 
-  it("Unbekanntes Markdown (z. B. Tabellen, HTML) bleibt wörtlich erhalten", () => {
+  it("Unbekanntes Markdown (z. B. HTML, Fußnoten) bleibt wörtlich erhalten", () => {
+    // Seit Etappe 19 sind Tabellen ein Editor-Block; eine unveränderte Tabelle bleibt trotzdem Zeichen für Zeichen gleich.
     const table = "| Spalte | Wert |\n| ------ | ---- |\n| a      | 1    |\n";
     const blocks = expectRoundtrip(`Vorher\n\n${table}\nNachher\n`);
-    expect(blocks[1].type).toBe("rawMarkdown");
-    expectRoundtrip("<div>\nHTML-Block\n</div>\n");
+    expect(blocks[1].type).toBe("table");
+    expect(expectRoundtrip("<div>\nHTML-Block\n</div>\n")[0].type).toBe("rawMarkdown");
     expectRoundtrip("Fußnote[^1] im Text.\n\n[^1]: Die Fußnote.\n");
   });
 
@@ -253,6 +254,111 @@ describe("Maskierung beim Speichern", () => {
     expect(viaEditor("__fett__ und _kursiv_\n").markdown).toBe("**fett** und *kursiv*\n");
     expect(viaEditor("Titel\n=====\n").markdown).toBe("# Titel\n");
     expect(viaEditor("~~~\ncode\n~~~\n").markdown).toBe("```\ncode\n```\n");
+  });
+
+  describe("Tabellen (Etappe 19)", () => {
+    /** Zellen einer Tabelle im Editor als Text (Zeile für Zeile). */
+    const zellen = (block: VaultBlock) =>
+      (block.content as { rows: { cells: { content: { text?: string }[] }[] }[] }).rows.map((row) => row.cells.map((cell) => cell.content.map((c) => c.text ?? "").join("")));
+    const ausrichtung = (block: VaultBlock) =>
+      (block.content as { rows: { cells: { props: { textAlignment: string } }[] }[] }).rows[0].cells.map((cell) => cell.props.textAlignment);
+
+    /** Lädt Markdown, ändert eine Zelle im Editor und liest das Ergebnis als Markdown (die einheitliche Form). */
+    function bearbeitet(markdown: string, zeile: number, spalte: number, text: string): string {
+      const editor = createEditor();
+      editor.replaceBlocks(editor.document, markdownToBlocks(markdown));
+      const tabelle = editor.document.find((block) => block.type === "table")!;
+      const content = structuredClone(tabelle.content) as { rows: { cells: { content: unknown[] }[] }[] };
+      content.rows[zeile].cells[spalte].content = [{ type: "text", text, styles: {} }];
+      editor.updateBlock(tabelle, { content } as never);
+      return blocksToMarkdown(editor.document);
+    }
+
+    it("erscheint im Editor als Tabelle und bleibt unverändert Zeichen für Zeichen gleich", () => {
+      const [block] = expectRoundtrip("| Level | Prinzip |\n| --- | --- |\n| RAID 0 | Striping |\n| RAID 1 | Spiegelung |\n");
+      expect(block.type).toBe("table");
+      expect(zellen(block)).toEqual([
+        ["Level", "Prinzip"],
+        ["RAID 0", "Striping"],
+        ["RAID 1", "Spiegelung"],
+      ]);
+      // Ausgerichtete Spalten wie aus Obsidian bleiben so, solange niemand die Tabelle ändert.
+      expectRoundtrip("| Name  | Wert |\n|-------|-----:|\n| Alpha |    1 |\n");
+    });
+
+    it("Ausrichtung: links, mittig, rechts; nach einer Änderung in der einheitlichen Form", () => {
+      const markdown = "| L | M | R | ohne |\n| :--- | :---: | ---: | --- |\n| a | b | c | d |\n";
+      const [block] = expectRoundtrip(markdown);
+      expect(ausrichtung(block)).toEqual(["left", "center", "right", "left"]);
+      expect(bearbeitet(markdown, 1, 0, "neu")).toBe("| L | M | R | ohne |\n| --- | :---: | ---: | --- |\n| neu | b | c | d |\n");
+    });
+
+    it("Formatierung in Zellen: fett, kursiv, Code, Link und [[Link]]", () => {
+      const markdown = "| Art | Beispiel |\n| --- | --- |\n| fett | **RAID 10** |\n| kursiv | *n − 1* |\n| Code | `mdadm` |\n| Link | [Doku](https://example.com) |\n| Seite | [[Ideen]] |\n";
+      const [block] = expectRoundtrip(markdown);
+      expect(block.type).toBe("table");
+      const zeilen = (block.content as { rows: { cells: { content: { type: string; styles?: Record<string, boolean> }[] }[] }[] }).rows;
+      expect(zeilen[1].cells[1].content[0].styles).toEqual({ bold: true });
+      expect(zeilen[2].cells[1].content[0].styles).toEqual({ italic: true });
+      expect(zeilen[3].cells[1].content[0].styles).toEqual({ code: true });
+      expect(zeilen[4].cells[1].content[0].type).toBe("link");
+      expect(zeilen[5].cells[1].content[0].type).toBe("wikilink");
+      expect(bearbeitet(markdown, 1, 0, "Fett")).toBe(markdown.replace("| fett |", "| Fett |"));
+    });
+
+    it("`\\|` in Zellen (auch in Code und in [[Link\\|Text]]) bleibt erhalten", () => {
+      const markdown = "| Ausdruck | Bedeutung |\n| --- | --- |\n| a \\| b | oder |\n| `x \\| y` | Code |\n| [[Ideen\\|Gedanken]] | Link mit Text |\n";
+      const [block] = expectRoundtrip(markdown);
+      expect(block.type).toBe("table");
+      expect(zellen(block)[1][0]).toBe("a | b");
+      expect(zellen(block)[2][0]).toBe("x | y");
+      // Nach einer Änderung: wieder mit \| geschrieben
+      expect(bearbeitet(markdown, 1, 1, "oder auch")).toBe(markdown.replace("| oder |", "| oder auch |"));
+      expect(bearbeitet(markdown, 1, 1, "a|b")).toContain("| a \\| b | a\\|b |\n");
+    });
+
+    it("leere Zellen, Umlaute und eine neue Zeile", () => {
+      const markdown = "| Größe | Übermaß | Äußerung |\n| --- | --- | --- |\n|  | ß |  |\n| Öl |  | ü |\n";
+      const [block] = expectRoundtrip(markdown);
+      expect(zellen(block)).toEqual([
+        ["Größe", "Übermaß", "Äußerung"],
+        ["", "ß", ""],
+        ["Öl", "", "ü"],
+      ]);
+      expect(bearbeitet(markdown, 2, 1, "Maß")).toBe("| Größe | Übermaß | Äußerung |\n| --- | --- | --- |\n|  | ß |  |\n| Öl | Maß | ü |\n");
+    });
+
+    it("Zeilen und Spalten hinzufügen und entfernen: gespeichert als normale Markdown-Tabelle", () => {
+      const editor = createEditor();
+      editor.replaceBlocks(editor.document, markdownToBlocks("| A | B |\n| --- | --- |\n| 1 | 2 |\n"));
+      const tabelle = () => editor.document[0];
+      const zelle = (text: string) => ({ type: "tableCell", props: { textAlignment: "left" }, content: text ? [{ type: "text", text, styles: {} }] : [] });
+      // Zeile und Spalte hinzufügen
+      editor.updateBlock(tabelle(), {
+        content: { type: "tableContent", rows: [{ cells: [zelle("A"), zelle("B"), zelle("C")] }, { cells: [zelle("1"), zelle("2"), zelle("")] }, { cells: [zelle("3"), zelle(""), zelle("x")] }] },
+      } as never);
+      expect(blocksToMarkdown(editor.document)).toBe("| A | B | C |\n| --- | --- | --- |\n| 1 | 2 |  |\n| 3 |  | x |\n");
+      // Spalte B und die erste Datenzeile entfernen
+      editor.updateBlock(tabelle(), {
+        content: { type: "tableContent", rows: [{ cells: [zelle("A"), zelle("C")] }, { cells: [zelle("3"), zelle("x")] }] },
+      } as never);
+      expect(blocksToMarkdown(editor.document)).toBe("| A | C |\n| --- | --- |\n| 3 | x |\n");
+      expect(markdownToBlocks(blocksToMarkdown(editor.document))[0].type).toBe("table");
+    });
+
+    it("Tabelle direkt nach Text (ohne Leerzeile) bleibt direkt darunter", () => {
+      const markdown = "RAID-Level im Vergleich:\n| Level | Platten |\n| --- | --- |\n| RAID 5 | 3 |\n\nDanach.\n";
+      const blocks = expectRoundtrip(markdown);
+      expect(blocks.map((block) => block.type)).toEqual(["paragraph", "table", "paragraph"]);
+    });
+
+    it("was der Editor nicht verlustfrei abbilden kann, bleibt unveränderter Markdown-Text", () => {
+      // ungleich viele Zellen, eine Tabelle in einer Liste, HTML mit Zeilenumbruch in einer Zelle bleibt bearbeitbar
+      expect(expectRoundtrip("| a | b |\n| --- | --- |\n| 1 |\n")[0].type).toBe("rawMarkdown");
+      expect(expectRoundtrip("| a | b |\n| --- | --- |\n| 1 | 2 | 3 |\n")[0].type).toBe("rawMarkdown");
+      expect(expectRoundtrip("- Liste\n\n  | a | b |\n  | --- | --- |\n  | 1 | 2 |\n")[0].type).toBe("rawMarkdown");
+      expect(expectRoundtrip("| a | b |\n| --- | --- |\n| Zeile<br>zwei | 2 |\n")[0].type).toBe("table");
+    });
   });
 
   it("leere Seite ergibt leeren Text", () => {

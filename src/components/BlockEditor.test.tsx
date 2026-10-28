@@ -38,12 +38,13 @@ describe("Menü „Baustein wählen …“ (Etappe 19)", () => {
     const menu = await screen.findByRole("listbox", { name: "Baustein wählen", hidden: true });
     expect(menu.querySelector(".baustein-menu-filter")?.textContent).toBe("Bausteine filtern …");
     const eintraege = await within(menu).findAllByRole("option", { hidden: true });
-    expect(eintraege.slice(0, 6).map((eintrag) => eintrag.querySelector(".baustein-menu-titel")?.textContent)).toEqual([
+    expect(eintraege.slice(0, 7).map((eintrag) => eintrag.querySelector(".baustein-menu-titel")?.textContent)).toEqual([
       "Text",
       "Überschrift",
       "Checkliste",
       "Callout",
       "Toggle",
+      "Tabelle",
       "Bild",
     ]);
     // Jeder Eintrag hat ein Symbol-Kästchen mit Linien-Symbol, nur der markierte den Hinweis ↵.

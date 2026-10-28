@@ -13,6 +13,7 @@ import {
   createParagraphBlockSpec,
   createQuoteBlockSpec,
   createStyleSpec,
+  createTableBlockSpec,
   defaultInlineContentSpecs,
   defaultStyleSpecs,
 } from "@blocknote/core";
@@ -20,7 +21,8 @@ import { createCalloutBlockSpec } from "./callout";
 import { WikiLink } from "./wikilink";
 
 /**
- * Markdown, das der Editor (noch) nicht als eigenen Block kennt, z. B. Tabellen oder HTML.
+ * Markdown, das der Editor (noch) nicht als eigenen Block kennt, z. B. HTML oder Tabellen, die sich nicht
+ * verlustfrei bearbeiten lassen.
  * Der Originaltext steht in `source` und wird beim Speichern unverändert zurückgeschrieben.
  */
 const createRawMarkdownBlockSpec = createBlockSpec(
@@ -63,6 +65,8 @@ export const schema = BlockNoteSchema.create({
     codeBlock: createCodeBlockSpec({ defaultLanguage: "" }),
     image: createImageBlockSpec(),
     divider: createDividerBlockSpec(),
+    // Markdown-Tabellen (GFM): Zellen, Zeilen und Spalten bearbeiten; gespeichert als normale Markdown-Tabelle.
+    table: createTableBlockSpec(),
     rawMarkdown: createRawMarkdownBlockSpec(),
     callout: createCalloutBlockSpec(),
   },

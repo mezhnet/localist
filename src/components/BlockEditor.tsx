@@ -18,6 +18,12 @@ import {
   SideMenu,
   SideMenuController,
   SuggestionMenuController,
+  AddButton,
+  DeleteButton,
+  TableHandle,
+  TableHandleMenu,
+  TableHandlesController,
+  type TableHandleMenuProps,
   useBlockNoteEditor,
   useComponentsContext,
   useCreateBlockNote,
@@ -25,7 +31,7 @@ import {
   type DefaultReactSuggestionItem,
 } from "@blocknote/react";
 import { ChevronRight, FileCode, FileText, Info, ListIndentDecrease, ListIndentIncrease } from "lucide-react";
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, type FC } from "react";
 import { markToggleOpen } from "../editor/callout";
 import { darfEinruecken, einruecken, MarkdownEinruecken, type Richtung } from "../editor/einruecken";
 import { schema, type VaultEditor, type VaultPartialBlock } from "../editor/schema";
@@ -91,6 +97,29 @@ function MarkdownDragHandleMenu() {
     <DragHandleMenu>
       <RemoveBlockItem>{de.drag_handle.delete_menuitem}</RemoveBlockItem>
     </DragHandleMenu>
+  );
+}
+
+/**
+ * Menü am Griff einer Tabellenzeile oder -spalte: nur Löschen und Hinzufügen. Kopfspalten, mehrere Kopfzeilen und
+ * Farben lassen sich in einer Markdown-Tabelle nicht speichern.
+ */
+function MarkdownTableHandleMenu(props: TableHandleMenuProps) {
+  return (
+    <TableHandleMenu {...props}>
+      <DeleteButton orientation={props.orientation} />
+      {props.orientation === "row" ? (
+        <>
+          <AddButton orientation="row" side="above" />
+          <AddButton orientation="row" side="below" />
+        </>
+      ) : (
+        <>
+          <AddButton orientation="column" side="left" />
+          <AddButton orientation="column" side="right" />
+        </>
+      )}
+    </TableHandleMenu>
   );
 }
 
@@ -188,10 +217,16 @@ export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }
       formattingToolbar={false}
       slashMenu={false}
       sideMenu={false}
+      tableHandles={false}
       className="block-editor"
     >
       <FormattingToolbarController formattingToolbar={MarkdownFormattingToolbar} />
       <SideMenuController sideMenu={(props) => <SideMenu {...props} dragHandleMenu={MarkdownDragHandleMenu} />} />
+      {/* Tabellen: Zeilen und Spalten hinzufügen, verschieben und löschen; keine Zellen-Griffe (Verbinden, Farben). */}
+      <TableHandlesController
+        tableHandle={(props) => <TableHandle {...props} tableHandleMenu={MarkdownTableHandleMenu as FC} />}
+        tableCellHandle={() => null}
+      />
       <SuggestionMenuController
         triggerCharacter="/"
         suggestionMenuComponent={BausteinMenu}
