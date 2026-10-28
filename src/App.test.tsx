@@ -29,9 +29,9 @@ async function openPage(folder: string, page: string) {
   fireEvent.click(await (await inTree()).findByText(page));
 }
 
-/** Öffnet das „Neu“-Menü der Sidebar und wählt einen Eintrag. */
+/** Öffnet das „Neu“-Menü der Sidebar („Neue Seite“, bis Etappe 17 „Neu“) und wählt einen Eintrag. */
 function createNew(item: "Notiz" | "HTML-Seite" | "Ordner" | "Datenbank" | "Notiz aus Vorlage …") {
-  fireEvent.click(screen.getByRole("button", { name: "Neu" }));
+  fireEvent.click(screen.getByRole("button", { name: "Neue Seite" }));
   fireEvent.click(screen.getByRole("menuitem", { name: item }));
 }
 
@@ -1980,5 +1980,67 @@ describe("CSS: Inhalt als abgesetzte Fläche (Etappe 18, jsdom misst kein Layout
     expect(regel(".workspace:not(.hat-fensterleiste) .main", pc)).toContain("margin-top: var(--window-gap);");
     expect(tokens).toMatch(/--window-gap: 6px;/);
     expect(tokens).toMatch(/--radius-content: var\(--radius-xl\);/);
+  });
+});
+
+describe("Seitenleiste nach der Vorlage (Etappe 18)", () => {
+  const seitenleiste = () => within(screen.getByRole("navigation", { name: "Seiten" }));
+
+  it("Aufbau von oben nach unten: Vault-Umschalter, Suchen, Volltextsuche, Startseite, Bausteine, Neue Seite, Favoriten, Seiten, Modus, Einstellungen", async () => {
+    await openVaultFromStart();
+    const nav = document.querySelector(".sidebar")!;
+    expect(nav.querySelector(".sidebar-header .vault-avatar")?.textContent).toBe("T");
+    expect(nav.querySelector(".sidebar-header .vault-name")?.textContent).toBe("Testvault");
+    expect([...nav.querySelectorAll(".sidebar-nav .sidebar-item .ui-button__label")].map((el) => el.textContent)).toEqual([
+      "Suchen",
+      "Volltextsuche",
+      "Startseite",
+      "Bausteine",
+      "Neue Seite",
+    ]);
+    expect([...nav.querySelectorAll(".sidebar-nav .ui-kbd")].map((el) => el.textContent)).toEqual(["Strg P", "Strg ⇧ F"]);
+    expect([...nav.querySelectorAll(".sidebar-section-title")].map((el) => el.textContent)).toEqual(["Favoriten", "Seiten"]);
+    expect(seitenleiste().getByRole("region", { name: "Seiten" }).querySelector('[role="tree"]')).toBeTruthy();
+    expect(seitenleiste().getByRole("button", { name: "Neu im Vault" })).toBeTruthy();
+    // Unten: Modus (drei Knöpfe), Trennlinie, Einstellungen mit der Versionsnummer daneben
+    const fuss = within(nav.querySelector<HTMLElement>(".sidebar-footer")!);
+    expect(fuss.getByText("Darstellung")).toBeTruthy();
+    expect(within(fuss.getByRole("group", { name: "Modus" })).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Hell", "Dunkel", "Schwarz"]);
+    expect(fuss.getByRole("button", { name: "Einstellungen" }).querySelector(".lucide-sliders-horizontal")).toBeTruthy();
+    expect(nav.querySelector(".sidebar-footer .app-version")?.textContent).toMatch(/^v\d+\.\d+\.\d+$/);
+    // Die Startseite ist offen: Ihr Eintrag ist hervorgehoben.
+    expect(seitenleiste().getByRole("button", { name: "Startseite" }).classList.contains("active")).toBe(true);
+  });
+
+  it("„Neue Seite“ öffnet das bisherige „Neu“-Menü; aktiv ist der Eintrag im Ordnerbaum, nicht der Favorit", async () => {
+    await openVaultFromStart();
+    const neu = seitenleiste().getByRole("button", { name: "Neue Seite" });
+    expect(neu.getAttribute("aria-haspopup")).toBe("menu");
+    fireEvent.click(neu);
+    const menue = within(screen.getByRole("menu", { name: "Neu" }));
+    expect(menue.getAllByRole("menuitem").map((m) => m.textContent)).toEqual(["Notiz", "HTML-Seite", "Ordner", "Datenbank", "Notiz aus Vorlage …"]);
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    await openPage("Notizen", "Ideen");
+    await screen.findByRole("textbox", { name: "Seitentitel" });
+    const zeile = ((await (await inTree()).findByTitle("Notizen/Ideen.md")) as HTMLElement).closest(".tree-row")!;
+    expect(zeile.classList.contains("active")).toBe(true);
+    const favorit = within(seitenleiste().getByRole("region", { name: "Favoriten" })).getByTitle("Notizen/Ideen.md").closest(".tree-row")!;
+    expect(favorit.classList.contains("active")).toBe(false);
+    expect(seitenleiste().getByRole("button", { name: "Startseite" }).classList.contains("active")).toBe(false);
+  });
+
+  it("aus Version 2.0 erhalten: Symbole für Datenbank, Notizbuch, HTML-Seite und Emoji, Markierung gleichnamiger Seiten, Kontextmenü", async () => {
+    await openVaultFromStart();
+    const baum = await inTree();
+    expect((await baum.findByTitle("Projekte")).querySelector(".lucide-database")).toBeTruthy();
+    expect((await baum.findByTitle("Lernen")).querySelector(".lucide-book-open")).toBeTruthy();
+    fireEvent.click(baum.getByText("Notizen"));
+    await waitFor(() => expect((baum.getByTitle("Notizen/DNS.html") as HTMLElement).querySelector(".tree-emoji")?.textContent).toBe("🧠"));
+    expect(baum.getByTitle("Notizen/Formatierung.md").querySelector(".lucide-file-text")).toBeTruthy();
+    act(() => vault().externalWrite("Notizen/Ideen.html", "<!doctype html><html><head><title>Ideen</title></head><body><main></main></body></html>"));
+    await waitFor(() => expect([...document.querySelectorAll(".tree .tree-duplicate")].map((el) => el.textContent).sort()).toEqual(["HTML", "MD"]));
+    fireEvent.contextMenu(baum.getByTitle("Notizen/Formatierung.md"));
+    expect(screen.getByRole("menuitem", { name: "Umbenennen" })).toBeTruthy();
   });
 });

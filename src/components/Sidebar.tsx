@@ -1,4 +1,5 @@
-// Sidebar: oben Startseite, Suche und das „Neu“-Menü, darunter die Favoriten und der Ordnerbaum des Vaults.
+// Sidebar nach der Vorlage (01/02): oben der Vault-Umschalter, dann Suchen, Volltextsuche, Startseite, Bausteine und
+// „Neue Seite“ (öffnet das „Neu“-Menü), darunter die Favoriten und der Ordnerbaum („Seiten“), unten Modus und Einstellungen.
 // Seiten und Ordner lassen sich anlegen, umbenennen, anheften, verschieben (auch per Drag & Drop) und löschen
 // (per Rechtsklick, "⋯"-Knopf, F2 oder Entf). Notizen und HTML-Seiten haben verschiedene Symbole.
 import {
@@ -22,6 +23,7 @@ import {
   Plus,
   Search,
   Settings,
+  SlidersHorizontal,
   Star,
   StarOff,
   TextSearch,
@@ -85,6 +87,8 @@ interface Props extends SidebarActions {
   /** Eintrag, der gerade umbenannt werden soll (z. B. direkt nach dem Anlegen). */
   renamingPath: string | null;
   onRenamingDone: () => void;
+  /** PC mit eigenem Fensterrahmen: Der Kopf gehört dann zur oberen Leiste und zieht das Fenster. */
+  fensterrahmen?: boolean;
 }
 
 type MenuState =
@@ -308,7 +312,8 @@ export function Sidebar(props: Props) {
 
   return (
     <nav className="sidebar" aria-label="Seiten" onContextMenu={(event) => setMenu({ kind: "new", anchor: atPointer(event), dir: "" })}>
-      <div className="sidebar-header">
+      {/* Steht die Seitenleiste links, liegt der Kopf in der oberen Leiste: Freie Stellen ziehen das Fenster. */}
+      <div className="sidebar-header" data-tauri-drag-region={props.fensterrahmen ? "deep" : undefined}>
         <button
           type="button"
           className="vault-switcher"
@@ -324,79 +329,83 @@ export function Sidebar(props: Props) {
         </button>
       </div>
 
-      <div className="sidebar-nav">
-        <Button variant="ghost" className={cx("sidebar-item", props.homeActive && "active")} icon={<House />} onClick={props.onOpenHome}>
-          Startseite
-        </Button>
-        <Button variant="ghost" className="sidebar-item" icon={<Search />} trailing={<Kbd>Strg+P</Kbd>} onClick={props.onQuickOpen} title="Seite nach Titel öffnen">
-          Suchen
-        </Button>
-        <Button
-          variant="ghost"
-          className="sidebar-item"
-          icon={<TextSearch />}
-          trailing={<Kbd>Strg+⇧+F</Kbd>}
-          onClick={props.onSearch}
-          title="Text in allen Seiten suchen"
-        >
-          Volltextsuche
-        </Button>
-        <Button
-          variant="ghost"
-          className="sidebar-item"
-          icon={<Plus />}
-          aria-haspopup="menu"
-          onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}
-        >
-          Neu
-        </Button>
-        <Button
-          variant="ghost"
-          className={cx("sidebar-item", props.libraryActive && "active")}
-          icon={<Blocks />}
-          onClick={props.onOpenLibrary}
-          title="Alle Bausteine mit Vorschau, eigene Bausteine und Hilfe"
-        >
-          Bausteine
-        </Button>
-      </div>
-
-      <section className="sidebar-section" aria-label="Favoriten">
-        <h2 className="sidebar-section-title">Favoriten</h2>
-        {favoriteNodes.length === 0 ? (
-          <p className="sidebar-hint">Seiten über „⋯“ oder den Stern anheften.</p>
-        ) : (
-          <ul className="favorites">
-            {favoriteNodes.map((node) => (
-              <li key={node.path}>
-                <div className={cx("tree-row", isActive(node) && "active")} onContextMenu={(event) => setMenu({ kind: "node", anchor: atPointer(event), node })}>
-                  <button type="button" className="tree-label" title={node.path} onClick={() => open(node)}>
-                    <span className="tree-icon" aria-hidden="true">
-                      {nodeIcon(node, false)}
-                    </span>
-                    <span className="tree-name">{node.name}</span>
-                  </button>
-                  <IconButton size="sm" className="tree-action" label={`„${node.name}“ aus Favoriten lösen`} onClick={() => props.onToggleFavorite(node.path)}>
-                    <StarOff />
-                  </IconButton>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="sidebar-section sidebar-section--tree" aria-label="Alle Seiten">
-        <div className="sidebar-section-head">
-          <h2 className="sidebar-section-title">Alle Seiten</h2>
-          <IconButton size="sm" label="Neu im Vault" onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}>
-            <Plus />
-          </IconButton>
+      <div className="sidebar-scroll">
+        <div className="sidebar-nav">
+          <Button variant="ghost" className="sidebar-item" icon={<Search />} trailing={<Kbd>Strg P</Kbd>} onClick={props.onQuickOpen} title="Seite nach Titel öffnen (Strg+P)">
+            Suchen
+          </Button>
+          <Button
+            variant="ghost"
+            className="sidebar-item"
+            icon={<TextSearch />}
+            trailing={<Kbd>Strg ⇧ F</Kbd>}
+            onClick={props.onSearch}
+            title="Text in allen Seiten suchen (Strg+Umschalt+F)"
+          >
+            Volltextsuche
+          </Button>
+          <Button variant="ghost" className={cx("sidebar-item", props.homeActive && "active")} icon={<House />} onClick={props.onOpenHome}>
+            Startseite
+          </Button>
+          <Button
+            variant="ghost"
+            className={cx("sidebar-item", props.libraryActive && "active")}
+            icon={<Blocks />}
+            onClick={props.onOpenLibrary}
+            title="Alle Bausteine mit Vorschau, eigene Bausteine und Hilfe"
+          >
+            Bausteine
+          </Button>
+          <Button
+            variant="ghost"
+            className="sidebar-item"
+            icon={<Plus />}
+            aria-haspopup="menu"
+            title="Neue Notiz, HTML-Seite, Ordner, Datenbank oder Notiz aus Vorlage"
+            onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}
+          >
+            Neue Seite
+          </Button>
         </div>
-        <ul className={cx("tree", dropTarget === "" && "drop-target")} role="tree" aria-label="Ordner und Seiten" {...dropProps("")}>
-          {tree.length === 0 ? <li className="tree-empty">Noch keine Seiten</li> : renderNodes(tree, 0)}
-        </ul>
-      </section>
+
+        <section className="sidebar-section" aria-label="Favoriten">
+          <h2 className="sidebar-section-title">Favoriten</h2>
+          {favoriteNodes.length === 0 ? (
+            <p className="sidebar-hint">Seiten über „⋯“ oder den Stern anheften.</p>
+          ) : (
+            <ul className="favorites">
+              {favoriteNodes.map((node) => (
+                <li key={node.path}>
+                  {/* Wie in der Vorlage ist nur der Eintrag im Ordnerbaum hervorgehoben, nicht der Favorit. */}
+                  <div className="tree-row" onContextMenu={(event) => setMenu({ kind: "node", anchor: atPointer(event), node })}>
+                    <button type="button" className="tree-label" title={node.path} onClick={() => open(node)}>
+                      <span className="tree-icon" aria-hidden="true">
+                        {nodeIcon(node, false)}
+                      </span>
+                      <span className="tree-name">{node.name}</span>
+                    </button>
+                    <IconButton size="sm" className="tree-action" label={`„${node.name}“ aus Favoriten lösen`} onClick={() => props.onToggleFavorite(node.path)}>
+                      <StarOff />
+                    </IconButton>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="sidebar-section sidebar-section--tree" aria-label="Seiten">
+          <div className="sidebar-section-head">
+            <h2 className="sidebar-section-title">Seiten</h2>
+            <IconButton size="sm" label="Neu im Vault" onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}>
+              <Plus />
+            </IconButton>
+          </div>
+          <ul className={cx("tree", dropTarget === "" && "drop-target")} role="tree" aria-label="Ordner und Seiten" {...dropProps("")}>
+            {tree.length === 0 ? <li className="tree-empty">Noch keine Seiten</li> : renderNodes(tree, 0)}
+          </ul>
+        </section>
+      </div>
 
       <div className="sidebar-footer">
         <div className="sidebar-darstellung">
@@ -404,7 +413,7 @@ export function Sidebar(props: Props) {
           <ModusUmschalter />
         </div>
         <div className="sidebar-footer-zeile">
-          <Button variant="ghost" size="sm" className="sidebar-item" icon={<Settings />} onClick={props.onOpenSettings}>
+          <Button variant="ghost" className="sidebar-item" icon={<SlidersHorizontal />} onClick={props.onOpenSettings}>
             Einstellungen
           </Button>
           <span className="app-version">v{packageInfo.version}</span>

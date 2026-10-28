@@ -137,7 +137,7 @@ async function runHtml(theme, device) {
   await sleep(800);
   await shot(`${prefix}html-seite-${theme}`);
   if (prefix) return;
-  await evaluate(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Neu").click()`);
+  await evaluate(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Neue Seite").click()`);
   await waitFor(`document.querySelector('[role="menu"]')`, "Neu-Menü");
   await shot(`neu-menue-${theme}`);
   await evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))`);

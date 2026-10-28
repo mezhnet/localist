@@ -263,7 +263,7 @@ try {
     });
 
     await pruefen(10, "Vorlage „Projekt“", async () => {
-      await klickAuf(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Neu")`);
+      await klickAuf(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Neue Seite")`);
       await klickAuf(knopf("Notiz aus Vorlage …"));
       await waitFor(`${knopf("Projekt")}`);
       await klickAuf(knopf("Projekt"));
@@ -309,7 +309,7 @@ try {
     };
 
     await pruefen(1, "HTML-Seite anlegen", async () => {
-      await klickAuf(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Neu")`);
+      await klickAuf(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Neue Seite")`);
       erwarte(await waitFor(knopf("HTML-Seite")), "„Neu“-Menü ohne HTML-Seite");
       await klickAuf(knopf("HTML-Seite"));
       erwarte(await waitFor(`window.__devVault.files.has(${JSON.stringify(SEITE)}) && document.querySelector('.html-workspace.is-geteilt .cm-editor')`), "Seite nicht angelegt oder nicht in „Geteilt“ geöffnet");

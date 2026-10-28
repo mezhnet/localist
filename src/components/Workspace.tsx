@@ -690,6 +690,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           icons={icons}
           renamingPath={renamingPath}
           onRenamingDone={() => setRenamingPath(null)}
+          fensterrahmen={hatFensterrahmen(platform)}
           onOpen={(path) => void openPage(path)}
           onOpenDatabase={(path) => void openDatabase(path)}
           onOpenHome={() => void openHome()}

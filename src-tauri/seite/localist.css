@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+a56d1601 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+cf418921 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -388,9 +388,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* Inhaltsfläche: schmaler Rand ringsum zum Fensterhintergrund, großer Radius */
   --window-gap: 6px;
   --radius-content: var(--radius-xl);
-  --sidebar-width: 264px;
+  /* Seitenleiste (gemessen in der Vorlage): Breite, Innenabstand, Zeilenhöhe, Einzug je Ordnerebene */
+  --sidebar-width: 248px;
   --sidebar-drawer-width: 300px;
-  --tree-indent: 14px;
+  --sidebar-padding: var(--space-2-5);
+  --size-sidebar-row: 26px;
+  --size-vault-avatar: 18px;
+  --size-mode-button-width: 28px;
+  --tree-indent: 20px;
   --content-width: 760px;
   --editor-inset: 54px;
   --wide-width: 1040px;
@@ -442,6 +447,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --shadow-lg: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 12px 40px rgba(18, 18, 17, 0.18);
   --shadow-drawer: 4px 0 24px rgba(18, 18, 17, 0.18);
   --shadow-focus: 0 0 0 2px var(--color-focus-ring);
+  /* Aktiver Eintrag der Seitenleiste: im Hellen eine Karte mit leichtem Schatten, im Dunklen nur die Linie */
+  --shadow-sidebar-active: 0 1px 2px rgba(18, 18, 17, 0.04);
 
   /* Bewegung und Ebenen */
   --duration-fast: 120ms;
@@ -569,6 +576,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-chart-6: #e0c25a;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sidebar-active: none;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
@@ -686,6 +694,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-chart-6: #e0c25a;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sidebar-active: none;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
@@ -804,6 +813,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     --color-chart-6: #e0c25a;
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sidebar-active: none;
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 16px rgba(0, 0, 0, 0.45);
     --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
