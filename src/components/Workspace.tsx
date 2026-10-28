@@ -14,6 +14,7 @@ import { readFavorites, removeFromFavorites, renameInFavorites, toggleFavorite, 
 import { pageIcons } from "../lib/home";
 import { DEFAULT_STATUS_OPTIONS } from "../lib/properties";
 import { instantiateTemplate, TEMPLATES_DIR, type IndexEntry } from "../lib/search";
+import { useSeitenleisteSeite } from "../lib/seitenleiste";
 import { useVaultSettings } from "../lib/settings";
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
 import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
@@ -104,6 +105,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const [vaultVersion, setVaultVersion] = useState(0);
   /** Auf dem Handy ist die Sidebar ein ausklappbares Menü. */
   const [menuOpen, setMenuOpen] = useState(false);
+  /** Seitenleiste links oder rechts (Einstellungen → Darstellung). */
+  const [seitenleisteSeite] = useSeitenleisteSeite();
   const [dialog, setDialog] = useState<
     | { kind: "quick" }
     | { kind: "search"; query?: string }
@@ -676,7 +679,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
 
   return (
-    <div className={cx("workspace", hatFensterrahmen(platform) && "hat-fensterleiste")}>
+    <div className={cx("workspace", `seitenleiste-${seitenleisteSeite}`, hatFensterrahmen(platform) && "hat-fensterleiste")}>
       {menuOpen && <div className="drawer-backdrop" aria-hidden="true" onClick={() => setMenuOpen(false)} />}
       <div className={cx("sidebar-shell", menuOpen && "open")}>
         <Sidebar
@@ -691,6 +694,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           renamingPath={renamingPath}
           onRenamingDone={() => setRenamingPath(null)}
           fensterrahmen={hatFensterrahmen(platform)}
+          seite={seitenleisteSeite}
           onOpen={(path) => void openPage(path)}
           onOpenDatabase={(path) => void openDatabase(path)}
           onOpenHome={() => void openHome()}

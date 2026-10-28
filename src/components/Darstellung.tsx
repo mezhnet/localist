@@ -2,8 +2,9 @@
 // der Seitenleiste, die ausführliche Wahl in Einstellungen → „Darstellung“ (Vorlage 05-handy-darstellung-dunkel.png).
 import { Check, Circle, Moon, Sun } from "lucide-react";
 import type { ReactNode } from "react";
+import { SEITENLEISTE_SEITEN, useSeitenleisteSeite, type SeitenleisteSeite } from "../lib/seitenleiste";
 import { AKZENTE, MODI, useTheme, type Modus } from "../lib/theme";
-import { cx, IconButton } from "./ui";
+import { cx, IconButton, Segmented } from "./ui";
 import { Switch } from "./ui/Switch";
 
 const SYMBOL: Record<Modus, typeof Sun> = { light: Sun, dark: Moon, black: Circle };
@@ -35,9 +36,11 @@ export function ModusUmschalter() {
   );
 }
 
-/** Abschnitt „Darstellung“ in den Einstellungen: Vorschaukarten, „Wie System“, Erklärung zu Schwarz, Akzentfarbe. */
+/** Abschnitt „Darstellung“ in den Einstellungen: Vorschaukarten, „Wie System“, Erklärung zu Schwarz, Akzentfarbe,
+ * Seite der Seitenleiste. */
 export function DarstellungEinstellungen({ children }: { children?: ReactNode }) {
   const { resolved, wieSystem, akzent, setModus, setWieSystem, setAkzent } = useTheme();
+  const [seitenleiste, setSeitenleiste] = useSeitenleisteSeite();
   return (
     <section className="settings-section darstellung" role="group" aria-label="Darstellung">
       <h3 className="settings-titel">Darstellung</h3>
@@ -88,6 +91,13 @@ export function DarstellungEinstellungen({ children }: { children?: ReactNode })
             onClick={() => setAkzent(value)}
           />
         ))}
+      </div>
+      <div className="settings-row settings-karte">
+        <div className="settings-text">
+          <h4>Seitenleiste</h4>
+          <p>Links oder rechts vom Inhalt. Die Fensterknöpfe bleiben oben rechts.</p>
+        </div>
+        <Segmented<SeitenleisteSeite> label="Seitenleiste" options={SEITENLEISTE_SEITEN} value={seitenleiste} onChange={setSeitenleiste} />
       </div>
       {children}
     </section>

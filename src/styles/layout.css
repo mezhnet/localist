@@ -14,6 +14,15 @@
   background: var(--color-window);
 }
 
+/* Seitenleiste rechts (Einstellungen → Darstellung): alles gespiegelt. Die obere Leiste reicht dann über die ganze
+   Breite, damit die Fensterknöpfe oben rechts bleiben; der Vault-Umschalter steht oben in der Seitenleiste. */
+.workspace.seitenleiste-rechts {
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width);
+  grid-template-areas:
+    "leiste leiste"
+    "inhalt seitenleiste";
+}
+
 .sidebar-shell {
   grid-area: seitenleiste;
   display: flex;
@@ -490,6 +499,11 @@ button.tree-toggle:hover {
   .workspace:not(.hat-fensterleiste) .main {
     margin-top: var(--window-gap);
   }
+
+  .workspace.seitenleiste-rechts .main {
+    margin-right: 0;
+    margin-left: var(--window-gap);
+  }
 }
 
 .topbar {
@@ -608,6 +622,18 @@ button.tree-toggle:hover {
   .sidebar-shell.open {
     transform: none;
     box-shadow: var(--shadow-drawer);
+  }
+
+  /* Seitenleiste rechts: Die Schublade kommt von rechts. */
+  .seitenleiste-rechts .sidebar-shell {
+    right: 0;
+    left: auto;
+    transform: translateX(100%);
+  }
+
+  .seitenleiste-rechts .sidebar-shell.open {
+    transform: none;
+    box-shadow: var(--shadow-drawer-right);
   }
 
   .sidebar-shell .sidebar {

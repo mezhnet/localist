@@ -2044,3 +2044,40 @@ describe("Seitenleiste nach der Vorlage (Etappe 18)", () => {
     expect(screen.getByRole("menuitem", { name: "Umbenennen" })).toBeTruthy();
   });
 });
+
+describe("Seitenleiste links oder rechts (Etappe 18)", () => {
+  const arbeitsbereich = () => document.querySelector(".workspace")!;
+
+  it("Einstellung unter „Darstellung“ wirkt sofort und wird gemerkt; die Fensterknöpfe bleiben am Ende der oberen Leiste", async () => {
+    await openVaultFromStart();
+    expect(arbeitsbereich().classList.contains("seitenleiste-links")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const darstellung = within(await screen.findByRole("group", { name: "Darstellung" }));
+    const seite = within(darstellung.getByRole("group", { name: "Seitenleiste" }));
+    expect(seite.getByRole("button", { name: "Links" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(seite.getByRole("button", { name: "Rechts" }));
+    // sofort, noch bei offenem Dialog
+    expect(arbeitsbereich().classList.contains("seitenleiste-rechts")).toBe(true);
+    expect(seite.getByRole("button", { name: "Rechts" }).getAttribute("aria-pressed")).toBe("true");
+    expect(localStorage.getItem("seitenleiste-seite")).toBe("rechts");
+    const leiste = document.querySelector(".workspace-leiste")!;
+    expect(leiste.lastElementChild?.getAttribute("aria-label")).toBe("Fenster");
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Einstellungen" }), { key: "Escape" });
+
+    cleanup();
+    await openVaultFromStart();
+    expect(arbeitsbereich().classList.contains("seitenleiste-rechts")).toBe(true);
+    // Alles aus der Seitenleiste geht weiter, z. B. das „Neu“-Menü
+    createNew("Notiz");
+    await waitFor(() => expect(vault().files.has("Unbenannt.md")).toBe(true));
+  });
+
+  it("CSS: rechts gespiegelt (Raster, Rand der Inhaltsfläche, Schublade von rechts), obere Leiste über die ganze Breite", async () => {
+    const { default: css } = await import("./styles/layout.css?raw");
+    const text = css.replace(/\r\n/g, "\n");
+    expect(text).toMatch(/\.workspace\.seitenleiste-rechts \{\s*grid-template-columns: minmax\(0, 1fr\) var\(--sidebar-width\);\s*grid-template-areas:\s*"leiste leiste"\s*"inhalt seitenleiste";/);
+    expect(text).toMatch(/\.workspace\.seitenleiste-rechts \.main \{\s*margin-right: 0;\s*margin-left: var\(--window-gap\);/);
+    expect(text).toMatch(/\.seitenleiste-rechts \.sidebar-shell \{\s*right: 0;\s*left: auto;\s*transform: translateX\(100%\);/);
+    expect(text).toMatch(/\.seitenleiste-rechts \.sidebar-shell\.open \{\s*transform: none;\s*box-shadow: var\(--shadow-drawer-right\);/);
+  });
+});

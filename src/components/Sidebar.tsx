@@ -89,6 +89,8 @@ interface Props extends SidebarActions {
   onRenamingDone: () => void;
   /** PC mit eigenem Fensterrahmen: Der Kopf gehört dann zur oberen Leiste und zieht das Fenster. */
   fensterrahmen?: boolean;
+  /** Steht die Seitenleiste rechts, öffnen sich die Menüs ihrer Knöpfe nach links (bleiben im Fenster). */
+  seite?: "links" | "rechts";
 }
 
 type MenuState =
@@ -309,6 +311,7 @@ export function Sidebar(props: Props) {
   };
 
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
+  const menuAlign = props.seite === "rechts" ? "end" : "start";
 
   return (
     <nav className="sidebar" aria-label="Seiten" onContextMenu={(event) => setMenu({ kind: "new", anchor: atPointer(event), dir: "" })}>
@@ -421,12 +424,12 @@ export function Sidebar(props: Props) {
       </div>
 
       {menu?.kind === "new" && (
-        <Menu anchor={menu.anchor} label="Neu" onClose={() => setMenu(null)}>
+        <Menu anchor={menu.anchor} label="Neu" align={menuAlign} onClose={() => setMenu(null)}>
           <NewItems dir={menu.dir} tree={tree} onCreate={create} />
         </Menu>
       )}
       {menu?.kind === "vault" && (
-        <Menu anchor={menu.anchor} label="Vault" onClose={() => setMenu(null)}>
+        <Menu anchor={menu.anchor} label="Vault" align={menuAlign} onClose={() => setMenu(null)}>
           <MenuItem icon={<FolderOpen />} onSelect={props.onSwitchVault}>
             Anderen Vault öffnen …
           </MenuItem>
@@ -441,7 +444,7 @@ export function Sidebar(props: Props) {
         </Menu>
       )}
       {menu?.kind === "node" && (
-        <Menu anchor={menu.anchor} label={`Aktionen für „${menu.node.name}“`} onClose={() => setMenu(null)}>
+        <Menu anchor={menu.anchor} label={`Aktionen für „${menu.node.name}“`} align={menuAlign} onClose={() => setMenu(null)}>
           <NodeItems
             node={menu.node}
             tree={tree}
