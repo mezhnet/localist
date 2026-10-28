@@ -4,7 +4,7 @@ import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 import beispielSeite from "../../beispiel-vault/Lernen/Bausteine.html?raw";
 import localistCss from "../../src-tauri/seite/localist.css?raw";
-import { applyPlan, BAUSTEINE, bausteinInfo, planInsert, type BausteinArt } from "./bausteine";
+import { applyPlan, BAUSTEINE, bausteinInfo, EINRUECKUNG, planInsert, type BausteinArt } from "./bausteine";
 import { htmlVisibleText } from "./html";
 
 const vorlage = (art: BausteinArt) => bausteinInfo(art).vorlage({ src: "../Anh%C3%A4nge/netzwerk.svg", href: "../Notizen/Ideen.md", titel: "Ideen" });
@@ -82,6 +82,17 @@ describe("Bausteine einfügen", () => {
       "<main>\r\n  <p>Eins</p>\r\n  <details>\r\n    <summary>Titel</summary>\r\n    <p>Inhalt</p>\r\n  </details>\r\n  <p>Zwei</p>\r\n</main>\r\n",
     );
     expect(state.sliceDoc(state.selection.main.from, state.selection.main.to)).toBe("Titel");
+  });
+
+  it("Vorlagen und Beispiele sind in Stufen von EINRUECKUNG eingerückt (wie Tab im Code-Editor), ohne Tabulatoren", () => {
+    expect(EINRUECKUNG).toBe("  ");
+    for (const info of BAUSTEINE) {
+      for (const zeile of [...vorlage(info.art), ...info.beispiel]) {
+        const einzug = /^ */.exec(zeile)![0].length;
+        expect(zeile, `${info.name}: ${zeile}`).not.toContain("\t");
+        expect(einzug % EINRUECKUNG.length, `${info.name}: ${zeile}`).toBe(0);
+      }
+    }
   });
 });
 

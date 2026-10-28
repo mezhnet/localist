@@ -2,7 +2,7 @@
 // bleibt immer im Editor (Taste gilt als erledigt), und alles Eingerückte übersteht Speichern und Neuladen.
 import { BlockNoteEditor } from "@blocknote/core";
 import { FormattingToolbarExtension } from "@blocknote/core/extensions";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { blocksToMarkdown, markdownToBlocks } from "../markdown/blocks";
 import { MarkdownEinruecken } from "./einruecken";
 import { schema, type VaultBlock, type VaultEditor, type VaultPartialBlock } from "./schema";
@@ -193,4 +193,67 @@ it("Strg+Tab bleibt frei (für spätere Reiter)", () => {
   e.setTextCursorPosition(block(e, "b").id, "end");
   expect(druecke(e, "Ctrl-Tab")).toBe(false);
   expect(markdown(e)).toBe("- a\n- b\n");
+});
+
+describe("Übergang beim Ein- und Ausrücken", () => {
+  // jsdom misst nichts und kennt keine Web Animations: Die linke Kante eines Blocks ergibt sich hier aus seiner
+  // Tiefe (24 px je Ebene), Dauer und Kurve kommen wie aus tokens.css, animate() wird mitgeschrieben.
+  const animate = vi.fn();
+  let reduziert = false;
+  beforeEach(() => {
+    animate.mockClear();
+    reduziert = false;
+    Object.defineProperty(HTMLElement.prototype, "animate", { value: animate, configurable: true, writable: true });
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      let gruppen = 0;
+      for (let el = this.parentElement; el; el = el.parentElement) if (el.classList.contains("bn-block-group")) gruppen++;
+      const left = 24 * Math.max(0, gruppen - 1);
+      return { left, x: left, right: left, top: 0, y: 0, bottom: 0, width: 0, height: 0 } as DOMRect;
+    });
+    const original = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((el, pseudo) => {
+      const style = original(el, pseudo);
+      const werte: Record<string, string> = { "--duration-indent": " 140ms", "--ease-indent": " cubic-bezier(0.25, 0.1, 0.25, 1)" };
+      return new Proxy(style, { get: (ziel, name) => (name === "getPropertyValue" ? (n: string) => werte[n] ?? ziel.getPropertyValue(n) : Reflect.get(ziel, name)) });
+    });
+    vi.spyOn(window, "matchMedia").mockImplementation((query) => ({ matches: reduziert && query.includes("reduce") }) as MediaQueryList);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (HTMLElement.prototype as { animate?: unknown }).animate;
+  });
+
+  const animiert = (e: VaultEditor, text: string) =>
+    animate.mock.contexts.map((el) => (el as HTMLElement).dataset.id).filter((id) => id === block(e, text).id).length;
+
+  it("Tab: der Block gleitet von der alten Stelle an die neue (140 ms, gleichmäßige Kurve)", () => {
+    const e = erstellen("- a\n- b\n");
+    e.setTextCursorPosition(block(e, "b").id, "end");
+    expect(druecke(e, "Tab")).toBe(true);
+    expect(animate).toHaveBeenCalledTimes(1);
+    expect(animate).toHaveBeenCalledWith([{ transform: "translateX(-24px)" }, { transform: "none" }], { duration: 140, easing: "cubic-bezier(0.25, 0.1, 0.25, 1)" });
+    expect(animiert(e, "b")).toBe(1);
+  });
+
+  it("Shift+Tab: der Block gleitet nach links, mehrere markierte Blöcke gleiten zusammen", () => {
+    const e = erstellen("- a\n  - b\n  - c\n");
+    e.setSelection(block(e, "b").id, block(e, "c").id);
+    expect(druecke(e, "Shift-Tab")).toBe(true);
+    expect(markdown(e)).toBe("- a\n- b\n- c\n");
+    expect(animate).toHaveBeenCalledTimes(2);
+    expect(animate.mock.calls.map(([frames]) => frames[0].transform)).toEqual(["translateX(24px)", "translateX(24px)"]);
+  });
+
+  it("was stehen bleibt, bewegt sich nicht; bei „Bewegung reduzieren“ springt der Block ohne Übergang", () => {
+    const e = erstellen("Eins\n\nZwei\n\n- a\n- b\n");
+    e.setTextCursorPosition(block(e, "Zwei").id, "end");
+    druecke(e, "Tab");
+    expect(animate).not.toHaveBeenCalled();
+
+    reduziert = true;
+    e.setTextCursorPosition(block(e, "b").id, "end");
+    druecke(e, "Tab");
+    expect(markdown(e)).toBe("Eins\n\nZwei\n\n- a\n  - b\n");
+    expect(animate).not.toHaveBeenCalled();
+  });
 });

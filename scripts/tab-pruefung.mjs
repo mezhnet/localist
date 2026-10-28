@@ -88,8 +88,10 @@ const HELFER = `window.__tab = {
   uebergang(werte) { const erst = werte[0][1]; const end = werte.at(-1)[1]; if (erst === end) return 'keine Bewegung';
     const beginn = werte.find(([, x]) => x !== erst); const ziel = werte.find(([t, x]) => t >= beginn[0] && Math.abs(x - end) < 0.5);
     const zwischen = werte.filter(([t, x]) => t >= beginn[0] && t < ziel[0]).length;
-    const sprung = Math.round(beginn[1] - erst);
-    return zwischen <= 1 ? 'Sprung ohne Übergang' : 'Übergang ' + Math.round(ziel[0] - beginn[0]) + ' ms (' + zwischen + ' Bilder' + (Math.abs(sprung) > 2 ? ', erst ' + sprung + ' px Sprung' : '') + ')'; },
+    // Bewegung je Bild ab dem letzten Bild vor dem Start bis zum Ziel (in px, gerundet).
+    const lauf = werte.slice(Math.max(0, werte.indexOf(beginn) - 1), werte.indexOf(ziel) + 1);
+    const schritte = lauf.slice(1).map(([, x], i) => Math.abs(Math.round(x - lauf[i][1])));
+    return zwischen <= 1 ? 'Sprung ohne Übergang' : 'Übergang ' + Math.round(ziel[0] - lauf[0][0]) + ' ms (' + zwischen + ' Bilder, Schritte ' + schritte.join('·') + ' px)'; },
   fokus() { const a = document.activeElement;
     if (!a || a === document.body) return 'nichts (body)';
     if (a.closest('.bn-formatting-toolbar')) return 'Formatierungsleiste (' + (a.getAttribute('aria-label') || a.getAttribute('data-test') || a.textContent.trim() || a.tagName) + ')';
@@ -226,6 +228,9 @@ try {
   await send("Page.enable");
   await send("Runtime.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+  // Edge übernimmt sonst „Animationseffekte“ aus den Windows-Einstellungen (aus = prefers-reduced-motion: reduce).
+  const system = await evaluate(`matchMedia("(prefers-reduced-motion: reduce)").matches`);
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
   await send("Page.navigate", { url: base });
   await waitFor("document.body");
   await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", "light"); true`);
@@ -256,6 +261,30 @@ try {
   await notizFall("Toggle", ["Toggle A"], false);
   await notizFall("Absatz nach Toggle", ["Letzter Absatz"], false);
 
+  // Nach Speichern und Neuladen (Seite schließen und neu aus der Datei öffnen) ist alles genauso eingerückt.
+  await zuruecksetzen();
+  const eingerueckt = ["Punkt B", "Absatz nach Liste", "Aufgabe B", "Schritt B"];
+  for (const t of eingerueckt) {
+    await klickAuf(`window.__tab.block(${JSON.stringify(t)})`, 0.99);
+    await taste("Tab");
+  }
+  await sleep(1500);
+  const tiefen = async () => (await Promise.all(eingerueckt.map((t) => evaluate(`window.__tab.tiefe(${JSON.stringify(t)})`)))).join("+");
+  const vorNeuladen = await tiefen();
+  await klickAuf(`document.querySelector('.tree [title="Notizen/Ideen.md"]')`);
+  await waitFor(`!window.__tab.block("Letzter Absatz")`);
+  await klickAuf(`document.querySelector('.tree [title="${NOTIZ}"]')`);
+  await waitFor(`window.__tab.block("Letzter Absatz")`);
+  await sleep(300);
+  zeile("Nach Speichern und Neuladen (Seite geschlossen, neu geöffnet)", "Tab in " + eingerueckt.map((t) => `„${t}“`).join(", "),
+    `${vorNeuladen} → ${await tiefen()}`, "–", "–", "–", "–", await gespeichert(eingerueckt));
+
+  // Mit „Bewegung reduzieren“ des Systems springt der Block ohne Übergang an seinen Platz.
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+  await notizFall("Liste (prefers-reduced-motion: reduce)", ["Punkt B"], false);
+  await notizFall("Absatz direkt nach Liste (prefers-reduced-motion: reduce)", ["Absatz nach Liste"], false);
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+
   // Code-Editor: DNS.html in der Ansicht „Code“
   await klickAuf(`document.querySelector('.tree [title="Notizen/DNS.html"]')`);
   await waitFor(knopf("Code"));
@@ -276,7 +305,7 @@ try {
   await codeFall("Escape, dann Tab", "<l-callout", inZeile("<l-callout", 0.5), [["Escape", 0], ["Tab", 0]]);
   await sleep(1500);
 
-  console.log(`Tab und Shift+Tab, Vorschau ${base} (Edge, echte Tastatur, 1280 × 800):\n`);
+  console.log(`Tab und Shift+Tab, Vorschau ${base} (Edge, echte Tastatur, 1280 × 800, prefers-reduced-motion: no-preference außer wo genannt; Windows meldet ${system ? "„Animationseffekte aus“ (reduce)" : "„Animationseffekte an“"}):\n`);
   console.log(zeilen.join("\n"));
 } finally {
   socket.close();

@@ -184,8 +184,9 @@
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  /* Ein- und Ausrücken im Block-Editor (höchstens 150 ms) */
-  --duration-indent: var(--duration-fast);
+  /* Ein- und Ausrücken im Block-Editor (höchstens 150 ms); gleichmäßige Kurve, damit der Block nicht anspringt */
+  --duration-indent: 140ms;
+  --ease-indent: cubic-bezier(0.25, 0.1, 0.25, 1);
   --z-sticky: 10;
   --z-popover: 50;
   --z-drawer: 60;

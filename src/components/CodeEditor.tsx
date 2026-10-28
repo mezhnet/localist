@@ -12,7 +12,16 @@ import {
 } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { html, htmlLanguage } from "@codemirror/lang-html";
-import { bracketMatching, foldGutter, foldKeymap, HighlightStyle, indentOnInput, syntaxHighlighting, syntaxTree } from "@codemirror/language";
+import {
+  bracketMatching,
+  foldGutter,
+  foldKeymap,
+  HighlightStyle,
+  indentOnInput,
+  indentUnit,
+  syntaxHighlighting,
+  syntaxTree,
+} from "@codemirror/language";
 import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
 import { Compartment, EditorState, type Text as DocText } from "@codemirror/state";
 import {
@@ -29,7 +38,7 @@ import {
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { BAUSTEIN_KLASSEN, BAUSTEIN_TAGS, planInsert } from "../lib/bausteine";
+import { BAUSTEIN_KLASSEN, BAUSTEIN_TAGS, EINRUECKUNG, planInsert } from "../lib/bausteine";
 
 /** Was die Seite mit dem Editor machen kann (Werkzeugleiste). */
 export interface CodeEditorApi {
@@ -209,6 +218,8 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
       extensions: [
         EditorState.lineSeparator.of(lineBreak),
         EditorState.phrases.of(GERMAN),
+        // Dieselbe Stufe wie die Vorlagen der Bausteine (für Tab, Shift+Tab, Enter und indentOnInput).
+        indentUnit.of(EINRUECKUNG),
         lineNumbers(),
         highlightActiveLineGutter(),
         highlightSpecialChars(),
@@ -226,6 +237,8 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
         highlightActiveLine(),
         highlightSelectionMatches(),
         search({ top: true }),
+        // Tab/Shift+Tab rücken die Zeile bzw. alle markierten Zeilen um EINRUECKUNG ein/aus, auch mit dem Cursor
+        // mitten in der Zeile. Escape und danach Tab verlässt den Editor (Tab-Fokus-Modus von CodeMirror, 2 s).
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap, indentWithTab]),
         html({ autoCloseTags: true, selfClosingTags: false, extraTags: BAUSTEIN_TAGS, extraGlobalAttributes: { class: BAUSTEIN_KLASSEN } }),
         htmlLanguage.data.of({ autocomplete: slashMenu(slashRef, onSlashRef) }),

@@ -25,11 +25,14 @@ export interface VorlagenWerte {
   titel?: string;
 }
 
+/** Eine Einrückungsstufe in HTML-Seiten: Vorlagen der Bausteine und Tab/Shift+Tab im Code-Editor. */
+export const EINRUECKUNG = "  ";
+
 export interface BausteinInfo {
   art: BausteinArt;
   name: string;
   beschreibung: string;
-  /** Zeilen der Vorlage, eingerückt mit zwei Leerzeichen je Ebene. */
+  /** Zeilen der Vorlage, eingerückt mit EINRUECKUNG je Ebene. */
   vorlage: (werte: VorlagenWerte) => string[];
   /** Dieser Text ist nach dem Einfügen markiert, damit man gleich lostippen kann. */
   auswahl?: string;

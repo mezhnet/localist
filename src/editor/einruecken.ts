@@ -83,15 +83,46 @@ function codeZeilen(editor: VaultEditor, richtung: Richtung) {
   });
 }
 
+/** Dauer und Kurve des Übergangs aus tokens.css; null ohne Web Animations oder bei „Bewegung reduzieren“. */
+function uebergang(el: HTMLElement): KeyframeAnimationOptions | null {
+  if (typeof el.animate !== "function" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return null;
+  const style = getComputedStyle(el);
+  const dauer = style.getPropertyValue("--duration-indent").trim();
+  const ms = dauer.endsWith("ms") ? parseFloat(dauer) : parseFloat(dauer) * 1000;
+  return ms > 0 ? { duration: ms, easing: style.getPropertyValue("--ease-indent").trim() || "ease" } : null;
+}
+
+/**
+ * Führt `aktion` aus und lässt die bewegten Blöcke von ihrer alten Stelle an die neue gleiten. BlockNotes eigene
+ * Animation (data-prev-depth-change) startet nicht zuverlässig, weil BlockNote das Attribut schon nach
+ * setTimeout(0) wieder entfernt, oft bevor der Browser es gezeichnet hat; page.css schaltet sie deshalb ab.
+ */
+function mitUebergang(editor: VaultEditor, ids: string[], aktion: () => void) {
+  const finde = (id: string) =>
+    [...(editor.domElement?.querySelectorAll<HTMLElement>(".bn-block-outer[data-id]") ?? [])].find((el) => el.dataset.id === id);
+  const vorher = new Map(ids.map((id) => [id, finde(id)?.getBoundingClientRect().left]));
+  aktion();
+  for (const id of ids) {
+    const el = finde(id);
+    const links = vorher.get(id);
+    if (!el || links === undefined) continue;
+    const optionen = uebergang(el);
+    if (!optionen) return;
+    const versatz = links - el.getBoundingClientRect().left;
+    if (Math.abs(versatz) >= 0.5) el.animate([{ transform: `translateX(${versatz}px)` }, { transform: "none" }], optionen);
+  }
+}
+
 /** Tab bzw. Shift+Tab: rückt ein oder aus, wenn es erlaubt ist, und meldet immer „erledigt“. */
 export function einruecken(editor: VaultEditor, richtung: Richtung): boolean {
   if (!editor.isEditable) return false;
-  const { $from, $to } = editor.prosemirrorState.selection;
+  const state = editor.prosemirrorState;
+  const { $from, $to } = state.selection;
   if ($from.parent.type.name === "codeBlock" && $from.sameParent($to)) {
     codeZeilen(editor, richtung);
-  } else if (darfEinruecken(editor.prosemirrorState, richtung)) {
-    if (richtung === "ein") editor.nestBlock();
-    else editor.unnestBlock();
+  } else if (darfEinruecken(state, richtung)) {
+    const ids = bereich(state)!.bewegt.map((block) => String(block.attrs.id));
+    mitUebergang(editor, ids, () => (richtung === "ein" ? editor.nestBlock() : editor.unnestBlock()));
   }
   return true;
 }
