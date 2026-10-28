@@ -1630,3 +1630,135 @@ describe("Bedienung: Im Explorer öffnen (Etappe 17)", () => {
     expect(vault().explorer).toEqual([]);
   });
 });
+
+describe("„Geteilt“: Code links oder rechts, verschiebbare Trennlinie (Etappe 17)", () => {
+  const modeButton = (name: "Lesen" | "Code" | "Geteilt") => within(screen.getByRole("group", { name: "Ansicht (Strg+E)" })).getByRole("button", { name });
+  const flaeche = () => document.querySelector(".html-workspace") as HTMLDivElement;
+  const frame = () => document.querySelector("iframe.html-frame") as HTMLIFrameElement;
+
+  async function openGeteilt() {
+    localStorage.setItem("html-ansicht", "geteilt");
+    await openVaultFromStart();
+    await openPage("Notizen", "DNS");
+    await waitFor(() => expect(document.querySelector(".html-workspace.is-geteilt iframe.html-frame")).toBeTruthy());
+  }
+
+  /** jsdom misst nichts: Die Fläche ist 1016 px breit (ab x = 0), die Trennlinie 16 px mit der Mitte bei x = 508. */
+  function trennlinie() {
+    const rect = (left: number, width: number) => ({ left, width, x: left, y: 0, top: 0, right: left + width, bottom: 0, height: 0, toJSON: () => ({}) }) as DOMRect;
+    vi.spyOn(flaeche(), "getBoundingClientRect").mockReturnValue(rect(0, 1016));
+    const trenner = screen.getByRole("separator", { name: "Trennlinie zwischen Code-Editor und Vorschau" });
+    vi.spyOn(trenner, "getBoundingClientRect").mockReturnValue(rect(500, 16));
+    return trenner;
+  }
+
+  it("Einstellung „Code-Editor rechts“ wirkt sofort, lädt die Vorschau nicht neu und wird gemerkt", async () => {
+    await openGeteilt();
+    const vorher = frame();
+    const src = vorher.src;
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const dialog = await screen.findByRole("dialog", { name: "Einstellungen" });
+    const gruppe = within(dialog).getByRole("group", { name: "Code-Editor" });
+    expect(within(gruppe).getByRole("button", { name: "Links" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(within(gruppe).getByRole("button", { name: "Rechts" }));
+    // Der Dialog liegt über der Seite: Die Seite folgt sofort, ohne Neuladen der Vorschau.
+    expect(flaeche().classList.contains("is-code-rechts")).toBe(true);
+    expect(localStorage.getItem("html-code-seite")).toBe("rechts");
+    expect(frame()).toBe(vorher);
+    expect(frame().src).toBe(src);
+    expect(document.querySelectorAll("iframe.html-frame").length).toBe(1);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(await (await inTree()).findByText("Ideen"));
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    fireEvent.click(await (await inTree()).findByText("DNS"));
+    await waitFor(() => expect(document.querySelector(".html-workspace.is-geteilt.is-code-rechts")).toBeTruthy());
+  });
+
+  it("„Seiten tauschen“ gibt es nur in „Geteilt“; der Knopf tauscht sofort, ohne die Vorschau neu zu laden", async () => {
+    await openGeteilt();
+    const vorher = frame();
+    fireEvent.click(screen.getByRole("button", { name: "Seiten tauschen" }));
+    expect(flaeche().classList.contains("is-code-rechts")).toBe(true);
+    expect(localStorage.getItem("html-code-seite")).toBe("rechts");
+    expect(frame()).toBe(vorher);
+    fireEvent.click(screen.getByRole("button", { name: "Seiten tauschen" }));
+    expect(flaeche().classList.contains("is-code-rechts")).toBe(false);
+    expect(localStorage.getItem("html-code-seite")).toBe("links");
+
+    fireEvent.click(modeButton("Code"));
+    await waitFor(() => expect(document.querySelector(".html-workspace.is-code")).toBeTruthy());
+    expect(screen.queryByRole("button", { name: "Seiten tauschen" })).toBeNull();
+    expect(screen.queryByRole("separator", { name: /Trennlinie/ })).toBeNull();
+    fireEvent.click(modeButton("Lesen"));
+    expect(screen.queryByRole("button", { name: "Seiten tauschen" })).toBeNull();
+  });
+
+  it("Trennlinie mit der Tastatur: role=separator mit aria-valuenow, Pfeile, Pos1/Ende, Enter und Doppelklick, das Verhältnis wird gemerkt", async () => {
+    await openGeteilt();
+    const trenner = trennlinie();
+    expect(trenner.getAttribute("tabindex")).toBe("0");
+    expect(trenner.getAttribute("aria-orientation")).toBe("vertical");
+    expect(trenner.getAttribute("aria-controls")).toBe(document.querySelector(".html-code-pane")!.id);
+    expect(trenner.getAttribute("aria-valuenow")).toBe("50");
+
+    fireEvent.keyDown(trenner, { key: "ArrowRight" });
+    expect(trenner.getAttribute("aria-valuenow")).toBe("52");
+    expect(trenner.getAttribute("aria-valuetext")).toBe("Code-Editor 52 %, Vorschau 48 %");
+    expect(flaeche().style.getPropertyValue("--html-links")).toBe("52.00fr");
+    expect(localStorage.getItem("html-geteilt-anteil")).toBe("0.52");
+    fireEvent.keyDown(trenner, { key: "ArrowLeft", shiftKey: true });
+    expect(trenner.getAttribute("aria-valuenow")).toBe("42");
+    // Jede Seite bleibt mindestens 280 px breit: 1000 px Platz → 28 % bis 72 %
+    fireEvent.keyDown(trenner, { key: "End" });
+    expect(trenner.getAttribute("aria-valuenow")).toBe("72");
+    fireEvent.keyDown(trenner, { key: "Home" });
+    expect(trenner.getAttribute("aria-valuenow")).toBe("28");
+    fireEvent.keyDown(trenner, { key: "Enter" });
+    expect(trenner.getAttribute("aria-valuenow")).toBe("50");
+    fireEvent.keyDown(trenner, { key: "ArrowRight" });
+    fireEvent.doubleClick(trenner);
+    expect(trenner.getAttribute("aria-valuenow")).toBe("50");
+    expect(localStorage.getItem("html-geteilt-anteil")).toBe("0.5");
+
+    // Code rechts: Die linke Spalte ist die Vorschau, ← macht den Code breiter.
+    fireEvent.click(screen.getByRole("button", { name: "Seiten tauschen" }));
+    fireEvent.keyDown(trenner, { key: "ArrowLeft" });
+    expect(trenner.getAttribute("aria-valuenow")).toBe("52");
+    expect(flaeche().style.getPropertyValue("--html-links")).toBe("48.00fr");
+    expect(flaeche().style.getPropertyValue("--html-rechts")).toBe("52.00fr");
+  });
+
+  it("Trennlinie ziehen: Pointer Capture, iframes ohne Mausereignisse, Begrenzung, kein Neuladen der Vorschau", async () => {
+    localStorage.setItem("html-geteilt-anteil", "0.4");
+    await openGeteilt();
+    const trenner = trennlinie();
+    expect(trenner.getAttribute("aria-valuenow")).toBe("40");
+    const capture = vi.fn();
+    Object.assign(trenner, { setPointerCapture: capture });
+    const vorher = frame();
+
+    fireEvent.pointerDown(trenner, { pointerId: 1, button: 0, clientX: 508 });
+    expect(capture).toHaveBeenCalledWith(1);
+    expect(flaeche().classList.contains("is-ziehen")).toBe(true);
+    fireEvent.pointerMove(trenner, { pointerId: 1, clientX: 708 });
+    await waitFor(() => expect(trenner.getAttribute("aria-valuenow")).toBe("70"));
+    fireEvent.pointerMove(trenner, { pointerId: 1, clientX: 1010 });
+    await waitFor(() => expect(trenner.getAttribute("aria-valuenow")).toBe("72"));
+    expect(localStorage.getItem("html-geteilt-anteil")).toBe("0.4"); // erst beim Loslassen gemerkt
+    fireEvent.pointerUp(trenner, { pointerId: 1, clientX: 1010 });
+    expect(flaeche().classList.contains("is-ziehen")).toBe(false);
+    expect(localStorage.getItem("html-geteilt-anteil")).toBe("0.72");
+    expect(frame()).toBe(vorher);
+
+    // Nur die Haupttaste zieht; ein bloßer Klick neben die Mitte der Linie (jetzt bei x = 728) verschiebt nichts.
+    fireEvent.pointerDown(trenner, { pointerId: 2, button: 2, clientX: 300 });
+    expect(flaeche().classList.contains("is-ziehen")).toBe(false);
+    vi.spyOn(trenner, "getBoundingClientRect").mockReturnValue({ left: 720, width: 16, x: 720, y: 0, top: 0, right: 736, bottom: 0, height: 0, toJSON: () => ({}) } as DOMRect);
+    fireEvent.pointerDown(trenner, { pointerId: 3, button: 0, clientX: 733 });
+    fireEvent.pointerUp(trenner, { pointerId: 3, clientX: 733 });
+    expect(trenner.getAttribute("aria-valuenow")).toBe("72");
+    expect(localStorage.getItem("html-geteilt-anteil")).toBe("0.72");
+  });
+});

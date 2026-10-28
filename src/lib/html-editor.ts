@@ -3,7 +3,10 @@
 // wird die Datei aus dem unveränderten Anfang, dem Editor-Text und dem unveränderten Ende zusammengesetzt.
 // So bleibt alles, was der Nutzer nicht bearbeitet, Zeichen für Zeichen gleich – auch Zeilenenden und BOM.
 // Es wird nichts geparst und neu geschrieben: Auch fehlerhaftes HTML geht nie verloren.
+// Dazu die Bedien-Einstellungen dieses Geräts (App-Speicher, nicht im Vault): Ansicht, Seite des Code-Editors und
+// Teilungsverhältnis in „Geteilt“.
 import { parse, type DefaultTreeAdapterTypes } from "parse5";
+import { useSyncExternalStore } from "react";
 
 export interface EditorSplit {
   /** Unveränderter Anfang der Datei (bei "ganze Datei" nur ein BOM). */
@@ -88,5 +91,111 @@ export function storeViewMode(mode: HtmlViewMode): void {
     localStorage.setItem(MODE_KEY, mode);
   } catch {
     // Ohne Speicher gilt die Wahl nur bis zum Neustart.
+  }
+}
+
+/** Wo der Code-Editor in „Geteilt“ steht. Auf schmalen Bildschirmen (untereinander) heißt links „oben“. */
+export type CodeSeite = "links" | "rechts";
+
+export const CODE_SEITEN: { value: CodeSeite; label: string }[] = [
+  { value: "links", label: "Links" },
+  { value: "rechts", label: "Rechts" },
+];
+
+const SEITE_KEY = "html-code-seite";
+/** Nur falls der App-Speicher nicht geht: Dann gilt die Wahl bis zum Neustart. */
+let seiteOhneSpeicher: CodeSeite | null = null;
+const seitenHoerer = new Set<() => void>();
+
+export function storedCodeSeite(): CodeSeite {
+  try {
+    return localStorage.getItem(SEITE_KEY) === "rechts" ? "rechts" : "links";
+  } catch {
+    return seiteOhneSpeicher ?? "links";
+  }
+}
+
+export function storeCodeSeite(seite: CodeSeite): void {
+  try {
+    localStorage.setItem(SEITE_KEY, seite);
+  } catch {
+    seiteOhneSpeicher = seite;
+  }
+  seitenHoerer.forEach((hoerer) => hoerer());
+}
+
+/** Seite des Code-Editors; eine Änderung (Einstellungen, Knopf „Seiten tauschen“) wirkt sofort überall. */
+export function useCodeSeite(): [CodeSeite, (seite: CodeSeite) => void] {
+  const seite = useSyncExternalStore(
+    (hoerer) => {
+      seitenHoerer.add(hoerer);
+      return () => seitenHoerer.delete(hoerer);
+    },
+    storedCodeSeite,
+    () => "links" as const,
+  );
+  return [seite, storeCodeSeite];
+}
+
+/** Jede Seite in „Geteilt“ bleibt mindestens so breit (px, wie --split-pane-min-width in tokens.css). */
+export const GETEILT_MIN_PX = 280;
+export const GETEILT_STANDARD = 0.5;
+const ANTEIL_KEY = "html-geteilt-anteil";
+
+/** Gemerkter Anteil des Code-Editors an der Breite (0 … 1); fehlt er oder ist er kaputt, gilt 50 : 50. */
+export function storedAnteil(): number {
+  try {
+    const wert = Number(localStorage.getItem(ANTEIL_KEY));
+    return wert > 0 && wert < 1 ? wert : GETEILT_STANDARD;
+  } catch {
+    return GETEILT_STANDARD;
+  }
+}
+
+export function storeAnteil(anteil: number): void {
+  try {
+    localStorage.setItem(ANTEIL_KEY, String(Math.round(anteil * 1000) / 1000));
+  } catch {
+    // Ohne Speicher gilt das Verhältnis nur bis zum Neustart.
+  }
+}
+
+/**
+ * Begrenzt den Anteil des Code-Editors so, dass beide Seiten mindestens `minPx` breit bleiben. `breite` ist der
+ * Platz für beide Seiten (ohne Trennlinie). Reicht er dafür nicht, gilt 50 : 50.
+ */
+export function begrenzeAnteil(anteil: number, breite: number, minPx = GETEILT_MIN_PX): number {
+  if (!Number.isFinite(anteil) || !(breite >= 2 * minPx)) return GETEILT_STANDARD;
+  const min = minPx / breite;
+  return Math.min(1 - min, Math.max(min, anteil));
+}
+
+/** Anteil des Code-Editors, wenn die Mitte der Trennlinie bei `x` steht (`links`, `breite`: die ganze Fläche). */
+export function anteilAusZeiger(x: number, links: number, breite: number, dicke: number, seite: CodeSeite): number {
+  const linkerAnteil = (x - links - dicke / 2) / (breite - dicke);
+  return seite === "links" ? linkerAnteil : 1 - linkerAnteil;
+}
+
+/**
+ * Tastatur an der Trennlinie, bezogen auf die sichtbare Linie: ←/→ verschieben sie um 2 % (mit Umschalt um 10 %),
+ * Pos1/Ende ganz nach links/rechts, Enter setzt auf 50 : 50. Ist der Code rechts, macht ← ihn also breiter.
+ * Liefert null für andere Tasten.
+ */
+export function anteilNachTaste(anteil: number, taste: string, umschalt: boolean, seite: CodeSeite): number | null {
+  const richtung = seite === "links" ? 1 : -1;
+  const schritt = umschalt ? 0.1 : 0.02;
+  switch (taste) {
+    case "ArrowLeft":
+      return anteil - richtung * schritt;
+    case "ArrowRight":
+      return anteil + richtung * schritt;
+    case "Home":
+      return seite === "links" ? 0 : 1;
+    case "End":
+      return seite === "links" ? 1 : 0;
+    case "Enter":
+      return GETEILT_STANDARD;
+    default:
+      return null;
   }
 }

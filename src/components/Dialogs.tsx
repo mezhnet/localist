@@ -7,6 +7,7 @@ import type { PageRef } from "../lib/links";
 import { quickSwitch, searchEntries, type IndexEntry } from "../lib/search";
 import { useTheme, type ThemePreference } from "../lib/theme";
 import { isHtmlPath } from "../lib/html";
+import { CODE_SEITEN, useCodeSeite, type CodeSeite } from "../lib/html-editor";
 import { isInside, parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
 import { Button, Dialog, Input, Kbd, Segmented } from "./ui";
@@ -296,6 +297,7 @@ const THEME_OPTIONS = [
 /** Einstellungen: Darstellung, Vault und Informationen zur App. */
 export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose }: { vaultName: string; vaultRoot: string; onSwitchVault: () => void; onClose: () => void }) {
   const { preference, setPreference } = useTheme();
+  const [codeSeite, setCodeSeite] = useCodeSeite();
   return (
     <Dialog label="Einstellungen" title="Einstellungen" onClose={onClose} size="md" className="settings-dialog">
       <section className="settings-section">
@@ -305,6 +307,15 @@ export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose }:
             <p>Hell, dunkel oder automatisch wie in Windows.</p>
           </div>
           <Segmented<ThemePreference> label="Darstellung" options={THEME_OPTIONS} value={preference} onChange={setPreference} />
+        </div>
+      </section>
+      <section className="settings-section">
+        <div className="settings-row">
+          <div className="settings-text">
+            <h3>HTML-Seiten</h3>
+            <p>Code-Editor in der Ansicht „Geteilt“ links oder rechts. Auf schmalen Bildschirmen oben oder unten.</p>
+          </div>
+          <Segmented<CodeSeite> label="Code-Editor" options={CODE_SEITEN} value={codeSeite} onChange={setCodeSeite} />
         </div>
       </section>
       <section className="settings-section">

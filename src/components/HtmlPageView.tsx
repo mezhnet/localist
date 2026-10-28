@@ -1,12 +1,13 @@
 // Eine HTML-Seite: oben der Seitenkopf wie bei Notizen (Icon und Cover aus den <meta>-Tags, Titel = Dateiname),
 // darunter eine von drei Ansichten: „Lesen“ (abgeschottete Anzeige), „Code“ (CodeMirror) und „Geteilt“
-// (Code links, Vorschau rechts). Umschalten per Schaltflächen oder Strg+E.
+// (Code und Vorschau nebeneinander, getrennt durch eine verschiebbare Linie; der Code steht links oder rechts,
+// siehe Einstellungen und Knopf „Seiten tauschen“). Umschalten per Schaltflächen oder Strg+E.
 // Der Editor zeigt nur den Inhalt von <main> (Schalter „Ganze Datei“ zeigt alles). Gespeichert wird automatisch:
 // unveränderter Anfang + Editor-Text + unveränderter Rest (siehe src/lib/html-editor.ts).
 // Über dem Editor fügt die Werkzeugleiste Bausteine ein, im Editor auch das „/“-Menü.
 // In „Lesen“ und „Geteilt“ öffnet das Stift-Symbol eines Bausteins ein Formular; Häkchen werden gespeichert.
-import { FileCode } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import { ArrowLeftRight, FileCode } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { bausteinAnzahl, bausteinEntfernen, bausteinLesen, bausteinSchreiben, haekchenSetzen, type BausteinWerte } from "../lib/baustein-formulare";
 import { BAUSTEINE, bausteinInfo, type BausteinArt } from "../lib/bausteine";
@@ -19,6 +20,7 @@ import {
   splitForEditor,
   storedViewMode,
   storeViewMode,
+  useCodeSeite,
   type EditorSplit,
   type HtmlViewMode,
 } from "../lib/html-editor";
@@ -30,11 +32,12 @@ import { BausteinDialog } from "./BausteinDialog";
 import { BausteinLeiste } from "./BausteinLeiste";
 import { CodeEditor, type CodeEditorApi, type SlashEintrag } from "./CodeEditor";
 import { EigenerBausteinDialog } from "./EigenerBausteinDialog";
+import { GeteiltTrenner } from "./GeteiltTrenner";
 import { PagePicker } from "./Dialogs";
 import { PageHeader } from "./PageHeader";
 import { PagePreview } from "./PagePreview";
 import { PageTitle, resolveFileUrlFor } from "./PageView";
-import { Button, cx, Segmented } from "./ui";
+import { Button, cx, IconButton, Segmented } from "./ui";
 
 interface Props {
   path: string;
@@ -76,6 +79,9 @@ export function HtmlPageView({
 }: Props) {
   const [mode, setModeState] = useState<HtmlViewMode>(() => (isNew ? "geteilt" : storedViewMode()));
   const [wholeFile, setWholeFile] = useState(false);
+  const [codeSeite, setCodeSeite] = useCodeSeite();
+  const flaeche = useRef<HTMLDivElement>(null);
+  const codeId = useId();
   /** Dateiinhalt zuletzt geladen oder gespeichert (für Kopf und Neuladen). */
   const [text, setText] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -406,15 +412,25 @@ export function HtmlPageView({
                 Ganze Datei
               </Button>
             )}
+            {mode === "geteilt" && (
+              <IconButton
+                size="sm"
+                label="Seiten tauschen"
+                title={`Seiten tauschen (Code-Editor nach ${codeSeite === "links" ? "rechts" : "links"})`}
+                onClick={() => setCodeSeite(codeSeite === "links" ? "rechts" : "links")}
+              >
+                <ArrowLeftRight />
+              </IconButton>
+            )}
             <Segmented<HtmlViewMode> size="sm" label="Ansicht (Strg+E)" options={HTML_VIEW_MODES} value={mode} onChange={setMode} />
           </div>
         </div>
         {text === null || split === null ? (
           <p className="muted">Lädt …</p>
         ) : (
-          <div className={cx("html-workspace", `is-${mode}`)}>
+          <div ref={flaeche} className={cx("html-workspace", `is-${mode}`, mode === "geteilt" && codeSeite === "rechts" && "is-code-rechts")}>
             {editing && (
-              <div className="html-code-pane">
+              <div className="html-code-pane" id={codeId}>
                 <BausteinLeiste onPick={(art) => void insertBaustein(art)} eigene={eigene} onPickEigen={insertEigen} onSave={saveSelection} />
                 <CodeEditor
                   value={splitRef.current?.body ?? split.body}
@@ -429,6 +445,7 @@ export function HtmlPageView({
                 />
               </div>
             )}
+            {mode === "geteilt" && <GeteiltTrenner flaeche={flaeche} seite={codeSeite} codeId={codeId} />}
             {mode !== "code" && (
               <div className="html-preview-pane">
                 <PagePreview

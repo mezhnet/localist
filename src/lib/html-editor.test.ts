@@ -1,6 +1,19 @@
 import { EditorState } from "@codemirror/state";
-import { describe, expect, it } from "vitest";
-import { joinFromEditor, mainContentRange, nextViewMode, splitForEditor } from "./html-editor";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  anteilAusZeiger,
+  anteilNachTaste,
+  begrenzeAnteil,
+  GETEILT_MIN_PX,
+  joinFromEditor,
+  mainContentRange,
+  nextViewMode,
+  splitForEditor,
+  storeAnteil,
+  storeCodeSeite,
+  storedAnteil,
+  storedCodeSeite,
+} from "./html-editor";
 
 const PAGE = `<!doctype html>
 <html lang="de">
@@ -84,5 +97,75 @@ describe("Code-Editor: Ausschnitt und Zusammensetzen", () => {
     expect(nextViewMode("lesen")).toBe("code");
     expect(nextViewMode("code")).toBe("geteilt");
     expect(nextViewMode("geteilt")).toBe("lesen");
+  });
+});
+
+describe("„Geteilt“: Seite des Code-Editors und Trennlinie (Etappe 17)", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
+
+  it("Code-Seite: Standard links, gemerkt unter „html-code-seite“, ungültige Werte ergeben links", () => {
+    expect(storedCodeSeite()).toBe("links");
+    storeCodeSeite("rechts");
+    expect(localStorage.getItem("html-code-seite")).toBe("rechts");
+    expect(storedCodeSeite()).toBe("rechts");
+    localStorage.setItem("html-code-seite", "oben");
+    expect(storedCodeSeite()).toBe("links");
+  });
+
+  it("Code-Seite ohne App-Speicher: gilt bis zum Neustart, nichts wirft", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("kein Speicher");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("kein Speicher");
+    });
+    expect(storedCodeSeite()).toBe("links");
+    storeCodeSeite("rechts");
+    expect(storedCodeSeite()).toBe("rechts");
+    storeCodeSeite("links");
+    expect(storedAnteil()).toBe(0.5);
+    expect(() => storeAnteil(0.7)).not.toThrow();
+  });
+
+  it("Verhältnis wird gemerkt unter „html-geteilt-anteil“, kaputte Werte ergeben 50 : 50", () => {
+    expect(storedAnteil()).toBe(0.5);
+    storeAnteil(0.61234);
+    expect(localStorage.getItem("html-geteilt-anteil")).toBe("0.612");
+    expect(storedAnteil()).toBe(0.612);
+    for (const kaputt of ["abc", "2", "-1", "0", "1", ""]) {
+      localStorage.setItem("html-geteilt-anteil", kaputt);
+      expect(storedAnteil(), kaputt).toBe(0.5);
+    }
+  });
+
+  it("Begrenzung: jede Seite bleibt mindestens 280 px breit, zu wenig Platz ergibt 50 : 50", () => {
+    expect(GETEILT_MIN_PX).toBe(280);
+    expect(begrenzeAnteil(0.6, 1000)).toBe(0.6);
+    expect(begrenzeAnteil(0.1, 1000)).toBeCloseTo(0.28);
+    expect(begrenzeAnteil(0.95, 1000)).toBeCloseTo(0.72);
+    expect(begrenzeAnteil(0, 1000) * 1000).toBeCloseTo(280);
+    expect(begrenzeAnteil(0.7, 559)).toBe(0.5);
+    expect(begrenzeAnteil(0.7, 0)).toBe(0.5);
+    expect(begrenzeAnteil(Number.NaN, 1000)).toBe(0.5);
+  });
+
+  it("Anteil aus der Zeigerposition, bei Code rechts gespiegelt", () => {
+    // Fläche ab x = 100, 1016 px breit, Trennlinie 16 px: Mitte bei x = 608
+    expect(anteilAusZeiger(608, 100, 1016, 16, "links")).toBeCloseTo(0.5);
+    expect(anteilAusZeiger(708, 100, 1016, 16, "links")).toBeCloseTo(0.6);
+    expect(anteilAusZeiger(708, 100, 1016, 16, "rechts")).toBeCloseTo(0.4);
+  });
+
+  it("Tastatur: Pfeile 2 % (Umschalt 10 %), Pos1/Ende, Enter = 50 : 50; bezogen auf die sichtbare Linie", () => {
+    expect(anteilNachTaste(0.5, "ArrowRight", false, "links")).toBeCloseTo(0.52);
+    expect(anteilNachTaste(0.5, "ArrowLeft", true, "links")).toBeCloseTo(0.4);
+    // Code rechts: Linie nach links macht den Code breiter
+    expect(anteilNachTaste(0.5, "ArrowLeft", false, "rechts")).toBeCloseTo(0.52);
+    expect(anteilNachTaste(0.5, "Home", false, "links")).toBe(0);
+    expect(anteilNachTaste(0.5, "End", false, "links")).toBe(1);
+    expect(anteilNachTaste(0.5, "Home", false, "rechts")).toBe(1);
+    expect(anteilNachTaste(0.7, "Enter", false, "links")).toBe(0.5);
+    expect(anteilNachTaste(0.7, "a", false, "links")).toBeNull();
   });
 });

@@ -558,10 +558,97 @@
   padding-left: 0;
 }
 
+/* „Geteilt“: Code, Trennlinie, Vorschau. Die Anteile setzt GeteiltTrenner als --html-links/--html-rechts (fr);
+   jede Seite bleibt mindestens --split-pane-min-width breit, solange der Platz für beide reicht. Steht der Code
+   rechts, tauscht nur die Reihenfolge der Anzeige (order): Editor und iframe bleiben im DOM, wo sie sind, damit
+   die Vorschau nicht neu lädt und ihre Scrollposition behält. */
 .html-workspace.is-geteilt {
+  --split-pane-min: min(var(--split-pane-min-width), calc(50% - var(--split-divider-width) / 2));
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-4);
+  grid-template-columns:
+    minmax(var(--split-pane-min), var(--html-links, 1fr))
+    var(--split-divider-width)
+    minmax(var(--split-pane-min), var(--html-rechts, 1fr));
+  gap: 0;
+}
+
+.html-workspace.is-code-rechts .html-preview-pane {
+  order: 1;
+}
+
+.html-workspace.is-code-rechts .html-trenner {
+  order: 2;
+}
+
+.html-workspace.is-code-rechts .html-code-pane {
+  order: 3;
+}
+
+.html-trenner {
+  position: relative;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+/* Feine Linie mit Griff in der Mitte; beim Überfahren kräftiger, beim Ziehen und mit Tastaturfokus in Akzentfarbe. */
+.html-trenner::before,
+.html-trenner::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  border-radius: var(--radius-full);
+  transform: translateX(-50%);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.html-trenner::before {
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: var(--border-width);
+  background: var(--color-border);
+}
+
+.html-trenner::after {
+  top: calc(50% - var(--split-divider-grip-height) / 2);
+  width: var(--split-divider-line);
+  height: var(--split-divider-grip-height);
+  background: var(--color-border-strong);
+}
+
+.html-trenner:hover::before,
+.html-trenner:hover::after {
+  background: var(--color-text-faint);
+}
+
+.html-trenner:focus-visible {
+  box-shadow: var(--shadow-focus);
+}
+
+.html-trenner:focus-visible::before,
+.html-trenner:focus-visible::after,
+.html-workspace.is-ziehen .html-trenner::before,
+.html-workspace.is-ziehen .html-trenner::after {
+  background: var(--color-accent);
+}
+
+/* Beim Ziehen: kein Markieren, und die Vorschau (iframes) schluckt keine Mausbewegungen. */
+.html-workspace.is-ziehen {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.html-workspace.is-ziehen .html-frame {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .html-trenner::before,
+  .html-trenner::after {
+    transition: none;
+  }
 }
 
 .html-code-pane,
@@ -733,9 +820,14 @@
     flex-wrap: wrap;
   }
 
-  /* Geteilt auf schmalen Bildschirmen: Code oben, Vorschau darunter */
+  /* Geteilt auf schmalen Bildschirmen untereinander: Code „links“ = oben, „rechts“ = unten (über order) */
   .html-workspace.is-geteilt {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .html-trenner {
+    display: none;
   }
 
   .html-code-pane,

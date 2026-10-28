@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+de9070ab – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+769171c0 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus der Schrift Inter, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -273,6 +273,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --property-name-width: 160px;
   --code-pane-height: 72vh;
   --code-pane-min-height: 320px;
+  /* „Geteilt“: jede Seite mindestens so breit (wie GETEILT_MIN_PX in html-editor.ts), Trennlinie mit Griff */
+  --split-pane-min-width: 280px;
+  --split-divider-width: var(--space-4);
+  --split-divider-line: var(--border-width-accent);
+  --split-divider-grip-height: var(--space-8);
 
   /* Radien */
   --radius-xs: 3px;

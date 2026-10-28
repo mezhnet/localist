@@ -163,6 +163,11 @@
   --property-name-width: 160px;
   --code-pane-height: 72vh;
   --code-pane-min-height: 320px;
+  /* „Geteilt“: jede Seite mindestens so breit (wie GETEILT_MIN_PX in html-editor.ts), Trennlinie mit Griff */
+  --split-pane-min-width: 280px;
+  --split-divider-width: var(--space-4);
+  --split-divider-line: var(--border-width-accent);
+  --split-divider-grip-height: var(--space-8);
 
   /* Radien */
   --radius-xs: 3px;
