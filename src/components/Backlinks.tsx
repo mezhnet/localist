@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { PageRef } from "../lib/links";
 import { backlinksFor, type Backlink, type IndexEntry } from "../lib/search";
 import { Badge } from "./ui";
+import { oeffnenKlick } from "./Reiterleiste";
 
 interface Props {
   path: string;
@@ -13,7 +14,8 @@ interface Props {
   version: number;
   /** Emoji-Icons der Seiten (aus dem Suchindex). */
   icons: ReadonlyMap<string, string>;
-  onOpen: (path: string) => void;
+  /** `neu`: Strg+Klick oder Mittelklick (neuer Reiter). */
+  onOpen: (path: string, neu?: boolean) => void;
 }
 
 export function Backlinks({ path, pages, loadIndex, version, icons, onOpen }: Props) {
@@ -42,7 +44,7 @@ export function Backlinks({ path, pages, loadIndex, version, icons, onOpen }: Pr
         <ul>
           {links.map((link) => (
             <li key={link.path}>
-              <button type="button" className="backlink" onClick={() => onOpen(link.path)}>
+              <button type="button" className="backlink" {...oeffnenKlick((neu) => onOpen(link.path, neu))}>
                 <span className="backlink-title">
                   <span className="backlink-icon" aria-hidden="true">
                     {icons.get(link.path) ?? <FileText />}

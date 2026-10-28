@@ -10,6 +10,7 @@ import { CODE_SEITEN, useCodeSeite, type CodeSeite } from "../lib/html-editor";
 import { isInside, parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
 import { DarstellungEinstellungen } from "./Darstellung";
+import { oeffnenKlick } from "./Reiterleiste";
 import { Button, Dialog, Input, Kbd, Segmented } from "./ui";
 
 interface ListDialogProps<T> {
@@ -20,7 +21,8 @@ interface ListDialogProps<T> {
   emptyText: string;
   query: string;
   onQuery: (query: string) => void;
-  onPick: (item: T) => void;
+  /** `neu`: Strg+Enter, Strg+Klick oder Mittelklick (in einem neuen Reiter öffnen). */
+  onPick: (item: T, neu: boolean) => void;
   onClose: () => void;
   render: (item: T) => ReactNode;
   itemKey: (item: T) => string;
@@ -51,7 +53,7 @@ function ListDialog<T>(props: ListDialogProps<T>) {
             event.preventDefault();
             setSelected((i) => Math.max(0, i - 1));
           }
-          if (event.key === "Enter" && props.items[selected]) props.onPick(props.items[selected]);
+          if (event.key === "Enter" && props.items[selected]) props.onPick(props.items[selected], event.ctrlKey || event.metaKey);
         }}
       />
       <ul className="dialog-list" role="listbox" aria-label="Ergebnisse">
@@ -63,7 +65,7 @@ function ListDialog<T>(props: ListDialogProps<T>) {
             aria-selected={index === selected}
             className={index === selected ? "selected" : undefined}
             onMouseEnter={() => setSelected(index)}
-            onClick={() => props.onPick(item)}
+            {...oeffnenKlick((neu) => props.onPick(item, neu))}
           >
             {props.render(item)}
           </li>
@@ -89,13 +91,16 @@ const keyHints = (
       <Kbd>Enter</Kbd> öffnen
     </span>
     <span>
+      <Kbd>Strg+Enter</Kbd> in neuem Reiter
+    </span>
+    <span>
       <Kbd>Esc</Kbd> schließen
     </span>
   </>
 );
 
 /** Strg+P: Seiten nach Titel finden und öffnen. */
-export function QuickSwitcher({ pages, onOpen, onClose }: { pages: PageRef[]; onOpen: (path: string) => void; onClose: () => void }) {
+export function QuickSwitcher({ pages, onOpen, onClose }: { pages: PageRef[]; onOpen: (path: string, neu: boolean) => void; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const items = useMemo(() => quickSwitch(pages, query), [pages, query]);
   return (
@@ -107,7 +112,7 @@ export function QuickSwitcher({ pages, onOpen, onClose }: { pages: PageRef[]; on
       emptyText="Keine passende Seite."
       query={query}
       onQuery={setQuery}
-      onPick={(page) => onOpen(page.path)}
+      onPick={(page, neu) => onOpen(page.path, neu)}
       onClose={onClose}
       itemKey={(page) => page.path}
       render={(page) => (
@@ -137,7 +142,7 @@ export function PagePicker({ pages, label, onPick, onClose }: { pages: PageRef[]
       emptyText="Keine passende Seite."
       query={query}
       onQuery={setQuery}
-      onPick={onPick}
+      onPick={(page) => onPick(page)}
       onClose={onClose}
       itemKey={(page) => page.path}
       render={(page) => (
@@ -163,7 +168,7 @@ export function SearchDialog({
 }: {
   loadIndex: () => Promise<IndexEntry[]>;
   initialQuery?: string;
-  onOpen: (path: string) => void;
+  onOpen: (path: string, neu: boolean) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState(initialQuery);
@@ -181,7 +186,7 @@ export function SearchDialog({
       emptyText={index === null ? "Suchindex wird geladen …" : query.trim() ? "Nichts gefunden." : "Suchbegriff eingeben."}
       query={query}
       onQuery={setQuery}
-      onPick={(hit) => onOpen(hit.path)}
+      onPick={(hit, neu) => onOpen(hit.path, neu)}
       onClose={onClose}
       itemKey={(hit) => hit.path}
       render={(hit) => (

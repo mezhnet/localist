@@ -33,17 +33,19 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent as Reac
 import packageInfo from "../../package.json";
 import { ancestorFolders, findNode, isInside, parentDir } from "../lib/tree";
 import { ModusUmschalter } from "./Darstellung";
+import { oeffnenKlick } from "./Reiterleiste";
 import type { TreeNode } from "../lib/vault-api";
 import { Button, cx, IconButton, Input, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, type MenuAnchor } from "./ui";
 
 export type CreateKind = "page" | "html" | "folder" | "database" | "template";
 
 export interface SidebarActions {
-  onOpen: (path: string) => void;
-  onOpenDatabase: (path: string) => void;
+  /** Öffnen im aktuellen Reiter; `neu` (Strg+Klick oder Mittelklick): in einem neuen Reiter. */
+  onOpen: (path: string, neu?: boolean) => void;
+  onOpenDatabase: (path: string, neu?: boolean) => void;
   onOpenHome: () => void;
   /** Bereich „Bausteine“ (Bibliothek und Hilfe) öffnen. */
-  onOpenLibrary: () => void;
+  onOpenLibrary: (neu?: boolean) => void;
   onCreate: (kind: CreateKind, dir: string) => void;
   onRename: (node: TreeNode, newName: string) => void;
   /** Per Drag & Drop in einen Ordner gezogen ("" = Vault-Wurzel). */
@@ -53,7 +55,7 @@ export interface SidebarActions {
   onDelete: (node: TreeNode) => void;
   onConvertToDatabase: (path: string) => void;
   /** Notizbuch (Ordner mit _notizbuch.yaml) öffnen bzw. einen Ordner dazu machen. */
-  onOpenNotebook: (path: string) => void;
+  onOpenNotebook: (path: string, neu?: boolean) => void;
   onConvertToNotebook: (path: string) => void;
   /** Notiz in eine HTML-Seite umwandeln (fragt vorher nach). */
   onConvertToHtml: (node: TreeNode) => void;
@@ -152,17 +154,17 @@ export function Sidebar(props: Props) {
     props.onCreate(kind, dir);
   };
 
-  const open = (node: TreeNode) => {
-    if (node.kind === "page") props.onOpen(node.path);
+  const open = (node: TreeNode, neu = false) => {
+    if (node.kind === "page") props.onOpen(node.path, neu);
     else if (node.database) {
       // Eine Datenbank öffnet sich als Tabelle und klappt ihre Einträge auf.
       setExpanded((previous) => new Set([...previous, node.path]));
-      props.onOpenDatabase(node.path);
+      props.onOpenDatabase(node.path, neu);
     } else if (node.notebook) {
       // Ein Notizbuch öffnet sich wie eine kleine Website.
       setExpanded((previous) => new Set([...previous, node.path]));
-      props.onOpenNotebook(node.path);
-    } else toggle(node.path);
+      props.onOpenNotebook(node.path, neu);
+    } else if (!neu) toggle(node.path);
   };
 
   const isActive = (node: TreeNode) => node.path === openPath || node.path === props.openDatabase || node.path === props.openNotebook;
@@ -252,7 +254,7 @@ export function Sidebar(props: Props) {
                 type="button"
                 className="tree-label"
                 title={node.path}
-                onClick={() => open(node)}
+                {...oeffnenKlick((neu) => open(node, neu))}
                 onKeyDown={(event) => {
                   if (event.key === "F2") {
                     event.preventDefault();
@@ -354,7 +356,7 @@ export function Sidebar(props: Props) {
             variant="ghost"
             className={cx("sidebar-item", props.libraryActive && "active")}
             icon={<Blocks />}
-            onClick={props.onOpenLibrary}
+            {...oeffnenKlick((neu) => props.onOpenLibrary(neu))}
             title="Alle Bausteine mit Vorschau, eigene Bausteine und Hilfe"
           >
             Bausteine
@@ -381,7 +383,7 @@ export function Sidebar(props: Props) {
                 <li key={node.path}>
                   {/* Wie in der Vorlage ist nur der Eintrag im Ordnerbaum hervorgehoben, nicht der Favorit. */}
                   <div className="tree-row" onContextMenu={(event) => setMenu({ kind: "node", anchor: atPointer(event), node })}>
-                    <button type="button" className="tree-label" title={node.path} onClick={() => open(node)}>
+                    <button type="button" className="tree-label" title={node.path} {...oeffnenKlick((neu) => open(node, neu))}>
                       <span className="tree-icon" aria-hidden="true">
                         {nodeIcon(node, false)}
                       </span>

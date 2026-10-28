@@ -37,7 +37,8 @@ import {
   rectangularSelection,
 } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { useContext, useEffect, useRef, type MutableRefObject } from "react";
+import { ScrollGedaechtnisContext, scrollWiederherstellen } from "../lib/scroll-gedaechtnis";
 import { BAUSTEIN_KLASSEN, BAUSTEIN_TAGS, EINRUECKUNG, planInsert } from "../lib/bausteine";
 
 /** Was die Seite mit dem Editor machen kann (Werkzeugleiste). */
@@ -210,6 +211,7 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
   slashRef.current = slashEintraege;
   // Während der Inhalt von außen ersetzt wird, keine Änderung melden.
   const replacing = useRef(false);
+  const scroll = useRef(useContext(ScrollGedaechtnisContext));
 
   useEffect(() => {
     if (!host.current) return;
@@ -254,6 +256,11 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
     });
     const editor = new EditorView({ state, parent: host.current });
     view.current = editor;
+    // Scrollposition des Reiters: wiederherstellen und beim Scrollen merken.
+    const { anfang, merken } = scroll.current;
+    const stopScroll = scrollWiederherstellen(editor.scrollDOM, anfang?.code ?? 0);
+    const onScroll = () => merken({ code: editor.scrollDOM.scrollTop });
+    editor.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
     if (apiRef) {
       /** Zuletzt eingefügter Baustein (Text danach, markierter Platzhalter, Ende des Bausteins). */
       let zuletzt: { doc: DocText; anchor: number; head: number; ende: number } | null = null;
@@ -282,6 +289,8 @@ export function CodeEditor({ value, docVersion, lineBreak, dark, label, onChange
       };
     }
     return () => {
+      stopScroll();
+      editor.scrollDOM.removeEventListener("scroll", onScroll);
       if (apiRef?.current) apiRef.current = null;
       editor.destroy();
       view.current = null;

@@ -9,7 +9,14 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
       typ: "link",
       pfad: "Notizen/Ideen.md",
       anker: "oben",
+      neu: false,
     });
+    // Strg+Klick oder Mittelklick (Etappe 19): neuer Reiter; alles andere als true gilt als normaler Klick.
+    expect(parseBridgeMessage({ localist: 1, typ: "link", pfad: "Notizen/Ideen.md", neu: true })).toEqual({ typ: "link", pfad: "Notizen/Ideen.md", anker: "", neu: true });
+    expect(parseBridgeMessage({ localist: 1, typ: "link", pfad: "Notizen/Ideen.md", neu: "ja" })).toEqual({ typ: "link", pfad: "Notizen/Ideen.md", anker: "", neu: false });
+    for (const taste of ["t", "w", "tab"]) {
+      expect(parseBridgeMessage({ localist: 1, typ: "taste", taste, umschalt: taste === "tab" })).toEqual({ typ: "taste", taste, umschalt: taste === "tab" });
+    }
     expect(parseBridgeMessage({ localist: 1, typ: "extern", url: "https://example.com/" })).toEqual({ typ: "extern", url: "https://example.com/" });
     expect(parseBridgeMessage({ localist: 1, typ: "taste", taste: "p", umschalt: false })).toEqual({ typ: "taste", taste: "p", umschalt: false });
     expect(parseBridgeMessage({ localist: 1, typ: "taste", taste: "e", umschalt: false })).toEqual({ typ: "taste", taste: "e", umschalt: false });
@@ -34,7 +41,8 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
       { localist: 1, typ: "extern", url: "javascript:alert(1)" },
       { localist: 1, typ: "extern", url: "file:///C:/Windows/win.ini" },
       { localist: 1, typ: "extern", url: "ipc://localhost/plugin" },
-      { localist: 1, typ: "taste", taste: "w", umschalt: false },
+      { localist: 1, typ: "taste", taste: "q", umschalt: false },
+      { localist: 1, typ: "taste", taste: "Tab", umschalt: false },
       { localist: 1, typ: "taste", taste: ",", umschalt: false },
       { localist: 1, typ: "position", y: -5 },
       { localist: 1, typ: "position", y: "10" },

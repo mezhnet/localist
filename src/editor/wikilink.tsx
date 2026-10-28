@@ -7,8 +7,8 @@ import { linkLabel } from "../lib/links";
 export interface WikiLinkActions {
   /** Pfad der Seite, auf die der Link zeigt, oder null, wenn es sie (noch) nicht gibt. */
   resolve: (target: string) => string | null;
-  /** Öffnet die Seite (und legt sie an, falls sie fehlt). */
-  open: (target: string) => void;
+  /** Öffnet die Seite (und legt sie an, falls sie fehlt); `neu`: in einem neuen Reiter. */
+  open: (target: string, neu?: boolean) => void;
   /** Passende Seiten für die Vorschläge nach "[[". */
   suggest: (query: string) => LinkSuggestion[];
 }
@@ -37,7 +37,13 @@ function WikiLinkView({ target, alias }: { target: string; alias: string }) {
       title={exists ? `Öffnet „${target}“` : `„${target}“ gibt es noch nicht – Klick legt die Seite an`}
       role="link"
       onMouseDown={(event) => event.preventDefault()}
-      onClick={() => actions.open(target)}
+      // Strg+Klick oder Mittelklick: in einem neuen Reiter öffnen.
+      onClick={(event) => actions.open(target, event.ctrlKey || event.metaKey)}
+      onAuxClick={(event) => {
+        if (event.button !== 1) return;
+        event.preventDefault();
+        actions.open(target, true);
+      }}
     >
       {alias || linkLabel(target)}
     </span>

@@ -550,7 +550,7 @@ button.tree-toggle:hover {
   font-size: var(--font-size-2xs);
 }
 
-/* ---------- Inhalt mit Kopfleiste ---------- */
+/* ---------- Inhalt mit Reiterleiste und Kopfleiste ---------- */
 .main {
   grid-area: inhalt;
   position: relative;
@@ -558,8 +558,157 @@ button.tree-toggle:hover {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--color-bg);
+}
+
+/* Unter der Reiterleiste scrollt der Inhalt des aktiven Reiters (die Leiste bleibt stehen). */
+.main-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Reiterleiste (Vorlage 01/02): fester Reiter „Startseite“, offene Seiten mit Typ-Symbol und ×, am Ende „+“.
+   Der aktive Reiter ist unterstrichen; die feine Linie darunter geht über die ganze Breite. */
+.reiterleiste {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  height: var(--size-reiterleiste);
+  padding: 0 var(--space-2);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.reiter-liste {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-0-5);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.reiter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  max-width: var(--reiter-max-width);
+  color: var(--color-text-muted);
+}
+
+/* Unterstreichung des aktiven Reiters, auf der Linie unter der Leiste */
+.reiter.is-aktiv::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: calc(-1 * var(--border-width));
+  left: 0;
+  height: var(--border-width-strong);
+  background: var(--color-text);
+}
+
+.reiter.is-aktiv {
+  color: var(--color-text);
+}
+
+.reiter-knopf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--reiter-padding);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: default;
+  outline: none;
+}
+
+.reiter:not(.is-fest) .reiter-knopf {
+  padding-right: var(--space-1);
+}
+
+.reiter-knopf:focus-visible {
+  border-radius: var(--radius-sm);
+  box-shadow: inset var(--shadow-focus);
+}
+
+.reiter:hover {
+  color: var(--color-text);
+}
+
+.reiter-symbol {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.reiter-symbol svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.reiter-titel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reiter-schliessen,
+.reiter-neu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-faint);
+  cursor: default;
+}
+
+.reiter-schliessen {
+  width: var(--size-reiter-schliessen);
+  height: var(--size-reiter-schliessen);
+  margin-right: var(--space-1-5);
+}
+
+.reiter-neu {
+  align-self: center;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  margin-left: var(--space-1);
+}
+
+.reiter-schliessen svg {
+  width: var(--size-icon-xs);
+  height: var(--size-icon-xs);
+}
+
+.reiter-neu svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+.reiter-schliessen:hover,
+.reiter-neu:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.reiter-schliessen:focus-visible,
+.reiter-neu:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* PC: Der Inhalt ist eine abgesetzte Fläche mit großem Radius und feiner Linie, ringsum ein schmaler Rand

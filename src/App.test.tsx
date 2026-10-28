@@ -2212,3 +2212,190 @@ describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
     expect(tokens).toMatch(/--duration-sidebar: 180ms;/);
   });
 });
+
+describe("Reiter (Etappe 19)", () => {
+  const leiste = () => within(screen.getByRole("tablist", { name: "Offene Reiter" }));
+  const reiter = () => leiste().getAllByRole("tab").map((tab) => tab.textContent);
+  const aktiverReiter = () => leiste().getByRole("tab", { selected: true }).textContent;
+  const mittelklick = (element: Element) => {
+    fireEvent.mouseDown(element, { button: 1 });
+    fireEvent(element, new MouseEvent("auxclick", { bubbles: true, cancelable: true, button: 1 }));
+  };
+
+  it("Klick öffnet im aktuellen Reiter, Strg+Klick und Mittelklick in einem neuen; Strg+T, Strg+W, Strg+Tab; Mittelklick schließt", async () => {
+    await openVaultFromStart();
+    expect(reiter()).toEqual(["Startseite"]);
+    expect(leiste().queryByRole("button", { name: /schließen/ })).toBeNull(); // fester Reiter ohne ×
+    await openPage("Notizen", "Ideen");
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    expect(reiter()).toEqual(["Startseite", "Ideen"]);
+    expect(aktiverReiter()).toBe("Ideen");
+
+    // Klick in der Seitenleiste: im aktuellen Reiter
+    fireEvent.click((await inTree()).getByText("Formatierung"));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Formatierung"]));
+    // Strg+Klick und Mittelklick: neuer Reiter (rechts neben dem aktiven, wird aktiv)
+    fireEvent.click((await inTree()).getByText("Ideen"), { ctrlKey: true });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Formatierung", "Ideen"]));
+    expect(aktiverReiter()).toBe("Ideen");
+    mittelklick((await inTree()).getByText("DNS"));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Formatierung", "Ideen", "DNS"]));
+    expect(aktiverReiter()).toBe("DNS");
+
+    // Strg+Tab und Strg+Umschalt+Tab wechseln reihum
+    fireEvent.keyDown(window, { key: "Tab", ctrlKey: true });
+    await waitFor(() => expect(aktiverReiter()).toBe("Startseite"));
+    expect(screen.getByRole("region", { name: "Startseite" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Tab", ctrlKey: true, shiftKey: true });
+    await waitFor(() => expect(aktiverReiter()).toBe("DNS"));
+    fireEvent.keyDown(window, { key: "Tab", ctrlKey: true, shiftKey: true });
+    await waitFor(() => expect(aktiverReiter()).toBe("Ideen"));
+    expect(await screen.findByText("Hier sammle ich lose Gedanken.")).toBeTruthy();
+
+    // Strg+W schließt den aktiven Reiter, der rechte Nachbar wird aktiv
+    fireEvent.keyDown(window, { key: "w", ctrlKey: true });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Formatierung", "DNS"]));
+    expect(aktiverReiter()).toBe("DNS");
+    // Strg+T: neuer Reiter mit der Startseite; ein Klick öffnet die Seite dann in diesem Reiter
+    fireEvent.keyDown(window, { key: "t", ctrlKey: true });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Formatierung", "DNS", "Startseite"]));
+    expect(await screen.findByRole("region", { name: "Startseite" })).toBeTruthy();
+    fireEvent.click((await inTree()).getByText("Ideen"));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Formatierung", "DNS", "Ideen"]));
+    // „+“ in der Leiste wie Strg+T
+    fireEvent.click(screen.getByRole("button", { name: "Neuer Reiter" }));
+    await waitFor(() => expect(reiter()).toHaveLength(5));
+
+    // Mittelklick auf einen Reiter schließt ihn, auf den festen Reiter „Startseite“ nicht
+    mittelklick(leiste().getByRole("tab", { name: "Formatierung" }));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "DNS", "Ideen", "Startseite"]));
+    mittelklick(leiste().getAllByRole("tab")[0]);
+    fireEvent.click(leiste().getByRole("button", { name: "Reiter „DNS“ schließen" }));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen", "Startseite"]));
+    // Vom festen Reiter aus wechselt ein Klick zum Reiter, der die Seite schon zeigt
+    fireEvent.click(leiste().getAllByRole("tab")[0]);
+    await waitFor(() => expect(aktiverReiter()).toBe("Startseite"));
+    fireEvent.click((await inTree()).getByText("Ideen"));
+    await waitFor(() => expect(aktiverReiter()).toBe("Ideen"));
+    expect(reiter()).toEqual(["Startseite", "Ideen", "Startseite"]);
+  });
+
+  it("Startseite, Strg+P und Links in Notizen und HTML-Seiten: Klick im aktuellen Reiter, Strg+Klick in einem neuen", async () => {
+    await openVaultFromStart();
+    // Startseite (fester Reiter): öffnet einen neuen Reiter
+    const startFavoriten = await within(screen.getByRole("region", { name: "Startseite" })).findByRole("region", { name: "Favoriten" });
+    fireEvent.click(await within(startFavoriten).findByText("Ideen"));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen"]));
+    // Strg+P mit Strg+Enter: neuer Reiter
+    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
+    const suche = await screen.findByRole("textbox", { name: "Schnellsuche" });
+    fireEvent.change(suche, { target: { value: "Relaunch" } });
+    fireEvent.keyDown(suche, { key: "Enter", ctrlKey: true });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen", "Website-Relaunch"]));
+    // Link [[Ideen]] in der Notiz mit Strg+Klick: neuer Reiter
+    const link = await waitFor(() => {
+      const el = [...document.querySelectorAll(".wikilink")].find((node) => node.textContent === "Ideen");
+      expect(el).toBeTruthy();
+      return el!;
+    });
+    fireEvent.click(link, { ctrlKey: true });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen", "Website-Relaunch", "Ideen"]));
+    // HTML-Seite: Link mit „neu“ aus der Brücke öffnet einen neuen Reiter
+    fireEvent.click((await inTree()).getByText("DNS"));
+    const frame = await waitFor(() => {
+      const f = document.querySelector<HTMLIFrameElement>("iframe.html-frame");
+      expect(f).toBeTruthy();
+      return f!;
+    });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen", "Website-Relaunch", "DNS"]));
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, typ: "link", pfad: "Notizen/Formatierung.md", neu: true }, source: frame.contentWindow }));
+    });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen", "Website-Relaunch", "DNS", "Formatierung"]));
+    // Reiter-Tastenkürzel aus der Seite (Brücke): Strg+Tab
+    fireEvent.click(leiste().getByRole("tab", { name: "DNS" }));
+    const frame2 = await waitFor(() => {
+      const f = document.querySelector<HTMLIFrameElement>("iframe.html-frame");
+      expect(f).toBeTruthy();
+      return f!;
+    });
+    act(() => {
+      window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, typ: "taste", taste: "tab", umschalt: false }, source: frame2.contentWindow }));
+    });
+    await waitFor(() => expect(aktiverReiter()).toBe("Formatierung"));
+  });
+
+  it("vor jedem Wechsel ist gespeichert, und Reiter folgen Umbenennen, Umwandeln und Löschen", async () => {
+    await openVaultFromStart();
+    await openPage("Projekte", "Website-Relaunch");
+    await screen.findByText("Domain prüfen");
+    const before = vault().files.get("Projekte/Website-Relaunch.md")!;
+    const tiptap = (window as unknown as { ProseMirror: { commands: { setTextSelection: (pos: number) => void; insertContent: (text: string) => void } } }).ProseMirror;
+    act(() => {
+      tiptap.commands.setTextSelection(3);
+      tiptap.commands.insertContent("Neue ");
+    });
+    // Sofort wechseln (vor der Wartezeit des automatischen Speicherns): Die Eingabe steht schon in der Datei.
+    fireEvent.keyDown(window, { key: "t", ctrlKey: true });
+    await waitFor(() => expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("- [ ] Neue Domain prüfen\n"), { timeout: 400 });
+    expect(before).not.toContain("Neue Domain");
+
+    // Umbenennen in der Seitenleiste: der Reiter folgt
+    fireEvent.click((await inTree()).getByText("Notizen"));
+    fireEvent.click(await (await inTree()).findByText("Ideen"), { ctrlKey: true });
+    fireEvent.click((await inTree()).getByText("Formatierung"), { ctrlKey: true });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Website-Relaunch", "Startseite", "Ideen", "Formatierung"]));
+    fireEvent.keyDown(await (await inTree()).findByTitle("Notizen/Ideen.md"), { key: "F2" });
+    const input = await screen.findByRole("textbox", { name: "Neuer Name für „Ideen“" });
+    fireEvent.change(input, { target: { value: "Gedanken" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Website-Relaunch", "Startseite", "Gedanken", "Formatierung"]));
+    expect(leiste().getByRole("tab", { name: "Gedanken" }).getAttribute("title")).toBe("Notizen/Gedanken.md");
+
+    // Umwandeln: der Reiter zeigt danach die HTML-Seite
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „Gedanken“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "In HTML-Seite umwandeln …" }));
+    await waitFor(() => expect(leiste().getByRole("tab", { name: "Gedanken" }).getAttribute("title")).toBe("Notizen/Gedanken.html"));
+    await waitFor(() => expect(vault().files.has("Notizen/Gedanken.md")).toBe(false));
+    expect(reiter()).toEqual(["Startseite", "Website-Relaunch", "Startseite", "Gedanken", "Formatierung"]);
+    expect(aktiverReiter()).toBe("Gedanken");
+
+    // Löschen: der Reiter schließt sich
+    fireEvent.click(await screen.findByRole("button", { name: "Aktionen für „Formatierung“" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Löschen/ }));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Website-Relaunch", "Startseite", "Gedanken"]));
+    // Von außen gelöscht: ebenfalls
+    act(() => vault().externalDelete("Projekte/Website-Relaunch.md"));
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Startseite", "Gedanken"]));
+  });
+
+  it("die offenen Reiter werden pro Vault gemerkt; auf dem Handy gibt es keine Reiterleiste", async () => {
+    await openVaultFromStart();
+    await openPage("Notizen", "Ideen");
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    fireEvent.click(screen.getByRole("button", { name: "Bausteine" }), { ctrlKey: true });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen", "Bausteine"]));
+    const gemerkt = Object.keys(localStorage).find((key) => key.startsWith("reiter:"))!;
+    expect(JSON.parse(localStorage.getItem(gemerkt)!)).toEqual({ reiter: [{ art: "seite", pfad: "Notizen/Ideen.md" }, { art: "bausteine" }], aktiv: 1 });
+    cleanup();
+    render(<App />);
+    await screen.findByRole("tree");
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen", "Bausteine"]));
+    expect(aktiverReiter()).toBe("Bausteine");
+    // Eine Seite, die es nicht mehr gibt, fällt still weg.
+    cleanup();
+    localStorage.setItem(gemerkt, JSON.stringify({ reiter: [{ art: "seite", pfad: "Gibt/Es/Nicht.md" }, { art: "seite", pfad: "Notizen/Ideen.md" }], aktiv: 1 }));
+    render(<App />);
+    await screen.findByRole("tree");
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Ideen"]));
+    expect(await screen.findByText("Hier sammle ich lose Gedanken.")).toBeTruthy();
+    expect(screen.queryByText(/außerhalb der App gelöscht/)).toBeNull();
+    cleanup();
+
+    localStorage.setItem("dev-platform", "android");
+    render(<App />);
+    await screen.findByRole("tree");
+    expect(screen.queryByRole("tablist", { name: "Offene Reiter" })).toBeNull();
+  });
+});

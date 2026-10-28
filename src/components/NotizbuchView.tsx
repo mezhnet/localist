@@ -21,7 +21,8 @@ interface Props {
   /** Wird erhöht, wenn sich im Vault etwas geändert hat. */
   version: number;
   onEdit: (path: string) => void;
-  onOpenLink: (path: string) => void;
+  /** `neu`: Strg+Klick oder Mittelklick (neuer Reiter). */
+  onOpenLink: (path: string, neu?: boolean) => void;
   onOpenExternal: (url: string) => void;
   onError: (message: string) => void;
 }
@@ -96,10 +97,10 @@ export function NotizbuchView({ folder, node, pages, version, onEdit, onOpenLink
   };
 
   /** Links zwischen Seiten des Notizbuchs bleiben im Notizbuch, alles andere öffnet die App. */
-  const link = (ziel: string) => {
+  const link = (ziel: string, neu = false) => {
     const name = ziel.slice(folder.length + 1);
-    if (parentDir(ziel) === folder && reihenfolge.includes(name)) setAktuell(name);
-    else onOpenLink(ziel);
+    if (!neu && parentDir(ziel) === folder && reihenfolge.includes(name)) setAktuell(name);
+    else onOpenLink(ziel, neu);
   };
 
   const titel = notizbuch.titel ?? pageTitle(folder);

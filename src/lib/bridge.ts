@@ -18,16 +18,23 @@ export interface SecurityCheck {
 export type BridgeMessage =
   | { typ: "bereit" }
   | { typ: "groesse"; hoehe: number }
-  | { typ: "link"; pfad: string; anker: string }
+  /** Link auf eine Seite im Vault; `neu`: Strg+Klick oder Mittelklick (neuer Reiter). */
+  | { typ: "link"; pfad: string; anker: string; neu: boolean }
   | { typ: "extern"; url: string }
-  /** Tastenkürzel der App aus der Seite: Strg+P, Strg+Umschalt+F, Strg+E und Strg+. (Seitenleiste ein-/ausklappen). */
-  | { typ: "taste"; taste: "p" | "f" | "e" | "."; umschalt: boolean }
+  /**
+   * Tastenkürzel der App aus der Seite: Strg+P, Strg+Umschalt+F, Strg+E, Strg+. (Seitenleiste ein-/ausklappen) und
+   * die Reiter (Strg+T, Strg+W, Strg+Tab, Strg+Umschalt+Tab).
+   */
+  | { typ: "taste"; taste: Taste; umschalt: boolean }
   | { typ: "position"; y: number }
   /** Stift-Symbol eines Bausteins geklickt (Nummer und Anzahl wie im iframe gezählt). */
   | { typ: "bearbeiten"; index: number; art: BausteinArt; anzahl: number }
   /** Häkchen in einer Checkliste gesetzt oder entfernt. */
   | { typ: "haekchen"; index: number; an: boolean }
   | { typ: "sicherheitstest"; ergebnisse: SecurityCheck[] };
+
+export type Taste = "p" | "f" | "e" | "." | "t" | "w" | "tab";
+const TASTEN: readonly Taste[] = ["p", "f", "e", ".", "t", "w", "tab"];
 
 const isIndex = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 100_000;
 
@@ -53,7 +60,7 @@ export function parseBridgeMessage(data: unknown): BridgeMessage | null {
       const anker = message.anker === undefined ? "" : message.anker;
       if (!isText(message.pfad) || !isText(anker, 500)) return null;
       const pfad = normalizeVaultPath(message.pfad);
-      return pfad === null ? null : { typ: "link", pfad, anker };
+      return pfad === null ? null : { typ: "link", pfad, anker, neu: message.neu === true };
     }
     case "extern":
       return isText(message.url) && isExternalUrl(message.url) ? { typ: "extern", url: message.url } : null;
@@ -62,8 +69,8 @@ export function parseBridgeMessage(data: unknown): BridgeMessage | null {
         ? { typ: "position", y: Math.min(Math.round(message.y), 10_000_000) }
         : null;
     case "taste":
-      if ((message.taste === "p" || message.taste === "f" || message.taste === "e" || message.taste === ".") && typeof message.umschalt === "boolean") {
-        return { typ: "taste", taste: message.taste, umschalt: message.umschalt };
+      if (TASTEN.includes(message.taste as Taste) && typeof message.umschalt === "boolean") {
+        return { typ: "taste", taste: message.taste as Taste, umschalt: message.umschalt };
       }
       return null;
     case "bearbeiten": {

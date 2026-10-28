@@ -1,9 +1,10 @@
-// Arbeitsbereich eines geöffneten Vaults: Sidebar links, rechts Startseite, Seite oder Datenbank.
-// Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen, anheften) und die Meldungen des Dateiwächters.
+// Arbeitsbereich eines geöffneten Vaults: Sidebar links, rechts Reiter mit Startseite, Seite, Datenbank, Notizbuch
+// oder Bausteinen. Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen, anheften) und die Meldungen des
+// Dateiwächters. Die Reiter-Logik steht in src/lib/reiter.ts; angezeigt wird immer nur der aktive Reiter.
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChevronRight, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Search, Star, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage } from "../lib/autosave";
 import { instantiateHtmlTemplate, isHtmlPath, pathMapper, readHead, rewriteReferences, setTitle } from "../lib/html";
@@ -14,10 +15,29 @@ import { readFavorites, removeFromFavorites, renameInFavorites, toggleFavorite, 
 import { pageIcons } from "../lib/home";
 import { DEFAULT_STATUS_OPTIONS } from "../lib/properties";
 import { instantiateTemplate, TEMPLATES_DIR, type IndexEntry } from "../lib/search";
+import {
+  aktiverReiter,
+  aktivieren,
+  entfernen,
+  istFest,
+  neuerStartReiter,
+  oeffnen,
+  pfadeFolgen,
+  reiterLaden,
+  reiterMerken,
+  schliessen,
+  START_REITER,
+  verlassen,
+  wechseln,
+  type ReiterInhalt,
+  type ReiterScroll,
+  type ReiterStand,
+} from "../lib/reiter";
+import { ScrollGedaechtnisContext, scrollWiederherstellen, type ScrollGedaechtnis } from "../lib/scroll-gedaechtnis";
 import { storedEingeklappt, storeEingeklappt, useEingeklappt, useSeitenleisteSeite } from "../lib/seitenleiste";
 import { useVaultSettings } from "../lib/settings";
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
-import { childrenOf, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
+import { childrenOf, findNode, isInside, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
 import { useSchemas } from "../lib/useSchemas";
 import type { EigenerBaustein } from "../lib/eigene-bausteine";
 import { eigenstaendigesHtml } from "../lib/export";
@@ -53,6 +73,7 @@ import { HtmlPageView } from "./HtmlPageView";
 import { NotizbuchView } from "./NotizbuchView";
 import { PageView } from "./PageView";
 import { Fensterleiste, hatFensterrahmen } from "./Fenster";
+import { Reiterleiste, useSchmal } from "./Reiterleiste";
 import { Sidebar, type CreateKind } from "./Sidebar";
 import { Button, cx, IconButton } from "./ui";
 
@@ -63,37 +84,37 @@ interface Props {
   onSwitchVault: () => void;
 }
 
-/** Die geöffnete Seite. `key` bleibt beim Umbenennen gleich, damit der Editor offen bleibt. */
-interface OpenPage {
-  key: number;
-  path: string;
-  isNew: boolean;
-}
-
 interface Notice {
   kind: "error" | "info";
   text: string;
 }
 
-let nextPageKey = 1;
-
 export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const explorer = platform !== "android" && platform !== "ios";
   const [tree, setTree] = useState<TreeNode[]>([]);
-  const [page, setPage] = useState<OpenPage | null>(null);
+  /** Ordnerbaum einmal geladen (vorher werden gemerkte Reiter noch nicht angezeigt, sie könnten fehlen). */
+  const [baumGeladen, setBaumGeladen] = useState(false);
+  const baumGeladenRef = useRef(false);
+  /** Offene Reiter (pro Vault gemerkt) und der aktive Reiter; er bestimmt, was rechts angezeigt wird. */
+  const [stand, setStandState] = useState<ReiterStand>(() => reiterLaden(vault.root));
+  const standRef = useRef(stand);
+  const setStand = (next: ReiterStand) => {
+    standRef.current = next;
+    setStandState(next);
+  };
+  const aktiv = aktiverReiter(stand);
+  /** Die Seite im aktiven Reiter. `key` bleibt beim Umbenennen gleich, damit der Editor offen bleibt. */
+  const page = aktiv.inhalt.art === "seite" ? { key: aktiv.ansicht, path: aktiv.inhalt.pfad, isNew: aktiv.neu === true } : null;
+  /** Geöffnete Datenbank bzw. geöffnetes Notizbuch (Ordnerpfad) im aktiven Reiter. */
+  const database = aktiv.inhalt.art === "datenbank" ? aktiv.inhalt.pfad : null;
+  const notebook = aktiv.inhalt.art === "notizbuch" ? aktiv.inhalt.pfad : null;
+  /** Bereich „Bausteine“ (Bibliothek und Hilfe) ist offen. */
+  const library = aktiv.inhalt.art === "bausteine";
   const [externalVersion, setExternalVersion] = useState(0);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   /** Der Vault-Ordner ist verschwunden (z. B. USB-Stick abgezogen oder umbenannt). */
   const [vaultMissing, setVaultMissing] = useState(false);
-  /** Geöffnete Datenbank (Ordnerpfad); dann ist keine Seite offen. */
-  const [database, setDatabase] = useState<string | null>(null);
-  /** Geöffnetes Notizbuch (Ordnerpfad) oder null. */
-  const [notebook, setNotebook] = useState<string | null>(null);
-  const notebookRef = useRef(notebook);
-  notebookRef.current = notebook;
-  /** Bereich „Bausteine“ (Bibliothek und Hilfe) ist offen. */
-  const [library, setLibrary] = useState(false);
   /** Eigene Bausteine des Vaults („Code-Speicher“). */
   const [eigene, setEigene] = useState<EigenerBaustein[]>([]);
   const loadEigene = useCallback(() => {
@@ -112,6 +133,11 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   fensterrahmenRef.current = fensterrahmen;
   const [eingeklapptGemerkt] = useEingeklappt();
   const eingeklappt = fensterrahmen && eingeklapptGemerkt;
+  /** Auf dem Handy und in schmalen Fenstern gibt es keine Reiterleiste. */
+  const schmal = useSchmal();
+  const ohneLeiste = !fensterrahmen || schmal;
+  const ohneLeisteRef = useRef(ohneLeiste);
+  ohneLeisteRef.current = ohneLeiste;
   const seitenleisteKnopf = useRef<HTMLButtonElement>(null);
   /** Ein- oder ausklappen; liegt der Fokus in der Seitenleiste, wandert er auf den Knopf (sonst ginge er verloren). */
   const seitenleisteUmschalten = useCallback(() => {
@@ -131,10 +157,6 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   /** Suchindex für Startseite und Icons in der Sidebar (wird bei Änderungen im Vault neu geladen). */
   const [index, setIndex] = useState<IndexEntry[]>([]);
   const saverRef = useRef<AutoSaver | null>(null);
-  const pageRef = useRef(page);
-  pageRef.current = page;
-  const databaseRef = useRef(database);
-  databaseRef.current = database;
   const treeRef = useRef(tree);
   treeRef.current = tree;
 
@@ -154,16 +176,14 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  const setPagePath = (path: string) => {
-    if (!pageRef.current) return;
-    pageRef.current = { ...pageRef.current, path };
-    setPage(pageRef.current);
+  /** Pfad der Seite bzw. Datenbank im aktiven Reiter (oder undefined). */
+  const offeneSeite = () => {
+    const inhalt = aktiverReiter(standRef.current).inhalt;
+    return inhalt.art === "seite" ? inhalt.pfad : undefined;
   };
-
-  const closePage = () => {
-    saverRef.current?.cancel();
-    pageRef.current = null;
-    setPage(null);
+  const offeneDatenbank = () => {
+    const inhalt = aktiverReiter(standRef.current).inhalt;
+    return inhalt.art === "datenbank" ? inhalt.pfad : undefined;
   };
 
   const refreshTree = useCallback(async () => {
@@ -171,15 +191,28 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       const next = sortTree(await listTree());
       setVaultMissing(false);
       setTree(next);
-      const current = pageRef.current;
-      if (current && !findNode(next, current.path)) {
-        closePage();
-        setNotice({ kind: "info", text: `„${pageTitle(current.path)}“ wurde außerhalb der App gelöscht oder verschoben.` });
+      // Reiter, deren Seite, Datenbank oder Notizbuch es nicht mehr gibt, schließen.
+      const weg = (inhalt: ReiterInhalt) =>
+        inhalt.art === "seite"
+          ? !findNode(next, inhalt.pfad)
+          : inhalt.art === "datenbank"
+            ? !findNode(next, inhalt.pfad)?.database
+            : inhalt.art === "notizbuch" && !findNode(next, inhalt.pfad)?.notebook;
+      const alt = standRef.current;
+      const neu = entfernen(alt, weg);
+      if (neu !== alt) {
+        const war = aktiverReiter(alt);
+        const aktivWeg = !istFest(war) && weg(war.inhalt);
+        if (aktivWeg) saverRef.current?.cancel();
+        standRef.current = neu;
+        setStandState(neu);
+        // Gemerkte Reiter aus einer früheren Sitzung verschwinden still.
+        if (aktivWeg && war.inhalt.art === "seite" && baumGeladenRef.current) {
+          setNotice({ kind: "info", text: `„${pageTitle(war.inhalt.pfad)}“ wurde außerhalb der App gelöscht oder verschoben.` });
+        }
       }
-      const db = databaseRef.current;
-      if (db && !findNode(next, db)?.database) setDatabase(null);
-      const nb = notebookRef.current;
-      if (nb && !findNode(next, nb)?.notebook) setNotebook(null);
+      baumGeladenRef.current = true;
+      setBaumGeladen(true);
     } catch (error) {
       const message = errorMessage(error);
       if (/Vault-Ordner .* wurde nicht gefunden/.test(message)) setVaultMissing(true);
@@ -208,11 +241,12 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     let disposed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     onVaultChanged((change) => {
-      const current = pageRef.current;
-      if (current && change.kind === "renamed" && change.path && change.newPath && isInside(current.path, change.path)) {
-        setPagePath(movePath(current.path, change.path, change.newPath));
+      if (change.kind === "renamed" && change.path && change.newPath) {
+        const neu = pfadeFolgen(standRef.current, change.path, change.newPath);
+        standRef.current = neu;
+        setStandState(neu);
       }
-      const openPath = pageRef.current?.path;
+      const openPath = offeneSeite();
       const touchesOpenPage = openPath !== undefined && (change.path === openPath || change.newPath === openPath);
       if ((touchesOpenPage && change.kind !== "removed") || change.kind === "rescan") {
         setExternalVersion((version) => version + 1);
@@ -220,7 +254,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       for (const path of [change.path, change.newPath]) {
         if (path?.endsWith(`/${VIEWS_FILE}`)) void reloadConfigRef.current(parentDir(path));
       }
-      const db = databaseRef.current;
+      const db = offeneDatenbank();
       if (db && [change.path, change.newPath].some((path) => path && isInside(path, db))) {
         setDatabaseVersion((version) => version + 1);
       }
@@ -245,10 +279,53 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   }, [refreshTree, showError]);
 
   // Nach dem Öffnen einer Seite oder Datenbank klappt das Menü auf dem Handy wieder zu.
-  useEffect(() => setMenuOpen(false), [page?.path, database]);
+  useEffect(() => setMenuOpen(false), [page?.path, database, aktiv.ansicht]);
+
+  // Offene Reiter pro Vault im App-Speicher merken.
+  useEffect(() => reiterMerken(vault.root, stand), [stand, vault.root]);
+
+  // Scrollposition je Reiter: Inhaltsfläche hier, Code-Editor und Vorschau melden sich über den Kontext.
+  const mainScroll = useRef<HTMLDivElement>(null);
+  const laufendScroll = useRef<Omit<ReiterScroll, "haupt">>({});
+  const aktivRef = useRef(aktiv);
+  aktivRef.current = aktiv;
+  const gedaechtnis = useMemo<ScrollGedaechtnis>(
+    () => ({ anfang: aktivRef.current.scroll, merken: (teil) => Object.assign(laufendScroll.current, teil) }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- neu nur, wenn eine andere Ansicht erscheint
+    [aktiv.ansicht],
+  );
+  useLayoutEffect(() => {
+    laufendScroll.current = {};
+    const element = mainScroll.current;
+    if (!element) return;
+    element.scrollTop = 0;
+    return scrollWiederherstellen(element, aktivRef.current.scroll?.haupt ?? 0);
+  }, [aktiv.ansicht, baumGeladen]);
+
+  /**
+   * Wechselt Reiter oder Inhalt: Vorher ist gespeichert, und der verlassene Reiter merkt sich seine Scrollposition
+   * (wenn er offen bleibt und dasselbe zeigt). Alle Wege zum Öffnen, Schließen und Wechseln laufen hierüber.
+   */
+  const wechsel = async (aendern: (stand: ReiterStand) => ReiterStand) => {
+    await saverRef.current?.flush();
+    const alt = standRef.current;
+    let neu = aendern(alt);
+    if (neu === alt) return;
+    const war = aktiverReiter(alt);
+    const wird = aktiverReiter(neu);
+    if (wird.id !== war.id || wird.ansicht !== war.ansicht) {
+      const bleibt = neu.reiter.find((reiter) => reiter.id === war.id);
+      if (bleibt && bleibt.ansicht === war.ansicht) neu = verlassen(neu, war.id, { ...laufendScroll.current, haupt: mainScroll.current?.scrollTop ?? 0 });
+    }
+    setStand(neu);
+    setMenuOpen(false);
+  };
+  const wechselRef = useRef(wechsel);
+  wechselRef.current = wechsel;
 
   // Tastenkürzel: Strg+P Schnellsuche, Strg+Umschalt+F Volltextsuche, Strg+. Seitenleiste ein-/ausklappen (auf
-  // deutscher Tastatur ohne AltGr; weder BlockNote noch CodeMirror belegen es).
+  // deutscher Tastatur ohne AltGr; weder BlockNote noch CodeMirror belegen es). Reiter (nur mit Reiterleiste):
+  // Strg+T neuer Reiter, Strg+W schließen, Strg+Tab und Strg+Umschalt+Tab wechseln.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
@@ -262,6 +339,18 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       } else if (key === "." && !event.shiftKey) {
         event.preventDefault();
         seitenleisteUmschalten();
+      } else if (ohneLeisteRef.current) {
+        return;
+      } else if (key === "t" && !event.shiftKey) {
+        event.preventDefault();
+        void wechselRef.current(neuerStartReiter);
+      } else if (key === "w" && !event.shiftKey) {
+        event.preventDefault();
+        void wechselRef.current((stand) => schliessen(stand, stand.aktiv));
+      } else if (key === "tab") {
+        event.preventDefault();
+        const richtung = event.shiftKey ? -1 : 1;
+        void wechselRef.current((stand) => wechseln(stand, richtung));
       }
     };
     window.addEventListener("keydown", onKey);
@@ -298,55 +387,26 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     return () => unlisten?.();
   }, []);
 
-  const openPage = async (path: string, isNew = false) => {
-    if (pageRef.current?.path === path) return;
-    await saverRef.current?.flush();
-    pageRef.current = { key: nextPageKey++, path, isNew };
-    setPage(pageRef.current);
-    setDatabase(null);
-    setNotebook(null);
-    setLibrary(false);
-  };
+  /** Öffnen im aktuellen Reiter; `neu` (Strg+Klick, Mittelklick): in einem neuen Reiter. */
+  const oeffnenIn = (inhalt: ReiterInhalt, neu = false, isNew = false) =>
+    wechsel((stand) => oeffnen(stand, inhalt, { neuerReiter: neu, ohneLeiste: ohneLeisteRef.current, neu: isNew }));
 
-  const openDatabase = async (folder: string) => {
-    await saverRef.current?.flush();
-    pageRef.current = null;
-    setPage(null);
-    setDatabase(folder);
-    setNotebook(null);
-    setLibrary(false);
+  const openPage = (path: string, isNew = false, neu = false) => oeffnenIn({ art: "seite", pfad: path }, neu, isNew);
+
+  const openDatabase = async (folder: string, neu = false) => {
+    await oeffnenIn({ art: "datenbank", pfad: folder }, neu);
     // Liegen in einem Ordner beide Dateien, gilt er als Datenbank.
     if (findNode(treeRef.current, folder)?.notebook) {
       setNotice({ kind: "info", text: `„${pageTitle(folder)}“ hat auch eine ${NOTIZBUCH_DATEI}. Ein Ordner ist entweder Datenbank oder Notizbuch – er wird als Datenbank angezeigt.` });
     }
   };
 
-  const openNotebook = async (folder: string) => {
-    await saverRef.current?.flush();
-    closePage();
-    setDatabase(null);
-    setLibrary(false);
-    setNotebook(folder);
-    setMenuOpen(false);
-  };
+  const openNotebook = (folder: string, neu = false) => oeffnenIn({ art: "notizbuch", pfad: folder }, neu);
 
-  const openHome = async () => {
-    await saverRef.current?.flush();
-    closePage();
-    setDatabase(null);
-    setNotebook(null);
-    setLibrary(false);
-    setMenuOpen(false);
-  };
+  /** „Startseite“ in der Seitenleiste: zum festen Reiter „Startseite“. */
+  const openHome = () => wechsel((stand) => aktivieren(stand, START_REITER));
 
-  const openLibrary = async () => {
-    await saverRef.current?.flush();
-    closePage();
-    setDatabase(null);
-    setNotebook(null);
-    setLibrary(true);
-    setMenuOpen(false);
-  };
+  const openLibrary = (neu = false) => oeffnenIn({ art: "bausteine" }, neu);
 
   /** Macht einen Ordner zur Datenbank: legt _ansichten.yaml mit den erkannten Eigenschaften an. */
   const convertToDatabase = async (folder: string) => {
@@ -421,13 +481,19 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       const oldPages = allPages(tree);
       const html = await seiteAlsHtml(node.path, htmlPath, oldPages, crypto.randomUUID());
       await writePage(htmlPath, html);
-      if (pageRef.current?.path === node.path) closePage();
+      // Reiter mit der Notiz zeigen danach die HTML-Seite (vorher nichts mehr in die Notiz speichern).
+      if (offeneSeite() === node.path) saverRef.current?.cancel();
+      setStand(pfadeFolgen(standRef.current, node.path, htmlPath));
       await deleteEntry(node.path);
       await updateFavorites((list) => renameInFavorites(list, node.path, htmlPath));
       await updateNotebookEntry(node.path, htmlPath);
       await refreshTree();
       const changed = await updateLinksAfterRelocate(oldPages, pathMapper(node.path, htmlPath));
-      await openPage(htmlPath);
+      // Die neue Seite zeigen: im Reiter, der die Notiz zeigte, sonst wie ein Klick.
+      await wechsel((stand) => {
+        const vorhanden = stand.reiter.find((reiter) => reiter.inhalt.art === "seite" && reiter.inhalt.pfad === htmlPath);
+        return vorhanden ? aktivieren(stand, vorhanden.id) : oeffnen(stand, { art: "seite", pfad: htmlPath }, { ohneLeiste: ohneLeisteRef.current });
+      });
       const links = changed > 0 ? ` Links in ${changed} ${changed === 1 ? "Seite" : "Seiten"} angepasst.` : "";
       setNotice({ kind: "info", text: `„${node.name}“ ist jetzt eine HTML-Seite.${links}` });
     } catch (error) {
@@ -559,14 +625,10 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       // Vorher speichern: Auch die offene Seite kann Links enthalten, die gleich angepasst werden.
       await saverRef.current?.flush();
       const oldPages = allPages(tree);
-      const current = pageRef.current;
       const newPath = await action();
       if (newPath === node.path) return true;
-      if (current && isInside(current.path, node.path)) setPagePath(movePath(current.path, node.path, newPath));
-      const db = databaseRef.current;
-      if (db && isInside(db, node.path)) setDatabase(movePath(db, node.path, newPath));
-      const nb = notebookRef.current;
-      if (nb && isInside(nb, node.path)) setNotebook(movePath(nb, node.path, newPath));
+      // Alle Reiter folgen (Seiten, Datenbanken und Notizbücher in einem umbenannten Ordner auch).
+      setStand(pfadeFolgen(standRef.current, node.path, newPath));
       await updateFavorites((list) => renameInFavorites(list, node.path, newPath));
       if (node.kind === "page") await updateNotebookEntry(node.path, newPath);
       if (renamed && node.kind === "page" && isHtmlPath(newPath)) {
@@ -620,11 +682,11 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   };
 
   /** Ein Link in einer HTML-Seite: Seite oder Datenbank im Vault öffnen. Der Pfad ist schon geprüft (bridge.ts). */
-  const openFromHtmlPage = (path: string) => {
+  const openFromHtmlPage = (path: string, neu = false) => {
     const node = findNode(treeRef.current, path);
-    if (node?.kind === "page") void openPage(path);
-    else if (node?.database) void openDatabase(path);
-    else if (node?.notebook) void openNotebook(path);
+    if (node?.kind === "page") void openPage(path, false, neu);
+    else if (node?.database) void openDatabase(path, neu);
+    else if (node?.notebook) void openNotebook(path, neu);
     else showError(`„${path}“ wurde im Vault nicht gefunden.`);
   };
 
@@ -640,11 +702,11 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const pages = useMemo(() => allPages(tree), [tree]);
   const linkActions = useMemo<WikiLinkActions>(
     () => ({
-      resolve: (target) => resolveLink(pages, target, pageRef.current?.path),
-      open: (target) => {
-        const path = resolveLink(pages, target, pageRef.current?.path);
-        if (path) void openPage(path);
-        else void createAndOpenLinkedPage(linkPageName(target));
+      resolve: (target) => resolveLink(pages, target, offeneSeite()),
+      open: (target, neu = false) => {
+        const path = resolveLink(pages, target, offeneSeite());
+        if (path) void openPage(path, false, neu);
+        else void createAndOpenLinkedPage(linkPageName(target), neu);
       },
       suggest: (query) => {
         const q = query.trim().toLowerCase();
@@ -659,13 +721,13 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     [pages],
   );
 
-  const createAndOpenLinkedPage = async (name: string) => {
+  const createAndOpenLinkedPage = async (name: string, neu = false) => {
     try {
       const html = isHtmlPath(name);
       const title = pageTitle(name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name);
       const path = await createPage("", title, html ? "html" : "notiz");
       await refreshTree();
-      await openPage(path);
+      await openPage(path, false, neu);
     } catch (error) {
       showError(errorMessage(error));
     }
@@ -679,8 +741,10 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     const confirmed = await confirmAction(`${what}\n\nEr wird in den Papierkorb verschoben.`, "Löschen bestätigen");
     if (!confirmed) return;
     try {
-      const current = pageRef.current;
-      if (current && isInside(current.path, node.path)) closePage();
+      // Reiter mit dem Gelöschten schließen (vorher nichts mehr dorthin speichern).
+      const offen = offeneSeite();
+      if (offen && isInside(offen, node.path)) saverRef.current?.cancel();
+      setStand(entfernen(standRef.current, (inhalt) => "pfad" in inhalt && isInside(inhalt.pfad, node.path)));
       await deleteEntry(node.path);
       await updateFavorites((list) => removeFromFavorites(list, node.path));
       await refreshTree();
@@ -690,13 +754,13 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   };
 
   const renameOpenPage = (newTitle: string) => {
-    const current = pageRef.current;
-    const node = current && findNode(tree, current.path);
+    const current = offeneSeite();
+    const node = current && findNode(tree, current);
     return node ? rename(node, newTitle) : Promise.resolve(false);
   };
 
   const current = page?.path ?? database ?? notebook;
-  const homeActive = !page && !database && !notebook && !library && !vaultMissing;
+  const homeActive = aktiv.inhalt.art === "start" && !vaultMissing;
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
 
   return (
@@ -716,13 +780,13 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           onRenamingDone={() => setRenamingPath(null)}
           fensterrahmen={fensterrahmen}
           seite={seitenleisteSeite}
-          onOpen={(path) => void openPage(path)}
-          onOpenDatabase={(path) => void openDatabase(path)}
+          onOpen={(path, neu) => void openPage(path, false, neu)}
+          onOpenDatabase={(path, neu) => void openDatabase(path, neu)}
           onOpenHome={() => void openHome()}
           libraryActive={library}
-          onOpenLibrary={() => void openLibrary()}
+          onOpenLibrary={(neu) => void openLibrary(neu)}
           onConvertToDatabase={(path) => void convertToDatabase(path)}
-          onOpenNotebook={(path) => void openNotebook(path)}
+          onOpenNotebook={(path, neu) => void openNotebook(path, neu)}
           onConvertToNotebook={(path) => void convertToNotebook(path)}
           onConvertToHtml={(node) => void convertToHtml(node)}
           onExport={(node) => void exportPage(node)}
@@ -756,6 +820,15 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
         </IconButton>
       </Fensterleiste>
       <main className="main">
+        {!ohneLeiste && (
+          <Reiterleiste
+            stand={stand}
+            onAktivieren={(id) => void wechsel((s) => aktivieren(s, id))}
+            onSchliessen={(id) => void wechsel((s) => schliessen(s, id))}
+            onNeu={() => void wechsel(neuerStartReiter)}
+          />
+        )}
+        <div className="main-scroll" ref={mainScroll}>
         <header className="topbar">
           <IconButton className="topbar-menu" label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
             <MenuIcon />
@@ -802,6 +875,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
             </IconButton>
           </div>
         )}
+        <ScrollGedaechtnisContext.Provider value={gedaechtnis}>
         {vaultMissing ? (
           <div className="empty-state">
             <div className="vault-missing" role="alert">
@@ -815,22 +889,23 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
               </Button>
             </div>
           </div>
-        ) : library ? (
-          <BausteinBibliothek eigene={eigene} onEigeneChanged={loadEigene} onError={showError} />
+        ) : !baumGeladen && aktiv.inhalt.art !== "start" ? null : library ? (
+          <BausteinBibliothek key={aktiv.ansicht} eigene={eigene} onEigeneChanged={loadEigene} onError={showError} />
         ) : notebook ? (
           <NotizbuchView
+            key={aktiv.ansicht}
             folder={notebook}
             node={findNode(tree, notebook)}
             pages={pages}
             version={vaultVersion}
             onEdit={(path) => void openPage(path)}
-            onOpenLink={openFromHtmlPage}
+            onOpenLink={(path, neu) => openFromHtmlPage(path, neu)}
             onOpenExternal={(url) => void openExternal(url)}
             onError={showError}
           />
         ) : database && schemas.configs[database] ? (
           <DatabaseView
-            key={database}
+            key={aktiv.ansicht}
             folder={database}
             config={schemas.configs[database]}
             pagePaths={(findNode(tree, database)?.children ?? []).filter((node) => node.kind === "page" && !node.html).map((node) => node.path)}
@@ -858,13 +933,13 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
               saverRef={saverRef}
               onRename={renameOpenPage}
               onError={showError}
-              onOpenLink={openFromHtmlPage}
+              onOpenLink={(path, neu) => openFromHtmlPage(path, neu)}
               onOpenExternal={(url) => void openExternal(url)}
               pages={pages}
               eigene={eigene}
               onEigeneChanged={loadEigene}
             >
-              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path) => void openPage(path)} />
+              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path, neu) => void openPage(path, false, neu)} />
             </HtmlPageView>
           ) : (
           <WikiLinkContext.Provider value={linkActions}>
@@ -879,32 +954,35 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
               propertySchema={schemas.schemaForPage(page.path)}
               onPropertyType={(name, type) => void schemas.setTypeForPage(page.path, name, type)}
             >
-              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path) => void openPage(path)} />
+              <Backlinks path={page.path} pages={pages} loadIndex={loadIndex} version={vaultVersion} icons={icons} onOpen={(path, neu) => void openPage(path, false, neu)} />
             </PageView>
           </WikiLinkContext.Provider>
           )
         ) : database ? null : (
           <HomePage
+            key={aktiv.ansicht}
             vaultName={vault.name}
             pages={pages}
             index={index}
             favorites={favoriteNodes}
             icons={icons}
-            onOpen={(node) => void (node.kind === "folder" ? openDatabase(node.path) : openPage(node.path))}
+            onOpen={(node, neu) => void (node.kind === "folder" ? openDatabase(node.path, neu) : openPage(node.path, false, neu))}
             onCreateNote={() => void handleCreatePage("")}
             onCreateDatabase={() => void handleCreateDatabase("")}
             onCreateFromTemplate={() => setDialog({ kind: "template", dir: "" })}
             onSearch={(query) => setDialog({ kind: "search", query })}
           />
         )}
+        </ScrollGedaechtnisContext.Provider>
+        </div>
       </main>
       {dialog?.kind === "quick" && (
         <QuickSwitcher
           pages={pages}
           onClose={() => setDialog(null)}
-          onOpen={(path) => {
+          onOpen={(path, neu) => {
             setDialog(null);
-            void openPage(path);
+            void openPage(path, false, neu);
           }}
         />
       )}
@@ -913,9 +991,9 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           loadIndex={loadIndex}
           initialQuery={dialog.query}
           onClose={() => setDialog(null)}
-          onOpen={(path) => {
+          onOpen={(path, neu) => {
             setDialog(null);
-            void openPage(path);
+            void openPage(path, false, neu);
           }}
         />
       )}

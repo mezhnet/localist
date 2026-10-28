@@ -15,9 +15,9 @@
     window.parent.postMessage(nachricht, "*");
   };
 
-  // Links: Seiten im Vault öffnet die App, externe Adressen der Standardbrowser.
-  document.addEventListener("click", function (event) {
-    if (event.defaultPrevented || event.button !== 0) return;
+  // Links: Seiten im Vault öffnet die App, externe Adressen der Standardbrowser. Strg+Klick und Mittelklick
+  // öffnen eine Seite im Vault in einem neuen Reiter.
+  var linkKlick = function (event, neu) {
     var link = event.target instanceof Element ? event.target.closest("a[href]") : null;
     if (!link) return;
     var href = link.getAttribute("href") || "";
@@ -36,19 +36,29 @@
       } catch (fehler) {
         return;
       }
-      senden({ typ: "link", pfad: pfad, anker: url.hash ? url.hash.slice(1) : "" });
+      senden({ typ: "link", pfad: pfad, anker: url.hash ? url.hash.slice(1) : "", neu: neu });
     } else if (url.protocol === "http:" || url.protocol === "https:" || url.protocol === "mailto:") {
       senden({ typ: "extern", url: url.href });
     }
+  };
+  document.addEventListener("click", function (event) {
+    if (event.defaultPrevented || event.button !== 0) return;
+    linkKlick(event, event.ctrlKey || event.metaKey);
+  });
+  document.addEventListener("auxclick", function (event) {
+    if (event.defaultPrevented || event.button !== 1) return;
+    linkKlick(event, true);
   });
 
-  // Tastenkürzel der App (Strg+P, Strg+Umschalt+F, Strg+E, Strg+.) wirken auch, wenn die Seite den Fokus hat.
+  // Tastenkürzel der App (Strg+P, Strg+Umschalt+F, Strg+E, Strg+., Reiter: Strg+T, Strg+W, Strg+(Umschalt+)Tab)
+  // wirken auch, wenn die Seite den Fokus hat.
   document.addEventListener(
     "keydown",
     function (event) {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
       var taste = (event.key || "").toLowerCase();
-      if ((taste === "p" && !event.shiftKey) || (taste === "f" && event.shiftKey) || (taste === "e" && !event.shiftKey) || (taste === "." && !event.shiftKey)) {
+      var ohneUmschalt = taste === "p" || taste === "e" || taste === "." || taste === "t" || taste === "w";
+      if ((ohneUmschalt && !event.shiftKey) || (taste === "f" && event.shiftKey) || taste === "tab") {
         event.preventDefault();
         senden({ typ: "taste", taste: taste, umschalt: event.shiftKey });
       }

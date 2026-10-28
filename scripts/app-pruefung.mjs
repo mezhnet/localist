@@ -155,7 +155,7 @@ try {
     await sleep(300);
 
     // Klick auf den Link „Ideen“ in der Seite öffnet die Notiz in der App (vorher ins Bild scrollen)
-    await evaluate(`document.querySelector('.main').scrollTop += ${Math.round(frameInfo.y + state.link.y - 400)}`);
+    await evaluate(`document.querySelector('.main-scroll').scrollTop += ${Math.round(frameInfo.y + state.link.y - 400)}`);
     await sleep(300);
     const frameTop = await evaluate(`document.querySelector('iframe.html-frame').getBoundingClientRect().y`);
     await click(frameInfo.x + state.link.x, frameTop + state.link.y);
@@ -214,7 +214,7 @@ try {
     const scrollTo = async (selector) => {
       const inner = await rect(selector);
       const frame = await frameAt();
-      await evaluate(`document.querySelector('.main').scrollTop += ${Math.round(frame.y + inner.y - 200)}`);
+      await evaluate(`document.querySelector('.main-scroll').scrollTop += ${Math.round(frame.y + inner.y - 200)}`);
       await sleep(300);
       return { inner: await rect(selector), frame: await frameAt() };
     };

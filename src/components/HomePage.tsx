@@ -8,6 +8,7 @@ import type { PageRef } from "../lib/links";
 import { quickSwitch, type IndexEntry } from "../lib/search";
 import { parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
+import { oeffnenKlick } from "./Reiterleiste";
 import { cx, Input, Kbd } from "./ui";
 
 interface Props {
@@ -16,7 +17,8 @@ interface Props {
   index: IndexEntry[];
   favorites: TreeNode[];
   icons: ReadonlyMap<string, string>;
-  onOpen: (node: { path: string; kind: TreeNode["kind"] }) => void;
+  /** `neu`: Strg+Klick oder Mittelklick (neuer Reiter). */
+  onOpen: (node: { path: string; kind: TreeNode["kind"] }, neu?: boolean) => void;
   onCreateNote: () => void;
   onCreateDatabase: () => void;
   onCreateFromTemplate: () => void;
@@ -61,7 +63,7 @@ export function HomePage(props: Props) {
                 html={isHtmlPath(entry.path)}
                 title={entry.title}
                 meta={`${parentDir(entry.path) || "Vault"} · ${entry.modified ? relativeTime(entry.modified, now.getTime()) : "unbekannt"}`}
-                onClick={() => props.onOpen({ path: entry.path, kind: "page" })}
+                onOpen={(neu) => props.onOpen({ path: entry.path, kind: "page" }, neu)}
               />
             ))}
           </div>
@@ -84,7 +86,7 @@ export function HomePage(props: Props) {
                 html={node.html}
                 title={node.name}
                 meta={node.kind === "folder" ? "Datenbank" : parentDir(node.path) || "Vault"}
-                onClick={() => props.onOpen(node)}
+                onOpen={(neu) => props.onOpen(node, neu)}
               />
             ))}
           </div>
@@ -112,17 +114,17 @@ function PageCard({
   html = false,
   title,
   meta,
-  onClick,
+  onOpen,
 }: {
   icon?: string;
   database?: boolean;
   html?: boolean;
   title: string;
   meta: string;
-  onClick: () => void;
+  onOpen: (neu: boolean) => void;
 }) {
   return (
-    <button type="button" className="home-card" onClick={onClick}>
+    <button type="button" className="home-card" {...oeffnenKlick(onOpen)}>
       <span className={cx("home-card-icon", icon && "is-emoji")} aria-hidden="true">
         {icon ?? (database ? <Database /> : html ? <FileCode /> : <FileText />)}
       </span>

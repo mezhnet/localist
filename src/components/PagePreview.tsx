@@ -2,10 +2,11 @@
 // Nach einer Änderung lädt die neue Fassung unsichtbar hinter der alten, bekommt deren Scrollposition und
 // ersetzt sie erst dann: Die Vorschau springt nicht. Nachrichten werden nur aus den eigenen iframes
 // angenommen und in src/lib/bridge.ts geprüft.
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import type { BausteinArt } from "../lib/bausteine";
 import { editMessage, parseBridgeMessage, scrollMessage, themeMessage, userIsActive } from "../lib/bridge";
 import { useTheme } from "../lib/theme";
+import { ScrollGedaechtnisContext } from "../lib/scroll-gedaechtnis";
 import { pageUrl } from "../lib/vault-api";
 import { cx } from "./ui";
 
@@ -16,7 +17,8 @@ interface Props {
   /** true: so hoch wie der Inhalt (Ansicht „Lesen“), false: feste Höhe mit eigenem Bildlauf („Geteilt“). */
   fitContent: boolean;
   title: string;
-  onOpenLink: (path: string) => void;
+  /** `neu`: Strg+Klick oder Mittelklick (neuer Reiter). */
+  onOpenLink: (path: string, neu: boolean) => void;
   onOpenExternal: (url: string) => void;
   /** Bausteine mit Stift-Symbol bearbeiten und Häkchen speichern (nur mit diesen Rückrufen). */
   onEditBaustein?: (index: number, art: BausteinArt, anzahl: number) => void;
@@ -38,7 +40,11 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
   const [frames, setFrames] = useState<Frame[]>([{ version, shown: true }]);
   const [height, setHeight] = useState<number | null>(null);
   const elements = useRef(new Map<number, HTMLIFrameElement>());
-  const scrollY = useRef(0);
+  // Scrollposition des Reiters („Geteilt“): Die erste Fassung scrollt dorthin, jede Position wird gemerkt.
+  const gedaechtnis = useContext(ScrollGedaechtnisContext);
+  const scrollY = useRef(fitContent ? 0 : (gedaechtnis.anfang?.vorschau ?? 0));
+  const merken = useRef(gedaechtnis.merken);
+  merken.current = gedaechtnis.merken;
   const { resolved, akzent } = useTheme();
   const actions = useRef({ onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, akzent, fitContent });
   actions.current = { onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, akzent, fitContent };
@@ -67,6 +73,10 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
       if (message.typ === "bereit") {
         element.contentWindow?.postMessage(themeMessage(actions.current.resolved, actions.current.akzent), "*");
         element.contentWindow?.postMessage(editMessage(actions.current.onEditBaustein !== undefined), "*");
+        if (isVisible && !actions.current.fitContent && scrollY.current > 0) {
+          // Erste Fassung nach dem Wechsel des Reiters: an die gemerkte Stelle.
+          element.contentWindow?.postMessage(scrollMessage(scrollY.current), "*");
+        }
         if (waiting && !actions.current.fitContent) {
           // Erst an die alte Stelle scrollen, dann zeigen (sobald die Seite die Position bestätigt).
           if (scrollY.current > 0) {
@@ -78,17 +88,21 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
         if (isVisible || waiting) setHeight(message.hoehe);
         if (waiting && actions.current.fitContent) show(frameVersion);
       } else if (message.typ === "position") {
-        if (isVisible) scrollY.current = message.y;
+        if (isVisible) {
+          scrollY.current = message.y;
+          if (!actions.current.fitContent) merken.current({ vorschau: message.y });
+        }
         else if (waiting && !actions.current.fitContent && Math.abs(message.y - scrollY.current) <= 2) show(frameVersion);
       } else if (isVisible && message.typ === "bearbeiten" && userIsActive()) {
         actions.current.onEditBaustein?.(message.index, message.art, message.anzahl);
       } else if (isVisible && message.typ === "haekchen" && userIsActive()) {
         actions.current.onToggleCheckbox?.(message.index, message.an);
-      } else if (isVisible && message.typ === "link") actions.current.onOpenLink(message.pfad);
+      } else if (isVisible && message.typ === "link") actions.current.onOpenLink(message.pfad, message.neu);
       else if (isVisible && message.typ === "extern") actions.current.onOpenExternal(message.url);
       else if (isVisible && message.typ === "taste") {
         // Tastenkürzel der App: wie ein Tastendruck im App-Fenster behandeln.
-        window.dispatchEvent(new KeyboardEvent("keydown", { key: message.taste, ctrlKey: true, shiftKey: message.umschalt, bubbles: true }));
+        const key = message.taste === "tab" ? "Tab" : message.taste;
+        window.dispatchEvent(new KeyboardEvent("keydown", { key, ctrlKey: true, shiftKey: message.umschalt, bubbles: true }));
       }
     };
     window.addEventListener("message", onMessage);

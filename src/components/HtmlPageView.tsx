@@ -50,7 +50,7 @@ interface Props {
   onRename: (newTitle: string) => Promise<boolean>;
   onError: (message: string) => void;
   /** Ein Link in der Seite zeigt auf eine Datei im Vault (Pfad ist geprüft). */
-  onOpenLink: (path: string) => void;
+  onOpenLink: (path: string, neu?: boolean) => void;
   /** Ein Link in der Seite zeigt nach außen (http, https, mailto). */
   onOpenExternal: (url: string) => void;
   /** Alle Seiten des Vaults (Ziele für Seitenlinks). */
