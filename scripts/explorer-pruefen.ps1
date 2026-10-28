@@ -7,6 +7,8 @@
 #
 # Ausgabe: eine Zeile mit Fenstertitel, Ordner und markierten Dateien; Exit-Code 1, wenn kein passendes Fenster
 # innerhalb von -Sekunden erschienen ist (dann mit der Liste der offenen Explorer-Fenster).
+# Achtung: PowerShell liest die deutschen Anführungszeichen als Begrenzer von Zeichenketten. Texte damit stehen
+# deshalb nur in einfachen Anführungszeichen und werden mit -f zusammengesetzt.
 param(
   [Parameter(Mandatory = $true)][string]$Ordner,
   [string]$Datei = "",
@@ -27,16 +29,20 @@ while ((Get-Date) -lt $ende) {
     if (-not $pfad) { continue }
     $markiert = @()
     try { $markiert = @($fenster.Document.SelectedItems() | ForEach-Object { [IO.Path]::GetFileName($_.Path) }) } catch {}
-    $gesehen += "„$($fenster.LocationName)“: $pfad (markiert: $(if ($markiert.Count) { $markiert -join ', ' } else { '–' }))"
+    $liste = if ($markiert.Count) { $markiert -join ', ' } else { '-' }
+    # Fremde Fenster nur zählen, nicht mit Pfad ausgeben.
+    if (-not $pfad.StartsWith([IO.Path]::GetDirectoryName($ziel), [StringComparison]::OrdinalIgnoreCase)) { $gesehen += 'ein anderes Fenster'; continue }
+    $gesehen += ('„{0}“: {1} (markiert: {2})' -f $fenster.LocationName, $pfad, $liste)
     if ($pfad.TrimEnd('\') -ine $ziel) { continue }
     if ($Datei -and -not ($markiert -contains $Datei)) { continue }
-    $text = if ($markiert.Count) { $markiert -join ', ' } else { '–' }
-    Write-Output "Explorer-Fenster „$($fenster.LocationName)“ (HWND $($fenster.HWND)), Ordner $pfad, markiert: $text"
+    Write-Output ('Explorer-Fenster „{0}“ (HWND {1}), Ordner {2}, markiert: {3}' -f $fenster.LocationName, $fenster.HWND, $pfad, $liste)
     if ($Schliessen) { $fenster.Quit() }
     exit 0
   }
   Start-Sleep -Milliseconds 300
 }
 
-Write-Output "Kein Explorer-Fenster mit $ziel$(if ($Datei) { " und markierter Datei $Datei" }) gefunden. Offen: $(if ($gesehen.Count) { $gesehen -join '; ' } else { 'keine' })"
+$offen = if ($gesehen.Count) { $gesehen -join '; ' } else { 'keine' }
+$was = if ($Datei) { ' und markierter Datei ' + $Datei } else { '' }
+Write-Output ('Kein Explorer-Fenster mit {0}{1} gefunden. Offen: {2}' -f $ziel, $was, $offen)
 exit 1
