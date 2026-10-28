@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+55327b46 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+215b484e – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus der Schrift Inter, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -243,6 +243,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --border-width: 1px;
   --border-width-strong: 2px;
   --border-width-accent: 3px;
+  /* Block-Editor: Einzug verschachtelter Blöcke, Führungslinie mittig unter dem Listenzeichen darüber */
+  --editor-indent: var(--space-6);
+  --editor-guide-offset: calc(var(--editor-indent) * -0.5);
   --sidebar-width: 264px;
   --sidebar-drawer-width: 300px;
   --tree-indent: 14px;
@@ -291,6 +294,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Ein- und Ausrücken im Block-Editor (höchstens 150 ms) */
+  --duration-indent: var(--duration-fast);
   --z-sticky: 10;
   --z-popover: 50;
   --z-drawer: 60;

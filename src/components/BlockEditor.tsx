@@ -14,18 +14,20 @@ import {
   FormattingToolbar,
   FormattingToolbarController,
   getDefaultReactSlashMenuItems,
-  NestBlockButton,
   RemoveBlockItem,
   SideMenu,
   SideMenuController,
   SuggestionMenuController,
-  UnnestBlockButton,
+  useBlockNoteEditor,
+  useComponentsContext,
   useCreateBlockNote,
+  useEditorState,
   type DefaultReactSuggestionItem,
 } from "@blocknote/react";
-import { FileCode, FileText } from "lucide-react";
+import { FileCode, FileText, ListIndentDecrease, ListIndentIncrease } from "lucide-react";
 import { useContext, useEffect } from "react";
 import { markToggleOpen } from "../editor/callout";
+import { darfEinruecken, einruecken, MarkdownEinruecken, type Richtung } from "../editor/einruecken";
 import { schema, type VaultEditor, type VaultPartialBlock } from "../editor/schema";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { useTheme } from "../lib/theme";
@@ -37,6 +39,30 @@ interface Props {
   onReady?: (editor: VaultEditor) => void;
   /** Wandelt eine Bildadresse aus dem Markdown in eine anzeigbare Adresse um. */
   resolveFileUrl: (url: string) => Promise<string>;
+}
+
+/** Knopf zum Ein- bzw. Ausrücken, nach denselben Regeln wie Tab und Shift+Tab (src/editor/einruecken.ts). */
+function EinrueckenButton({ richtung }: { richtung: Richtung }) {
+  const Components = useComponentsContext()!;
+  const editor = useBlockNoteEditor(schema);
+  const erlaubt = useEditorState({ editor, selector: ({ editor }) => darfEinruecken(editor.prosemirrorState, richtung) });
+  const ein = richtung === "ein";
+  const name = ein ? "Einrücken" : "Ausrücken";
+  return (
+    <Components.FormattingToolbar.Button
+      className="bn-button"
+      data-test={ein ? "nestBlock" : "unnestBlock"}
+      onClick={() => {
+        editor.focus();
+        einruecken(editor, richtung);
+      }}
+      isDisabled={!erlaubt}
+      label={name}
+      mainTooltip={name}
+      secondaryTooltip={ein ? "Tab" : "Umschalt+Tab"}
+      icon={ein ? <ListIndentIncrease size={18} /> : <ListIndentDecrease size={18} />}
+    />
+  );
 }
 
 /** Nur Formatierungen, die sich als Markdown speichern lassen (keine Farben, keine Ausrichtung). */
@@ -51,8 +77,8 @@ function MarkdownFormattingToolbar() {
       <BasicTextStyleButton basicTextStyle="underline" key="underlineStyleButton" />
       <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
       <BasicTextStyleButton basicTextStyle="code" key="codeStyleButton" />
-      <NestBlockButton key="nestBlockButton" />
-      <UnnestBlockButton key="unnestBlockButton" />
+      <EinrueckenButton richtung="ein" key="nestBlockButton" />
+      <EinrueckenButton richtung="aus" key="unnestBlockButton" />
       <CreateLinkButton key="createLinkButton" />
     </FormattingToolbar>
   );
@@ -129,6 +155,9 @@ export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }
       dictionary: de,
       initialContent: initialBlocks.length > 0 ? initialBlocks : undefined,
       resolveFileUrl,
+      // Tab rückt immer ein (eigene Regeln in MarkdownEinruecken), statt in die Formatierungsleiste zu springen.
+      tabBehavior: "prefer-indent",
+      extensions: [MarkdownEinruecken],
     },
     [],
   );

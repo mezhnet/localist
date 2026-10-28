@@ -347,6 +347,49 @@
   line-height: var(--line-height-normal);
 }
 
+/* Ein- und Ausrücken (Tab/Shift+Tab): Einzug, Führungslinie und Übergang kommen aus tokens.css.
+   BlockNote setzt dafür einen Augenblick lang data-prev-depth-change (±2 je Ebene, --x) und lässt den
+   Block dann an seinen Platz gleiten. Das BlockNote-CSS lädt später, deshalb steht .block-editor davor. */
+.block-editor .bn-block-group .bn-block-group {
+  margin-left: var(--editor-indent);
+}
+
+.block-editor .bn-block-outer {
+  transition: margin-left var(--duration-indent) var(--ease-out);
+}
+
+.block-editor .bn-block-outer[data-prev-depth-change] {
+  margin-left: calc(var(--editor-indent) * var(--x) / 2);
+}
+
+.block-editor .bn-block-outer[data-prev-depth-change] .bn-block-outer[data-prev-depth-change] {
+  margin-left: 0;
+}
+
+.block-editor .bn-block-group .bn-block-group .bn-block-outer:not([data-prev-depth-changed])::before {
+  left: var(--editor-guide-offset);
+  transition: height var(--duration-indent) var(--ease-out);
+}
+
+.block-editor
+  .bn-block-group
+  .bn-block:not(:has(.bn-toggle-wrapper))
+  .bn-block-group
+  .bn-block-outer:not([data-prev-depth-changed])::before {
+  border-left: var(--border-width) solid var(--color-border-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-editor .bn-block-outer,
+  .block-editor .bn-block-group .bn-block-group .bn-block-outer:not([data-prev-depth-changed])::before {
+    transition: none;
+  }
+
+  .block-editor .bn-block-outer[data-prev-depth-change] {
+    margin-left: 0;
+  }
+}
+
 /* Markdown, das der Editor nicht als eigenen Block kennt (z. B. Tabellen): wird wörtlich gezeigt. */
 .md-raw-block {
   width: 100%;

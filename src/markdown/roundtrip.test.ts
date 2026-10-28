@@ -188,6 +188,30 @@ describe("Roundtrip Markdown → Editor → Markdown", () => {
       expectRoundtrip(splitFrontmatter(text.replace(/\r\n/g, "\n")).body);
     }
   });
+
+  // Was Tab einrücken darf (src/editor/einruecken.ts), muss nach Speichern und Neuladen genauso eingerückt sein.
+  it.each([
+    ["Listenpunkte über drei Ebenen", "- a\n  - b\n    - c\n"],
+    ["nummerierte Liste unter nummerierter Liste", "1. a\n   1. b\n2. c\n"],
+    ["Checkliste unter Checkliste", "- [ ] a\n  - [x] b\n- [ ] c\n"],
+    ["nummerierte Liste unter Checkliste", "- [ ] a\n  1. b\n"],
+    ["Checkliste unter nummerierter Liste", "1. a\n   - [ ] b\n"],
+    ["Absatz unter Checklistenpunkt", "- [ ] a\n\n  Absatz\n"],
+    ["Absatz unter nummeriertem Punkt, danach der nächste Punkt", "1. a\n\n   Absatz\n2. b\n"],
+    ["Absatz unter einem eingerückten Punkt", "- a\n  - b\n\n    Absatz\n"],
+    ["eingerückte Liste in einem Callout", "> [!info] Titel\n> - a\n>   - b\n"],
+  ])("Einrückung bleibt erhalten: %s", (_name, markdown) => {
+    expectRoundtrip(markdown);
+  });
+
+  it("Kinder eines Absatzes speichert Markdown nicht eingerückt (deshalb rückt Tab keinen Block unter einen Absatz)", () => {
+    const blocks: VaultBlock[] = [
+      { id: "a", type: "paragraph", props: {}, content: [{ type: "text", text: "Absatz", styles: {} }], children: [
+        { id: "b", type: "paragraph", props: {}, content: [{ type: "text", text: "Kind", styles: {} }], children: [] },
+      ] } as unknown as VaultBlock,
+    ];
+    expect(blocksToMarkdown(blocks)).toBe("Absatz\n\nKind\n");
+  });
 });
 
 describe("Maskierung beim Speichern", () => {
