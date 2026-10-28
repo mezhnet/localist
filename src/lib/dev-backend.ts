@@ -43,6 +43,8 @@ interface DevVault {
   setMissing: (missing: boolean) => void;
   /** Simuliert einen Schreibfehler (z. B. Datenträger voll): Solange gesetzt, scheitert jedes Speichern mit diesem Text. */
   schreibfehler: string | null;
+  /** Setzt die Änderungszeit einer Datei (für Screenshot-Skripte, z. B. „vor 7 Min.“ auf der Startseite). */
+  setModified: (path: string, zeit: number) => void;
   /** Exportierte Dateien (Ziel → Inhalt) und fertig dargestellte Notizen (Pfad → HTML). */
   exporte: Map<string, string>;
   darstellungen: Map<string, string>;
@@ -421,5 +423,8 @@ export function installDevBackend(): void {
       notify({ kind: "rescan" });
     },
     schreibfehler: null,
+    setModified(path, zeit) {
+      modified.set(path, zeit);
+    },
   };
 }

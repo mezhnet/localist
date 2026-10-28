@@ -186,7 +186,7 @@
   /* Startseite (gemessen in der Vorlage): Spaltenbreite, Abstand oben, Feld „Schnell notieren“, Tabellenzeilen, Chips */
   --home-width: 616px;
   --home-padding-top: 48px;
-  --home-schnell-hoehe: 52px;
+  --home-schnell-hoehe: 46px;
   --size-home-row: 36px;
   --home-name-width: 56%;
   --size-home-chip: 30px;

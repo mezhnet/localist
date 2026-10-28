@@ -21,6 +21,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [base = "http://localhost:1430", outDir = "docs/screenshots/etappe-9", scenes = "etappe9"] = process.argv.slice(2);
+/** Gespeicherter Modus je Name (Schwarz seit Etappe 18; der Browser meldet dafür „dunkel“). */
+const MODUS = { hell: "light", dunkel: "dark", schwarz: "black" };
 const EDGE = process.env.EDGE_PATH ?? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 const PORT = 9400 + Math.floor(Math.random() * 500);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -122,7 +124,7 @@ async function openVault(theme, device) {
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme === "hell" ? "light" : "dark" }] });
   await send("Page.navigate", { url: base });
   await waitFor("document.body", "Seite");
-  await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", ${JSON.stringify(theme === "hell" ? "light" : "dark")}); true`);
+  await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", ${JSON.stringify(MODUS[theme])}); true`);
   await send("Page.navigate", { url: base });
   await waitFor(`document.querySelector('[role="tree"] .tree-row') && document.querySelector('.home-table-zeile')`, "Startseite");
   return mobile ? "handy-" : "";
@@ -130,10 +132,11 @@ async function openVault(theme, device) {
 
 async function runHtml(theme, device) {
   const prefix = await openVault(theme, device);
+  await evaluate(`localStorage.setItem("html-ansicht", "lesen"); true`);
   await click('.tree [title="Notizen"]');
   await waitFor(`document.querySelector('.tree [title="Notizen/DNS.html"]')`, "DNS.html im Ordnerbaum");
   await click('.tree [title="Notizen/DNS.html"]');
-  await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('iframe.html-frame').style.height`, "HTML-Seite mit Höhe");
+  await waitFor(`document.querySelector('iframe.html-frame') && document.querySelector('.html-preview').style.height`, "HTML-Seite mit Höhe");
   await sleep(800);
   await shot(`${prefix}html-seite-${theme}`);
   if (prefix) return;
@@ -409,7 +412,7 @@ async function run(theme, device) {
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme === "hell" ? "light" : "dark" }] });
   await send("Page.navigate", { url: base });
   await waitFor("document.body", "Seite");
-  await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", ${JSON.stringify(theme === "hell" ? "light" : "dark")}); true`);
+  await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", ${JSON.stringify(MODUS[theme])}); true`);
   await send("Page.navigate", { url: base });
   await waitFor(`document.querySelector('[role="tree"] .tree-row') && document.querySelector('.home-table-zeile')`, "Startseite");
   const prefix = mobile ? "handy-" : "";
@@ -441,6 +444,49 @@ async function run(theme, device) {
   await clickTab("Kalender");
   await waitFor(`document.querySelector('.calendar-entry')`, "Kalender");
   await shot(`${prefix}kalender-${theme}`);
+}
+
+/** Etappe 19: Strg+P, Volltextsuche, Vorlagen-Auswahl, Einstellungen, Kontextmenü und eine Meldung. */
+async function runDialoge(theme) {
+  await openVault(theme, "pc");
+  const taste = async (key, code, modifiers = 2) => {
+    for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key, code, modifiers, windowsVirtualKeyCode: key.toUpperCase().charCodeAt(0) });
+  };
+  const schliessen = async () => {
+    await evaluate(`document.querySelector('[role="dialog"]')?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); true`);
+    await sleep(300);
+  };
+  await taste("p", "KeyP");
+  await waitFor(`document.querySelector('[role="dialog"] input')`, "Strg+P");
+  await send("Input.insertText", { text: "e" });
+  await sleep(300);
+  await shot(`strg-p-${theme}`);
+  await schliessen();
+  await taste("f", "KeyF", 2 | 8);
+  await waitFor(`document.querySelector('[role="dialog"] input')`, "Volltextsuche");
+  await send("Input.insertText", { text: "Wochenplanung" });
+  await sleep(600);
+  await shot(`volltextsuche-${theme}`);
+  await schliessen();
+  await click('.home-schnell-knopf[aria-label="Neue Seite aus Vorlage"]');
+  await waitFor(`document.querySelector('[role="dialog"]')`, "Vorlagen-Auswahl");
+  await shot(`vorlagen-auswahl-${theme}`);
+  await schliessen();
+  await evaluate(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim().startsWith("Einstellungen")).click(); true`);
+  await waitFor(`document.querySelector('[role="dialog"] .modus-karten')`, "Einstellungen");
+  await shot(`einstellungen-${theme}`);
+  await schliessen();
+  await evaluate(`(() => { const ziel = document.querySelector('.tree [title="Notizen"]'); const r = ziel.getBoundingClientRect(); ziel.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: r.x + 40, clientY: r.y + 10 })); return true; })()`);
+  await waitFor(`document.querySelector('[role="menu"]')`, "Kontextmenü");
+  await shot(`kontextmenue-${theme}`);
+  await evaluate(`document.querySelector('[role="menu"]').dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); true`);
+  await sleep(200);
+  await evaluate("document.querySelector('.home-schnell-feld').focus(); true");
+  await send("Input.insertText", { text: "Einkaufsliste" });
+  await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  await waitFor(`document.querySelector('.toast')`, "Meldung");
+  await shot(`meldung-${theme}`);
 }
 
 /** Echter Klick auf ein Element in einer Seite der Anzeige (iframe), `seite` ist ein Teil ihrer Adresse. */
@@ -567,7 +613,20 @@ try {
   mkdirSync(outDir, { recursive: true });
   await send("Page.enable");
   await send("Runtime.enable");
-  for (const device of ["pc", "handy"]) {
+  if (scenes === "etappe19") {
+    // Etappe 19: alle Ansichten im neuen Stil in Hell, Dunkel und Schwarz (PC 1280 × 800).
+    for (const theme of ["hell", "dunkel", "schwarz"]) {
+      console.log(`PC, ${theme}:`);
+      await run(theme, "pc");
+      await runHtml(theme, "pc");
+      await runEditor(theme, "pc");
+      await runBausteine(theme, "pc");
+      await runLernen(theme, "pc");
+      await runNotizbuch(theme, "pc");
+      await runDialoge(theme);
+    }
+  }
+  for (const device of scenes === "etappe19" ? [] : ["pc", "handy"]) {
     for (const theme of ["hell", "dunkel"]) {
       console.log(`${device === "pc" ? "PC" : "Handy"}, ${theme}:`);
       if (scenes === "etappe10") await runHtml(theme, device);

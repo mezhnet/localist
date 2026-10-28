@@ -15,7 +15,8 @@
   position: relative;
   max-width: calc(var(--content-width) + 2 * var(--space-12));
   margin: 0 auto;
-  padding: var(--space-10) var(--space-12) var(--space-1) calc(var(--space-12) + var(--editor-inset));
+  /* Wie in der Vorlage steht der Titel nah unter dem Seitenkopf („Icon/Cover hinzufügen“ erscheint beim Überfahren). */
+  padding: var(--space-2) var(--space-12) var(--space-1) calc(var(--space-12) + var(--editor-inset));
 }
 
 .with-cover .page-header-inner {
@@ -299,6 +300,28 @@
   white-space: nowrap;
 }
 
+/* „×“ zum Entfernen erst beim Überfahren (die Vorlage zeigt schlichte Chips); entfernen geht auch mit der Rücktaste. */
+.properties .prop-chip button {
+  display: none;
+}
+
+.properties .prop-chip:hover button {
+  display: inline-flex;
+}
+
+/* Kalender- und Uhrzeit-Knopf des Datumsfelds erst beim Überfahren der Zeile oder mit Fokus */
+.properties .prop-date .prop-time-toggle.ui-icon-button,
+.properties .prop-date input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+.properties .property-row:hover .prop-date .prop-time-toggle.ui-icon-button,
+.properties .property-row:focus-within .prop-date .prop-time-toggle.ui-icon-button,
+.properties .property-row:hover .prop-date input::-webkit-calendar-picker-indicator,
+.properties .property-row:focus-within .prop-date input::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+}
+
 .prop-chip:first-child {
   border-color: transparent;
   background: var(--color-accent-chip);
@@ -373,6 +396,8 @@
 }
 
 .bn-container .bn-editor {
+  /* Rechts kein eigener Rand: Text und Tabellen nutzen die ganze Spalte (598 px wie in der Vorlage). */
+  padding-right: 0;
   font-size: var(--font-size-editor);
   line-height: var(--line-height-normal);
 }
@@ -438,11 +463,13 @@
   font-size: 0.88em;
 }
 
-/* Tabelle (Vorlage 02): volle Spaltenbreite, abgerundeter Rahmen, gedämpfte Kopfzeile, feine Zeilenlinien.
-   BlockNote setzt die Breite mit !important auf „auto“; der Rand für Griffe und „+“ bleibt bedienbar. */
+/* Tabelle (Vorlage 02): Spaltenbreite (abzüglich Platz für „+“), abgerundeter Rahmen, gedämpfte Kopfzeile, feine
+   Zeilenlinien. BlockNote setzt die Breite mit !important auf „auto“. */
 .block-editor .bn-editor [data-content-type="table"] .tableWrapper {
-  width: calc(100% + var(--bn-table-handle-size) + var(--bn-table-widget-size));
-  margin-left: calc(-1 * var(--bn-table-handle-size));
+  /* Links bündig mit dem Text; rechts bleibt Platz für „+“ (neue Spalte). */
+  box-sizing: border-box;
+  width: 100%;
+  padding-left: 0;
 }
 
 .block-editor .bn-editor [data-content-type="table"] table {
@@ -456,7 +483,7 @@
 
 .block-editor .bn-editor [data-content-type="table"] th,
 .block-editor .bn-editor [data-content-type="table"] td {
-  padding: var(--space-1-5) var(--space-3);
+  padding: var(--space-1-5) var(--space-2-5);
   border: 0;
   border-bottom: var(--border-width) solid var(--color-border);
   vertical-align: middle;
@@ -474,7 +501,7 @@
 }
 
 .block-editor .bn-editor [data-content-type="table"] td {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
 }
 
 /* Leerer Block: „Baustein wählen …“ */

@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+e3005efd – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+2fd97102 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -401,7 +401,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* Startseite (gemessen in der Vorlage): Spaltenbreite, Abstand oben, Feld „Schnell notieren“, Tabellenzeilen, Chips */
   --home-width: 616px;
   --home-padding-top: 48px;
-  --home-schnell-hoehe: 52px;
+  --home-schnell-hoehe: 46px;
   --size-home-row: 36px;
   --home-name-width: 56%;
   --size-home-chip: 30px;
