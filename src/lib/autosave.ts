@@ -4,6 +4,43 @@
 
 export const AUTOSAVE_DELAY_MS = 600;
 
+/**
+ * Speicherstatus der offenen Seite (für den Seitenkopf): „bereit“ (nichts geändert seit dem Öffnen), „speichert“
+ * (Eingaben warten oder werden geschrieben), „gespeichert“ (mit Uhrzeit) oder „fehler“. Es gilt immer der zuletzt
+ * angelegte AutoSaver, also der der offenen Seite.
+ */
+export type SpeicherZustand =
+  | { art: "bereit" }
+  | { art: "speichert" }
+  | { art: "gespeichert"; zeit: number }
+  | { art: "fehler"; meldung: string };
+
+let speicherZustand: SpeicherZustand = { art: "bereit" };
+let aktuellerSaver: AutoSaver | null = null;
+const speicherHoerer = new Set<() => void>();
+
+export function aktuellerSpeicherZustand(): SpeicherZustand {
+  return speicherZustand;
+}
+
+export function speicherZustandAbonnieren(hoerer: () => void): () => void {
+  speicherHoerer.add(hoerer);
+  return () => {
+    speicherHoerer.delete(hoerer);
+  };
+}
+
+/** Neue Ansicht im Reiter: Meldungen älterer AutoSaver gelten nicht mehr. */
+export function speicherZustandZuruecksetzen(): void {
+  aktuellerSaver = null;
+  setzen({ art: "bereit" });
+}
+
+function setzen(zustand: SpeicherZustand): void {
+  speicherZustand = zustand;
+  speicherHoerer.forEach((hoerer) => hoerer());
+}
+
 export class AutoSaver {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private produce: (() => string) | null = null;
@@ -22,11 +59,18 @@ export class AutoSaver {
     private readonly write: (text: string) => Promise<void>,
     private readonly onError: (message: string) => void = () => {},
     private readonly delay = AUTOSAVE_DELAY_MS,
-  ) {}
+  ) {
+    aktuellerSaver = this;
+  }
+
+  private melden(zustand: SpeicherZustand): void {
+    if (aktuellerSaver === this) setzen(zustand);
+  }
 
   /** Merkt eine Änderung vor. `produce` erzeugt den Dateiinhalt erst beim Speichern. */
   schedule(produce: () => string): void {
     this.produce = produce;
+    this.melden({ art: "speichert" });
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.flush(), this.delay);
   }
@@ -65,13 +109,17 @@ export class AutoSaver {
 
   private async save(produce: () => string): Promise<void> {
     const text = produce();
-    if (text === this.lastSaved) return;
     try {
-      await this.write(text);
-      this.lastSaved = text;
-      this.recent = [text, ...this.recent].slice(0, 5);
+      if (text !== this.lastSaved) {
+        await this.write(text);
+        this.lastSaved = text;
+        this.recent = [text, ...this.recent].slice(0, 5);
+      }
+      if (this.produce === null) this.melden({ art: "gespeichert", zeit: Date.now() });
     } catch (error) {
-      this.onError(`Speichern fehlgeschlagen: ${errorMessage(error)}`);
+      const meldung = `Speichern fehlgeschlagen: ${errorMessage(error)}`;
+      this.melden({ art: "fehler", meldung });
+      this.onError(meldung);
     }
   }
 }

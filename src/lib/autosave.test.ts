@@ -1,5 +1,41 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AUTOSAVE_DELAY_MS, AutoSaver } from "./autosave";
+import { aktuellerSpeicherZustand, AUTOSAVE_DELAY_MS, AutoSaver, speicherZustandZuruecksetzen } from "./autosave";
+
+describe("Speicherstatus für den Seitenkopf (Etappe 19)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("speichert … → gespeichert mit Uhrzeit; Fehler deutlich; ältere AutoSaver melden nichts mehr", async () => {
+    vi.setSystemTime(new Date(2026, 9, 29, 10, 0));
+    speicherZustandZuruecksetzen();
+    expect(aktuellerSpeicherZustand()).toEqual({ art: "bereit" });
+    let scheitern = false;
+    const write = vi.fn(async () => {
+      if (scheitern) throw new Error("Datenträger voll");
+    });
+    const alt = new AutoSaver("a", write);
+    const saver = new AutoSaver("a", write);
+    saver.schedule(() => "ab");
+    expect(aktuellerSpeicherZustand()).toEqual({ art: "speichert" });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS);
+    expect(aktuellerSpeicherZustand()).toEqual({ art: "gespeichert", zeit: new Date(2026, 9, 29, 10, 0, 0, AUTOSAVE_DELAY_MS).getTime() });
+
+    // Ein älterer AutoSaver (z. B. der Seite davor) ändert den Status nicht.
+    alt.schedule(() => "x");
+    await alt.flush();
+    expect(aktuellerSpeicherZustand().art).toBe("gespeichert");
+
+    scheitern = true;
+    saver.schedule(() => "abc");
+    await saver.flush();
+    expect(aktuellerSpeicherZustand()).toEqual({ art: "fehler", meldung: "Speichern fehlgeschlagen: Datenträger voll" });
+
+    // Nach dem Zurücksetzen (neue Ansicht) zählt nur noch ein neuer AutoSaver.
+    speicherZustandZuruecksetzen();
+    saver.schedule(() => "abcd");
+    expect(aktuellerSpeicherZustand()).toEqual({ art: "bereit" });
+  });
+});
 
 describe("AutoSaver (automatisches Speichern)", () => {
   beforeEach(() => vi.useFakeTimers());

@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+2b6c607b – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+70c107e5 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -396,6 +396,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --reiter-padding: var(--space-2-5);
   --reiter-max-width: 220px;
   --size-reiter-schliessen: 18px;
+  /* Seitenkopf unter der Reiterleiste (Pfad, Speicherstatus, Stern, „…“) */
+  --size-seitenkopf: 40px;
   /* Startseite (gemessen in der Vorlage): Spaltenbreite, Abstand oben, Feld „Schnell notieren“, Tabellenzeilen, Chips */
   --home-width: 616px;
   --home-padding-top: 48px;

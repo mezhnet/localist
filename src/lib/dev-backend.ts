@@ -41,6 +41,8 @@ interface DevVault {
   externalDelete: (path: string) => void;
   /** Simuliert einen verschwundenen Vault-Ordner (z. B. abgezogener USB-Stick). */
   setMissing: (missing: boolean) => void;
+  /** Simuliert einen Schreibfehler (z. B. Datenträger voll): Solange gesetzt, scheitert jedes Speichern mit diesem Text. */
+  schreibfehler: string | null;
   /** Exportierte Dateien (Ziel → Inhalt) und fertig dargestellte Notizen (Pfad → HTML). */
   exporte: Map<string, string>;
   darstellungen: Map<string, string>;
@@ -204,6 +206,7 @@ export function installDevBackend(): void {
           return text;
         }
         case "write_page":
+          if (window.__devVault?.schreibfehler) throw window.__devVault.schreibfehler;
           files.set(a.path, a.content);
           touch(a.path);
           syncPreview(a.path, a.content);
@@ -417,5 +420,6 @@ export function installDevBackend(): void {
       missing = value;
       notify({ kind: "rescan" });
     },
+    schreibfehler: null,
   };
 }

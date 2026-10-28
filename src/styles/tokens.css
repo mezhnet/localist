@@ -181,6 +181,8 @@
   --reiter-padding: var(--space-2-5);
   --reiter-max-width: 220px;
   --size-reiter-schliessen: 18px;
+  /* Seitenkopf unter der Reiterleiste (Pfad, Speicherstatus, Stern, „…“) */
+  --size-seitenkopf: 40px;
   /* Startseite (gemessen in der Vorlage): Spaltenbreite, Abstand oben, Feld „Schnell notieren“, Tabellenzeilen, Chips */
   --home-width: 616px;
   --home-padding-top: 48px;

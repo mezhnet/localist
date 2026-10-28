@@ -494,7 +494,7 @@ function NewItems({ dir, tree, onCreate }: { dir: string; tree: TreeNode[]; onCr
   );
 }
 
-interface NodeItemsProps {
+export interface NodeItemsProps {
   node: TreeNode;
   tree: TreeNode[];
   favorite: boolean;
@@ -511,7 +511,7 @@ interface NodeItemsProps {
   onReveal?: () => void;
 }
 
-function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase, onNotebook, onConvertToHtml, onExport, onReveal }: NodeItemsProps) {
+export function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase, onNotebook, onConvertToHtml, onExport, onReveal }: NodeItemsProps) {
   const isFolder = node.kind === "folder";
   // Ein Ordner ist entweder Datenbank oder Notizbuch (liegen beide Dateien darin, gilt er als Datenbank).
   const notebook = node.notebook && !node.database;

@@ -2236,6 +2236,75 @@ describe("Seitenleiste ein- und ausklappen (Etappe 18)", () => {
   });
 });
 
+describe("Seitenkopf (Etappe 19)", () => {
+  it("Pfad „Ordner / Seite“, Speicherstatus (Speichert …, gerade eben, vor 3 Min., Fehler deutlich), Stern und „…“ mit den Aktionen des Kontextmenüs", async () => {
+    await openVaultFromStart();
+    await openPage("Projekte", "Website-Relaunch");
+    await screen.findByText("Domain prüfen");
+    const kopf = within(document.querySelector<HTMLElement>(".topbar")!);
+    expect(kopf.getByRole("navigation", { name: "Pfad" }).textContent).toBe("Projekte/Website-Relaunch");
+    expect(document.querySelector(".breadcrumb-name")?.textContent).toBe("Projekte");
+    expect(document.querySelector(".topbar-title")?.textContent).toBe("Website-Relaunch");
+    const status = () => document.querySelector(".speicherstatus")?.textContent;
+    // Vor der ersten Eingabe: die letzte Änderung der Datei (die Beispiel-Dateien gelten als „gestern“ geändert)
+    await waitFor(() => expect(status()).toBe("gestern gespeichert"));
+
+    const tiptap = (window as unknown as { ProseMirror: { commands: { setTextSelection: (pos: number) => void; insertContent: (text: string) => void } } }).ProseMirror;
+    act(() => {
+      tiptap.commands.setTextSelection(3);
+      tiptap.commands.insertContent("Neue ");
+    });
+    expect(status()).toBe("Speichert …");
+    await waitFor(() => expect(status()).toBe("gerade eben gespeichert"), { timeout: 2000 });
+
+    // Schreibfehler: deutlich sichtbar (rot, Warnsymbol, Meldung im Tooltip)
+    vault().schreibfehler = "Der Datenträger ist voll.";
+    act(() => {
+      tiptap.commands.insertContent("y");
+    });
+    const fehler = await screen.findByText("Nicht gespeichert", {}, { timeout: 2000 });
+    expect(fehler.closest(".speicherstatus")?.classList.contains("is-fehler")).toBe(true);
+    expect(fehler.closest(".speicherstatus")?.getAttribute("role")).toBe("alert");
+    expect(fehler.closest(".speicherstatus")?.getAttribute("title")).toBe("Speichern fehlgeschlagen: Der Datenträger ist voll.");
+    vault().schreibfehler = null;
+    act(() => {
+      tiptap.commands.insertContent("z");
+    });
+    await waitFor(() => expect(status()).toBe("gerade eben gespeichert"), { timeout: 2000 });
+
+    // Stern: Favorit an und aus
+    fireEvent.click(kopf.getByRole("button", { name: "Zu Favoriten hinzufügen" }));
+    await waitFor(() => expect(kopf.getByRole("button", { name: "Aus Favoriten entfernen" }).classList.contains("is-active")).toBe(true));
+    fireEvent.click(kopf.getByRole("button", { name: "Aus Favoriten entfernen" }));
+    await waitFor(() => expect(kopf.getByRole("button", { name: "Zu Favoriten hinzufügen" })).toBeTruthy());
+
+    // „…“: dieselben Einträge wie das Kontextmenü der Seitenleiste, inklusive „Im Explorer öffnen“
+    fireEvent.click(kopf.getByRole("button", { name: "Weitere Aktionen" }));
+    const menue = screen.getByRole("menu", { name: "Aktionen für „Website-Relaunch“" });
+    const eintraege = within(menue).getAllByRole("menuitem").map((item) => item.textContent?.replace(/F2|Entf/, ""));
+    fireEvent.keyDown(menue, { key: "Escape" });
+    fireEvent.contextMenu(await (await inTree()).findByTitle("Projekte/Website-Relaunch.md"));
+    const kontext = screen.getByRole("menu", { name: "Aktionen für „Website-Relaunch“" });
+    expect(within(kontext).getAllByRole("menuitem").map((item) => item.textContent?.replace(/F2|Entf/, ""))).toEqual(eintraege);
+    expect(eintraege).toContain("Im Explorer öffnen");
+    fireEvent.keyDown(kontext, { key: "Escape" });
+    fireEvent.click(kopf.getByRole("button", { name: "Weitere Aktionen" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Im Explorer öffnen" }));
+    await waitFor(() => expect(vault().explorer).toEqual(["Projekte/Website-Relaunch.md"]));
+    // „Umbenennen“ markiert den Seitentitel
+    fireEvent.click(kopf.getByRole("button", { name: "Weitere Aktionen" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Umbenennen/ }));
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Seitentitel" }));
+
+    // Datenbank: Pfad, Stern und „…“, aber kein Speicherstatus
+    fireEvent.click((await inTree()).getAllByText("Projekte")[0]);
+    await screen.findByRole("table");
+    await waitFor(() => expect(document.querySelector(".topbar-title")?.textContent).toBe("Projekte"));
+    expect(document.querySelector(".speicherstatus")).toBeNull();
+    expect(kopf.getByRole("button", { name: "Weitere Aktionen" })).toBeTruthy();
+  });
+});
+
 describe("Reiter (Etappe 19)", () => {
   const leiste = () => within(screen.getByRole("tablist", { name: "Offene Reiter" }));
   const reiter = () => leiste().getAllByRole("tab").map((tab) => tab.textContent);

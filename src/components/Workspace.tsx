@@ -3,10 +3,10 @@
 // Dateiwächters. Die Reiter-Logik steht in src/lib/reiter.ts; angezeigt wird immer nur der aktive Reiter.
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { ChevronRight, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Search, Star, X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
-import { AutoSaver, errorMessage } from "../lib/autosave";
+import { AutoSaver, errorMessage, speicherZustandZuruecksetzen } from "../lib/autosave";
 import { instantiateHtmlTemplate, isHtmlPath, pathMapper, readHead, rewriteReferences, setTitle } from "../lib/html";
 import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewriteLinks, type PageRef } from "../lib/links";
 import { today } from "../lib/calendar";
@@ -74,6 +74,7 @@ import { NotizbuchView } from "./NotizbuchView";
 import { PageView } from "./PageView";
 import { Fensterleiste, hatFensterrahmen } from "./Fenster";
 import { Reiterleiste, useSchmal } from "./Reiterleiste";
+import { SeitenKopf } from "./SeitenKopf";
 import { Sidebar, type CreateKind } from "./Sidebar";
 import { Button, cx, IconButton } from "./ui";
 
@@ -280,6 +281,9 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
 
   // Nach dem Öffnen einer Seite oder Datenbank klappt das Menü auf dem Handy wieder zu.
   useEffect(() => setMenuOpen(false), [page?.path, database, aktiv.ansicht]);
+
+  // Neue Ansicht: Der Speicherstatus im Seitenkopf gilt ab jetzt für sie.
+  useEffect(() => speicherZustandZuruecksetzen(), [aktiv.ansicht]);
 
   // Offene Reiter pro Vault im App-Speicher merken.
   useEffect(() => reiterMerken(vault.root, stand), [stand, vault.root]);
@@ -786,6 +790,35 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const current = page?.path ?? database ?? notebook;
   const homeActive = aktiv.inhalt.art === "start" && !vaultMissing;
   const favoriteNodes = favorites.map((path) => findNode(tree, path)).filter((node): node is TreeNode => node !== null);
+  const currentNode = current ? findNode(tree, current) : null;
+
+  /** „Umbenennen“ aus dem Seitenkopf: bei der offenen Seite im Seitentitel, sonst in der Seitenleiste. */
+  const umbenennenStarten = (node: TreeNode) => {
+    const titel = document.querySelector<HTMLInputElement>(".page-title");
+    if (node.kind === "page" && titel) {
+      titel.focus();
+      titel.select();
+      return;
+    }
+    if (eingeklappt) storeEingeklappt(false);
+    if (ohneLeiste) setMenuOpen(true);
+    setRenamingPath(node.path);
+  };
+  /** „…“ im Seitenkopf: dieselben Aktionen wie das Kontextmenü der Seitenleiste. */
+  const kopfAktionen = currentNode
+    ? {
+        tree,
+        onCreate: handleCreate,
+        onRename: () => umbenennenStarten(currentNode),
+        onMove: () => setDialog({ kind: "move", node: currentNode }),
+        onDelete: () => void handleDelete(currentNode),
+        onDatabase: () => void (currentNode.database ? openDatabase(currentNode.path) : convertToDatabase(currentNode.path)),
+        onNotebook: () => void (currentNode.notebook ? openNotebook(currentNode.path) : convertToNotebook(currentNode.path)),
+        onConvertToHtml: () => void convertToHtml(currentNode),
+        onExport: () => void exportPage(currentNode),
+        onReveal: explorer ? () => void revealInExplorer(currentNode.path) : undefined,
+      }
+    : null;
 
   return (
     <div className={cx("workspace", `seitenleiste-${seitenleisteSeite}`, fensterrahmen && "hat-fensterleiste", eingeklappt && "is-eingeklappt")}>
@@ -853,44 +886,20 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           />
         )}
         <div className="main-scroll" ref={mainScroll}>
-        <header className={cx("topbar", homeActive && "is-start")}>
-          <IconButton className="topbar-menu" label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
-            <MenuIcon />
-          </IconButton>
-          <nav className="breadcrumb" aria-label="Pfad">
-            {current ? (
-              <>
-                {ancestorNames(current).map((name, i) => (
-                  <span key={i} className="breadcrumb-folder">
-                    <span className="breadcrumb-name">{name}</span>
-                    <ChevronRight className="breadcrumb-separator" aria-hidden="true" />
-                  </span>
-                ))}
-                <span className="topbar-title">
-                  {page && icons.get(page.path) && <span className="topbar-icon">{icons.get(page.path)}</span>}
-                  {pageTitle(current)}
-                </span>
-              </>
-            ) : (
-              <span className="topbar-title">{vaultMissing ? vault.name : library ? "Bausteine" : "Startseite"}</span>
-            )}
-          </nav>
-          <div className="topbar-actions">
-            {current && (
-              <IconButton
-                label={favorites.includes(current) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
-                active={favorites.includes(current)}
-                className="favorite-toggle"
-                onClick={() => void updateFavorites((list) => toggleFavorite(list, current))}
-              >
-                <Star />
-              </IconButton>
-            )}
-            <IconButton className="topbar-search" label="Seite suchen" onClick={() => setDialog({ kind: "quick" })}>
-              <Search />
-            </IconButton>
-          </div>
-        </header>
+        <SeitenKopf
+          ordner={current ? ancestorNames(current) : []}
+          titel={current ? pageTitle(current) : vaultMissing ? vault.name : library ? "Bausteine" : "Startseite"}
+          istSeite={page !== null}
+          geaendert={page ? index.find((entry) => entry.path === page.path)?.modified : undefined}
+          node={currentNode}
+          favorit={current !== null && favorites.includes(current)}
+          onFavorit={() => current && void updateFavorites((list) => toggleFavorite(list, current))}
+          aktionen={kopfAktionen}
+          start={homeActive}
+          menuOffen={menuOpen}
+          onMenu={() => setMenuOpen(true)}
+          onSuche={() => setDialog({ kind: "quick" })}
+        />
         {notice && (
           <div className={`notice toast ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>
             <span>{notice.text}</span>

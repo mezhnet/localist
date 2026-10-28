@@ -730,6 +730,7 @@ button.tree-toggle:hover {
   }
 }
 
+/* Seitenkopf (Vorlage 02): Pfad „Ordner / Seite“, rechts Speicherstatus, Stern und „…“ */
 .topbar {
   position: sticky;
   top: 0;
@@ -737,8 +738,8 @@ button.tree-toggle:hover {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--size-control-xl);
-  padding: 0 var(--space-3);
+  min-height: var(--size-seitenkopf);
+  padding: 0 var(--space-2) 0 var(--space-2-5);
   flex-shrink: 0;
   background: var(--color-bg);
 }
@@ -781,8 +782,6 @@ button.tree-toggle:hover {
 }
 
 .breadcrumb-separator {
-  width: var(--size-icon-sm);
-  height: var(--size-icon-sm);
   color: var(--color-text-faint);
 }
 
@@ -795,7 +794,37 @@ button.tree-toggle:hover {
   text-overflow: ellipsis;
   padding: var(--space-0-5) var(--space-1);
   color: var(--color-text);
-  font-weight: var(--font-weight-medium);
+}
+
+/* Speicherstatus in Monospace; ein Fehler steht deutlich in Rot mit Warnsymbol. */
+.speicherstatus {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-right: var(--space-1-5);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  white-space: nowrap;
+}
+
+.speicherstatus.is-fehler {
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.speicherstatus svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.topbar-actions .ui-icon-button {
+  color: var(--color-text-muted);
 }
 
 .topbar-actions {
