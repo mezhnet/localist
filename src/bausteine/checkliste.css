@@ -15,8 +15,8 @@ ul.l-checkliste > li {
 
 ul.l-checkliste > li > input[type="checkbox"] {
   flex: none;
-  width: var(--size-icon-md);
-  height: var(--size-icon-md);
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
   margin: 0;
   position: relative;
   top: var(--space-0-5);

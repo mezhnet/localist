@@ -202,7 +202,9 @@ describe("Eigenschaften und Datenbanken", () => {
     const table = await screen.findByRole("table");
     // Die Einträge laden nach der Tabelle (unter Last etwas später): darauf warten.
     await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(3)); // Kopfzeile + 2 Seiten
-    expect(within(table).getAllByRole("columnheader").map((th) => th.textContent?.trim())).toEqual(["Aa Name", "◐ status", "# aufwand", ""]);
+    // Seit Etappe 19 Linien-Symbole (SVG) statt Zeichen vor den Eigenschaften
+    expect(within(table).getAllByRole("columnheader").map((th) => th.textContent?.trim())).toEqual(["Aa Name", "status", "aufwand", ""]);
+    expect([...table.querySelectorAll("th .column-type svg")]).toHaveLength(2);
   });
 
   it("Tabelle: Zellen bearbeiten, sortieren und filtern (gespeichert in _ansichten.yaml), neue Zeile mit id", async () => {
@@ -2274,6 +2276,39 @@ describe("Notiz nach der Vorlage 02 (Etappe 19)", () => {
     expect(text).toMatch(/\.baustein-menu-symbol \{[^}]*border: var\(--border-width\) solid var\(--color-border\);/);
     expect(tokens).toMatch(/--content-width: 652px;/);
     expect(tokens).toMatch(/--font-size-editor: 15px;/);
+  });
+});
+
+describe("CSS: übrige Ansichten und Bausteine im Stil der Vorlage (Etappe 19)", () => {
+  const ohneCrlf = (text: string) => text.replace(/\r\n/g, "\n");
+
+  it("Menüs, Dialoge, Strg+P, Tastenkürzel und Datenbank-Tabelle wie die Elemente der Notiz", async () => {
+    const ui = ohneCrlf((await import("./components/ui/ui.css?raw")).default);
+    const dialoge = ohneCrlf((await import("./styles/dialogs.css?raw")).default);
+    const datenbank = ohneCrlf((await import("./styles/database.css?raw")).default);
+    expect(ui).toMatch(/\.ui-menu \{[^}]*border: var\(--border-width\) solid var\(--color-border\);/);
+    expect(ui).toMatch(/\.ui-menu__item:focus-visible \{\s*outline: none;\s*background: var\(--color-menu-selected\);/);
+    expect(ui).toMatch(/\.ui-dialog \{[^}]*border: var\(--border-width\) solid var\(--color-border\);/);
+    expect(ui).toMatch(/\.ui-kbd \{[^}]*font-family: var\(--font-mono\);/);
+    expect(dialoge).toMatch(/\.dialog-list li\.selected \{\s*background: var\(--color-menu-selected\);/);
+    expect(datenbank).toMatch(/\.table-wrapper \{[^}]*border-radius: var\(--radius-lg\);/);
+    expect(datenbank).toMatch(/\.database-table th \{\s*background: var\(--color-bg-subtle\);/);
+    expect(datenbank).toMatch(/\.database-table \.prop-date \.ui-input \{\s*font-family: var\(--font-mono\);/);
+  });
+
+  it("localist.css: Callout, Tabelle, Checkliste, Toggle, Code und Schrift wie in der Notiz", async () => {
+    const lese = async (name: string) => ohneCrlf((await import(`./bausteine/${name}.css?raw`)).default as string);
+    const callout = await lese("callout");
+    expect(callout).toMatch(/l-callout \{[^}]*--callout-farbe: var\(--color-accent-text\);[^}]*border-radius: var\(--radius-lg\);\s*background: var\(--color-accent-callout\);/);
+    expect(callout).toMatch(/l-callout::before \{[^}]*background: var\(--callout-farbe\);[^}]*mask: var\(--callout-symbol\)/);
+    expect(callout).not.toMatch(/content: "[ℹ💡⚠⛔]/u);
+    const tabelle = await lese("tabelle");
+    expect(tabelle).toMatch(/table \{[^}]*border: var\(--border-width\) solid var\(--color-border\);[^}]*border-radius: var\(--radius-lg\);/);
+    expect(tabelle).toMatch(/th \{\s*background: var\(--color-bg-subtle\);\s*color: var\(--color-text-muted\);/);
+    expect(await lese("checkliste")).toMatch(/width: var\(--size-checkbox\);[^}]*accent-color: var\(--color-accent\);/);
+    expect(await lese("toggle")).toMatch(/details > summary::before \{[^}]*mask: url\("data:image\/svg\+xml,/);
+    expect(await lese("code")).toMatch(/border-radius: var\(--radius-lg\);/);
+    expect(await lese("basis")).toMatch(/body \{[^}]*font-size: var\(--font-size-editor\);/);
   });
 });
 

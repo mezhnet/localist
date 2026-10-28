@@ -31,7 +31,7 @@
 }
 
 .dialog-list li.selected {
-  background: var(--color-hover);
+  background: var(--color-menu-selected);
 }
 
 .dialog-list li:hover {

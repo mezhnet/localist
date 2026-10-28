@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+7e0f1c21 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+e3005efd – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -873,7 +873,8 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: var(--font-size-lg);
+  /* Dieselbe Schriftgröße wie der Text einer Notiz */
+  font-size: var(--font-size-editor);
   line-height: var(--line-height-normal);
   overflow-wrap: break-word;
 }
@@ -907,7 +908,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   letter-spacing: var(--letter-spacing-tight);
   margin: var(--space-8) 0 var(--space-2);
@@ -1057,50 +1058,46 @@ figcaption {
 }
 
 /* ---- callout.css ---- */
-/* Callout: <l-callout typ="info|tipp|warnung|fehler">Text</l-callout> – farbige Box mit Symbol.
-   Ohne CSS bleibt der Text als normaler Absatz lesbar. */
-
+/* Callout: <l-callout typ="info|tipp|warnung|fehler">Text</l-callout> – wie der Callout einer Notiz (Vorlage 02):
+   getönte Akzentfläche, Linien-Symbol links (als CSS-Maske aus einem eingebetteten SVG, Farbe aus den Tokens).
+   Warnung und Fehler in ihren Statusfarben. Ohne CSS bleibt der Text als normaler Absatz lesbar. */
 l-callout {
+  --callout-farbe: var(--color-accent-text);
+  --callout-symbol: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E");
   display: block;
   position: relative;
   margin: var(--space-3) 0;
-  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + var(--space-8));
-  border-radius: var(--radius-md);
-  background: var(--color-info-soft);
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-3) + var(--size-icon-md) + var(--space-2-5));
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-callout);
 }
 
 l-callout::before {
-  content: "ℹ️" / "";
+  content: "";
   position: absolute;
-  left: var(--space-4);
-  top: var(--space-3);
-  width: var(--space-6);
-  text-align: center;
-  line-height: inherit;
+  left: var(--space-3);
+  top: calc(var(--space-3) + (1lh - var(--size-icon-md)) / 2);
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  background: var(--callout-farbe);
+  -webkit-mask: var(--callout-symbol) center / contain no-repeat;
+  mask: var(--callout-symbol) center / contain no-repeat;
 }
 
 l-callout[typ="tipp"] {
-  background: var(--color-success-soft);
-}
-
-l-callout[typ="tipp"]::before {
-  content: "💡" / "";
+  --callout-symbol: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'/%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3C/svg%3E");
 }
 
 l-callout[typ="warnung"] {
+  --callout-farbe: var(--color-warning);
+  --callout-symbol: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
   background: var(--color-warning-soft);
 }
 
-l-callout[typ="warnung"]::before {
-  content: "⚠️" / "";
-}
-
 l-callout[typ="fehler"] {
+  --callout-farbe: var(--color-danger);
+  --callout-symbol: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m15 9-6 6'/%3E%3Cpath d='m9 9 6 6'/%3E%3C/svg%3E");
   background: var(--color-danger-soft);
-}
-
-l-callout[typ="fehler"]::before {
-  content: "⛔" / "";
 }
 
 l-callout > :first-child {
@@ -1129,8 +1126,8 @@ ul.l-checkliste > li {
 
 ul.l-checkliste > li > input[type="checkbox"] {
   flex: none;
-  width: var(--size-icon-md);
-  height: var(--size-icon-md);
+  width: var(--size-checkbox);
+  height: var(--size-checkbox);
   margin: 0;
   position: relative;
   top: var(--space-0-5);
@@ -1153,7 +1150,7 @@ pre {
   margin: var(--space-4) 0;
   padding: var(--space-4);
   overflow-x: auto;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-bg-subtle);
   border: var(--border-width) solid var(--color-border);
   font-family: var(--font-mono);
@@ -1710,13 +1707,17 @@ l-spalte > :last-child {
 /* ---- tabelle.css ---- */
 /* Tabelle: <table> mit <tr>, <th>, <td>. Breite Tabellen scrollen waagerecht statt die Seite zu sprengen. */
 
+/* Wie die Tabelle einer Notiz (Vorlage 02): abgerundeter Rahmen, gedämpfte Kopfzeile, feine Zeilenlinien. */
 table {
   display: block;
   width: max-content;
   max-width: 100%;
   overflow-x: auto;
   margin: var(--space-4) 0;
-  border-collapse: collapse;
+  border: var(--border-width) solid var(--color-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-lg);
   font-size: var(--font-size-md);
 }
 
@@ -1724,14 +1725,21 @@ th,
 td {
   min-width: var(--space-16);
   padding: var(--space-1-5) var(--space-3);
-  border: var(--border-width) solid var(--color-border-strong);
+  border: 0;
+  border-bottom: var(--border-width) solid var(--color-border);
   text-align: left;
   vertical-align: top;
 }
 
+tr:last-child > td {
+  border-bottom: 0;
+}
+
 th {
   background: var(--color-bg-subtle);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
 }
 
 caption {
@@ -1764,11 +1772,15 @@ details > summary::-webkit-details-marker {
 }
 
 details > summary::before {
-  content: "▸" / "";
+  content: "";
   flex: none;
+  align-self: center;
   display: inline-block;
-  width: var(--space-4);
-  color: var(--color-text-muted);
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  background: var(--color-text-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
   transition: transform var(--duration-fast) var(--ease-out);
 }
 

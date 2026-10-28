@@ -12,7 +12,8 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: var(--font-size-lg);
+  /* Dieselbe Schriftgröße wie der Text einer Notiz */
+  font-size: var(--font-size-editor);
   line-height: var(--line-height-normal);
   overflow-wrap: break-word;
 }
@@ -46,7 +47,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   letter-spacing: var(--letter-spacing-tight);
   margin: var(--space-8) 0 var(--space-2);

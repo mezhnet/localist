@@ -75,7 +75,7 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
                 {PROPERTY_TYPES.map((info) => (
                   <MenuItem
                     key={info.type}
-                    icon={<span className="column-type">{info.icon}</span>}
+                    icon={<EigenschaftSymbol type={info.type} />}
                     checked={type === info.type}
                     onSelect={() => onSetType(name, info.type)}
                   >
@@ -110,7 +110,7 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
 }
 
 /** Linien-Symbol je Eigenschaftstyp (Vorlage 02: Schild für Tags, Kalender für Datumswerte …). */
-function EigenschaftSymbol({ type }: { type: PropertyType }) {
+export function EigenschaftSymbol({ type }: { type: PropertyType }) {
   switch (type) {
     case "zahl":
       return <Hash />;

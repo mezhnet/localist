@@ -1,12 +1,16 @@
 /* Tabelle: <table> mit <tr>, <th>, <td>. Breite Tabellen scrollen waagerecht statt die Seite zu sprengen. */
 
+/* Wie die Tabelle einer Notiz (Vorlage 02): abgerundeter Rahmen, gedämpfte Kopfzeile, feine Zeilenlinien. */
 table {
   display: block;
   width: max-content;
   max-width: 100%;
   overflow-x: auto;
   margin: var(--space-4) 0;
-  border-collapse: collapse;
+  border: var(--border-width) solid var(--color-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-lg);
   font-size: var(--font-size-md);
 }
 
@@ -14,14 +18,21 @@ th,
 td {
   min-width: var(--space-16);
   padding: var(--space-1-5) var(--space-3);
-  border: var(--border-width) solid var(--color-border-strong);
+  border: 0;
+  border-bottom: var(--border-width) solid var(--color-border);
   text-align: left;
   vertical-align: top;
 }
 
+tr:last-child > td {
+  border-bottom: 0;
+}
+
 th {
   background: var(--color-bg-subtle);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
 }
 
 caption {

@@ -6,7 +6,7 @@ pre {
   margin: var(--space-4) 0;
   padding: var(--space-4);
   overflow-x: auto;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-bg-subtle);
   border: var(--border-width) solid var(--color-border);
   font-family: var(--font-mono);

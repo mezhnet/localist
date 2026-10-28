@@ -34,7 +34,7 @@ import {
   type SortRule,
   type ViewConfig,
 } from "../lib/database";
-import { normalizeValue, PROPERTY_TYPES, readProperties, setProperty, typeInfo, type PropertyType, type PropertyValue } from "../lib/properties";
+import { normalizeValue, PROPERTY_TYPES, readProperties, setProperty, type PropertyType, type PropertyValue } from "../lib/properties";
 import { pageTitle } from "../lib/tree";
 import { readPage, writePage } from "../lib/vault-api";
 import { joinFrontmatter, splitFrontmatter } from "../markdown/frontmatter";
@@ -42,7 +42,7 @@ import { groupableProperties, groupProperty } from "../lib/kanban";
 import { calendarProperty, dateProperties } from "../lib/calendar";
 import { CalendarView } from "./CalendarView";
 import { KanbanBoard } from "./KanbanBoard";
-import { AddPropertyForm } from "./PropertiesBar";
+import { AddPropertyForm, EigenschaftSymbol } from "./PropertiesBar";
 import { PropertyInput } from "./PropertyInput";
 import { Button, IconButton, Input, Menu, MenuItem, MenuLabel, MenuSeparator, Select, Tab, TabList, useMenu, type MenuAnchor } from "./ui";
 
@@ -463,7 +463,7 @@ export function DatabaseView(props: Props) {
                         }}
                       >
                         <span className="column-type" aria-hidden="true">
-                          {typeInfo(typeOf(name)).icon}
+                          <EigenschaftSymbol type={typeOf(name)} />
                         </span>{" "}
                         {name}
                         {view.sortierung[0]?.eigenschaft === name && (view.sortierung[0].richtung === "aufsteigend" ? " ↑" : " ↓")}
@@ -529,7 +529,7 @@ export function DatabaseView(props: Props) {
               {PROPERTY_TYPES.map((info) => (
                 <MenuItem
                   key={info.type}
-                  icon={<span className="column-type">{info.icon}</span>}
+                  icon={<EigenschaftSymbol type={info.type} />}
                   checked={typeOf(columnInfo) === info.type}
                   onSelect={() => setType(columnInfo, info.type)}
                 >

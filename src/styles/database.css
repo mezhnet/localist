@@ -109,8 +109,11 @@
 }
 
 /* ---------- Tabelle ---------- */
+/* Wie die Tabelle einer Notiz (Vorlage 02): abgerundeter Rahmen, gedämpfte Kopfzeile, feine Linien */
 .table-wrapper {
   overflow-x: auto;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .database-table {
@@ -118,6 +121,16 @@
   min-width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-md);
+}
+
+.database-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Datumswerte in Monospace */
+.database-table .prop-date .ui-input {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
 }
 
 .database-table th,
@@ -139,6 +152,7 @@
 }
 
 .database-table th {
+  background: var(--color-bg-subtle);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-regular);
