@@ -5,6 +5,9 @@
   "use strict";
   if (window.parent === window) return; // direkt im Browser geöffnet: keine App da
   var BASIS = "__LOCALIST_BASIS__";
+  // Modus und Akzentfarbe, die die App schicken darf (Nachricht „thema“).
+  var MODI = { hell: "light", dunkel: "dark", schwarz: "black" };
+  var AKZENTE = ["orange", "blau", "gruen", "lila"];
   // Kennzeichen für localist.css: In der App steht die Seite schon in einer Spalte unter dem Titel.
   document.documentElement.setAttribute("data-localist", "app");
   var senden = function (nachricht) {
@@ -196,10 +199,11 @@
     if (event.source !== window.parent) return;
     var daten = event.data;
     if (!daten || daten.localist !== 1) return;
-    if (daten.typ === "thema" && (daten.wert === "hell" || daten.wert === "dunkel")) {
-      var dunkel = daten.wert === "dunkel";
-      document.documentElement.setAttribute("data-theme", dunkel ? "dark" : "light");
-      document.documentElement.style.colorScheme = dunkel ? "dark" : "light";
+    if (daten.typ === "thema" && MODI.hasOwnProperty(daten.wert)) {
+      document.documentElement.setAttribute("data-theme", MODI[daten.wert]);
+      document.documentElement.style.colorScheme = daten.wert === "hell" ? "light" : "dark";
+      // Akzentfarbe nur aus der festen Liste; fehlt sie, gilt Orange.
+      document.documentElement.setAttribute("data-accent", AKZENTE.indexOf(daten.akzent) >= 0 ? daten.akzent : "orange");
     } else if (daten.typ === "anker" && typeof daten.id === "string" && /^[\w-]{1,100}$/.test(daten.id)) {
       var ziel = document.getElementById(daten.id);
       if (ziel) ziel.scrollIntoView({ block: "start", behavior: "smooth" });

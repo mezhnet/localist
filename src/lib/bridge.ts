@@ -3,6 +3,7 @@
 // prüft deshalb zuerst `event.source === iframe.contentWindow`, dann hier den Nachrichtentyp und die Felder,
 // und bei Links, dass der Pfad im Vault liegt. An die Seite schickt die App nur Farbschema, Scrollposition und
 // ob Bausteine bearbeitet werden dürfen.
+import type { Akzent, Modus } from "./theme";
 import { BAUSTEINE, type BausteinArt } from "./bausteine";
 
 export interface SecurityCheck {
@@ -109,9 +110,10 @@ export function isExternalUrl(url: string): boolean {
   }
 }
 
-/** Nachrichten an die Seite: nur das Farbschema und die Scrollposition, nie vertrauliche Daten. */
-export function themeMessage(theme: "light" | "dark") {
-  return { localist: 1, typ: "thema", wert: theme === "dark" ? "dunkel" : "hell" } as const;
+/** Nachrichten an die Seite: nur Modus, Akzentfarbe und Scrollposition, nie vertrauliche Daten. */
+export function themeMessage(modus: Modus, akzent: Akzent = "orange") {
+  const wert = modus === "black" ? "schwarz" : modus === "dark" ? "dunkel" : "hell";
+  return { localist: 1, typ: "thema", wert, akzent } as const;
 }
 
 export function scrollMessage(y: number) {

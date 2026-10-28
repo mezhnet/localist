@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+379d6cff – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+50013cff – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -257,6 +257,24 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-accent-callout: #fbf2ee;
   --color-focus-ring: #c2410c;
 
+  /* Vorschaukarten der Modi (Einstellungen → Darstellung) und Farbkreise der Akzentfarben: in jedem Modus gleich */
+  --mode-preview-light-window: #f0f0ee;
+  --mode-preview-light-bg: #ffffff;
+  --mode-preview-light-line: #d9d9d6;
+  --mode-preview-light-text: #131311;
+  --mode-preview-dark-window: #131313;
+  --mode-preview-dark-bg: #1f1f1d;
+  --mode-preview-dark-line: #3a3a37;
+  --mode-preview-dark-text: #ececea;
+  --mode-preview-black-window: #000000;
+  --mode-preview-black-bg: #141414;
+  --mode-preview-black-line: #2e2e2e;
+  --mode-preview-black-text: #f4f4f4;
+  --accent-swatch-orange: #c2410c;
+  --accent-swatch-blau: #2a65db;
+  --accent-swatch-gruen: #1d6a58;
+  --accent-swatch-lila: #6a4ed7;
+
   /* Rückmeldungen, zurückhaltend eingesetzt */
   --color-danger: #b93a32;
   --color-danger-soft: rgba(201, 66, 58, 0.09);
@@ -392,6 +410,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   /* Seite „Bausteine“: Breite der Liste und Höchstbreite (greift erst bei sehr breiten Fenstern) */
   --library-list-width: 340px;
   --library-max-width: 1760px;
+  /* Schalter (an/aus) */
+  --size-switch-width: 40px;
+  --size-switch-height: 24px;
 
   /* Radien */
   --radius-xs: 3px;

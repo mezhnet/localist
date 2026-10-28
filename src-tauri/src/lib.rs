@@ -397,6 +397,15 @@ pub fn run() {
             });
         })
         .setup(|app| {
+            // Das Fenster startet unsichtbar und erscheint, sobald die Oberfläche Modus und Farben gesetzt hat
+            // (src/main.tsx), damit beim Start nichts hell aufblitzt. Zur Sicherheit spätestens nach 3 Sekunden.
+            #[cfg(desktop)]
+            if let Some(fenster) = app.get_webview_window("main") {
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    let _ = fenster.show();
+                });
+            }
             // Sicherheitstest: Kommt nach 60 Sekunden kein Ergebnis, gilt er als nicht bestanden.
             if let Some(test) = lock(&app.state::<AppState>().security_test).clone() {
                 let handle = app.handle().clone();

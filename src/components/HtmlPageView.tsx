@@ -91,7 +91,7 @@ export function HtmlPageView({
   /** Zählt Neuladungen der Vorschau (nach Speichern oder Änderungen von außen). */
   const [previewVersion, setPreviewVersion] = useState(1);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  const { resolved } = useTheme();
+  const { dark } = useTheme();
   /** Aktueller Inhalt inklusive noch nicht gespeicherter Eingaben. */
   const current = useRef<string | null>(null);
   /** Aktueller Ausschnitt inklusive der letzten Eingaben (für einen neu aufgebauten Editor nach Ansichtswechsel). */
@@ -436,7 +436,7 @@ export function HtmlPageView({
                   value={splitRef.current?.body ?? split.body}
                   docVersion={editorVersion}
                   lineBreak={split.lineBreak}
-                  dark={resolved === "dark"}
+                  dark={dark}
                   label={`HTML-Code von „${title}“`}
                   onChange={onEditorChange}
                   apiRef={editorApi}

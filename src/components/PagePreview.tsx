@@ -39,9 +39,9 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
   const [height, setHeight] = useState<number | null>(null);
   const elements = useRef(new Map<number, HTMLIFrameElement>());
   const scrollY = useRef(0);
-  const { resolved } = useTheme();
-  const actions = useRef({ onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, fitContent });
-  actions.current = { onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, fitContent };
+  const { resolved, akzent } = useTheme();
+  const actions = useRef({ onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, akzent, fitContent });
+  actions.current = { onOpenLink, onOpenExternal, onEditBaustein, onToggleCheckbox, resolved, akzent, fitContent };
 
   /** Macht eine Fassung sichtbar und entfernt alle älteren. */
   const show = (shownVersion: number) =>
@@ -65,7 +65,7 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
       const isVisible = frameVersion === visible();
       const waiting = !isVisible && frames.some((frame) => frame.version === frameVersion && !frame.shown);
       if (message.typ === "bereit") {
-        element.contentWindow?.postMessage(themeMessage(actions.current.resolved), "*");
+        element.contentWindow?.postMessage(themeMessage(actions.current.resolved, actions.current.akzent), "*");
         element.contentWindow?.postMessage(editMessage(actions.current.onEditBaustein !== undefined), "*");
         if (waiting && !actions.current.fitContent) {
           // Erst an die alte Stelle scrollen, dann zeigen (sobald die Seite die Position bestätigt).
@@ -97,8 +97,8 @@ export function PagePreview({ path, version, fitContent, title, onOpenLink, onOp
 
   // Hell/Dunkel an alle geladenen Fassungen weitergeben.
   useEffect(() => {
-    for (const element of elements.current.values()) element.contentWindow?.postMessage(themeMessage(resolved), "*");
-  }, [resolved]);
+    for (const element of elements.current.values()) element.contentWindow?.postMessage(themeMessage(resolved, akzent), "*");
+  }, [resolved, akzent]);
 
   return (
     <div className={cx("html-preview", fitContent ? "is-fit" : "is-fixed")} style={fitContent && height !== null ? { height: Math.max(height, 120) } : undefined}>

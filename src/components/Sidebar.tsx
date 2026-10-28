@@ -30,6 +30,7 @@ import {
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from "react";
 import packageInfo from "../../package.json";
 import { ancestorFolders, findNode, isInside, parentDir } from "../lib/tree";
+import { ModusUmschalter } from "./Darstellung";
 import type { TreeNode } from "../lib/vault-api";
 import { Button, cx, IconButton, Input, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, type MenuAnchor } from "./ui";
 
@@ -398,10 +399,16 @@ export function Sidebar(props: Props) {
       </section>
 
       <div className="sidebar-footer">
-        <Button variant="ghost" size="sm" className="sidebar-item" icon={<Settings />} onClick={props.onOpenSettings}>
-          Einstellungen
-        </Button>
-        <span className="app-version">v{packageInfo.version}</span>
+        <div className="sidebar-darstellung">
+          <span className="sidebar-section-label">Darstellung</span>
+          <ModusUmschalter />
+        </div>
+        <div className="sidebar-footer-zeile">
+          <Button variant="ghost" size="sm" className="sidebar-item" icon={<Settings />} onClick={props.onOpenSettings}>
+            Einstellungen
+          </Button>
+          <span className="app-version">v{packageInfo.version}</span>
+        </div>
       </div>
 
       {menu?.kind === "new" && (

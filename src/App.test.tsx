@@ -574,7 +574,7 @@ describe("Seiten im Editor", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(localStorage.getItem("theme")).toBe("dark");
     expect(theme.getByRole("button", { name: "Dunkel" }).getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(theme.getByRole("button", { name: "Wie System" }));
+    fireEvent.click(theme.getByRole("switch", { name: "Wie System" }));
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(localStorage.getItem("theme")).toBeNull();
   });
@@ -1825,5 +1825,83 @@ describe("CSS: Seite „Bausteine“ nutzt die Breite (jsdom misst kein Layout)"
     expect(regel(".bibliothek-vorschau")).not.toContain("--code-pane-height");
     expect(regel(".hilfe")).toContain("container-type: inline-size;");
     expect(text).toMatch(/@container \(min-width: 820px\) \{\s*\.hilfe-eintrag \{\s*display: grid;/);
+  });
+});
+
+describe("Modi Hell, Dunkel, Schwarz und Akzentfarbe (Etappe 18)", () => {
+  /** System hell oder dunkel vortäuschen (prefers-color-scheme). */
+  function system(dunkel: boolean) {
+    vi.spyOn(window, "matchMedia").mockImplementation(
+      (query) => ({ matches: dunkel && query.includes("dark"), media: query, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList,
+    );
+  }
+  const html = () => document.documentElement.dataset;
+
+  it("Einstellungen → Darstellung: Karten Hell, Dunkel, Schwarz; „Wie System“ nimmt bei dunklem System den zuletzt gewählten dunklen Modus", async () => {
+    system(true);
+    await openVaultFromStart();
+    expect(html().theme).toBe("dark"); // Standard „Wie System“, dunkles System → Dunkel
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const darstellung = within(await screen.findByRole("group", { name: "Darstellung" }));
+    expect(darstellung.getByRole("switch", { name: "Wie System" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(darstellung.getByRole("button", { name: "Schwarz" }));
+    expect(html().theme).toBe("black");
+    expect(localStorage.getItem("theme")).toBe("black");
+    expect(localStorage.getItem("theme-dunkel")).toBe("black");
+    expect(darstellung.getByRole("switch", { name: "Wie System" }).getAttribute("aria-checked")).toBe("false");
+    expect(darstellung.getByRole("button", { name: "Schwarz" }).getAttribute("aria-pressed")).toBe("true");
+    expect(darstellung.getByText(/nutzt echtes Schwarz statt Dunkelgrau/)).toBeTruthy();
+    // Wieder „Wie System“: dunkles System → der zuletzt gewählte dunkle Modus (Schwarz)
+    fireEvent.click(darstellung.getByRole("switch", { name: "Wie System" }));
+    expect(html().theme).toBe("black");
+    expect(localStorage.getItem("theme")).toBeNull();
+  });
+
+  it("Umschalter in der Seitenleiste: drei Knöpfe, ein Klick schaltet „Wie System“ aus", async () => {
+    await openVaultFromStart();
+    const modus = within(screen.getByRole("group", { name: "Modus" }));
+    expect(modus.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Hell", "Dunkel", "Schwarz"]);
+    expect(modus.getByRole("button", { name: "Hell" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(modus.getByRole("button", { name: "Schwarz" }));
+    expect(html().theme).toBe("black");
+    expect(localStorage.getItem("theme")).toBe("black");
+    fireEvent.click(modus.getByRole("button", { name: "Hell" }));
+    expect(html().theme).toBe("light");
+    // Hell gewählt: Der dunkle Modus für „Wie System“ bleibt Schwarz.
+    expect(localStorage.getItem("theme-dunkel")).toBe("black");
+  });
+
+  it("alte gespeicherte Werte gelten weiter (theme = dark aus Version 2.0)", async () => {
+    localStorage.setItem("theme", "dark");
+    system(false);
+    await openVaultFromStart();
+    expect(html().theme).toBe("dark");
+    expect(html().accent).toBe("orange");
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const darstellung = within(await screen.findByRole("group", { name: "Darstellung" }));
+    expect(darstellung.getByRole("button", { name: "Dunkel" }).getAttribute("aria-pressed")).toBe("true");
+    expect(darstellung.getByRole("switch", { name: "Wie System" }).getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("Akzentfarbe: vier Farben, wirkt sofort (auch in HTML-Seiten) und wird gemerkt", async () => {
+    await openVaultFromStart();
+    await openPage("Notizen", "DNS");
+    const frame = await waitFor(() => {
+      const f = document.querySelector<HTMLIFrameElement>("iframe.html-frame");
+      expect(f).toBeTruthy();
+      return f!;
+    });
+    const nachrichten: unknown[] = [];
+    vi.spyOn(frame.contentWindow!, "postMessage").mockImplementation((daten: unknown) => void nachrichten.push(daten));
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const akzent = within(await screen.findByRole("radiogroup", { name: "Akzentfarbe" }));
+    expect(akzent.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Orange", "Blau", "Grün", "Lila"]);
+    expect(akzent.getByRole("radio", { name: "Orange" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(akzent.getByRole("radio", { name: "Blau" }));
+    expect(html().accent).toBe("blau");
+    expect(localStorage.getItem("akzent")).toBe("blau");
+    await waitFor(() => expect(nachrichten).toContainEqual({ localist: 1, typ: "thema", wert: "hell", akzent: "blau" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Darstellung" })).getByRole("button", { name: "Schwarz" }));
+    await waitFor(() => expect(nachrichten).toContainEqual({ localist: 1, typ: "thema", wert: "schwarz", akzent: "blau" }));
   });
 });

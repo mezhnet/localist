@@ -147,7 +147,7 @@ function linkMenuItems(editor: VaultEditor, links: WikiLinkActions, query: strin
 }
 
 export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }: Props) {
-  const { resolved } = useTheme();
+  const { dark } = useTheme();
   const links = useContext(WikiLinkContext);
   const editor = useCreateBlockNote(
     {
@@ -168,7 +168,7 @@ export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }
   return (
     <BlockNoteView
       editor={editor}
-      theme={resolved}
+      theme={dark ? "dark" : "light"}
       onChange={() => onChange(editor)}
       formattingToolbar={false}
       slashMenu={false}

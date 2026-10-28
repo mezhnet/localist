@@ -710,3 +710,50 @@
     min-height: var(--size-row-touch);
   }
 }
+
+/* ---------- Schalter (an/aus) ---------- */
+.ui-switch {
+  position: relative;
+  flex: none;
+  width: var(--size-switch-width);
+  height: var(--size-switch-height);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.ui-switch__knopf {
+  position: absolute;
+  top: var(--space-0-5);
+  left: var(--space-0-5);
+  width: calc(var(--size-switch-height) - 2 * var(--space-0-5));
+  height: calc(var(--size-switch-height) - 2 * var(--space-0-5));
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.ui-switch.is-on {
+  background: var(--color-accent);
+}
+
+.ui-switch.is-on .ui-switch__knopf {
+  background: var(--color-text-on-accent);
+  transform: translateX(calc(var(--size-switch-width) - var(--size-switch-height)));
+}
+
+.ui-switch:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-switch,
+  .ui-switch__knopf {
+    transition: none;
+  }
+}

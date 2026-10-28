@@ -298,17 +298,56 @@ button.tree-toggle:hover {
   position: sticky;
   bottom: 0;
   display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+  background: var(--color-bg-subtle);
+}
+
+.sidebar-footer-zeile {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-2);
-  padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+  padding-top: var(--space-1);
   border-top: var(--border-width) solid var(--color-border);
-  background: var(--color-bg-subtle);
 }
 
 .sidebar-footer .sidebar-item.ui-button {
   width: auto;
+}
+
+/* Darstellung: drei Knöpfe Hell, Dunkel, Schwarz in einer getönten Leiste */
+.sidebar-darstellung {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0 var(--space-1) var(--space-2);
+}
+
+.sidebar-section-label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.modus-umschalter {
+  display: flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-active);
+}
+
+.modus-umschalter .modus-knopf.is-active {
+  background: var(--color-surface-selected);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-text);
+}
+
+.modus-knopf.is-black svg {
+  fill: currentColor;
 }
 
 .app-version {

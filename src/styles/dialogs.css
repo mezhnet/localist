@@ -324,3 +324,229 @@
     display: none;
   }
 }
+
+/* ---------- Einstellungen → Darstellung (Vorlage 05-handy-darstellung-dunkel.png) ---------- */
+.settings-titel {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.settings-label {
+  margin: var(--space-4) 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.darstellung .settings-label:first-of-type {
+  margin-top: 0;
+}
+
+.modus-karten {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-subtle);
+}
+
+.modus-karte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.modus-vorschau {
+  display: flex;
+  gap: var(--space-1-5);
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: var(--space-2);
+  border: var(--border-width-strong) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--mode-preview-window);
+}
+
+.modus-karte.is-active .modus-vorschau {
+  border-color: var(--color-accent);
+}
+
+.modus-karte:focus-visible {
+  outline: none;
+}
+
+.modus-karte:focus-visible .modus-vorschau {
+  box-shadow: var(--shadow-focus);
+}
+
+.modus-vorschau.is-light {
+  --mode-preview-window: var(--mode-preview-light-window);
+  --mode-preview-bg: var(--mode-preview-light-bg);
+  --mode-preview-line: var(--mode-preview-light-line);
+  --mode-preview-text: var(--mode-preview-light-text);
+}
+
+.modus-vorschau.is-dark {
+  --mode-preview-window: var(--mode-preview-dark-window);
+  --mode-preview-bg: var(--mode-preview-dark-bg);
+  --mode-preview-line: var(--mode-preview-dark-line);
+  --mode-preview-text: var(--mode-preview-dark-text);
+}
+
+.modus-vorschau.is-black {
+  --mode-preview-window: var(--mode-preview-black-window);
+  --mode-preview-bg: var(--mode-preview-black-bg);
+  --mode-preview-line: var(--mode-preview-black-line);
+  --mode-preview-text: var(--mode-preview-black-text);
+}
+
+.modus-vorschau-leiste {
+  width: 18%;
+  background: repeating-linear-gradient(to bottom, var(--mode-preview-line) 0 var(--space-1), transparent var(--space-1) var(--space-2));
+  background-size: 100% calc(3 * var(--space-2));
+  background-repeat: no-repeat;
+}
+
+.modus-vorschau-flaeche {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--mode-preview-line);
+  border-radius: var(--radius-md);
+  background: var(--mode-preview-bg);
+}
+
+.modus-vorschau-titel,
+.modus-vorschau-zeile {
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+}
+
+.modus-vorschau-titel {
+  width: 55%;
+  height: var(--space-1-5);
+  background: var(--mode-preview-text);
+}
+
+.modus-vorschau-zeile {
+  width: 80%;
+  background: var(--mode-preview-line);
+}
+
+.modus-vorschau-zeile.is-kurz {
+  width: 60%;
+}
+
+.modus-vorschau-akzent {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--color-accent);
+}
+
+.modus-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.modus-name svg {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  color: var(--color-accent-text);
+}
+
+.settings-karte {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-subtle);
+}
+
+/* Text links, Schalter rechts daneben (nicht umbrechen) */
+.settings-row.settings-karte {
+  flex-wrap: nowrap;
+}
+
+.settings-karte .settings-text {
+  flex: 1;
+}
+
+.settings-karte h4 {
+  margin: 0 0 var(--space-0-5);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.settings-hinweis {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.settings-hinweis strong {
+  color: var(--color-text);
+}
+
+.akzent-wahl {
+  display: flex;
+  justify-content: space-around;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-subtle);
+}
+
+.akzent-punkt {
+  width: var(--size-control-xl);
+  height: var(--size-control-xl);
+  padding: 0;
+  border: var(--border-width-accent) solid transparent;
+  border-radius: var(--radius-full);
+  background: var(--accent-swatch) content-box;
+  cursor: pointer;
+}
+
+.akzent-punkt.is-active {
+  border-color: var(--color-text);
+}
+
+.akzent-punkt:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.akzent-punkt.is-orange {
+  --accent-swatch: var(--accent-swatch-orange);
+}
+
+.akzent-punkt.is-blau {
+  --accent-swatch: var(--accent-swatch-blau);
+}
+
+.akzent-punkt.is-gruen {
+  --accent-swatch: var(--accent-swatch-gruen);
+}
+
+.akzent-punkt.is-lila {
+  --accent-swatch: var(--accent-swatch-lila);
+}

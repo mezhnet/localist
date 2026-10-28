@@ -1,15 +1,15 @@
 // Dialoge über dem Arbeitsbereich: Schnellsuche (Strg+P), Volltextsuche, Vorlagen-Auswahl und Einstellungen.
 // Die drei Such-Dialoge sind Listen mit Eingabefeld, die sich mit Pfeiltasten, Enter und Escape bedienen lassen.
-import { FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Monitor, Moon, Search, Sun, TextSearch } from "lucide-react";
+import { FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Search, TextSearch } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import packageInfo from "../../package.json";
 import type { PageRef } from "../lib/links";
 import { quickSwitch, searchEntries, type IndexEntry } from "../lib/search";
-import { useTheme, type ThemePreference } from "../lib/theme";
 import { isHtmlPath } from "../lib/html";
 import { CODE_SEITEN, useCodeSeite, type CodeSeite } from "../lib/html-editor";
 import { isInside, parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
+import { DarstellungEinstellungen } from "./Darstellung";
 import { Button, Dialog, Input, Kbd, Segmented } from "./ui";
 
 interface ListDialogProps<T> {
@@ -288,27 +288,12 @@ export function MoveDialog({ node, tree, onPick, onClose }: { node: TreeNode; tr
   );
 }
 
-const THEME_OPTIONS = [
-  { value: "system" as const, label: "Wie System", icon: <Monitor /> },
-  { value: "light" as const, label: "Hell", icon: <Sun /> },
-  { value: "dark" as const, label: "Dunkel", icon: <Moon /> },
-];
-
 /** Einstellungen: Darstellung, Vault und Informationen zur App. */
 export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose }: { vaultName: string; vaultRoot: string; onSwitchVault: () => void; onClose: () => void }) {
-  const { preference, setPreference } = useTheme();
   const [codeSeite, setCodeSeite] = useCodeSeite();
   return (
     <Dialog label="Einstellungen" title="Einstellungen" onClose={onClose} size="md" className="settings-dialog">
-      <section className="settings-section">
-        <div className="settings-row">
-          <div className="settings-text">
-            <h3>Darstellung</h3>
-            <p>Hell, dunkel oder automatisch wie in Windows.</p>
-          </div>
-          <Segmented<ThemePreference> label="Darstellung" options={THEME_OPTIONS} value={preference} onChange={setPreference} />
-        </div>
-      </section>
+      <DarstellungEinstellungen />
       <section className="settings-section">
         <div className="settings-row">
           <div className="settings-text">

@@ -63,8 +63,10 @@ describe("Nachrichten der HTML-Seiten (postMessage)", () => {
   });
 
   it("schickt der Seite nur Farbschema, Scrollposition und die Erlaubnis für Stift-Symbole", () => {
-    expect(themeMessage("dark")).toEqual({ localist: 1, typ: "thema", wert: "dunkel" });
-    expect(Object.keys(themeMessage("light"))).toEqual(["localist", "typ", "wert"]);
+    expect(themeMessage("dark")).toEqual({ localist: 1, typ: "thema", wert: "dunkel", akzent: "orange" });
+    expect(themeMessage("black", "lila")).toEqual({ localist: 1, typ: "thema", wert: "schwarz", akzent: "lila" });
+    expect(themeMessage("light", "blau")).toEqual({ localist: 1, typ: "thema", wert: "hell", akzent: "blau" });
+    expect(Object.keys(themeMessage("light"))).toEqual(["localist", "typ", "wert", "akzent"]);
     expect(scrollMessage(310.4)).toEqual({ localist: 1, typ: "scrollen", y: 310 });
     expect(editMessage(true)).toEqual({ localist: 1, typ: "stifte", an: true });
     // Ohne die Browser-Funktion navigator.userActivation (jsdom) gilt der Nutzer als aktiv.

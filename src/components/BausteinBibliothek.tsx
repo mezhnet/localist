@@ -93,9 +93,9 @@ export function BausteinBibliothek({ eigene, onEigeneChanged, onError }: Props) 
   const [version, setVersion] = useState(1);
   const frame = useRef<HTMLIFrameElement>(null);
   const vorschau = useRef<HTMLDivElement>(null);
-  const { resolved } = useTheme();
-  const resolvedRef = useRef(resolved);
-  resolvedRef.current = resolved;
+  const { resolved, akzent } = useTheme();
+  const themaRef = useRef(themeMessage(resolved, akzent));
+  themaRef.current = themeMessage(resolved, akzent);
   const erstesMal = useRef(true);
 
   useEffect(() => {
@@ -111,7 +111,7 @@ export function BausteinBibliothek({ eigene, onEigeneChanged, onError }: Props) 
     const onMessage = (event: MessageEvent) => {
       if (!frame.current || event.source !== frame.current.contentWindow) return;
       const message = parseBridgeMessage(event.data);
-      if (message?.typ === "bereit") frame.current.contentWindow?.postMessage(themeMessage(resolvedRef.current), "*");
+      if (message?.typ === "bereit") frame.current.contentWindow?.postMessage(themaRef.current, "*");
       else if (message?.typ === "taste") window.dispatchEvent(new KeyboardEvent("keydown", { key: message.taste, ctrlKey: true, shiftKey: message.umschalt, bubbles: true }));
     };
     window.addEventListener("message", onMessage);
@@ -119,8 +119,8 @@ export function BausteinBibliothek({ eigene, onEigeneChanged, onError }: Props) 
   }, []);
 
   useEffect(() => {
-    frame.current?.contentWindow?.postMessage(themeMessage(resolved), "*");
-  }, [resolved]);
+    frame.current?.contentWindow?.postMessage(themeMessage(resolved, akzent), "*");
+  }, [resolved, akzent]);
 
   const zeigen = (id: string) => {
     setAuswahl(id);
