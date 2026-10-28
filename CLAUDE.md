@@ -15,7 +15,8 @@ Localist ist eine App für Windows (und Android) für Notizen, Projekte und inte
 ## Versionen
 
 - **Version 1.0 (Etappen 0–8): abgeschlossen.** Block-Editor für Markdown-Notizen, Eigenschaften, Datenbanken mit Tabelle, Kanban und Kalender, Suche, Strg+P, Vorlagen, Backlinks, Windows-Installer und Android-APK. Details, Nachweise und Entscheidungen stehen in `FORTSCHRITT.md`.
-- **Version 2.0 (Etappen 9–15): in Arbeit.** Neues Design, zweiter Seitentyp „HTML-Seite“ mit Code-Editor und Lesemodus, Baustein-Bibliothek, Notizbücher.
+- **Version 2.0 (Etappen 9–15): abgeschlossen.** Neues Design, zweiter Seitentyp „HTML-Seite“ mit Code-Editor und Lesemodus, Baustein-Bibliothek, Notizbücher.
+- **Version 2.1 (Etappen 16–20): in Arbeit.** Ordnername „Localist“, bessere Bedienung, neues Design nach der Vorlage in `docs/design/`, Handy-Design. Auftrag mit Design-Vorlage und Befunden: `docs/design/auftrag-version-2.1.md`.
 
 ## Kommunikation
 
@@ -212,9 +213,11 @@ seiten:
 
 ## Design-Grundsätze
 
+- **Die Design-Vorlage in `docs/design/` ist verbindlich** (Bilder für PC und Handy, Erklärung in `docs/design/auftrag-version-2.1.md`). Was sie nicht zeigt, wird im selben Stil gestaltet.
 - Ruhig und aufgeräumt: viel Weißraum, zurückhaltende Farben, eine Akzentfarbe, dezente Linien statt schwerer Kästen.
+- Die Akzentfarbe ist wählbar (Orange, Blau, Grün, Lila), Standard ist Orange.
 - Ein Design-System: Farben, Abstände, Schriftgrößen, Radien und Schatten sind CSS-Variablen in `src/styles/tokens.css`. Komponenten nutzen nur diese Variablen.
-- Hell- und Dunkelmodus sind gleichwertig.
+- Die Modi Hell, Dunkel und Schwarz sind gleichwertig.
 - `localist.css` wird beim Build aus `tokens.css` und `src/bausteine/*.css` erzeugt, damit HTML-Seiten und App wie aus einem Guss aussehen und die Datei trotzdem allein funktioniert.
 - Schrift lokal eingebunden (z. B. Inter über `@fontsource`).
 - Wiederverwendbare UI-Komponenten (Schaltfläche, Menü, Dialog, Eingabefeld, Reiter) liegen unter `src/components/ui/`.
@@ -228,7 +231,7 @@ seiten:
 4. **Nach jedem erledigten Kriterium** sofort `FORTSCHRITT.md` aktualisieren (Haken setzen, nächsten Schritt notieren) und einen Zwischen-Commit erstellen: `Etappe N: <was erledigt ist>`.
 5. **Zum Abschluss** jedes Kriterium einzeln im Chat nachweisen, auch die schon früher erledigten. Der `/goal`-Prüfer sieht nur den Chat, deshalb stehen Nachweise immer als Text dort: Befehlsausgaben, Namen der passenden Tests, Dateipfade, die Auflistung der Screenshot-Ordner, bei Android die `adb`-Befehle mit Ausgabe. Danach einen Abschluss-Commit erstellen: `Etappe N abgeschlossen: <kurze Beschreibung>`.
 6. **Jede Etappe besteht diese Prüfungen:** `npm test` ist grün, `cargo test --manifest-path src-tauri/Cargo.toml` ist grün, `npx tsc --noEmit` zeigt keine Fehler, `npm run tauri build` endet ohne Fehler.
-7. **Nichts kaputt machen.** Alle Funktionen der Version 1.0 bleiben erhalten. Das heißt: mindestens 128 Tests in `npm test` und 20 in `cargo test` laufen weiter grün (Stand 1.0), keiner wird gelöscht, und die feste Klickliste „Version 1.0“ in `FORTSCHRITT.md` (in Etappe 9 anlegen: Notiz bearbeiten, Callout, Link, Eigenschaft, Tabelle, Kanban, Kalender, Suche, Strg+P, Vorlage, Backlinks, Hell/Dunkel) ist in der Browser-Vorschau abgehakt. Bestehende Tests nur ändern, wenn sich das gewünschte Verhalten bewusst ändert, und die Begründung in `FORTSCHRITT.md` notieren.
+7. **Nichts kaputt machen.** Alle Funktionen der Versionen 1.0 und 2.0 bleiben erhalten. Das heißt: mindestens 297 Tests in `npm test` und 42 in `cargo test` laufen weiter grün (Stand 2.0), keiner wird gelöscht, und die festen Klicklisten „Version 1.0“ (Notiz bearbeiten, Callout, Link, Eigenschaft, Tabelle, Kanban, Kalender, Suche, Strg+P, Vorlage, Backlinks, Hell/Dunkel) und „Version 2.0“ (HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein, Notizbuch, Umwandeln, Export) in `FORTSCHRITT.md` sind in jeder Etappe in der Browser-Vorschau abgehakt. Bestehende Tests nur ändern, wenn sich das gewünschte Verhalten bewusst ändert, und die Begründung in `FORTSCHRITT.md` notieren.
 8. **Oberfläche ansehen.** Neue oder geänderte Oberflächen in der Browser-Vorschau prüfen (`npm run dev`, nutzt `src/lib/dev-backend.ts`). Für HTML-Seiten liefert eine Vite-Middleware `beispiel-vault/` mit denselben Regeln und Headern aus wie das Schema `localist-seite`. Screenshots unter `docs/screenshots/etappe-N/` ablegen, damit der Nutzer das Ergebnis sehen kann. Ist ein Screenshot technisch nicht möglich, das in `FORTSCHRITT.md` vermerken.
 9. **Nur im Projektordner arbeiten.** Zum Testen den Beispiel-Vault im Projekt verwenden (`beispiel-vault/`) und ihn um Beispiele für neue Funktionen ergänzen. Nie echte Nutzerdaten verändern.
 10. **Diese Datei nicht überschreiben.**
@@ -266,79 +269,86 @@ seiten:
 
 Etappe 0 Fundament · 1 Vault und Seiten · 2 Notion-Feeling · 3 Eigenschaften und Tabelle · 4 Kanban · 5 Kalender · 6 Komfort · 7 Version 1.0 für den PC · 8 Android-APK. Kriterien und Nachweise stehen in `FORTSCHRITT.md`.
 
-### Etappe 9 – Neues Design
+### Version 2.0 – abgeschlossen
 
-- [ ] Alle Farben, Abstände, Schriftgrößen, Radien und Schatten stehen als CSS-Variablen in `src/styles/tokens.css` (hell und dunkel). Ein Test prüft alle `.css`-Dateien unter `src/` außer `tokens.css` und stellt sicher, dass dort keine festen Farbwerte (`#…`, `rgb(…)`, `rgba(…)`, `hsl(…)`, `hsla(…)`) stehen.
-- [ ] Die Klickliste „Version 1.0“ (siehe Arbeitsregel 7) steht in `FORTSCHRITT.md`.
-- [ ] Wiederverwendbare UI-Komponenten unter `src/components/ui/` (Schaltfläche, Menü, Dialog, Eingabefeld, Reiter) ersetzen die bisherigen Einzellösungen in Sidebar, Dialogen, Eigenschaften-Leiste und Datenbank-Ansichten.
-- [ ] Die Schrift ist lokal eingebunden, die App lädt nichts aus dem Internet.
-- [ ] Überarbeitete Sidebar: oben ein Bereich „Favoriten“ (Seiten anheften und lösen, gespeichert in `.localist/settings.json`), darunter der Ordnerbaum. Ein „Neu“-Menü fasst Notiz, Ordner und Datenbank zusammen.
-- [ ] Startseite, wenn keine Seite offen ist: zuletzt bearbeitete Seiten, Favoriten, Schnellaktionen und ein Suchfeld.
-- [ ] Notizen, Datenbank-Ansichten (Tabelle, Kanban, Kalender), Dialoge und Einstellungen nutzen das neue Design, hell und dunkel, und sind ab 360 px Breite bedienbar.
-- [ ] Screenshots (hell und dunkel) von Startseite, Notiz, Tabelle, Kanban und Kalender liegen in `docs/screenshots/etappe-9/` und sind in `FORTSCHRITT.md` verlinkt.
-- [ ] Alle Funktionen der Version 1.0 funktionieren weiterhin (siehe Arbeitsregel 7).
+Etappe 9 Neues Design · 10 HTML-Seiten: Grundlage und sichere Anzeige · 11 HTML-Seiten: Code-Editor · 12 Baustein-Bibliothek: Grundbausteine · 13 Lernen, Diagramme und eigene Bausteine · 14 Notizbücher, Umwandeln und Export · 15 Version 2.0. Kriterien und Nachweise stehen in `FORTSCHRITT.md`.
 
-### Etappe 10 – HTML-Seiten: Grundlage und sichere Anzeige
+### Version 2.1 – in Arbeit
 
-- [ ] `.html`-Dateien erscheinen in Sidebar, Strg+P und Suche mit eigenem Symbol. Das „Neu“-Menü legt eine HTML-Seite nach dem Speicherformat an (mit `localist-id`). Vorlagen aus `Vorlagen/` funktionieren auch für HTML-Seiten (siehe Speicherformat).
-- [ ] Anlegen, Umbenennen und Löschen funktionieren für HTML-Seiten wie für Notizen. Ein neuer oder umbenannter Name darf pro Ordner über beide Typen nur einmal vorkommen. Beim Umbenennen wird `<title>` angepasst.
-- [ ] Neu für beide Typen und Ordner: **Verschieben** per Drag & Drop in der Sidebar und über „Verschieben nach…“. Dabei werden Links im Vault angepasst und bei HTML-Seiten die relativen Pfade (Bausteine, Bilder, Links) neu berechnet.
-- [ ] Das Schema `localist-seite` mit eigener CSP und Brücken-Skript ist umgesetzt (siehe „Sicherheit“). Bis Etappe 12 liefert es für `localist.js` und `localist.css` leere Platzhalter. Die Ansicht „Lesen“ zeigt die Seite darüber in der abgeschotteten Anzeige. Bilder aus dem Vault werden angezeigt, Icon und Cover aus den `<meta>`-Tags erscheinen im Seitenkopf wie bei Notizen. Die Tastenkürzel der App (z. B. Strg+P) wirken auch, wenn die Seite den Fokus hat.
-- [ ] Die App-weite CSP ist gesetzt, der Wert steht in `FORTSCHRITT.md`, und die gebaute `localist.exe` funktioniert damit (Notiz, Datenbank, HTML-Seite geöffnet).
-- [ ] Automatischer Sicherheitstest in der echten App: z. B. `localist.exe --sicherheitstest <vault>` öffnet eine Testseite in der abgeschotteten Anzeige, sammelt die Ergebnisse per `postMessage` und gibt sie als Tabelle auf der Konsole aus. Geprüft wird: `window.__TAURI__`, `window.__TAURI_INTERNALS__`, `parent.document`, `localStorage`, `fetch` ins Netzwerk, `fetch` an die Tauri-IPC (`http://ipc.localhost/…`), ein Bild von `https://…`, `location.href` nach außen und eine Datei außerhalb des Vaults (`../`, `%2e%2e`). Alles schlägt fehl. Die Konsolenausgabe steht im Chat und in `FORTSCHRITT.md`.
-- [ ] Links: Ein Klick auf einen Link zu einer Notiz oder HTML-Seite öffnet sie in der App, externe Links öffnen im Standardbrowser. Notizen können HTML-Seiten verlinken (`[[Name.html]]`, mit Vorschlägen beim Tippen). Backlinks und das Anpassen von Links beim Umbenennen und Verschieben gelten für beide Typen. Dafür werden `src/lib/links.ts`, `src-tauri/src/vault.rs`, der Suchindex und `src/lib/dev-backend.ts` auf beide Endungen erweitert.
-- [ ] Suche und Backlinks werten den sichtbaren Text von HTML-Seiten aus (ohne Tags, Skripte und Styles).
-- [ ] Wird eine HTML-Seite außerhalb der App geändert, lädt die Anzeige neu.
-- [ ] Die Browser-Vorschau zeigt HTML-Seiten über die Vite-Middleware (Arbeitsregel 8).
-- [ ] Tests für Anlegen, Umbenennen und Verschieben (Kopfbereich, relative Pfade), Pfadprüfung des Schemas, Textauszug für die Suche, Links in beide Richtungen und die Prüfung der `postMessage`-Nachrichten.
+Auftrag, Design-Vorlage und Befunde zu jeder Etappe: `docs/design/auftrag-version-2.1.md`. Zu Beginn jeder dieser Etappen erneut lesen.
 
-### Etappe 11 – HTML-Seiten: Code-Editor
+### Etappe 16 – Ordnername „Localist“
 
-- [ ] Drei Ansichten: „Lesen“, „Code“ und „Geteilt“ (Code links, Vorschau rechts, auf schmalen Bildschirmen untereinander). Umschalten per Schaltflächen und Strg+E. Die zuletzt gewählte Ansicht wird gemerkt, eine neue HTML-Seite öffnet in „Geteilt“.
-- [ ] Code-Editor mit CodeMirror 6: Syntaxhervorhebung (hell und dunkel), Zeilennummern, Einklappen, Suchen und Ersetzen, Autovervollständigung für HTML-Tags.
-- [ ] Vereinfachte Ansicht: Der Editor zeigt nur den Inhalt von `<main>`. Ein Schalter „Ganze Datei“ zeigt alles. Fehlt `<main>`, wird immer die ganze Datei angezeigt.
-- [ ] In „Geteilt“ aktualisiert sich die Vorschau kurz nach dem Tippen, ohne dass die Scrollposition springt.
-- [ ] Automatisches Speichern wie bei Notizen. Tests belegen: Unveränderte Teile der Datei bleiben Zeichen für Zeichen gleich, auch in einer Datei mit CRLF-Zeilenenden und BOM. Die App ändert nur, was der Nutzer bearbeitet hat.
-- [ ] Fehlerhaftes HTML (z. B. nicht geschlossene Tags) führt nie zu Datenverlust. Die Vorschau zeigt, was der Browser daraus macht.
+- [ ] `git grep -n -i "localprojekt"` ist geprüft, die Ausgabe steht im Chat. Jede Stelle, die den Ordner- oder Projektnamen meint, sagt jetzt „Localist“. Übrig sind nur die Übernahme-Kennungen und historische Einträge in `FORTSCHRITT.md`, jeweils begründet.
+- [ ] Keine versionierte Datei und keine Datei unter `src-tauri/gen/android/` (außer Build-Ausgaben) enthält einen absoluten Pfad mit `LocalProjekt`.
+- [ ] Die Vorbereitung ist committet. Danach hältst du an und erklärst mir Schritt für Schritt, was ich tun muss: alles schließen, was den Ordner benutzt (Claude Code, VS Code, Terminals, `npm run dev`, Localist, Android-Emulator), den Ordner im Explorer umbenennen, den Ordner in der Claude-App neu verbinden und Claude Code im neuen Ordner starten. Notiere das unter „Offene Probleme“.
+- [ ] Nach dem Umbenennen läuft alles im neuen Ordner: `npm test`, `cargo test`, `npx tsc --noEmit`, `npm run tauri build` (Rust baut einmal komplett neu, weil sich die Pfade geändert haben), die Android-APK baut wie in Etappe 15, und `npm run dev` startet. Die alten Build-Reste `localprojekt*` sind entfernt (`cargo clean` ist erlaubt).
 
-### Etappe 12 – Baustein-Bibliothek: Grundbausteine
+### Etappe 17 – Bedienung verbessern
 
-- [ ] `localist.css` und `localist.js` entstehen beim Build aus dem Quellcode der App (`src/bausteine/` und `tokens.css`). Beim Öffnen eines Vaults werden sie nach `.localist/bausteine/` geschrieben, wenn sie fehlen oder Version bzw. Inhalt abweichen (Versionsnummer in der Datei). Das Schema `localist-seite` liefert dieselbe gebündelte Fassung aus.
-- [ ] Grundbausteine mit dem Markup aus der Tabelle im Speicherformat: Callout, Toggle, Tabelle, Checkliste, Spalten, Bild, Trennlinie, Code-Block und Seitenlink.
-- [ ] Werkzeugleiste über dem Code-Editor und „/“-Menü im Code-Editor: Ein Klick fügt den Baustein sauber eingerückt an der Cursorposition ein. Die Autovervollständigung kennt alle Bausteine.
-- [ ] Bearbeiten ohne Code: In „Lesen“ und „Geteilt“ zeigt jeder Baustein beim Überfahren ein Stift-Symbol. Es öffnet ein Formular, bei Tabellen einen Tabellen-Editor zum Hinzufügen und Entfernen von Zeilen und Spalten. Speichern ändert nur diesen Baustein im Code.
-- [ ] Häkchen in Checklisten lassen sich in „Lesen“ setzen und werden in der Datei gespeichert.
-- [ ] Die Beispielseite `beispiel-vault/Lernen/Bausteine.html` zeigt alle Bausteine. Per Doppelklick in Edge oder Chrome geöffnet sieht der Inhalt aus wie in „Lesen“ und ist interaktiv (Screenshots beider Fälle in `docs/screenshots/etappe-12/`).
-- [ ] Tests: Einfügen erzeugt den erwarteten Code, Formulare ändern nur den betroffenen Baustein, der Text jedes Bausteins steht ohne Skript lesbar in der Datei.
+#### Tab und Shift+Tab
 
-### Etappe 13 – Lernen, Diagramme und eigene Bausteine
+- [ ] Zuerst nachgestellt (Browser-Vorschau, echte Tastatur): Was passiert heute bei Tab und Shift+Tab in Absatz, Überschrift, Liste, Checkliste, nummerierter Liste, Callout und Toggle, mit und ohne Markierung, im ersten Block und im Code-Editor? Das Ergebnis steht als Tabelle in `FORTSCHRITT.md`.
+- [ ] Notizen: Tab rückt den aktuellen bzw. alle markierten Blöcke ein, Shift+Tab rückt aus, auch bei offener Formatierungsleiste. Der Fokus verlässt den Editor nie (auch nicht im ersten Block oder ganz links). Cursor und Markierung bleiben an derselben Textstelle, die Seite scrollt nicht.
+- [ ] Notizen: Eingerückt wird nur, was Markdown auch speichern kann (Listenpunkte, Checklisten, nummerierte Listen und Absätze unter einem Listenpunkt). In allen anderen Fällen bleibt der Block ruhig stehen, ohne Sprung und ohne Fokusverlust. Alles Eingerückte ist nach Speichern und Neuladen genauso eingerückt. Dafür gibt es Roundtrip-Tests.
+- [ ] Notizen: Ein- und Ausrücken hat einen kurzen, ruhigen Übergang (höchstens 150 ms, Werte aus `tokens.css`, aus bei `prefers-reduced-motion`). Einzug und Führungslinie kommen aus `tokens.css`.
+- [ ] HTML-Seiten: Tab rückt die Zeile bzw. alle markierten Zeilen um eine Stufe ein (dieselbe Einrückung wie bei eingefügten Bausteinen), Shift+Tab rückt aus, auch wenn der Cursor mitten in der Zeile steht. Escape und danach Tab verlässt den Editor, wie es CodeMirror für die Tastaturbedienung vorsieht.
+- [ ] Tests für beide Editoren.
 
-- [ ] Karteikarte: umdrehen per Klick, Fingertipp oder Leertaste.
-- [ ] Kartenstapel: Lernmodus mit einer Karte nach der anderen und den Knöpfen „Gewusst“ und „Nochmal“. Nicht gewusste Karten kommen erneut dran, am Ende gibt es eine Auswertung.
-- [ ] Quiz: Multiple-Choice-Fragen mit sofortiger Rückmeldung und Punktzahl.
-- [ ] Diagramm: liest die Daten aus der enthaltenen `<table>`, wird als SVG gezeichnet, passt sich an hell und dunkel an und braucht keine Online-Bibliothek. Das Formular enthält einen Daten-Editor.
-- [ ] Alle vier nutzen das Markup aus der Tabelle im Speicherformat und haben Formulare zum Bearbeiten ohne Code.
-- [ ] Eigene Bausteine („Code-Speicher“): Markierten Code als eigenen Baustein speichern (Name und Beschreibung), siehe Speicherformat. Eigene Bausteine erscheinen in Werkzeugleiste und „/“-Menü. Ein Bereich „Bausteine“ in der Sidebar zeigt die ganze Bibliothek (eingebaute und eigene) mit Vorschau. Eigene Bausteine lassen sich bearbeiten, umbenennen und löschen.
-- [ ] Hilfe-Ansicht in der App: alle eingebauten Bausteine mit kurzer Erklärung und Beispielcode zum Kopieren.
-- [ ] Die Beispielseite `Bausteine.html` enthält auch die neuen Bausteine.
-- [ ] Tests für die Lernlogik (Reihenfolge, Wiederholung, Auswertung), die Diagramm-Daten aus Tabellen und das Speichern und Laden eigener Bausteine.
+#### „Im Explorer öffnen“
 
-### Etappe 14 – Notizbücher, Umwandeln und Export
+- [ ] Rechtsklick auf eine Seite (Notiz oder HTML-Seite) → „Im Explorer öffnen“: Der Windows-Explorer zeigt den Ordner und markiert die Datei. Auf einem Ordner öffnet derselbe Eintrag den Ordner selbst. Im Menü „Vault“ gibt es „Vault im Explorer öffnen“.
+- [ ] Umgesetzt über einen neuen Rust-Befehl, der den Pfad wie `vault::resolve` prüft (nur Pfade im geöffneten Vault) und dann den Explorer öffnet. Die Capabilities werden dafür nicht erweitert. `cargo test` prüft die Pfadprüfung.
+- [ ] Auf Android ist der Eintrag ausgeblendet. In der Browser-Vorschau zeigt `src/lib/dev-backend.ts` stattdessen eine Meldung. Ein Vitest-Test prüft den Menüeintrag.
+- [ ] In der gebauten `localist.exe` geprüft: Ein Explorer-Fenster mit markierter Datei öffnet sich (Nachweis z. B. über den Fenstertitel aus einem Skript).
 
-- [ ] Ein Ordner lässt sich in ein Notizbuch umwandeln (legt `_notizbuch.yaml` an). Ein Ordner, der schon Datenbank ist, kann kein Notizbuch werden und umgekehrt.
-- [ ] Die Notizbuch-Ansicht wirkt wie eine kleine Website: Inhaltsverzeichnis links, Seite rechts, „Zurück“ und „Weiter“ unten. Notizen erscheinen dort fertig dargestellt, wie HTML-Seiten in der abgeschotteten Anzeige. „Bearbeiten“ öffnet die Seite im passenden Editor.
-- [ ] Die Reihenfolge lässt sich im Inhaltsverzeichnis per Drag & Drop ändern und wird in `_notizbuch.yaml` gespeichert. Neue Seiten erscheinen automatisch am Ende.
-- [ ] „In HTML-Seite umwandeln“ (nach Rückfrage): wandelt eine Notiz um, auf Basis des mdast aus `src/markdown/` (nicht über das verlustbehaftete HTML von BlockNote). Überschriften, Absätze, Formatierungen, Listen, Checklisten, Zitate, Code, Bilder, Tabellen, Callouts (→ `<l-callout>`), Toggles (→ `<details>`) und `[[Links]]` (→ `<a>`) werden übernommen. `id`, Icon und Cover werden übernommen, alle weiteren Frontmatter-Felder werden zu `<meta name="localist-prop-<name>">`. Die `.md` kommt in den Papierkorb, Links im Vault werden auf die neue Datei angepasst. Eine Notiz in einem Datenbank-Ordner lässt sich nur nach Hinweis umwandeln, dass sie dann aus Tabelle, Kanban und Kalender verschwindet.
-- [ ] „Als eigenständige HTML-Datei exportieren“: Speichern-Dialog. Die exportierte Datei enthält CSS, Skript und Bilder eingebettet und funktioniert ohne Vault.
-- [ ] Tests für `_notizbuch.yaml`, die Umwandlung (je Element) und den Export.
+#### HTML-Seiten: Code links oder rechts, verschiebbare Trennlinie
 
-### Etappe 15 – Version 2.0
+- [ ] Einstellung „Code-Editor links / rechts“ in den Einstellungen und als kleiner Knopf „Seiten tauschen“ in der Ansicht „Geteilt“. Sie wirkt sofort und wird gemerkt. Auf schmalen Bildschirmen (untereinander) bedeutet links „oben“ und rechts „unten“.
+- [ ] In „Geteilt“ lässt sich die Trennlinie mit Maus und Finger verschieben. Jede Seite bleibt mindestens etwa 280 px breit, ein Doppelklick setzt auf 50 : 50 zurück. Mit der Tastatur bedienbar (Fokus, Pfeiltasten, `role="separator"` mit `aria-valuenow`). Das Verhältnis wird gemerkt.
+- [ ] Beim Ziehen ruckelt nichts, es wird kein Text markiert, und die Vorschau behält ihre Scrollposition.
+- [ ] Tests für Einstellung, Begrenzung und Speicherung des Verhältnisses und die Tastatur, dazu ein Prüfskript mit echter Maus wie `scripts/vorschau-scroll-pruefung.mjs`.
 
-- [ ] Version 2.0.0 in `package.json`, `tauri.conf.json` und `Cargo.toml`. Die Windows-Installer werden gebaut, die Pfade sind genannt.
-- [ ] Android: Die APK wird gebaut. Im Emulator geprüft und mit `adb`-Befehlen samt Ausgabe belegt (Installation, Screenshots per `adb exec-out screencap`): HTML-Seiten und Notizbücher lassen sich lesen, Karteikarten und Quiz per Fingertipp bedienen, die Code-Ansicht ist nutzbar (Werkzeugleiste scrollbar).
-- [ ] Die Klickliste „Version 1.0“ und eine Klickliste „Version 2.0“ (HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein, Notizbuch, Umwandeln, Export) sind in `FORTSCHRITT.md` abgehakt.
-- [ ] Keine Fehler bei `npx tsc --noEmit`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
-- [ ] `README.md` und `ANLEITUNG.md` sind aktualisiert, mit einem Abschnitt „Neu in Version 2.0“ und einer kurzen Einführung in HTML-Seiten und Bausteine für Einsteiger.
+#### Seite „Bausteine“ breiter
+
+- [ ] Auf dem PC nutzt die Seite „Bausteine“ (Bibliothek und Hilfe) die verfügbare Breite: Liste links, die Vorschau füllt den Rest und die Fensterhöhe. Eine Höchstbreite greift erst bei sehr breiten Fenstern. Die Hilfe stellt Erklärung und Beispielcode nebeneinander, wenn Platz ist.
+- [ ] Screenshots bei 1280 × 800, 1920 × 1080 und 360 × 740.
+- [ ] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
+
+### Etappe 18 – Neues Design, Teil 1: Grundlagen, Fenster und Seitenleiste
+
+- [ ] `tokens.css` nach der Vorlage, mit allen Farben für Hell, Dunkel und Schwarz und den vier Akzentfarben (je mit abgeleiteten Tönen für Flächen, Chips, Callouts und Text auf Akzent). Text und Bedienelemente erreichen in allen Kombinationen mindestens WCAG AA; ein Test rechnet die Kontraste nach. Der Farbtest aus Etappe 9 bleibt grün.
+- [ ] Schriften nach der Vorlage (siehe „Schrift“), lokal eingebunden, mit Lizenztexten. Sie ersetzen Inter in der App und in `localist.css`. In `localist.css` nur die Zeichensätze und Schnitte, die die Seiten brauchen; die Dateigröße steht in `FORTSCHRITT.md`.
+- [ ] Modi Hell, Dunkel und Schwarz plus „Wie System“: Ist das System hell, gilt Hell; ist es dunkel, gilt der zuletzt gewählte dunkle Modus (Dunkel oder Schwarz). Umschalter unten in der Seitenleiste (drei Knöpfe; ein Klick schaltet „Wie System“ aus) und Einstellungen → „Darstellung“ wie in `05-handy-darstellung-dunkel.png` (Vorschaukarten, Schalter „Wie System“, Erklärung zu Schwarz, Akzentfarbe). Alte gespeicherte Werte werden übernommen. Der Wechsel wirkt sofort und ohne Flackern, auch beim Start.
+- [ ] HTML-Seiten, Notizbuch und Vorschauen folgen Modus und Akzentfarbe sofort. Die Brücke ist um Schwarz und Akzent erweitert, die Prüfung der `postMessage`-Nachrichten und ihre Tests sind angepasst. Ohne App (Doppelklick im Browser) gilt `prefers-color-scheme` mit Orange.
+- [ ] Fensterrahmen wie in der Vorlage: keine Windows-Titelleiste (`decorations: false`), eigene Knöpfe für Minimieren, Maximieren/Wiederherstellen und Schließen oben rechts. Ziehen an freien Stellen der oberen Leiste verschiebt das Fenster, Doppelklick maximiert, die Fenstergröße lässt sich am Rand ändern, Andocken mit Win+Pfeiltasten geht. In `capabilities/default.json` kommen nur die dafür nötigen Rechte dazu. Geprüft in der gebauten `localist.exe`. Lässt sich etwas davon nicht zuverlässig umsetzen, bleibt die Windows-Titelleiste; dann notierst du die Abwägung unter „Entscheidungen“ und sagst es mir.
+- [ ] Der Inhalt ist eine abgesetzte Fläche (Radius, feine Linie, schmaler Rand ringsum) wie in der Vorlage.
+- [ ] Seitenleiste neu nach der Vorlage (Aufbau siehe „Was die Vorlage festlegt“). „Neue Seite“ öffnet das bisherige „Neu“-Menü. Alles aus Version 2.0 bleibt erhalten: Drag & Drop, Umbenennen, Kontextmenü, Markierung gleichnamiger Seiten, Emoji-Icons, Symbole für Datenbank und Notizbuch.
+- [ ] Seitenleiste links oder rechts: Einstellung unter „Darstellung“, wirkt sofort, wird gemerkt. Rechts ist alles gespiegelt (Rahmenlinie, Einklapp-Knopf, Menüs bleiben im Fenster). Die Fensterknöpfe bleiben immer oben rechts.
+- [ ] Seitenleiste ein- und ausklappbar: ein Knopf mit Seitenleisten-Symbol in der oberen Leiste und ein Tastenkürzel, das auf deutscher Tastatur ohne AltGr geht und kein Kürzel von BlockNote oder CodeMirror überschreibt (im Tooltip angezeigt). Eingeklappt nutzt der Inhalt die volle Breite. Kurzer Übergang (aus bei `prefers-reduced-motion`), der Zustand wird gemerkt.
+- [ ] Screenshots in Hell, Dunkel und Schwarz (Seitenleiste links, rechts und eingeklappt; Einstellungen → Darstellung) in `docs/screenshots/etappe-18/`.
+
+### Etappe 19 – Neues Design, Teil 2: Reiter und Inhalte
+
+- [ ] Reiter wie in der Vorlage. Ein Klick in der Seitenleiste, auf der Startseite, in Strg+P oder auf einen Link öffnet die Seite im aktuellen Reiter. Strg+Klick oder Mittelklick öffnet einen neuen Reiter. Strg+T öffnet einen neuen Reiter mit der Startseite, Strg+W schließt, Strg+Tab und Strg+Umschalt+Tab wechseln, Mittelklick auf einen Reiter schließt ihn. Reiter folgen Umbenennen, Verschieben, Umwandeln und Löschen. Jeder Reiter merkt sich seine Scrollposition. Vor jedem Wechsel ist gespeichert, es geht nichts verloren. Die offenen Reiter werden pro Vault im App-Speicher gemerkt. Auf dem Handy gibt es keine Reiterleiste.
+- [ ] Startseite nach `01-desktop-startseite-hell.png`: Datum, Begrüßung nach Tageszeit, „Schnell notieren …“ (Enter legt eine Notiz in der Vault-Wurzel an: erste Zeile = Titel, Rest = Inhalt, Name eindeutig und ohne ungültige Zeichen; Umschalt+Enter macht eine neue Zeile; ein leeres Feld macht nichts), Knöpfe für Datenbank, Vorlage und „+ Notiz“, „Zuletzt bearbeitet“ als Tabelle mit relativer Zeit, „Alle Seiten“ (alle Seiten nach Änderungszeit) und Favoriten als Chips.
+- [ ] Seitenkopf: Pfad, Speicherstatus („Speichert …“, „gerade eben gespeichert“, „vor 3 Min. gespeichert“, Fehler deutlich sichtbar), Stern für Favorit und „…“ mit denselben Aktionen wie das Kontextmenü, inklusive „Im Explorer öffnen“.
+- [ ] Notiz nach `02-desktop-notiz-schwarz.png`: Titel, Eigenschaften (Chips für Mehrfachwerte, Datumswerte in Monospace, „+ Eigenschaft hinzufügen“), Callout, Toggle, Zitat, Code, Checkliste und Tabelle im Stil der Vorlage. „+“ und Ziehgriff neben dem Block; „/“ und „+“ öffnen das Menü „Baustein wählen …“ mit Filterfeld und Symbol-Kästchen.
+- [ ] Tabellen in Notizen: Markdown-Tabellen erscheinen im Editor als Tabelle und lassen sich bearbeiten (Zellen, Zeilen und Spalten hinzufügen und entfernen); „Tabelle“ steht im Menü. Gespeichert wird weiterhin eine normale Markdown-Tabelle, die Obsidian anzeigt. Was der Editor nicht verlustfrei abbilden kann, bleibt wie bisher unveränderter Markdown-Text. Roundtrip-Tests für Ausrichtung, Formatierung in Zellen, `\|` in Zellen, leere Zellen, Tabelle direkt nach Text und Umlaute.
+- [ ] Im neuen Stil, in allen drei Modi: HTML-Seiten (Lesen, Code, Geteilt, Werkzeugleiste, Formulare, Stift-Symbol), Datenbank-Ansichten (Tabelle, Kanban, Kalender), Notizbuch, Seite „Bausteine“, Strg+P, Volltextsuche, Vorlagen-Auswahl, Dialoge, Menüs, Meldungen und Einstellungen.
+- [ ] Die Bausteine in `localist.css` sehen aus wie die Elemente der Notiz in der Vorlage (Callout, Tabelle, Checkliste usw.), damit Notizen und HTML-Seiten gleich wirken. Per Doppelklick im Browser bleibt alles lesbar und interaktiv (wie in Etappe 12 geprüft).
+- [ ] Vergleich mit der Vorlage: Screenshots von Startseite und Notiz mit den Inhalten der Vorlage (eigener Vault für das Screenshot-Skript, gleiche Fenstergröße) liegen in `docs/screenshots/etappe-19/`. Anordnung, Abstände, Größen und Farben stimmen mit `01-…` und `02-…` überein, Abweichungen sind in `FORTSCHRITT.md` begründet. Dazu Screenshots aller übrigen Ansichten in Hell, Dunkel und Schwarz.
+
+### Etappe 20 – Handy und Version 2.1
+
+- [ ] Untere Navigationsleiste nach `03-handy-startseite-hell.png`: Start, Suchen, „+“ (Neu-Menü), Seiten (Ordnerbaum mit Favoriten) und Einstellungen. Sie berücksichtigt `safe-area-inset-bottom` und ersetzt den Menü-Knopf oben. Die Handy-Startseite sieht aus wie in der Vorlage.
+- [ ] Handy-Notiz nach `04-handy-notiz-schwarz.png`: Kopf mit Zurück-Pfeil und Ordnername, Stern und „…“; Eigenschaften als Chips in einer Zeile. Beim Schreiben steht über der Tastatur eine Leiste mit „+“ (Baustein wählen), Checkliste, Callout, Toggle, Bild und „Fertig“ (schließt die Tastatur). Die Leiste verdeckt nie den Cursor.
+- [ ] Handy-Einstellungen → Darstellung nach `05-handy-darstellung-dunkel.png`.
+- [ ] Ab 360 px Breite ist alles bedienbar, Tippflächen sind mindestens 44 px groß.
+- [ ] Version 2.1.0 in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml`. Windows-Installer und APK sind gebaut, die Pfade stehen im Chat.
+- [ ] Android im Emulator mit `adb`-Befehlen samt Ausgabe und Screenshots geprüft: Startseite, Navigationsleiste, Notiz bearbeiten mit Leiste und „Fertig“, Darstellung (alle drei Modi und eine andere Akzentfarbe), Seite „Bausteine“, HTML-Seite in „Lesen“ und „Code“.
+- [ ] Neue Klickliste „Version 2.1“ in `FORTSCHRITT.md` (Tab/Shift+Tab in Liste und Code, „Im Explorer öffnen“ in der Vorschau-Simulation, Seitenleiste rechts und eingeklappt, Code rechts und Trennlinie ziehen, Reiter öffnen/wechseln/schließen, Schnell notieren, Modus Schwarz mit Akzent Blau, Tabelle in einer Notiz bearbeiten) ist abgehakt, ebenso „Version 1.0“ und „Version 2.0“, möglichst automatisch mit `scripts/klickliste.mjs` (neues Argument `2.1`).
+- [ ] `README.md` und `ANLEITUNG.md` haben einen Abschnitt „Neu in Version 2.1“ für Einsteiger, die Pfade zeigen auf `Localist`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
 
 ## Zukunft (noch nicht umsetzen)
 
