@@ -274,6 +274,51 @@ try {
   report.push(`Callouts in ${datei}: vorher ${calloutsVorher}, nach dem Fingertipp ${calloutsNachher} (automatisch gespeichert)`);
   screenshot("09-code-eingefuegt");
 
+  // 7. Seite „Bausteine“ (Etappe 17): Bibliothek und Hilfe lesbar, nichts ragt über den Rand, Liste und Vorschau
+  // per Finger bedienbar. Inhalt in einem eigenen, quer scrollbaren Kasten (z. B. Code in <pre>) zählt nicht als Überstand.
+  const UEBERSTAND = `(() => { const raus = [...document.querySelectorAll('.bibliothek-seite *')].filter((e) => { const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.right > innerWidth + 1)) return false; for (let p = e.parentElement; p && !p.classList.contains('bibliothek-seite'); p = p.parentElement) if (getComputedStyle(p).overflowX !== 'visible') return false; return true; }); const main = document.querySelector('.main'); return { raus: raus.length, quer: document.documentElement.scrollWidth > innerWidth + 1 || main.scrollWidth > main.clientWidth + 1 }; })()`;
+  const KOPIEREN = `(() => { let ueber = 0; let quer = 0; for (const box of document.querySelectorAll('.hilfe-code')) { const k = box.querySelector('.ui-button').getBoundingClientRect(); const pre = box.querySelector('pre'); if (pre.scrollWidth > pre.clientWidth + 1) quer++; const r = document.createRange(); r.selectNodeContents(pre.querySelector('code')); if ([...r.getClientRects()].some((z) => z.width > 0 && z.right > k.left && z.left < k.right && z.bottom > k.top && z.top < k.bottom)) ueber++; } return { ueber, quer }; })()`;
+  const mitteVon = (ausdruck) => evaluate(`(() => { const el = ${ausdruck}; el.scrollIntoView({ block: "center" }); const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+  await klickText(".sidebar-item", "Bausteine");
+  await waitFor(`document.querySelector('.bibliothek-vorschau iframe.html-frame') && !document.querySelector('.html-preview')`, "Seite Bausteine");
+  await sleep(2000);
+  const bib = await evaluate(`(() => { const v = document.querySelector('.bibliothek-vorschau').getBoundingClientRect(); const l = document.querySelector('.bibliothek-liste').getBoundingClientRect(); return { breite: innerWidth, liste: Math.round(l.width), vorschau: Math.round(v.width) + " × " + Math.round(v.height), ...${UEBERSTAND} }; })()`);
+  report.push(`Seite „Bausteine“, Bibliothek: WebView ${bib.breite} px breit, Liste ${bib.liste} px, Vorschau ${bib.vorschau} px, quer scrollbar: ${bib.quer ? "JA" : "nein"}, Elemente über den Rand: ${bib.raus}`);
+  screenshot("10-bibliothek");
+  const eintrag = await mitteVon(`[...document.querySelectorAll('.bibliothek-eintrag')].find((b) => b.textContent.includes("Quiz"))`);
+  await sleep(400);
+  await tippen(aufGeraet(eintrag.x, eintrag.y), "Eintrag „Quiz“ in der Liste");
+  await sleep(1500);
+  const nachTipp = await evaluate(`(() => { const r = document.querySelector('.bibliothek-vorschau').getBoundingClientRect(); return { oben: Math.round(r.top), unten: Math.round(r.bottom), hoehe: innerHeight, aktiv: document.querySelector('.bibliothek-eintrag.active .bibliothek-name')?.textContent }; })()`);
+  const quizOben = await inSeite(`Math.round(document.getElementById("baustein-quiz").getBoundingClientRect().top)`);
+  report.push(`Nach dem Fingertipp: aktiv „${nachTipp.aktiv}“, Vorschau im Bild bei y = ${nachTipp.oben} bis ${nachTipp.unten} von ${nachTipp.hoehe} (ganz sichtbar: ${nachTipp.oben >= 0 && nachTipp.unten <= nachTipp.hoehe ? "ja" : "NEIN"}), „Quiz“ steht in der Vorschau bei y = ${quizOben}`);
+  screenshot("11-bibliothek-vorschau");
+  const vorschauBox = await evaluate(`(() => { const r = document.querySelector('.bibliothek-vorschau').getBoundingClientRect(); return { x: r.x + r.width / 2, oben: r.top + r.height * 0.75, unten: r.top + r.height * 0.25 }; })()`);
+  const scrollVorher = await inSeite("Math.round(scrollY)");
+  const wischVon = aufGeraet(vorschauBox.x, vorschauBox.oben);
+  const wischBis = aufGeraet(vorschauBox.x, vorschauBox.unten);
+  shell(`input swipe ${wischVon.x} ${wischVon.y} ${wischBis.x} ${wischBis.y} 400`, { log: false });
+  report.push(`> adb shell input swipe ${wischVon.x} ${wischVon.y} ${wischBis.x} ${wischBis.y} 400   (in der Vorschau nach oben wischen)`);
+  await sleep(1000);
+  report.push(`Vorschau nach dem Wischen: scrollY ${scrollVorher} → ${await inSeite("Math.round(scrollY)")}`);
+
+  const hilfeTab = await mitteVon(`[...document.querySelectorAll('[role="tab"]')].find((t) => t.textContent.trim() === "Hilfe")`);
+  await sleep(400);
+  await tippen(aufGeraet(hilfeTab.x, hilfeTab.y), "Reiter „Hilfe“");
+  await waitFor(`document.querySelector('.hilfe-eintrag')`, "Hilfe");
+  await sleep(800);
+  const hilfe = await evaluate(`(() => { const e = document.querySelector('.hilfe-eintrag'); const t = e.querySelector('.hilfe-text').getBoundingClientRect(); const c = e.querySelector('.hilfe-code').getBoundingClientRect(); return { untereinander: c.top >= t.bottom - 1, preRaus: [...document.querySelectorAll('.hilfe-code pre')].filter((p) => p.getBoundingClientRect().right > innerWidth + 1).length, ...${UEBERSTAND} }; })()`);
+  const kopierenPruefung = await evaluate(KOPIEREN);
+  report.push(`Hilfe: Erklärung und Code ${hilfe.untereinander ? "untereinander" : "nebeneinander"}, Code-Kästen über den Rand: ${hilfe.preRaus}, „Kopieren“ über Code-Text: ${kopierenPruefung.ueber}, Code-Kästen mit Querscrollen: ${kopierenPruefung.quer}, quer scrollbar: ${hilfe.quer ? "JA" : "nein"}, Elemente über den Rand: ${hilfe.raus}`);
+  screenshot("12-hilfe");
+  const kopieren = await mitteVon(`document.querySelector('[aria-label="Beispielcode „Callout“ kopieren"]')`);
+  await sleep(400);
+  await tippen(aufGeraet(kopieren.x, kopieren.y), "„Kopieren“ beim Callout");
+  await sleep(800);
+  const kopiert = await evaluate(`({ knopf: document.querySelector('[aria-label="Beispielcode „Callout“ kopieren"]').textContent.trim(), fehler: document.querySelector('.notice[role="alert"]')?.textContent ?? null })`);
+  report.push(`Nach dem Fingertipp auf „Kopieren“: Knopf zeigt „${kopiert.knopf}“${kopiert.fehler ? `, Fehlermeldung: ${kopiert.fehler}` : ", keine Fehlermeldung"}`);
+  screenshot("13-hilfe-kopiert");
+
   report.push(problems.length === 0 ? "Konsole: keine Fehler." : `Konsole: ${problems.length} Meldungen:\n  ${problems.join("\n  ")}`);
 } catch (error) {
   report.push(`FEHLER: ${error.message}`);

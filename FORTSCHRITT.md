@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 17 – Bedienung verbessern (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
-- Zuletzt aktualisiert: 2026-10-28 21:22
-- Nächster Schritt: Offen sind nur noch Prüfungen mit gebauten Programmen: `npm run tauri build`, dann `node scripts/app-pruefung.mjs <localist.exe> <Vault-Kopie> docs/screenshots/etappe-17/app` („Im Explorer öffnen“, Kriterien 1 und 4) und die Android-APK im Emulator (Seite „Bausteine“, `scripts/android-pruefung.mjs`). Danach Arbeitsregel 6, Klicklisten 1.0 und 2.0, Abschluss-Commit.
+- Zuletzt aktualisiert: 2026-10-28 21:42
+- Nächster Schritt: Alle Kriterien von Etappe 17 sind abgehakt. Zum Abschluss: Arbeitsregel 6 (`npm test`, `cargo test`, `npx tsc --noEmit`, `npm run tauri build` mit dem letzten Stand), Klicklisten 1.0 und 2.0, Tab-Messung noch einmal, Abschluss-Commit. Danach Etappe 18.
 
 ## Fertig-Kriterien der aktuellen Etappe
 **Tab und Shift+Tab**
@@ -83,7 +83,43 @@
     360 × 740 dunkel, Bibliothek: Arbeitsbereich 360 px, Seite 360 px, Liste 336 px, Vorschau 336 × 426 px, Abstand rechts 12 px, unten -660 px, Arbeitsbereich scrollt: ja, quer scrollbar: nein, über den Rand: 0: docs\screenshots\etappe-17\handy-bibliothek-dunkel.png
     360 × 740 dunkel, Hilfe: Seite 360 px, Erklärung und Code untereinander (336 px breit), Code-Kästen über den Rand: 0, Elemente über den Rand: 0: docs\screenshots\etappe-17\handy-hilfe-dunkel.png
     ```
-- [ ] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
+- [x] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
+  - APK: `npx tauri android build --debug --apk --target aarch64 --target x86_64` (EXIT=0) → `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk`. Eigener Emulator „Medium_Phone_API_37.0“ (Android 17, 1080 × 2400) als `emulator-5556`, angesprochen mit `ANDROID_SERIAL=emulator-5556` (der zweite laufende Emulator „Kartei_Test“ gehört nicht zu Localist und blieb unberührt). `scripts/android-pruefung.mjs` hat den neuen Schritt 7 „Seite Bausteine“ (Bibliothek, Fingertipp auf einen Eintrag, Wischen in der Vorschau, Reiter „Hilfe“, „Kopieren“).
+  - Gefundener und behobener Fehler: In der Hilfe lag „Kopieren“ (oben rechts im Code-Kasten) auf dem Handy über einzeiligem Code, lange Zeilen scrollten quer. Jetzt brechen die Code-Beispiele um (`white-space: pre-wrap`), und unter 768 px steht „Kopieren“ über dem Code (`src/styles/page.css`). Beide Prüfskripte zählen seitdem „„Kopieren“ über Code-Text“ und „Code-Kästen mit Querscrollen“ (überall 0). APK danach neu gebaut, Lauf wiederholt (Ausgabe unten), Screenshots in `docs/screenshots/etappe-17/android/` (`10-bibliothek.png` bis `13-hilfe-kopiert.png`).
+  - Beobachtet, nicht Teil dieser Etappe: Die Gesten-Leiste von Android liegt unten über der WebView (die WebView reicht bis zum unteren Rand). Das gehört zu `safe-area-inset-bottom` in Etappe 20 (Navigationsleiste).
+  - Ausgabe (2026-10-28 21:41):
+    ```
+    > adb devices
+          List of devices attached
+          emulator-5554	device
+          emulator-5556	device
+    > adb install -r src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+          Performing Streamed Install
+          Success
+    > adb shell dumpsys package de.localist.desktop | grep versionName
+          versionName=2.0.0
+    > adb push C:\Users\emre\AppData\Local\Temp\localist-android-XZYg7z\Localist-Pruefung /sdcard/Documents/Localist-Pruefung
+          C:\Users\emre\AppData\Local\Temp\localist-android-XZYg7z\Localist-Pruefung\: 17 files pushed, 0 skipped. 0.4 MB/s (138463 bytes in 0.376s)
+    > adb shell appops set de.localist.desktop MANAGE_EXTERNAL_STORAGE allow
+          
+        …(Schritte 1–6 wie in Etappe 15: HTML-Seite, Notizbuch, Karteikarte, Kartenstapel, Quiz, Code-Ansicht – alle bestanden)…
+    Seite „Bausteine“, Bibliothek: WebView 411 px breit, Liste 387 px, Vorschau 387 × 527 px, quer scrollbar: nein, Elemente über den Rand: 0
+    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\10-bibliothek.png
+    > adb shell input tap 540 1201   (Eintrag „Quiz“ in der Liste)
+    Nach dem Fingertipp: aktiv „Quiz“, Vorschau im Bild bei y = 324 bis 850 von 914 (ganz sichtbar: ja), „Quiz“ steht in der Vorschau bei y = 16
+    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\11-bibliothek-vorschau.png
+    > adb shell input swipe 540 1887 540 1196 400   (in der Vorschau nach oben wischen)
+    Vorschau nach dem Wischen: scrollY 2517 → 2866
+    > adb shell input tap 329 412   (Reiter „Hilfe“)
+    Hilfe: Erklärung und Code untereinander, Code-Kästen über den Rand: 0, „Kopieren“ über Code-Text: 0, Code-Kästen mit Querscrollen: 0, quer scrollbar: nein, Elemente über den Rand: 0
+    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\12-hilfe.png
+    > adb shell input tap 929 1175   („Kopieren“ beim Callout)
+    Nach dem Fingertipp auf „Kopieren“: Knopf zeigt „Kopiert“, keine Fehlermeldung
+    > adb exec-out screencap -p > docs\screenshots\etappe-17\android\13-hilfe-kopiert.png
+    Konsole: keine Fehler.
+    Screenshots in docs/screenshots/etappe-17/android (android).
+    EXIT=0
+    ```
 
 ### Tab und Shift+Tab im Stand 2.0 (nachgestellt am 2026-10-28)
 Mit `scripts/tab-pruefung.mjs` (Edge im Hintergrund, echte Tastatur über das DevTools-Protokoll, 1280 × 800, Testnotiz `Notizen/Tab-Test.md` nur im Arbeitsspeicher der Vorschau). Je Fall erst Tab, dann Shift+Tab; „gespeichert“ zeigt die Zeile in der Datei nach dem automatischen Speichern (führende Leerzeichen als „·“). Ergebnis:

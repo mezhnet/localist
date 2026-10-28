@@ -75,6 +75,9 @@ const knopf = (text) => `[...document.querySelectorAll('button, [role="tab"]')].
 // Inhalt in einem eigenen, quer scrollbaren Kasten (z. B. langer Code in <pre>) zählt nicht, nur der Kasten selbst.
 const UEBERSTAND = `(() => { const raus = [...document.querySelectorAll('.bibliothek-seite *')].filter((e) => { const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.right > innerWidth + 1)) return false; for (let p = e.parentElement; p && !p.classList.contains('bibliothek-seite'); p = p.parentElement) if (getComputedStyle(p).overflowX !== 'visible') return false; return true; }); return raus.length ? raus.length + ' (' + raus.slice(0, 3).map((e) => e.tagName.toLowerCase() + '.' + e.className).join(', ') + ')' : 0; })()`;
 
+/** Liegt „Kopieren“ über Code-Text, und scrollt ein Code-Kasten quer? (Anzahl der Beispiele) */
+const KOPIEREN = `(() => { let ueber = 0; let quer = 0; for (const box of document.querySelectorAll('.hilfe-code')) { const k = box.querySelector('.ui-button').getBoundingClientRect(); const pre = box.querySelector('pre'); if (pre.scrollWidth > pre.clientWidth + 1) quer++; const r = document.createRange(); r.selectNodeContents(pre.querySelector('code')); if ([...r.getClientRects()].some((z) => z.width > 0 && z.right > k.left && z.left < k.right && z.bottom > k.top && z.top < k.bottom)) ueber++; } return { ueber, quer }; })()`;
+
 const GROESSEN = [
   { name: "pc", breite: 1280, hoehe: 800, faktor: 1, mobil: false },
   { name: "breit", breite: 1920, hoehe: 1080, faktor: 1, mobil: false },
@@ -120,8 +123,9 @@ try {
       const hilfe = await ev(`(() => { const e = document.querySelector('.hilfe-eintrag'); const t = e.querySelector('.hilfe-text').getBoundingClientRect(); const c = e.querySelector('.hilfe-code').getBoundingClientRect(); const s = document.querySelector('.bibliothek-seite').getBoundingClientRect();
         return { seite: Math.round(s.width), nebeneinander: c.left >= t.right - 1, text: Math.round(t.width), code: Math.round(c.width), preRaus: [...document.querySelectorAll('.hilfe-code pre')].filter((p) => p.getBoundingClientRect().right > innerWidth + 1).length }; })()`);
       const ueberHilfe = await ev(UEBERSTAND);
+      const kopierenPruefung = await ev(KOPIEREN);
       zeilen.push(
-        `${g.breite} × ${g.hoehe} ${hell}, Hilfe: Seite ${hilfe.seite} px, Erklärung und Code ${hilfe.nebeneinander ? `nebeneinander (${hilfe.text} px | ${hilfe.code} px)` : `untereinander (${hilfe.code} px breit)`}, Code-Kästen über den Rand: ${hilfe.preRaus}, Elemente über den Rand: ${ueberHilfe}: ${await shot(`${praefix}hilfe-${hell}`)}`,
+        `${g.breite} × ${g.hoehe} ${hell}, Hilfe: Seite ${hilfe.seite} px, Erklärung und Code ${hilfe.nebeneinander ? `nebeneinander (${hilfe.text} px | ${hilfe.code} px)` : `untereinander (${hilfe.code} px breit)`}, Code-Kästen über den Rand: ${hilfe.preRaus}, „Kopieren“ über Code-Text: ${kopierenPruefung.ueber}, Code-Kästen mit Querscrollen: ${kopierenPruefung.quer}, Elemente über den Rand: ${ueberHilfe}: ${await shot(`${praefix}hilfe-${hell}`)}`,
       );
     }
   }
