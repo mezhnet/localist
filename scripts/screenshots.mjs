@@ -124,7 +124,7 @@ async function openVault(theme, device) {
   await waitFor("document.body", "Seite");
   await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", ${JSON.stringify(theme === "hell" ? "light" : "dark")}); true`);
   await send("Page.navigate", { url: base });
-  await waitFor(`document.querySelector('[role="tree"] .tree-row') && document.querySelector('.home-card')`, "Startseite");
+  await waitFor(`document.querySelector('[role="tree"] .tree-row') && document.querySelector('.home-table-zeile')`, "Startseite");
   return mobile ? "handy-" : "";
 }
 
@@ -411,7 +411,7 @@ async function run(theme, device) {
   await waitFor("document.body", "Seite");
   await evaluate(`localStorage.clear(); localStorage.setItem("dev-last-vault", "beispiel-vault (Browser-Vorschau)"); localStorage.setItem("theme", ${JSON.stringify(theme === "hell" ? "light" : "dark")}); true`);
   await send("Page.navigate", { url: base });
-  await waitFor(`document.querySelector('[role="tree"] .tree-row') && document.querySelector('.home-card')`, "Startseite");
+  await waitFor(`document.querySelector('[role="tree"] .tree-row') && document.querySelector('.home-table-zeile')`, "Startseite");
   const prefix = mobile ? "handy-" : "";
   await shot(`${prefix}startseite-${theme}`);
 

@@ -12,7 +12,7 @@ import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewr
 import { today } from "../lib/calendar";
 import { createDatabaseConfig, VIEWS_FILE, type DatabaseConfig } from "../lib/database";
 import { readFavorites, removeFromFavorites, renameInFavorites, toggleFavorite, withFavorites } from "../lib/favorites";
-import { pageIcons } from "../lib/home";
+import { pageIcons, schnellNotiz } from "../lib/home";
 import { DEFAULT_STATUS_OPTIONS } from "../lib/properties";
 import { instantiateTemplate, TEMPLATES_DIR, type IndexEntry } from "../lib/search";
 import {
@@ -579,6 +579,30 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     }
   };
 
+  /**
+   * „Schnell notieren“ auf der Startseite: neue Notiz in der Vault-Wurzel, erste Zeile = Titel (eindeutig, ohne
+   * ungültige Zeichen), der Rest = Inhalt. Die Notiz wird nicht geöffnet, man kann gleich die nächste schreiben.
+   */
+  const schnellNotieren = async (text: string): Promise<boolean> => {
+    const notiz = schnellNotiz(text);
+    if (!notiz) return false;
+    try {
+      const title = uniqueName(childrenOf(treeRef.current, ""), notiz.titel);
+      const path = await createPage("", title, "notiz");
+      if (notiz.inhalt) {
+        const angelegt = await readPage(path);
+        await writePage(path, `${angelegt}${angelegt.endsWith("\n") ? "" : "\n"}${notiz.inhalt}\n`);
+      }
+      await refreshTree();
+      setVaultVersion((version) => version + 1);
+      setNotice({ kind: "info", text: `Notiz „${title}“ gespeichert.` });
+      return true;
+    } catch (error) {
+      showError(errorMessage(error));
+      return false;
+    }
+  };
+
   const handleCreateFolder = async (dir: string) => {
     try {
       const name = uniqueName(childrenOf(tree, dir), "Neuer Ordner");
@@ -829,7 +853,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           />
         )}
         <div className="main-scroll" ref={mainScroll}>
-        <header className="topbar">
+        <header className={cx("topbar", homeActive && "is-start")}>
           <IconButton className="topbar-menu" label="Menü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
             <MenuIcon />
           </IconButton>
@@ -961,8 +985,6 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
         ) : database ? null : (
           <HomePage
             key={aktiv.ansicht}
-            vaultName={vault.name}
-            pages={pages}
             index={index}
             favorites={favoriteNodes}
             icons={icons}
@@ -970,7 +992,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
             onCreateNote={() => void handleCreatePage("")}
             onCreateDatabase={() => void handleCreateDatabase("")}
             onCreateFromTemplate={() => setDialog({ kind: "template", dir: "" })}
-            onSearch={(query) => setDialog({ kind: "search", query })}
+            onQuickNote={schnellNotieren}
           />
         )}
         </ScrollGedaechtnisContext.Provider>

@@ -748,6 +748,13 @@ button.tree-toggle:hover {
   display: none;
 }
 
+/* Die Startseite hat auf dem PC keine Kopfzeile (Vorlage 01), auf dem Handy trägt sie den Menü-Knopf. */
+@media (min-width: 769px) {
+  .topbar.is-start {
+    display: none;
+  }
+}
+
 .breadcrumb {
   flex: 1;
   min-width: 0;

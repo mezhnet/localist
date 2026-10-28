@@ -123,6 +123,8 @@
   --line-height-snug: 1.35;
   --line-height-normal: 1.5;
   --letter-spacing-tight: -0.015em;
+  /* Große Überschriften (Begrüßung, Seitentitel): enge Laufweite wie in der Vorlage */
+  --letter-spacing-display: -0.035em;
 
   /* Abstände (4er-Raster) */
   --space-0-5: 2px;
@@ -179,6 +181,13 @@
   --reiter-padding: var(--space-2-5);
   --reiter-max-width: 220px;
   --size-reiter-schliessen: 18px;
+  /* Startseite (gemessen in der Vorlage): Spaltenbreite, Abstand oben, Feld „Schnell notieren“, Tabellenzeilen, Chips */
+  --home-width: 616px;
+  --home-padding-top: 48px;
+  --home-schnell-hoehe: 52px;
+  --size-home-row: 36px;
+  --home-name-width: 56%;
+  --size-home-chip: 30px;
   /* Seitenleiste (gemessen in der Vorlage): Breite, Innenabstand, Zeilenhöhe, Einzug je Ordnerebene */
   --sidebar-width: 248px;
   --sidebar-drawer-width: 300px;

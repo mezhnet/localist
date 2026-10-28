@@ -1,19 +1,20 @@
-// Startseite, wenn keine Seite offen ist: Begrüßung mit Suchfeld, Schnellaktionen,
-// zuletzt bearbeitete Seiten und Favoriten.
-import { Database, FileCode, FilePlus, FileText, History, LayoutTemplate, Search, Star, TextSearch } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
-import { greeting, longDate, recentPages, relativeTime } from "../lib/home";
+// Startseite nach der Vorlage (01-desktop-startseite-hell.png): Datum und Begrüßung, „Schnell notieren …“ mit
+// Knöpfen für Datenbank, Vorlage und „+ Notiz“, „Zuletzt bearbeitet“ als Tabelle (mit „Alle Seiten“) und die
+// Favoriten als Chips. Ein Klick öffnet im aktuellen Reiter, Strg+Klick oder Mittelklick in einem neuen.
+import { CornerDownLeft, Database, FileCode, FileText, LayoutTemplate, Plus, Star } from "lucide-react";
+import { useMemo, useState } from "react";
+import { allePagesNachZeit, greeting, kurzesDatum, recentPages, relativeTime } from "../lib/home";
 import { isHtmlPath } from "../lib/html";
-import type { PageRef } from "../lib/links";
-import { quickSwitch, type IndexEntry } from "../lib/search";
+import type { IndexEntry } from "../lib/search";
 import { parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
 import { oeffnenKlick } from "./Reiterleiste";
-import { cx, Input, Kbd } from "./ui";
+import { Button, cx, IconButton } from "./ui";
+
+/** So viele Seiten zeigt „Zuletzt bearbeitet“, bis „Alle Seiten“ gewählt ist. */
+const ZULETZT = 5;
 
 interface Props {
-  vaultName: string;
-  pages: PageRef[];
   index: IndexEntry[];
   favorites: TreeNode[];
   icons: ReadonlyMap<string, string>;
@@ -22,186 +23,139 @@ interface Props {
   onCreateNote: () => void;
   onCreateDatabase: () => void;
   onCreateFromTemplate: () => void;
-  /** Volltextsuche öffnen, optional mit Suchbegriff. */
-  onSearch: (query?: string) => void;
+  /** „Schnell notieren“: legt die Notiz an; true, wenn es geklappt hat (dann wird das Feld geleert). */
+  onQuickNote: (text: string) => Promise<boolean>;
 }
 
 export function HomePage(props: Props) {
   const now = new Date();
-  const recent = useMemo(() => recentPages(props.index, 8), [props.index]);
+  const [alle, setAlle] = useState(false);
+  const seiten = useMemo(() => (alle ? allePagesNachZeit(props.index) : recentPages(props.index, ZULETZT)), [props.index, alle]);
   return (
     <div className="home" role="region" aria-label="Startseite">
       <header className="home-hero">
-        <p className="home-date">{longDate(now)}</p>
+        <p className="home-date">{kurzesDatum(now)}</p>
         <h1 className="home-greeting">{greeting(now)}</h1>
-        <p className="home-vault">Vault „{props.vaultName}“</p>
-        <HomeSearch pages={props.pages} onOpen={(path) => props.onOpen({ path, kind: "page" })} onSearch={props.onSearch} />
       </header>
 
-      <section className="home-section" aria-label="Schnellaktionen">
-        <h2 className="home-section-title">Schnellaktionen</h2>
-        <div className="home-actions">
-          <ActionCard icon={<FilePlus />} title="Neue Notiz" text="Leere Seite im Vault" onClick={props.onCreateNote} />
-          <ActionCard icon={<Database />} title="Neue Datenbank" text="Tabelle, Kanban und Kalender" onClick={props.onCreateDatabase} />
-          <ActionCard icon={<LayoutTemplate />} title="Aus Vorlage" text="Seite aus dem Ordner „Vorlagen“" onClick={props.onCreateFromTemplate} />
-          <ActionCard icon={<TextSearch />} title="Alle Seiten durchsuchen" text="Suche im Text aller Seiten" onClick={() => props.onSearch()} />
-        </div>
-      </section>
+      <SchnellNotieren onQuickNote={props.onQuickNote} onCreateNote={props.onCreateNote} onCreateDatabase={props.onCreateDatabase} onCreateFromTemplate={props.onCreateFromTemplate} />
 
-      <section className="home-section" aria-label="Zuletzt bearbeitet">
-        <h2 className="home-section-title">
-          <History aria-hidden="true" /> Zuletzt bearbeitet
-        </h2>
-        {recent.length === 0 ? (
-          <p className="home-empty">Noch keine Seiten. Lege mit „Neue Notiz“ die erste an.</p>
+      <section className="home-section" aria-label={alle ? "Alle Seiten" : "Zuletzt bearbeitet"}>
+        <div className="home-section-head">
+          <h2 className="home-section-title">{alle ? "Alle Seiten" : "Zuletzt bearbeitet"}</h2>
+          <button type="button" className="home-link" aria-pressed={alle} onClick={() => setAlle(!alle)}>
+            {alle ? "Zuletzt bearbeitet" : "Alle Seiten"}
+          </button>
+        </div>
+        {seiten.length === 0 ? (
+          <p className="home-empty">Noch keine Seiten. Schreib oben etwas und drück Enter – das wird deine erste Notiz.</p>
         ) : (
-          <div className="home-cards">
-            {recent.map((entry) => (
-              <PageCard
-                key={entry.path}
-                icon={props.icons.get(entry.path)}
-                html={isHtmlPath(entry.path)}
-                title={entry.title}
-                meta={`${parentDir(entry.path) || "Vault"} · ${entry.modified ? relativeTime(entry.modified, now.getTime()) : "unbekannt"}`}
-                onOpen={(neu) => props.onOpen({ path: entry.path, kind: "page" }, neu)}
-              />
-            ))}
+          <div className="home-table">
+            <div className="home-table-kopf" aria-hidden="true">
+              <span>Name</span>
+              <span>Ort</span>
+              <span className="home-table-zeit">Bearbeitet</span>
+            </div>
+            <ul className="home-table-zeilen">
+              {seiten.map((entry) => (
+                <li key={entry.path}>
+                  <button type="button" className="home-table-zeile" title={entry.path} {...oeffnenKlick((neu) => props.onOpen({ path: entry.path, kind: "page" }, neu))}>
+                    <span className="home-table-name">
+                      <SeitenSymbol emoji={props.icons.get(entry.path)} html={isHtmlPath(entry.path)} />
+                      <span className="home-table-titel">{entry.title}</span>
+                    </span>
+                    <span className="home-table-ort">{parentDir(entry.path) || "Vault"}</span>
+                    <span className="home-table-zeit">{entry.modified ? relativeTime(entry.modified, now.getTime()) : "–"}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </section>
 
       <section className="home-section" aria-label="Favoriten">
-        <h2 className="home-section-title">
-          <Star aria-hidden="true" /> Favoriten
-        </h2>
+        <h2 className="home-section-title">Favoriten</h2>
         {props.favorites.length === 0 ? (
-          <p className="home-empty">Noch keine Favoriten. Hefte Seiten über den Stern oben rechts oder das „⋯“-Menü in der Sidebar an.</p>
+          <p className="home-empty">Noch keine Favoriten. Hefte Seiten über den Stern oben rechts oder das „⋯“-Menü in der Seitenleiste an.</p>
         ) : (
-          <div className="home-cards">
+          <ul className="home-chips">
             {props.favorites.map((node) => (
-              <PageCard
-                key={node.path}
-                icon={node.kind === "folder" ? undefined : props.icons.get(node.path)}
-                database={node.kind === "folder"}
-                html={node.html}
-                title={node.name}
-                meta={node.kind === "folder" ? "Datenbank" : parentDir(node.path) || "Vault"}
-                onOpen={(neu) => props.onOpen(node, neu)}
-              />
+              <li key={node.path}>
+                <button type="button" className="home-chip" title={node.path} {...oeffnenKlick((neu) => props.onOpen(node, neu))}>
+                  <Star className="home-chip-stern" aria-hidden="true" />
+                  <span className="home-chip-name">{node.name}</span>
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </section>
     </div>
   );
 }
 
-function ActionCard({ icon, title, text, onClick }: { icon: ReactNode; title: string; text: string; onClick: () => void }) {
+function SeitenSymbol({ emoji, html }: { emoji?: string; html: boolean }) {
   return (
-    <button type="button" className="home-action" onClick={onClick}>
-      <span className="home-action-icon" aria-hidden="true">
-        {icon}
-      </span>
-      <span className="home-action-title">{title}</span>
-      <span className="home-action-text">{text}</span>
-    </button>
+    <span className={cx("home-table-symbol", emoji && "is-emoji")} aria-hidden="true">
+      {emoji ?? (html ? <FileCode /> : <FileText />)}
+    </span>
   );
 }
 
-function PageCard({
-  icon,
-  database = false,
-  html = false,
-  title,
-  meta,
-  onOpen,
-}: {
-  icon?: string;
-  database?: boolean;
-  html?: boolean;
-  title: string;
-  meta: string;
-  onOpen: (neu: boolean) => void;
-}) {
-  return (
-    <button type="button" className="home-card" {...oeffnenKlick(onOpen)}>
-      <span className={cx("home-card-icon", icon && "is-emoji")} aria-hidden="true">
-        {icon ?? (database ? <Database /> : html ? <FileCode /> : <FileText />)}
-      </span>
-      <span className="home-card-title">{title}</span>
-      <span className="home-card-meta">{meta}</span>
-    </button>
-  );
-}
-
-/** Suchfeld der Startseite: Seiten nach Titel, Enter öffnet; darunter der Weg zur Volltextsuche. */
-function HomeSearch({ pages, onOpen, onSearch }: { pages: PageRef[]; onOpen: (path: string) => void; onSearch: (query?: string) => void }) {
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(0);
-  const results = useMemo(() => (query.trim() ? quickSwitch(pages, query, 6) : []), [pages, query]);
-  /** Ergebnisse plus „Im Text suchen“ als letzter Eintrag. */
-  const count = query.trim() ? results.length + 1 : 0;
-  const pick = (index: number) => {
-    if (index < results.length) onOpen(results[index].path);
-    else onSearch(query);
+/**
+ * „Schnell notieren …“: Enter legt eine Notiz in der Vault-Wurzel an (erste Zeile = Titel, Rest = Inhalt),
+ * Umschalt+Enter macht eine neue Zeile, ein leeres Feld macht nichts. „+ Notiz“ tut dasselbe; ist das Feld leer,
+ * legt es eine leere Notiz an und öffnet sie.
+ */
+function SchnellNotieren(props: Pick<Props, "onQuickNote" | "onCreateNote" | "onCreateDatabase" | "onCreateFromTemplate">) {
+  const [text, setText] = useState("");
+  const [speichert, setSpeichert] = useState(false);
+  const speichern = async () => {
+    if (speichert || text.trim() === "") return;
+    setSpeichert(true);
+    try {
+      if (await props.onQuickNote(text)) setText("");
+    } finally {
+      setSpeichert(false);
+    }
   };
   return (
-    <div className="home-search">
-      <Input
-        inputSize="lg"
-        icon={<Search />}
-        wrapClassName="home-search-field"
-        aria-label="Seiten suchen"
-        placeholder="Seiten suchen …"
-        value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setSelected(0);
-        }}
+    <div className="home-schnell">
+      <textarea
+        className="home-schnell-feld"
+        aria-label="Schnell notieren"
+        placeholder="Schnell notieren …"
+        rows={2}
+        value={text}
+        onChange={(event) => setText(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "ArrowDown" && count > 0) {
-            event.preventDefault();
-            setSelected((i) => Math.min(count - 1, i + 1));
-          } else if (event.key === "ArrowUp" && count > 0) {
-            event.preventDefault();
-            setSelected((i) => Math.max(0, i - 1));
-          } else if (event.key === "Enter" && count > 0) pick(selected);
-          else if (event.key === "Escape") setQuery("");
+          if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+          event.preventDefault();
+          void speichern();
         }}
       />
-      {!query && (
-        <span className="home-search-hint" aria-hidden="true">
-          <Kbd>Strg+P</Kbd>
+      <div className="home-schnell-leiste">
+        <span className="home-schnell-hinweis" aria-hidden="true">
+          <CornerDownLeft /> als neue Notiz speichern
         </span>
-      )}
-      {count > 0 && (
-        <ul className="home-search-results" role="listbox" aria-label="Suchergebnisse">
-          {results.map((page, index) => (
-            <li
-              key={page.path}
-              role="option"
-              aria-selected={index === selected}
-              className={cx(index === selected && "selected")}
-              onMouseEnter={() => setSelected(index)}
-              onClick={() => pick(index)}
-            >
-              <FileText aria-hidden="true" />
-              <span className="dialog-title">{page.title}</span>
-              <span className="dialog-sub">{parentDir(page.path) || "Vault"}</span>
-            </li>
-          ))}
-          <li
-            role="option"
-            aria-selected={selected === results.length}
-            className={cx("home-search-fulltext", selected === results.length && "selected")}
-            onMouseEnter={() => setSelected(results.length)}
-            onClick={() => pick(results.length)}
-          >
-            <TextSearch aria-hidden="true" />
-            <span>Im Text aller Seiten suchen: „{query.trim()}“</span>
-          </li>
-        </ul>
-      )}
+        <IconButton className="home-schnell-knopf" label="Neue Datenbank" title="Neue Datenbank" onClick={props.onCreateDatabase}>
+          <Database />
+        </IconButton>
+        <IconButton className="home-schnell-knopf" label="Neue Seite aus Vorlage" title="Neue Seite aus Vorlage" onClick={props.onCreateFromTemplate}>
+          <LayoutTemplate />
+        </IconButton>
+        <Button
+          variant="primary"
+          size="sm"
+          className="home-schnell-notiz"
+          icon={<Plus />}
+          title={text.trim() ? "Als neue Notiz speichern (Enter)" : "Neue leere Notiz"}
+          onClick={() => (text.trim() ? void speichern() : props.onCreateNote())}
+        >
+          Notiz
+        </Button>
+      </div>
     </div>
   );
 }

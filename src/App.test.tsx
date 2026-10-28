@@ -639,62 +639,83 @@ describe("Neues Design: Favoriten, Startseite, „Neu“-Menü und Einstellungen
     await waitFor(() => expect(savedFavorites()).toEqual(["Notizen/Gedanken.md"]));
   });
 
-  it("Startseite: zuletzt bearbeitete Seiten, Favoriten, Schnellaktionen und Suchfeld", async () => {
+  it("Startseite nach der Vorlage: Datum, Begrüßung, „Zuletzt bearbeitet“ als Tabelle, „Alle Seiten“ und Favoriten als Chips", async () => {
     await openVaultFromStart();
     const home = within(await screen.findByRole("region", { name: "Startseite" }));
     expect(home.getByRole("heading", { level: 1 }).textContent).toMatch(/^(Guten (Morgen|Tag|Abend)|Gute Nacht)$/);
-    const recentTitles = () =>
-      [...home.getByRole("region", { name: "Zuletzt bearbeitet" }).querySelectorAll(".home-card-title")].map((el) => el.textContent);
+    expect(document.querySelector(".home-date")?.textContent).toMatch(/^(Mo|Di|Mi|Do|Fr|Sa|So), \d\d\.\d\d\.\d{4}$/);
+    const zeilen = () =>
+      [...home.getByRole("region", { name: /^(Zuletzt bearbeitet|Alle Seiten)$/ }).querySelectorAll(".home-table-zeile")].map((zeile) =>
+        [...zeile.children].map((spalte) => spalte.textContent),
+      );
 
-    // Zuletzt bearbeitet: neueste zuerst, ohne Vorlagen
+    // Zuletzt bearbeitet: neueste zuerst, ohne Vorlagen, höchstens 5, mit Ort und relativer Zeit
     act(() => vault().externalWrite("Projekte/Umzug.md", "---\nid: 8c1d\nstatus: Geplant\n---\nKisten packen\n"));
-    await waitFor(() => expect(recentTitles()[0]).toBe("Umzug"));
-    expect(recentTitles()).toEqual(expect.arrayContaining(["Umzug", "Ideen", "Formatierung", "Website-Relaunch"]));
-    expect(recentTitles()).not.toContain("Projekt"); // Vorlage
-    expect(home.getByRole("region", { name: "Zuletzt bearbeitet" }).textContent).toContain("Projekte · gerade eben");
+    await waitFor(() => expect(zeilen()[0]).toEqual(["Umzug", "Projekte", "gerade eben"]));
+    expect([...document.querySelectorAll(".home-table-kopf span")].map((spalte) => spalte.textContent)).toEqual(["Name", "Ort", "Bearbeitet"]);
+    expect(zeilen().length).toBeLessThanOrEqual(5);
+    expect(zeilen().map((zeile) => zeile[0])).not.toContain("Projekt"); // Vorlage
+    // „Alle Seiten“: alle Seiten nach Änderungszeit (auch Vorlagen)
+    fireEvent.click(home.getByRole("button", { name: "Alle Seiten" }));
+    await waitFor(() => expect(zeilen().length).toBe(vault().files.size - [...vault().files.keys()].filter((p) => !/\.(md|html)$/.test(p) || p.startsWith(".localist/")).length));
+    expect(zeilen().map((zeile) => zeile[0])).toContain("Projekt");
+    expect(zeilen()[0][0]).toBe("Umzug");
+    fireEvent.click(home.getByRole("button", { name: "Zuletzt bearbeitet" }));
 
-    // Favoriten
-    const favorites = [...home.getByRole("region", { name: "Favoriten" }).querySelectorAll(".home-card-title")].map((el) => el.textContent);
-    expect(favorites).toEqual(["Ideen", "Projekte"]);
-
-    // Schnellaktionen
-    const actions = within(home.getByRole("region", { name: "Schnellaktionen" }));
-    expect(actions.getAllByRole("button").map((b) => b.querySelector(".home-action-title")?.textContent)).toEqual([
-      "Neue Notiz",
-      "Neue Datenbank",
-      "Aus Vorlage",
-      "Alle Seiten durchsuchen",
-    ]);
-
-    // Suchfeld: Titel finden, Enter öffnet die Seite
-    const search = home.getByRole("textbox", { name: "Seiten suchen" });
-    fireEvent.change(search, { target: { value: "relaunch" } });
-    expect(within(home.getByRole("listbox", { name: "Suchergebnisse" })).getAllByRole("option").map((o) => o.textContent)).toEqual([
-      "Website-RelaunchProjekte",
-      "Im Text aller Seiten suchen: „relaunch“",
-    ]);
-    fireEvent.keyDown(search, { key: "Enter" });
-    expect(await screen.findByText("Domain prüfen")).toBeTruthy();
+    // Favoriten als Chips mit Stern
+    const chips = [...home.getByRole("region", { name: "Favoriten" }).querySelectorAll(".home-chip")];
+    expect(chips.map((chip) => chip.textContent)).toEqual(["Ideen", "Projekte"]);
+    expect(chips.every((chip) => chip.querySelector(".home-chip-stern"))).toBe(true);
+    // Klick auf eine Zeile öffnet die Seite
+    fireEvent.click(within(home.getByRole("region", { name: "Zuletzt bearbeitet" })).getByText("Umzug"));
+    expect(await screen.findByText("Kisten packen")).toBeTruthy();
 
     // „Startseite“ in der Sidebar führt zurück
     fireEvent.click(screen.getByRole("button", { name: "Startseite" }));
     expect(await screen.findByRole("region", { name: "Startseite" })).toBeTruthy();
   });
 
-  it("Startseite: Suche im Text aller Seiten und „Neue Notiz“", async () => {
+  it("Startseite: „Schnell notieren …“ (Enter, Umschalt+Enter, leeres Feld) und die Knöpfe Datenbank, Vorlage und „+ Notiz“", async () => {
     await openVaultFromStart();
+    await inTree();
     const home = within(await screen.findByRole("region", { name: "Startseite" }));
-    fireEvent.change(home.getByRole("textbox", { name: "Seiten suchen" }), { target: { value: "wochenplanung" } });
-    fireEvent.click(home.getByRole("option", { name: /Im Text aller Seiten suchen/ }));
-    const input = await screen.findByRole("textbox", { name: "Volltextsuche" });
-    expect((input as HTMLInputElement).value).toBe("wochenplanung");
-    expect(await screen.findByRole("option", { name: /Ideen/ })).toBeTruthy();
-    fireEvent.keyDown(input, { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const feld = home.getByRole("textbox", { name: "Schnell notieren" }) as HTMLTextAreaElement;
+    expect(feld.placeholder).toBe("Schnell notieren …");
+    const anzahl = vault().files.size;
+    // Leeres Feld: nichts passiert
+    fireEvent.keyDown(feld, { key: "Enter" });
+    fireEvent.change(feld, { target: { value: "   \n " } });
+    fireEvent.keyDown(feld, { key: "Enter" });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(vault().files.size).toBe(anzahl);
+    // Umschalt+Enter macht eine neue Zeile (das Feld bleibt, nichts wird angelegt)
+    fireEvent.change(feld, { target: { value: "Einkaufen: Wochenende?" } });
+    expect(fireEvent.keyDown(feld, { key: "Enter", shiftKey: true })).toBe(true); // nicht verhindert → Zeilenumbruch
+    expect(vault().files.size).toBe(anzahl);
+    // Enter: erste Zeile = Titel (ohne ungültige Zeichen), Rest = Inhalt; Name eindeutig
+    fireEvent.change(feld, { target: { value: "Einkaufen: Wochenende?\n- Milch\n- Brot" } });
+    expect(fireEvent.keyDown(feld, { key: "Enter" })).toBe(false);
+    await waitFor(() => expect(vault().files.get("Einkaufen Wochenende.md")).toMatch(/^---\nid: [0-9a-f-]{36}\n---\n- Milch\n- Brot\n$/));
+    await waitFor(() => expect(feld.value).toBe(""));
+    expect(await screen.findByText("Notiz „Einkaufen Wochenende“ gespeichert.")).toBeTruthy();
+    fireEvent.change(feld, { target: { value: "Einkaufen: Wochenende?" } });
+    fireEvent.click(home.getByRole("button", { name: "Notiz" }));
+    await waitFor(() => expect(vault().files.get("Einkaufen Wochenende 2.md")).toMatch(/^---\nid: [0-9a-f-]{36}\n---\n$/));
+    await waitFor(() => expect(within(screen.getByRole("region", { name: "Zuletzt bearbeitet" })).getAllByText(/^Einkaufen Wochenende/)).toHaveLength(2));
 
-    fireEvent.click(home.getByRole("button", { name: /Neue Notiz/ }));
+    // Vorlage-Knopf öffnet die Vorlagen-Auswahl
+    fireEvent.click(home.getByRole("button", { name: "Neue Seite aus Vorlage" }));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // „+ Notiz“ mit leerem Feld: leere Notiz anlegen und öffnen
+    fireEvent.click(home.getByRole("button", { name: "Notiz" }));
     await waitFor(() => expect(vault().files.get("Unbenannt.md")).toMatch(/^---\nid: [0-9a-f-]{36}\n---\n$/));
     expect(await screen.findByDisplayValue("Unbenannt")).toBeTruthy();
+    // Datenbank-Knopf (auf dem festen Reiter „Startseite“)
+    fireEvent.click(screen.getByRole("tab", { name: "Startseite" }));
+    fireEvent.click(within(await screen.findByRole("region", { name: "Startseite" })).getByRole("button", { name: "Neue Datenbank" }));
+    await waitFor(() => expect(vault().files.has("Neue Datenbank/_ansichten.yaml")).toBe(true));
   });
 
   it("„Neu“-Menü legt eine Datenbank an (mit _ansichten.yaml) und öffnet sie", async () => {
@@ -1152,7 +1173,8 @@ describe("Bausteine (Etappe 12)", () => {
 });
 
 describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
-  const frame = () => [...document.querySelectorAll<HTMLIFrameElement>("iframe.html-frame")].find((element) => !element.classList.contains("is-loading"))!;
+  // Nur die Vorschau der HTML-Seite selbst (beim Öffnen über den Ordner „Lernen“ zeigt kurz das Notizbuch dieselbe Seite).
+  const frame = () => [...document.querySelectorAll<HTMLIFrameElement>(".html-workspace iframe.html-frame")].find((element) => !element.classList.contains("is-loading"))!;
   const fromFrame = (data: unknown) =>
     act(() => {
       window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, ...(data as object) }, source: frame().contentWindow }));
@@ -1263,7 +1285,8 @@ describe("Bausteine ohne Code bearbeiten (Etappe 12)", () => {
 });
 
 describe("Lern-Bausteine und Diagramme bearbeiten (Etappe 13)", () => {
-  const frame = () => [...document.querySelectorAll<HTMLIFrameElement>("iframe.html-frame")].find((element) => !element.classList.contains("is-loading"))!;
+  // Nur die Vorschau der HTML-Seite selbst (beim Öffnen über den Ordner „Lernen“ zeigt kurz das Notizbuch dieselbe Seite).
+  const frame = () => [...document.querySelectorAll<HTMLIFrameElement>(".html-workspace iframe.html-frame")].find((element) => !element.classList.contains("is-loading"))!;
   const fromFrame = (data: unknown) =>
     act(() => {
       window.dispatchEvent(new MessageEvent("message", { data: { localist: 1, ...(data as object) }, source: frame().contentWindow }));
@@ -2335,9 +2358,12 @@ describe("Reiter (Etappe 19)", () => {
       tiptap.commands.setTextSelection(3);
       tiptap.commands.insertContent("Neue ");
     });
-    // Sofort wechseln (vor der Wartezeit des automatischen Speicherns): Die Eingabe steht schon in der Datei.
+    // Sofort wechseln (vor der Wartezeit des automatischen Speicherns): Sobald der neue Reiter da ist, steht die
+    // Eingabe schon in der Datei.
+    expect(vault().files.get("Projekte/Website-Relaunch.md")).toBe(before);
     fireEvent.keyDown(window, { key: "t", ctrlKey: true });
-    await waitFor(() => expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("- [ ] Neue Domain prüfen\n"), { timeout: 400 });
+    await waitFor(() => expect(reiter()).toEqual(["Startseite", "Website-Relaunch", "Startseite"]));
+    expect(vault().files.get("Projekte/Website-Relaunch.md")).toContain("- [ ] Neue Domain prüfen\n");
     expect(before).not.toContain("Neue Domain");
 
     // Umbenennen in der Seitenleiste: der Reiter folgt

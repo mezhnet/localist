@@ -56,3 +56,49 @@ export function relativeTime(then: number, now: number): string {
   if (dayDiff < 7) return `vor ${dayDiff} Tagen`;
   return thenDay.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
+
+const WOCHENTAGE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+
+/** Datum oben auf der Startseite (Vorlage): „Mo, 26.10.2026“. */
+export function kurzesDatum(date: Date): string {
+  const zwei = (zahl: number) => String(zahl).padStart(2, "0");
+  return `${WOCHENTAGE[date.getDay()]}, ${zwei(date.getDate())}.${zwei(date.getMonth() + 1)}.${date.getFullYear()}`;
+}
+
+/** Alle Seiten nach Änderungszeit, neueste zuerst (Link „Alle Seiten“ auf der Startseite, Vorlagen eingeschlossen). */
+export function allePagesNachZeit(entries: readonly IndexEntry[]): IndexEntry[] {
+  return [...entries].sort((a, b) => (b.modified ?? 0) - (a.modified ?? 0) || a.title.localeCompare(b.title, "de"));
+}
+
+const NAME_MAX = 100;
+
+/**
+ * Dateiname aus einem Text (erste Zeile von „Schnell notieren“): ohne Zeichen, die Windows, Android oder Links in
+ * Obsidian nicht erlauben (< > : " / \ | ? * # ^ [ ] und Steuerzeichen), ohne Punkt am Anfang (versteckt) und ohne
+ * Punkt oder Leerzeichen am Ende, höchstens 100 Zeichen, keine reservierten Namen wie „CON“. Leer → „Unbenannt“.
+ */
+export function gueltigerName(text: string): string {
+  // eslint-disable-next-line no-control-regex -- Steuerzeichen sind in Dateinamen verboten
+  let name = text.replace(/[\u0000-\u001f\u007f<>:"/\\|?*#^[\]]/g, " ").replace(/\s+/g, " ").trim();
+  name = name.replace(/^[.\s]+/, "");
+  if (name.length > NAME_MAX) name = name.slice(0, NAME_MAX);
+  name = name.replace(/[.\s]+$/, "");
+  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(name)) name = `${name} (Notiz)`;
+  return name || "Unbenannt";
+}
+
+/**
+ * „Schnell notieren“: erste nicht leere Zeile = Titel (als gültiger Dateiname), der Rest = Inhalt (ohne Leerzeilen am
+ * Anfang und Leerraum am Ende). Ein leeres Feld ergibt null (es passiert nichts).
+ */
+export function schnellNotiz(text: string): { titel: string; inhalt: string } | null {
+  const zeilen = text.replace(/\r\n?/g, "\n").split("\n");
+  const erste = zeilen.findIndex((zeile) => zeile.trim() !== "");
+  if (erste < 0) return null;
+  const inhalt = zeilen
+    .slice(erste + 1)
+    .join("\n")
+    .replace(/^\s*\n/, "")
+    .trimEnd();
+  return { titel: gueltigerName(zeilen[erste]), inhalt };
+}

@@ -1,5 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { greeting, pageIcons, recentPages, relativeTime } from "./home";
+import { allePagesNachZeit, greeting, gueltigerName, kurzesDatum, pageIcons, recentPages, relativeTime, schnellNotiz } from "./home";
+
+describe("Startseite nach der Vorlage (Etappe 19)", () => {
+  it("Datum wie „Mo, 26.10.2026“", () => {
+    expect(kurzesDatum(new Date(2026, 9, 26, 8))).toBe("Mo, 26.10.2026");
+    expect(kurzesDatum(new Date(2027, 0, 3))).toBe("So, 03.01.2027");
+  });
+
+  it("„Alle Seiten“: alle Seiten nach Änderungszeit, auch Vorlagen", () => {
+    const entries = [entry("A.md", 100), entry("Vorlagen/Projekt.md", 999), entry("C.md", 200)];
+    expect(allePagesNachZeit(entries).map((e) => e.path)).toEqual(["Vorlagen/Projekt.md", "C.md", "A.md"]);
+  });
+
+  it("Schnell notieren: erste Zeile = Titel, Rest = Inhalt; ein leeres Feld ergibt nichts", () => {
+    expect(schnellNotiz("Einkaufen\nMilch\nBrot\n")).toEqual({ titel: "Einkaufen", inhalt: "Milch\nBrot" });
+    expect(schnellNotiz("\n\n  Idee: Wochenplan?  \r\n\r\n- Montag\r\n- Dienstag  \n\n")).toEqual({ titel: "Idee Wochenplan", inhalt: "- Montag\n- Dienstag" });
+    expect(schnellNotiz("Nur ein Titel")).toEqual({ titel: "Nur ein Titel", inhalt: "" });
+    expect(schnellNotiz("")).toBeNull();
+    expect(schnellNotiz("   \n \n")).toBeNull();
+  });
+
+  it("gültige Dateinamen: keine verbotenen Zeichen, kein Punkt am Anfang oder Ende, keine reservierten Namen", () => {
+    expect(gueltigerName('a<b>c:d"e/f\\g|h?i*j')).toBe("a b c d e f g h i j");
+    expect(gueltigerName("# Überschrift [[Link]] ^block")).toBe("Überschrift Link block");
+    expect(gueltigerName("...versteckt")).toBe("versteckt");
+    expect(gueltigerName("Ende. . ")).toBe("Ende");
+    expect(gueltigerName("CON")).toBe("CON (Notiz)");
+    expect(gueltigerName("lpt1")).toBe("lpt1 (Notiz)");
+    expect(gueltigerName("?*:")).toBe("Unbenannt");
+    expect(gueltigerName("x".repeat(150))).toHaveLength(100);
+    expect(gueltigerName("Tab\tund\u0007Glocke")).toBe("Tab und Glocke");
+    expect(gueltigerName("Größe & Maße – 2026")).toBe("Größe & Maße – 2026");
+  });
+});
 
 const entry = (path: string, modified: number, content = "") => ({ path, title: path.replace(/^.*\//, "").replace(/\.md$/, ""), content, modified });
 
