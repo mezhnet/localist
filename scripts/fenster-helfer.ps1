@@ -4,7 +4,7 @@
 # keybd_event). Sicherheitsregel: Maus und Tasten wirken nur, wenn das Localist-Fenster vorn liegt bzw. unter dem
 # Mauszeiger ist – sonst bricht der Befehl ab, damit kein anderes Fenster bedient wird.
 #
-# Befehle: finde <pid> | info <hwnd> | oben <hwnd> <0|1> | klick <hwnd> x y | doppelklick <hwnd> x y
+# Befehle: finde <pid> | info <hwnd> | oben <hwnd> <0|1> | vorholen <hwnd> | klick <hwnd> x y | doppelklick <hwnd> x y
 #          ziehen <hwnd> x y dx dy | tasten <hwnd> <win+left|win+right|win+up|win+down|escape> | zeigen <hwnd>
 #          bild <hwnd> <datei> | ende
 $ErrorActionPreference = 'Stop'
@@ -172,6 +172,7 @@ while ($true) {
       }
       'tasten' { Vorn $h; [LocalistFenster]::Tasten($teile[2]); Antwort @{ ok = $true } }
       'zeigen' { [void][LocalistFenster]::ShowWindow($h, 9); Antwort @{ ok = $true } }
+      'vorholen' { Antwort @{ ok = $true; vorn = [LocalistFenster]::SetForegroundWindow($h) } }
       'bild' {
         $r = [LocalistFenster]::Sichtbar($h)
         $bmp = New-Object System.Drawing.Bitmap ($r.Right - $r.Left), ($r.Bottom - $r.Top)

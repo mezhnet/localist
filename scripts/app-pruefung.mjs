@@ -205,9 +205,9 @@ try {
       return answer.result?.result?.value;
     };
     const look = await inPage(
-      `document.fonts.ready.then(() => ({ version: document.documentElement.getAttribute("data-localist-bausteine"), schrift: document.fonts.check('16px "Inter Variable"'), callout: getComputedStyle(document.querySelector("l-callout")).backgroundColor, sprache: document.querySelector("pre").getAttribute("data-sprache") }))`,
+      `document.fonts.ready.then(() => ({ version: document.documentElement.getAttribute("data-localist-bausteine"), schrift: [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family.replace(/"/g, "")).filter((n, i, a) => a.indexOf(n) === i).join(" + "), callout: getComputedStyle(document.querySelector("l-callout")).backgroundColor, sprache: document.querySelector("pre").getAttribute("data-sprache") }))`,
     );
-    report.push(`In der Seite: Bausteine ${look.version}, Schrift Inter ${look.schrift ? "geladen" : "NICHT geladen"}, Callout-Hintergrund ${look.callout}, Code-Beschriftung „${look.sprache}“`);
+    report.push(`In der Seite: Bausteine ${look.version}, Schriften geladen: ${look.schrift || "KEINE"}, Callout-Hintergrund ${look.callout}, Code-Beschriftung „${look.sprache}“`);
 
     const rect = (selector) => inPage(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, width: r.width, height: r.height }; })()`);
     const frameAt = () => evaluate(`(() => { const r = [...document.querySelectorAll('iframe.html-frame')].find((f) => !f.classList.contains('is-loading')).getBoundingClientRect(); return { x: r.x, y: r.y }; })()`);

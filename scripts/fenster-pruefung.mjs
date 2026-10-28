@@ -4,14 +4,16 @@
 // scripts/fenster-helfer.ps1; die Positionen der Elemente kommen über die WebView2-Entwicklerschnittstelle.
 // Maus und Tasten wirken nur, solange das Localist-Fenster vorn liegt (sonst bricht der Helfer ab).
 //
-// Aufruf: node scripts/fenster-pruefung.mjs <localist.exe> <Vault-Kopie> <Screenshot-Ordner>
+// Aufruf: node scripts/fenster-pruefung.mjs <localist.exe> <Vault-Kopie> <Screenshot-Ordner> [seite]
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 
-const [exe, vault, outDir] = process.argv.slice(2);
+const [exe, vault, outDir, modus] = process.argv.slice(2);
+/** „seite“: ohne echte Maus und Tastatur, nur Mausereignisse in der Seite (Doppelklick und Knöpfe). */
+const nurSeite = modus === "seite";
 if (!exe || !vault || !outDir) {
   console.error("Aufruf: node scripts/fenster-pruefung.mjs <localist.exe> <Vault-Kopie> <Screenshot-Ordner>");
   process.exit(2);
@@ -140,9 +142,55 @@ try {
   report.push(`Freie Stelle der oberen Leiste bei CSS ${Math.round(frei.x)},${Math.round(frei.y)}: Element „${frei.element}“, Ziehbereich „${frei.region}“`);
   const freiPunkt = await punkt(".workspace-leiste .fensterleiste-frei");
 
+  if (nurSeite) {
+    // Ohne echte Eingaben (z. B. wenn die Remote-Desktop-Sitzung minimiert ist und Windows keine Maus annimmt):
+    // Doppelklick und Knöpfe als Mausereignisse in der Seite, gemessen wird am echten Fenster.
+    const seitenKlick = async (x, y, anzahl = 1) => {
+      for (let n = 1; n <= anzahl; n++)
+        for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: n });
+    };
+    const mitte = (selektor) => evaluate(`(() => { const b = document.querySelector(${JSON.stringify(selektor)}).getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+    const vorher = (await info()).sichtbar;
+    await seitenKlick(frei.x, frei.y, 2);
+    const maxDoppel = await bis(async () => (await info()).maximiert);
+    i = await info();
+    report.push(`[Seite] Doppelklick auf die freie Stelle (drag.js → internal_toggle_maximize): maximiert ${ja(maxDoppel)}, Innenbereich = Arbeitsfläche ${r(i.arbeitsflaeche)}: ${ja(i.innen.x === i.arbeitsflaeche.links && i.innen.y === i.arbeitsflaeche.oben && i.innen.breite === i.arbeitsflaeche.breite && i.innen.hoehe === i.arbeitsflaeche.hoehe)}`);
+    await sleep(600);
+    const f2 = await mitte(".workspace-leiste .fensterleiste-frei");
+    await seitenKlick(f2.x, f2.y, 2);
+    const zurueck = await bis(async () => !(await info()).maximiert);
+    report.push(`[Seite] Zweiter Doppelklick: wiederhergestellt ${ja(zurueck)}, wieder ${r((await info()).sichtbar)}: ${ja(r((await info()).sichtbar) === r(vorher))}`);
+    for (const [nr, name, pruefen] of [
+      [2, "Maximieren", async () => (await info()).maximiert],
+      [2, "Wiederherstellen", async () => !(await info()).maximiert],
+      [1, "Minimieren", async () => (await info()).minimiert],
+    ]) {
+      await sleep(600);
+      const k = await mitte(`.fenster-knopf:nth-child(${nr})`);
+      await seitenKlick(k.x, k.y);
+      report.push(`[Seite] Knopf „${name}“: ${ja(await bis(pruefen))}`);
+    }
+    await ps(`zeigen ${hwnd}`);
+    await bis(async () => !(await info()).minimiert);
+    await sleep(600);
+    const k = await mitte(".fenster-knopf.is-schliessen");
+    await ps(`oben ${hwnd} 0`);
+    await seitenKlick(k.x, k.y);
+    const zu = await bis(async () => exitCode !== null, 5000);
+    report.push(`[Seite] Knopf „Schließen“: App beendet ${ja(zu)}${zu ? ` (Exit-Code ${exitCode})` : ""}`);
+    report.push("Ziehen, Größe am Rand und Win+Pfeiltasten brauchen echte Eingaben: in diesem Lauf nicht geprüft.");
+    throw null;
+  }
+
   // Ein echter Klick holt das Fenster nach vorn (startet ein Ziehen ohne Bewegung).
   await ps(`klick ${hwnd} ${freiPunkt.x} ${freiPunkt.y}`);
-  await bis(async () => (await info()).vorn);
+  if (!(await bis(async () => (await info()).vorn))) {
+    // Zweiter Versuch: Windows nach vorn bitten und noch einmal klicken (Windows sperrt das manchmal kurz).
+    await ps(`vorholen ${hwnd}`);
+    await pause();
+    await ps(`klick ${hwnd} ${freiPunkt.x} ${freiPunkt.y}`);
+    await bis(async () => (await info()).vorn);
+  }
   await pause();
   i = await info();
   report.push(`Nach einem Klick auf die Leiste liegt Localist vorn: ${ja(i.vorn)}, Fenster unverändert: ${ja(r(i.fenster) === r((await info()).fenster))}`);
@@ -257,7 +305,7 @@ try {
   report.push(`Knopf „Schließen“: App beendet ${ja(zu)}${zu ? ` (Exit-Code ${exitCode})` : ""}`);
   report.push(`Screenshots (echte Bildschirmaufnahme des Fensters): ${["fenster-rahmen.png", "fenster-maximiert.png", "fenster-links-angedockt.png"].map((n) => join(outDir, n)).join(", ")}`);
 } catch (error) {
-  report.push(`FEHLER: ${error.message}`);
+  if (error !== null) report.push(`FEHLER: ${error.message}`);
 } finally {
   console.log(report.join("\n"));
   if (hwnd && exitCode === null) await ps(`oben ${hwnd} 0`).catch(() => {});
