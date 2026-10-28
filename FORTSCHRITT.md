@@ -2,12 +2,12 @@
 
 ## Aktueller Stand
 - Etappe: 17 – Bedienung verbessern (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
-- Zuletzt aktualisiert: 2026-10-28 19:30
-- Nächster Schritt: Tab und Shift+Tab im heutigen Stand in der Vorschau nachstellen (echte Tastatur) und als Tabelle hier eintragen.
+- Zuletzt aktualisiert: 2026-10-28 20:00
+- Nächster Schritt: Tab/Shift+Tab in Notizen umsetzen (eigene Tastenbelegung, Regeln nach dem Markdown-Konverter, Übergang aus `tokens.css`).
 
 ## Fertig-Kriterien der aktuellen Etappe
 **Tab und Shift+Tab**
-- [ ] Zuerst nachgestellt (Browser-Vorschau, echte Tastatur): Was passiert heute bei Tab und Shift+Tab in Absatz, Überschrift, Liste, Checkliste, nummerierter Liste, Callout und Toggle, mit und ohne Markierung, im ersten Block und im Code-Editor? Das Ergebnis steht als Tabelle in `FORTSCHRITT.md`.
+- [x] Zuerst nachgestellt (Browser-Vorschau, echte Tastatur): Was passiert heute bei Tab und Shift+Tab in Absatz, Überschrift, Liste, Checkliste, nummerierter Liste, Callout und Toggle, mit und ohne Markierung, im ersten Block und im Code-Editor? Das Ergebnis steht als Tabelle in `FORTSCHRITT.md`.
 - [ ] Notizen: Tab rückt den aktuellen bzw. alle markierten Blöcke ein, Shift+Tab rückt aus, auch bei offener Formatierungsleiste. Der Fokus verlässt den Editor nie (auch nicht im ersten Block oder ganz links). Cursor und Markierung bleiben an derselben Textstelle, die Seite scrollt nicht.
 - [ ] Notizen: Eingerückt wird nur, was Markdown auch speichern kann (Listenpunkte, Checklisten, nummerierte Listen und Absätze unter einem Listenpunkt). In allen anderen Fällen bleibt der Block ruhig stehen, ohne Sprung und ohne Fokusverlust. Alles Eingerückte ist nach Speichern und Neuladen genauso eingerückt. Dafür gibt es Roundtrip-Tests.
 - [ ] Notizen: Ein- und Ausrücken hat einen kurzen, ruhigen Übergang (höchstens 150 ms, Werte aus `tokens.css`, aus bei `prefers-reduced-motion`). Einzug und Führungslinie kommen aus `tokens.css`.
@@ -27,6 +27,54 @@
 - [ ] Auf dem PC nutzt die Seite „Bausteine“ (Bibliothek und Hilfe) die verfügbare Breite: Liste links, die Vorschau füllt den Rest und die Fensterhöhe. Eine Höchstbreite greift erst bei sehr breiten Fenstern. Die Hilfe stellt Erklärung und Beispielcode nebeneinander, wenn Platz ist.
 - [ ] Screenshots bei 1280 × 800, 1920 × 1080 und 360 × 740.
 - [ ] Android im Emulator geprüft (`adb`-Befehle mit Ausgabe, Screenshots per `adb exec-out screencap`): Bibliothek und Hilfe sind lesbar, Liste und Vorschau bedienbar, nichts ist abgeschnitten oder verrutscht. Gefundene Fehler sind behoben.
+
+### Tab und Shift+Tab im Stand 2.0 (nachgestellt am 2026-10-28)
+Mit `scripts/tab-pruefung.mjs` (Edge im Hintergrund, echte Tastatur über das DevTools-Protokoll, 1280 × 800, Testnotiz `Notizen/Tab-Test.md` nur im Arbeitsspeicher der Vorschau). Je Fall erst Tab, dann Shift+Tab; „gespeichert“ zeigt die Zeile in der Datei nach dem automatischen Speichern (führende Leerzeichen als „·“). Ergebnis:
+- Der Fokus verlässt den Editor in BlockNote 0.56 nie, auch nicht im ersten Block oder ganz links; Cursor und Scrollposition bleiben gleich.
+- Mit Markierung (Formatierungsleiste offen, auch bei zwei markierten Listenpunkten) passiert bei Tab und Shift+Tab nichts: BlockNote gibt die Taste bei `tabBehavior: "prefer-navigate-ui"` an die Leiste ab, eingerückt wird nicht.
+- Absatz und Überschrift rücken sichtbar um 24 px ein, gespeichert wird aber ohne Einrückung (nach dem Neuladen weg).
+- Callout, Toggle und ein Absatz nach einem Toggle rutschen in den vorigen Block: Der Callout landet im Listenpunkt davor, das Toggle im Callout (`> > [!note]-`), der Absatz im Toggle (`> Letzter Absatz`). Das ändert den Inhalt, nicht nur die Einrückung.
+- Liste, Checkliste, nummerierte Liste und ein Absatz direkt nach einer Liste werden richtig eingerückt gespeichert. Der Block springt ohne Übergang (24 px, im Toggle 42 px).
+- Code-Editor: Tab/Shift+Tab rücken die ganze Zeile um 2 Leerzeichen ein bzw. aus, auch mitten in der Zeile und über mehrere markierte Zeilen; der Cursor bleibt an derselben Textstelle. Escape und danach Tab verlässt den Editor (Fokus auf dem nächsten Knopf).
+
+Tab und Shift+Tab, Vorschau http://localhost:1420 (Edge, echte Tastatur, 1280 × 800):
+
+| Fall | Taste | Einrückung (Tiefe) | Versatz | Fokus danach | Cursor/Markierung | Scroll | gespeichert |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Erster Block (Absatz) | Tab | 0 → 0 | 0 px | Editor | gleich | gleich | `Erster Absatz` |
+| Erster Block (Absatz) | Shift+Tab | 0 → 0 | 0 px | Editor | gleich | gleich | `Erster Absatz` |
+| Absatz | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `Zweiter Absatz` |
+| Absatz | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `Zweiter Absatz` |
+| Absatz, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `Zweiter Absatz` |
+| Absatz, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `Zweiter Absatz` |
+| Überschrift | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `## Überschrift` |
+| Überschrift | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `## Überschrift` |
+| Liste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `··- Punkt B` |
+| Liste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `- Punkt B` |
+| Liste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- Punkt B` |
+| Liste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- Punkt B` |
+| Liste, zwei Punkte markiert | Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
+| Liste, zwei Punkte markiert | Shift+Tab (Formatierungsleiste offen) | 0+0 → 0+0 | 0 px | Editor | gleich | gleich | `- Punkt B` `- Punkt C` |
+| Absatz direkt nach Liste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `··Absatz nach Liste` |
+| Absatz direkt nach Liste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `Absatz nach Liste` |
+| Checkliste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `··- [ ] Aufgabe B` |
+| Checkliste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+| Checkliste, Text markiert | Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+| Checkliste, Text markiert | Shift+Tab (Formatierungsleiste offen) | 0 → 0 | 0 px | Editor | gleich | gleich | `- [ ] Aufgabe B` |
+| Nummerierte Liste | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `···1. Schritt B` |
+| Nummerierte Liste | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `2. Schritt B` |
+| Callout | Tab | 0 → 1 | 24 px | Editor | gleich | gleich | `···> [!info] Callout A` |
+| Callout | Shift+Tab | 1 → 0 | -24 px | Editor | gleich | gleich | `> [!info] Callout A` |
+| Toggle | Tab | 0 → 1 | 42 px | Editor | gleich | gleich | `> > [!note]- Toggle A` |
+| Toggle | Shift+Tab | 1 → 0 | -42 px | Editor | gleich | gleich | `> [!note]- Toggle A` |
+| Absatz nach Toggle | Tab | 0 → 1 | 42 px | Editor | gleich | gleich | `> Letzter Absatz` |
+| Absatz nach Toggle | Shift+Tab | 1 → 0 | -42 px | Editor | gleich | gleich | `Letzter Absatz` |
+| Code-Editor: Cursor mitten in der Zeile | Tab | 0 → 2 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 44 | – | – |
+| Code-Editor: Cursor mitten in der Zeile | Shift+Tab | 2 → 0 Leerzeichen | – | Code-Editor | „<l-callout typ“ Spalte 43 → „<l-callout typ“ Spalte 41 | – | – |
+| Code-Editor: Cursor mitten in eingerückter Zeile | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-frage>Welch“ Spalte 23 → „<l-frage>Welch“ Spalte 21 | – | – |
+| Code-Editor: drei Zeilen markiert (Einzug der ersten) | Tab | 2 → 4 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) → „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) | – | – |
+| Code-Editor: drei Zeilen markiert, zurück | Shift+Tab | 4 → 2 Leerzeichen | – | Code-Editor | „<l-antwort>Por“ Spalte 7 (67 Zeichen markiert) → „<l-antwort>Por“ Spalte 5 (63 Zeichen markiert) | – | – |
+| Code-Editor: Escape, dann Tab | Escape, Tab | 0 → 0 Leerzeichen | – | button „🧱BausteineLink „DNS““ | „<l-callout typ“ Spalte 42 → „<l-callout typ“ Spalte 42 | – | – |
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
