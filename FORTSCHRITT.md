@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 20 – Handy und Version 2.1 (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
-- Zuletzt aktualisiert: 2026-10-29 02:10
-- Nächster Schritt: Etappe 20, Kriterium 7 (Klicklisten 1.0, 2.0 und die neue 2.1 mit `scripts/klickliste.mjs` durchlaufen und in FORTSCHRITT eintragen; die Liste 2.1 ist im Skript fertig), danach Kriterium 8 (`README.md`/`ANLEITUNG.md` „Neu in Version 2.1“ sind geschrieben, TODO-Prüfung ist leer) und der Abschluss (Arbeitsregel 5–7). Den eigenen Emulator am Ende mit `adb -s emulator-5556 emu kill` beenden. Hinweise: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`); dort gibt es die Navigationsleiste `src/components/Navigationsleiste.tsx` und `HomePage` mit `handy`. (b) In `.workspace.is-handy .main` gilt `--color-bg: var(--color-window)` (Seiten auf dem Fensterhintergrund), Karten und Leisten nutzen `--color-handy-karte`. (c) Vergleich mit der Vorlage: `node scripts/vorlage-vergleich.mjs http://localhost:<port> docs/screenshots/etappe-20 handy` (bisher nur 03; 04 und 05 dort ergänzen). (d) Im eingebauten Browserfenster von Claude laufen abgeschottete iframes nicht; Prüfungen und Screenshots mit den Edge-Skripten. (e) Bash-Heredocs verschlucken `\\` und brechen bei manchen Zeichen ab: Umbau-Skripte mit dem Write-Werkzeug schreiben. (f) Tests, die das Handy brauchen, täuschen mit `handyBildschirm()` in `src/App.test.tsx` einen schmalen Bildschirm vor.
+- Zuletzt aktualisiert: 2026-10-29 02:12
+- Nächster Schritt: Etappe 20, Kriterium 8 (`README.md`/`ANLEITUNG.md` „Neu in Version 2.1“ committen, `git grep -nE "TODO|FIXME" -- src src-tauri/src` ist leer), danach Abschluss (Arbeitsregel 5–7: alle Kriterien im Chat nachweisen, `npm test`, `cargo test`, `npx tsc --noEmit`, `npm run tauri build`, Abschluss-Commit). Den eigenen Emulator mit `adb -s emulator-5556 emu kill` beenden. Hinweise: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`); dort gibt es die Navigationsleiste `src/components/Navigationsleiste.tsx` und `HomePage` mit `handy`. (b) In `.workspace.is-handy .main` gilt `--color-bg: var(--color-window)` (Seiten auf dem Fensterhintergrund), Karten und Leisten nutzen `--color-handy-karte`. (c) Vergleich mit der Vorlage: `node scripts/vorlage-vergleich.mjs http://localhost:<port> docs/screenshots/etappe-20 handy` (bisher nur 03; 04 und 05 dort ergänzen). (d) Im eingebauten Browserfenster von Claude laufen abgeschottete iframes nicht; Prüfungen und Screenshots mit den Edge-Skripten. (e) Bash-Heredocs verschlucken `\\` und brechen bei manchen Zeichen ab: Umbau-Skripte mit dem Write-Werkzeug schreiben. (f) Tests, die das Handy brauchen, täuschen mit `handyBildschirm()` in `src/App.test.tsx` einen schmalen Bildschirm vor.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Untere Navigationsleiste nach `03-handy-startseite-hell.png`: Start, Suchen, „+“ (Neu-Menü), Seiten (Ordnerbaum mit Favoriten) und Einstellungen. Sie berücksichtigt `safe-area-inset-bottom` und ersetzt den Menü-Knopf oben. Die Handy-Startseite sieht aus wie in der Vorlage.
@@ -119,18 +119,19 @@
     ```
   - Screenshots (`adb exec-out screencap -p`) in `docs/screenshots/etappe-20/android/`: `01-startseite`, `02-navigation-seiten`, `03-navigation-suchen`, `04-navigation-neu`, `05-notiz`, `06-notiz-schreiben-tastatur`, `07-notiz-getippt`, `08-notiz-checkliste`, `09-notiz-fertig`, `10-einstellungen`, `11-darstellung-hell`, `12-darstellung-dunkel`, `13-darstellung-schwarz`, `14-darstellung-schwarz-gruen`, `15-startseite-schwarz-gruen`, `16-bausteine`, `17-bausteine-hilfe`, `18-html-lesen`, `19-html-code`, `20-html-code-tastatur` (20 Dateien).
   - Erkenntnisse und behobene Fehler: Android 17 zeichnet die App bis unter Status- und Gestenleiste (`safe-area-inset-bottom` 24 px, die Navigationsleiste steht 24 px über dem Rand). Die Bildschirmtastatur verkleinert die Seite nicht, sondern überdeckt sie (Fenster 914 px, sichtbar 578 px) – genau der Fall, für den die Leiste `visualViewport` auswertet. Behoben: (1) BlockNote zeigt auf Touch-Geräten eine eigene Formatierungsleiste über der Tastatur (`.bn-mobile-formatting-toolbar`), die hinter der Leiste der Vorlage hervorschaute; sie erscheint jetzt nur, solange Text markiert ist (dann fett, kursiv, Link …), und nimmt dann den Platz der Leiste ein (`data-auswahl` an der Leiste). (2) Eine Notiz ohne Eigenschaften zeigte nur ein einzelnes „+“; jetzt steht dort wie am PC „+ Eigenschaft hinzufügen“. Offen (siehe „Offene Probleme“): Die Symbole der Android-Statusleiste richten sich nach dem System, nicht nach dem Modus der App.
-- [ ] Neue Klickliste „Version 2.1“ in `FORTSCHRITT.md` (Tab/Shift+Tab in Liste und Code, „Im Explorer öffnen“ in der Vorschau-Simulation, Seitenleiste rechts und eingeklappt, Code rechts und Trennlinie ziehen, Reiter öffnen/wechseln/schließen, Schnell notieren, Modus Schwarz mit Akzent Blau, Tabelle in einer Notiz bearbeiten) ist abgehakt, ebenso „Version 1.0“ und „Version 2.0“, möglichst automatisch mit `scripts/klickliste.mjs` (neues Argument `2.1`).
+- [x] Neue Klickliste „Version 2.1“ in `FORTSCHRITT.md` (Tab/Shift+Tab in Liste und Code, „Im Explorer öffnen“ in der Vorschau-Simulation, Seitenleiste rechts und eingeklappt, Code rechts und Trennlinie ziehen, Reiter öffnen/wechseln/schließen, Schnell notieren, Modus Schwarz mit Akzent Blau, Tabelle in einer Notiz bearbeiten) ist abgehakt, ebenso „Version 1.0“ und „Version 2.0“, möglichst automatisch mit `scripts/klickliste.mjs` (neues Argument `2.1`).
+  - Neue Liste „Version 2.1“ (Abschnitt oben, 8 Punkte) in `scripts/klickliste.mjs` (Argument `2.1`; neu die Hilfen `ziehen` für echtes Ziehen mit der Maus, `rechteck` und Klicks mit Strg bzw. Mittelklick). Am 2026-10-29 um 02:10 auf Port 1431 durchgeklickt: „Version 1.0“ 12 von 12, „Version 2.0“ 7 von 7, „Version 2.1“ 8 von 8 bestanden (Ausgaben in den drei Abschnitten oben).
 - [ ] `README.md` und `ANLEITUNG.md` haben einen Abschnitt „Neu in Version 2.1“ für Einsteiger, die Pfade zeigen auf `Localist`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7. Sie wird in jeder Etappe in der Browser-Vorschau (`npm run dev`) durchgeklickt; die Haken gelten für den unten genannten Stand.
 
-Stand: am 2026-10-29 um 00:40 mit dem Abschluss-Stand von Etappe 19 in der Browser-Vorschau (eigene Vorschau „vorschau-1430“, Port 1430, Vite aus dem Ordner `Localist`) durchgeklickt, alle 12 Punkte bestanden (`node scripts/klickliste.mjs http://localhost:1430 "Etappe 19" 1.0`, echte Tastatur und Maus in Microsoft Edge; nur die Kanban-Karte wird mit Drag-Ereignissen gezogen). Ausgabe:
+Stand: am 2026-10-29 um 02:10 mit dem Stand von Etappe 20 (Version 2.1.0) in der Browser-Vorschau (eigene Vorschau „vorschau-1430“, diesmal auf Port 1431, Vite aus dem Ordner `Localist`) durchgeklickt, alle 12 Punkte bestanden (`node scripts/klickliste.mjs http://localhost:1431 "Etappe 20" 1.0`, echte Tastatur und Maus in Microsoft Edge; nur die Kanban-Karte wird mit Drag-Ereignissen gezogen). Ausgabe:
     ```
-    Klickliste „Version 1.0“ (Etappe 19), Vorschau http://localhost:1430:
-    [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 19.“
+    Klickliste „Version 1.0“ (Etappe 20), Vorschau http://localhost:1431:
+    [x] 1. Notiz bearbeiten: gespeichert: „Hier sammle ich lose Gedanken. Klickliste Etappe 20.“
     [x] 2. Callout über das „/“-Menü: eingefügt
-    [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 19 [[Formatierung]]“, Klick öffnet „Formatierung“
+    [x] 3. Link mit [[ und Klick: gespeichert als „> [!info] Hinweis Etappe 20 [[Formatierung]]“, Klick öffnet „Formatierung“
     [x] 4. Eigenschaft: `kategorie: Lernen` im Frontmatter
     [x] 5. Tabelle: Zelle, Sortierung, Filter: priorität: mittel; absteigend: Umzug, Website-Relaunch; Filter status ist Geplant: Umzug
     [x] 6. Kanban: „Umzug“ nach „Erledigt“ (status: Erledigt)
@@ -157,16 +158,16 @@ Stand: am 2026-10-29 um 00:40 mit dem Abschluss-Stand von Etappe 19 in der Brows
 ## Klickliste „Version 2.0“
 Feste Liste für Version 2.0 (Etappe 15). Sie wird wie die Liste „Version 1.0“ in der Browser-Vorschau geprüft, ebenfalls mit `scripts/klickliste.mjs` (echte Tastatur und Maus in Microsoft Edge, Aufruf `node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" 2.0`). Rückfragen der Seite beantwortet das Skript wie ein Mensch mit „OK“.
 
-Stand: am 2026-10-29 um 00:42 mit dem Abschluss-Stand von Etappe 19 (Port 1430, Aufruf `node scripts/klickliste.mjs http://localhost:1430 "Etappe 19" 2.0`) durchgeklickt, alle 7 Punkte bestanden. Ausgabe:
+Stand: am 2026-10-29 um 02:10 mit dem Stand von Etappe 20 (Port 1431, Aufruf `node scripts/klickliste.mjs http://localhost:1431 "Etappe 20" 2.0`) durchgeklickt, alle 7 Punkte bestanden. Ausgabe:
     ```
-    Klickliste „Version 2.0“ (Etappe 19), Vorschau http://localhost:1430:
-    [x] 1. HTML-Seite anlegen: Unbenannt.html mit localist-id 5e96e702-a67c-4043-88e9-3c39d5c28b32, <title>Unbenannt</title> und Verweisen auf .localist/bausteine/, geöffnet in „Geteilt“
+    Klickliste „Version 2.0“ (Etappe 20), Vorschau http://localhost:1431:
+    [x] 1. HTML-Seite anlegen: Unbenannt.html mit localist-id 038dfe30-c858-4457-bcbb-5a401a7aadf4, <title>Unbenannt</title> und Verweisen auf .localist/bausteine/, geöffnet in „Geteilt“
     [x] 2. Code bearbeiten: getippt, gespeichert (nur diese Zeile neu, Rest der Datei Zeichen für Zeichen gleich), Vorschau zeigt „Klickliste Version 2.0“
     [x] 3. Jeder Baustein (Werkzeugleiste, dann „Lesen“): 13 Bausteine eingefügt (13 Markups in der Datei); in „Lesen“: {"callout":"Info","bild":1,"code":null,"stapel":"0 von 2 gewusst","quiz":"Punkte: 0 von 1","diagramm":1,"spalten":"grid"}, Karteikarte per Klick umgedreht
     [x] 4. Eigener Baustein: .localist/bausteine/eigene/Klickliste-Box.html: "<!-- beschreibung: Aus der Klickliste 2.0 -->\n<l-callout typ=\"info\">Text</l-callout>\n"; in der Werkzeugleiste, Klick fügt ihn ein (1 → 2)
     [x] 5. Notizbuch: _notizbuch.yaml "titel: Notizen\nseiten:\n  - DNS.html\n  - Formatierung.md\n  - Ideen.md\n", Inhaltsverzeichnis 1DNS, 2Formatierung, 3Ideen, „Weiter“ → Formatierung
     [x] 6. Umwandeln: Rückfrage „„Ideen“ in eine HTML-Seite umwandeln? Die Notiz kommt in den Papierkorb, Links im Vault werden angepasst.“ mit OK beantwortet; Notizen/Ideen.html angelegt, Ideen.md im Papierkorb, Website-Relaunch verlinkt [[Ideen.html]], Notizbuch-Eintrag Ideen.html
-    [x] 7. Export: C:/Export/DNS.html (173187 Zeichen): CSS und Skript eingebettet, keine Verweise auf .localist/
+    [x] 7. Export: C:/Export/DNS.html (178495 Zeichen): CSS und Skript eingebettet, keine Verweise auf .localist/
     ```
 - [x] HTML-Seite anlegen: „Neu“ → „HTML-Seite“ legt `Unbenannt.html` nach dem Speicherformat an (mit `localist-id`) und öffnet sie in „Geteilt“.
 - [x] Code bearbeiten: Im Code-Editor tippen; gespeichert wird nur die geänderte Stelle, die Vorschau zeigt den neuen Text.
@@ -175,6 +176,30 @@ Stand: am 2026-10-29 um 00:42 mit dem Abschluss-Stand von Etappe 19 (Port 1430, 
 - [x] Notizbuch: Ordner „Notizen“ in ein Notizbuch umwandeln, Inhaltsverzeichnis, „Weiter“.
 - [x] Umwandeln: „Ideen“ nach Rückfrage in eine HTML-Seite umwandeln, Links und Notizbuch-Eintrag werden angepasst.
 - [x] Export: „DNS“ als eigenständige HTML-Datei exportieren (CSS und Skript eingebettet).
+
+## Klickliste „Version 2.1“
+Feste Liste für Version 2.1 (Etappe 20). Sie wird wie die Listen „Version 1.0“ und „Version 2.0“ in der Browser-Vorschau geprüft, mit `scripts/klickliste.mjs` (drittes Argument `2.1`, echte Tastatur und Maus in Microsoft Edge, 1280 × 800).
+
+Stand: am 2026-10-29 um 02:10 mit dem Stand von Etappe 20 (Port 1431, Aufruf `node scripts/klickliste.mjs http://localhost:1431 "Etappe 20" 2.1`) durchgeklickt, alle 8 Punkte bestanden. Ausgabe:
+    ```
+    Klickliste „Version 2.1“ (Etappe 20), Vorschau http://localhost:1431:
+    [x] 1. Tab/Shift+Tab in Liste und Code: Liste: „  - Einkaufsliste mit Checkboxen“ → „- Einkaufsliste mit Checkboxen“, Fokus blieb im Editor; Code (Cursor mitten in der Zeile): „  <h1>Namens…“ → „<h1>Namens…“
+    [x] 2. „Im Explorer öffnen“ (Vorschau-Simulation): Rechtsklick auf „Ideen“ → „Im Explorer öffnen“: Meldung „Browser-Vorschau: Hier gibt es keinen Explorer. In der App öffnet sich jetzt der Windows-Explorer und zeigt „Notizen/Ideen.md“ markiert in seinem Ordner.“, Pfad Notizen/Ideen.md
+    [x] 3. Seitenleiste rechts und eingeklappt: rechts: Seitenleiste ab x 1032 (Inhalt bis 1032); Strg+. eingeklappt (Breite 0, Inhalt 1268 px breit), gemerkt „rechts/true“; Strg+. wieder 248 px
+    [x] 4. Code rechts und Trennlinie ziehen: „Seiten tauschen“: Code rechts (x 522 > 39); Trennlinie 120 px nach links gezogen: Code-Anteil 50 % → 63 %, gemerkt „rechts, Anteil 0.628“
+    [x] 5. Reiter öffnen, wechseln, schließen: Strg+Klick: Startseite | DNS | Formatierung*; Strg+Tab: Startseite* | DNS | Formatierung; Strg+Umschalt+Tab: Startseite | DNS | Formatierung*; Strg+W: Startseite | DNS*; Mittelklick schließt „Ideen“: Startseite | DNS*
+    [x] 6. Schnell notieren: Enter legt „Klickliste 2.1.md“ an (Umschalt+Enter = neue Zeile, Inhalt „Zweite Zeile vom Schnell-Notieren“), Feld wieder leer, oben in „Zuletzt bearbeitet“: „Klickliste 2.1“
+    [x] 7. Modus Schwarz mit Akzent Blau: sofort {"modus":"black","akzent":"blau","fenster":"#000000","farbe":"#2a65db","knopf":"rgb(42, 101, 219)"}; nach dem Neuladen Modus „black“, Akzent „blau“
+    [x] 8. Tabelle in einer Notiz bearbeiten: Zelle „64“ → „64 Adr.“ und neue Zeile über „+“: | Präfix | Adressen | | --- | --- | | /24 | 256 | | /25 | 128 | | /26 | 64 Adr. | |  |  |
+    ```
+- [x] Tab/Shift+Tab in Liste und Code: In „Ideen“ einen Listenpunkt mit Tab einrücken und mit Umschalt+Tab ausrücken (gespeichert, Fokus bleibt im Editor); im Code-Editor von „DNS“ eine Zeile mit dem Cursor mitten darin ein- und ausrücken.
+- [x] „Im Explorer öffnen“ in der Vorschau-Simulation: Rechtsklick auf eine Seite → „Im Explorer öffnen“ zeigt die Meldung der Vorschau mit dem Pfad.
+- [x] Seitenleiste rechts und eingeklappt: Einstellungen → Darstellung → „Rechts“, dann Strg+. ein- und wieder ausklappen; beides wird gemerkt.
+- [x] Code rechts und Trennlinie ziehen: In „Geteilt“ „Seiten tauschen“, die Trennlinie mit der Maus ziehen; Seite und Verhältnis werden gemerkt.
+- [x] Reiter öffnen/wechseln/schließen: Strg+Klick öffnet einen neuen Reiter, Strg+Tab und Strg+Umschalt+Tab wechseln, Strg+W und Mittelklick schließen.
+- [x] Schnell notieren: Auf der Startseite zwei Zeilen tippen (Umschalt+Enter), Enter legt die Notiz an.
+- [x] Modus Schwarz mit Akzent Blau: Knopf „Schwarz“ unten in der Seitenleiste, Akzent „Blau“ in den Einstellungen; wirkt sofort und bleibt nach dem Neuladen.
+- [x] Tabelle in einer Notiz bearbeiten: In „Subnetting“ eine Zelle ändern und über „+“ eine Zeile anfügen; gespeichert als Markdown-Tabelle.
 
 ## Abgeschlossene Etappen
 - Etappe 19 – Neues Design, Teil 2: Reiter und Inhalte (abgeschlossen am 2026-10-29). Nachweise: Reiter (`src/lib/reiter.ts`, `src/components/Reiterleiste.tsx`), Startseite nach der Vorlage mit „Schnell notieren“, Seitenkopf mit Speicherstatus, Notiz nach der Vorlage mit Menü „Baustein wählen …“, Tabellen in Notizen als Editor-Tabelle (verlustfrei oder Markdown-Text), übrige Ansichten und `localist.css` im neuen Stil, Vergleich mit der Vorlage (`scripts/vorlage-vergleich.mjs`) und Screenshots aller Ansichten in Hell, Dunkel und Schwarz (`docs/screenshots/etappe-19/`, 111 Dateien). Arbeitsregel 6 am Ende (2026-10-29, 00:30–00:55): `npm test` 440 von 440 grün (37 Testdateien), `cargo test` 44 von 44 grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler (EXIT=0: `src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi` (3,37 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` (2,64 MiB)); mit dieser EXE `localist.exe --sicherheitstest`: „Ergebnis: 21 von 21 Prüfungen bestanden“ (Exit-Code 0). Klicklisten „Version 1.0“ (12/12) und „Version 2.0“ (7/7) abgehakt.

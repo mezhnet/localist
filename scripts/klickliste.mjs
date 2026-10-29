@@ -1,10 +1,11 @@
-// Klicklisten „Version 1.0“ (Arbeitsregel 7) und „Version 2.0“ (Etappe 15) automatisch in der Browser-Vorschau:
+// Klicklisten „Version 1.0“ (Arbeitsregel 7), „Version 2.0“ (Etappe 15) und „Version 2.1“ (Etappe 20) automatisch
+// in der Browser-Vorschau:
 // steuert Microsoft Edge im Hintergrund mit echter Tastatur und Maus (DevTools-Protokoll) und prüft nach jedem
 // Schritt die Datei im Arbeitsspeicher der Vorschau (dev-backend.ts). Echte Dateien ändern sich nicht.
 // Einzige Ausnahme: Das Ziehen einer Kanban-Karte nutzt Drag-Ereignisse per Skript (natives Drag & Drop lässt
 // sich über das Protokoll nicht auslösen).
 //
-// Aufruf, während die Vorschau läuft: node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" [1.0|2.0]
+// Aufruf, während die Vorschau läuft: node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" [1.0|2.0|2.1]
 // Rückfragen der Seite (window.confirm) beantwortet das Skript wie ein Mensch mit „OK“.
 import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -58,7 +59,7 @@ const waitFor = async (expression, ms = 8000) => {
   return false;
 };
 const tippen = (text) => send("Input.insertText", { text });
-const KEYS = { Enter: ["Enter", 13], Escape: ["Escape", 27], End: ["End", 35], Home: ["Home", 36], Tab: ["Tab", 9] };
+const KEYS = { Enter: ["Enter", 13], Escape: ["Escape", 27], End: ["End", 35], Home: ["Home", 36], Tab: ["Tab", 9], ".": [".", 190] };
 const taste = async (key, modifiers = 0, code) => {
   const [name, keyCode] = KEYS[key] ?? [key, key.toUpperCase().charCodeAt(0)];
   const info = { key: name, code: code ?? (KEYS[key] ? name : `Key${key.toUpperCase()}`), windowsVirtualKeyCode: keyCode, modifiers };
@@ -67,16 +68,28 @@ const taste = async (key, modifiers = 0, code) => {
   await send("Input.dispatchKeyEvent", { type: "keyUp", ...info });
   await sleep(120);
 };
-const klick = async (x, y) => {
-  for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", clickCount: 1 });
+const klick = async (x, y, { button = "left", modifiers = 0 } = {}) => {
+  for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : button, clickCount: 1, modifiers });
   await sleep(200);
 };
+/** Mit gedrückter Maustaste von (x1, y1) nach (x2, y2) ziehen, in kleinen Schritten wie eine echte Hand. */
+const ziehen = async (x1, y1, x2, y2) => {
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x1, y: y1, button: "none" });
+  await send("Input.dispatchMouseEvent", { type: "mousePressed", x: x1, y: y1, button: "left", buttons: 1, clickCount: 1 });
+  for (let i = 1; i <= 12; i++) {
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x1 + ((x2 - x1) * i) / 12, y: y1 + ((y2 - y1) * i) / 12, button: "left", buttons: 1 });
+    await sleep(30);
+  }
+  await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x2, y: y2, button: "left", buttons: 0, clickCount: 1 });
+  await sleep(300);
+};
 /** Klick auf ein Element (Ausdruck liefert das Element), an Position `wo` (Bruchteil der Breite). */
-const klickAuf = async (elementExpr, wo = 0.5) => {
+const klickAuf = async (elementExpr, wo = 0.5, optionen) => {
   const rect = await evaluate(`(() => { const el = ${elementExpr}; if (!el) return null; el.scrollIntoView({ block: "center" }); const r = el.getBoundingClientRect(); return { x: r.x + r.width * ${wo}, y: r.y + r.height / 2 }; })()`);
   if (!rect) throw new Error(`Nicht gefunden: ${elementExpr}`);
-  await klick(rect.x, rect.y);
+  await klick(rect.x, rect.y, optionen);
 };
+const rechteck = (elementExpr) => evaluate(`(() => { const r = (${elementExpr})?.getBoundingClientRect(); return r ? { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height } : null; })()`);
 const knopf = (text) => `[...document.querySelectorAll('button, [role="menuitem"], [role="option"], [role="tab"]')].find((b) => b.textContent.trim() === ${JSON.stringify(text)} || b.getAttribute("aria-label") === ${JSON.stringify(text)})`;
 const datei = (pfad) => evaluate(`window.__devVault.files.get(${JSON.stringify(pfad)}) ?? ""`);
 const SICHTBAR = `[...document.querySelectorAll('iframe.html-frame')].find((f) => !f.classList.contains('is-loading'))`;
@@ -291,6 +304,177 @@ try {
       const danach = await evaluate(`document.documentElement.dataset.theme`);
       erwarte(sofort === "dark" && danach === "dark", `${sofort} / ${danach}`);
       return `sofort „${sofort}“, nach dem Neuladen „${danach}“`;
+    });
+  } else if (liste === "2.1") {
+    // Klickliste „Version 2.1“ (Etappe 20)
+    const reiter = () => evaluate(`[...document.querySelectorAll('[role="tablist"][aria-label="Offene Reiter"] [role="tab"]')].map((t) => t.textContent.trim() + (t.getAttribute("aria-selected") === "true" ? "*" : ""))`);
+    const zeilen = async (pfad, muster) => (await datei(pfad)).split("\n").filter((z) => muster.test(z));
+
+    await pruefen(1, "Tab/Shift+Tab in Liste und Code", async () => {
+      await klickAuf(`document.querySelector('.tree [title="Notizen"]')`);
+      await klickAuf(`document.querySelector('.tree [title="Notizen/Ideen.md"]')`);
+      erwarte(await waitFor(`[...document.querySelectorAll('.bn-editor .bn-inline-content')].some((e) => e.textContent === "Einkaufsliste mit Checkboxen")`), "Ideen nicht geöffnet");
+      await klickAuf(`[...document.querySelectorAll('.bn-editor .bn-inline-content')].find((e) => e.textContent === "Einkaufsliste mit Checkboxen")`, 0.5);
+      await taste("Tab");
+      await sleep(1200);
+      const ein = await zeilen("Notizen/Ideen.md", /Einkaufsliste/);
+      erwarte(/^\s+- Einkaufsliste mit Checkboxen$/.test(ein[0] ?? ""), `nicht eingerückt: ${JSON.stringify(ein)}`);
+      const imEditor = await evaluate(`document.querySelector('.bn-editor').contains(document.activeElement)`);
+      erwarte(imEditor, "Fokus hat den Editor verlassen");
+      await taste("Tab", 8);
+      await sleep(1200);
+      const aus = await zeilen("Notizen/Ideen.md", /Einkaufsliste/);
+      erwarte(aus[0] === "- Einkaufsliste mit Checkboxen", `nicht ausgerückt: ${JSON.stringify(aus)}`);
+      // Code-Editor der HTML-Seite DNS
+      await klickAuf(`document.querySelector('.tree [title="Notizen/DNS.html"]')`);
+      erwarte(await waitFor(`document.querySelector('[aria-label="Ansicht (Strg+E)"]')`), "DNS nicht geöffnet");
+      await klickAuf(`[...document.querySelectorAll('[aria-label="Ansicht (Strg+E)"] button')].find((b) => b.textContent.trim() === "Code")`);
+      erwarte(await waitFor(`[...document.querySelectorAll('.cm-content .cm-line')].some((l) => l.textContent.startsWith("<h1>"))`), "Code fehlt");
+      await klickAuf(`[...document.querySelectorAll('.cm-content .cm-line')].find((l) => l.textContent.startsWith("<h1>"))`, 0.3);
+      await taste("Tab");
+      await sleep(1200);
+      const codeEin = await zeilen("Notizen/DNS.html", /<h1>/);
+      await taste("Tab", 8);
+      await sleep(1200);
+      const codeAus = await zeilen("Notizen/DNS.html", /<h1>/);
+      erwarte(codeEin[0]?.startsWith("  <h1>") && codeAus[0]?.startsWith("<h1>"), `Code: ${JSON.stringify(codeEin)} → ${JSON.stringify(codeAus)}`);
+      return `Liste: „${ein[0]}“ → „${aus[0]}“, Fokus blieb im Editor; Code (Cursor mitten in der Zeile): „${codeEin[0].slice(0, 12)}…“ → „${codeAus[0].slice(0, 10)}…“`;
+    });
+
+    await pruefen(2, "„Im Explorer öffnen“ (Vorschau-Simulation)", async () => {
+      await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 5, y: 5, button: "none" });
+      const r = await rechteck(`document.querySelector('.tree [title="Notizen/Ideen.md"]')`);
+      for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: r.left + 30, y: r.top + r.height / 2, button: "right", clickCount: 1 });
+      erwarte(await waitFor(knopf("Im Explorer öffnen")), "Kontextmenü ohne „Im Explorer öffnen“");
+      await klickAuf(knopf("Im Explorer öffnen"));
+      erwarte(await waitFor(`document.querySelector('.notice.toast')?.textContent.includes("Explorer")`), "keine Meldung");
+      const meldung = await evaluate(`document.querySelector('.notice.toast').textContent`);
+      const pfade = await evaluate(`window.__devVault.explorer.join(", ")`);
+      erwarte(pfade === "Notizen/Ideen.md", `Pfad: ${pfade}`);
+      return `Rechtsklick auf „Ideen“ → „Im Explorer öffnen“: Meldung „${meldung}“, Pfad ${pfade}`;
+    });
+
+    await pruefen(3, "Seitenleiste rechts und eingeklappt", async () => {
+      await klickAuf(`[...document.querySelectorAll('.sidebar-footer button')].find((b) => b.textContent.trim().startsWith("Einstellungen"))`);
+      await klickAuf(`[...document.querySelectorAll('[role="dialog"] [aria-label="Seitenleiste"] button')].find((b) => b.textContent.trim() === "Rechts")`);
+      await taste("Escape");
+      await sleep(400);
+      const seite = await rechteck(`document.querySelector(".sidebar-shell")`);
+      const inhalt = await rechteck(`document.querySelector("main.main")`);
+      erwarte(seite.left > inhalt.right - 1, `Seitenleiste nicht rechts (${seite.left} / ${inhalt.right})`);
+      await taste(".", 2, "Period");
+      await sleep(600);
+      const zu = await rechteck(`document.querySelector(".sidebar-shell")`);
+      const voll = await rechteck(`document.querySelector("main.main")`);
+      erwarte(zu.width < 1 && (await evaluate(`document.querySelector(".workspace").classList.contains("is-eingeklappt")`)), `nicht eingeklappt (${zu.width})`);
+      const gemerkt = await evaluate(`localStorage.getItem("seitenleiste-seite") + "/" + localStorage.getItem("seitenleiste-eingeklappt")`);
+      await taste(".", 2, "Period");
+      await sleep(600);
+      const auf = await rechteck(`document.querySelector(".sidebar-shell")`);
+      erwarte(auf.width > 200, "nicht wieder ausgeklappt");
+      return `rechts: Seitenleiste ab x ${Math.round(seite.left)} (Inhalt bis ${Math.round(inhalt.right)}); Strg+. eingeklappt (Breite ${Math.round(zu.width)}, Inhalt ${Math.round(voll.width)} px breit), gemerkt „${gemerkt}“; Strg+. wieder ${Math.round(auf.width)} px`;
+    });
+
+    await pruefen(4, "Code rechts und Trennlinie ziehen", async () => {
+      await klickAuf(`[...document.querySelectorAll('[aria-label="Ansicht (Strg+E)"] button')].find((b) => b.textContent.trim() === "Geteilt")`);
+      erwarte(await waitFor(`document.querySelector('.html-workspace.is-geteilt [role="separator"]')`), "„Geteilt“ fehlt");
+      await klickAuf(`document.querySelector('[aria-label="Seiten tauschen"]')`);
+      await sleep(500);
+      const code = await rechteck(`document.querySelector(".html-code-pane")`);
+      const vorschau = await rechteck(`document.querySelector(".html-preview-pane")`);
+      erwarte(code.left > vorschau.left, "Code nicht rechts");
+      const linie = await rechteck(`document.querySelector('.html-workspace [role="separator"]')`);
+      const vorher = await evaluate(`document.querySelector('.html-workspace [role="separator"]').getAttribute("aria-valuenow")`);
+      await ziehen(linie.left + linie.width / 2, linie.top + linie.height / 2, linie.left + linie.width / 2 - 120, linie.top + linie.height / 2);
+      const nachher = await evaluate(`document.querySelector('.html-workspace [role="separator"]').getAttribute("aria-valuenow")`);
+      const gemerkt = await evaluate(`localStorage.getItem("html-code-seite") + ", Anteil " + localStorage.getItem("html-geteilt-anteil")`);
+      erwarte(Number(nachher) > Number(vorher), `Trennlinie: ${vorher} → ${nachher}`);
+      await klickAuf(`document.querySelector('[aria-label="Seiten tauschen"]')`);
+      return `„Seiten tauschen“: Code rechts (x ${Math.round(code.left)} > ${Math.round(vorschau.left)}); Trennlinie 120 px nach links gezogen: Code-Anteil ${vorher} % → ${nachher} %, gemerkt „${gemerkt}“`;
+    });
+
+    await pruefen(5, "Reiter öffnen, wechseln, schließen", async () => {
+      await klickAuf(`document.querySelector('.tree [title="Notizen/Formatierung.md"]')`, 0.5, { modifiers: 2 });
+      erwarte(await waitFor(`[...document.querySelectorAll('[aria-label="Offene Reiter"] [role="tab"]')].some((t) => t.textContent.includes("Formatierung"))`), "kein neuer Reiter");
+      const offen = await reiter();
+      // Strg+Tab wechselt reihum (vom letzten zum festen Reiter „Startseite“), Strg+Umschalt+Tab zurück
+      await taste("Tab", 2);
+      await sleep(500);
+      const gewechselt = await reiter();
+      await taste("Tab", 2 | 8);
+      await sleep(500);
+      const zurueck = await reiter();
+      erwarte(gewechselt.includes("Startseite*") && zurueck.some((r) => r.startsWith("Formatierung") && r.endsWith("*")), `Wechsel: ${gewechselt} / ${zurueck}`);
+      await taste("w", 2);
+      await sleep(500);
+      const geschlossen = await reiter();
+      erwarte(offen.length === geschlossen.length + 1 && !geschlossen.some((r) => r.startsWith("Formatierung")), `Reiter: ${offen} → ${geschlossen}`);
+      // Mittelklick schließt
+      await klickAuf(`document.querySelector('.tree [title="Notizen/Ideen.md"]')`, 0.5, { modifiers: 2 });
+      await sleep(500);
+      const mitIdeen = await reiter();
+      await klickAuf(`[...document.querySelectorAll('[aria-label="Offene Reiter"] .reiter')].find((r) => r.textContent.includes("Ideen"))`, 0.4, { button: "middle" });
+      await sleep(500);
+      const ohne = await reiter();
+      erwarte(mitIdeen.length === ohne.length + 1, `Mittelklick: ${mitIdeen} → ${ohne}`);
+      return `Strg+Klick: ${offen.join(" | ")}; Strg+Tab: ${gewechselt.join(" | ")}; Strg+Umschalt+Tab: ${zurueck.join(" | ")}; Strg+W: ${geschlossen.join(" | ")}; Mittelklick schließt „Ideen“: ${ohne.join(" | ")}`;
+    });
+
+    await pruefen(6, "Schnell notieren", async () => {
+      await klickAuf(`[...document.querySelectorAll('.sidebar-item')].find((b) => b.textContent.trim() === "Startseite")`);
+      erwarte(await waitFor(`document.querySelector('[aria-label="Schnell notieren"]')`), "Startseite fehlt");
+      await klickAuf(`document.querySelector('[aria-label="Schnell notieren"]')`);
+      await tippen("Klickliste 2.1");
+      await send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, modifiers: 8 });
+      await send("Input.dispatchKeyEvent", { type: "char", text: "\r", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, modifiers: 8 });
+      await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, modifiers: 8 });
+      await tippen("Zweite Zeile vom Schnell-Notieren");
+      await taste("Enter");
+      erwarte(await waitFor(`window.__devVault.files.has("Klickliste 2.1.md")`), "Notiz nicht angelegt");
+      const text = await datei("Klickliste 2.1.md");
+      const feld = await evaluate(`document.querySelector('[aria-label="Schnell notieren"]').value`);
+      erwarte(/^---\nid: [0-9a-f-]{36}\n---\n/.test(text) && text.includes("Zweite Zeile vom Schnell-Notieren") && feld === "", `Datei: ${JSON.stringify(text)}`);
+      const oben = await evaluate(`document.querySelector('.home-table-zeile .home-table-titel')?.textContent`);
+      return `Enter legt „Klickliste 2.1.md“ an (Umschalt+Enter = neue Zeile, Inhalt „Zweite Zeile vom Schnell-Notieren“), Feld wieder leer, oben in „Zuletzt bearbeitet“: „${oben}“`;
+    });
+
+    await pruefen(7, "Modus Schwarz mit Akzent Blau", async () => {
+      await klickAuf(`document.querySelector('.modus-umschalter [aria-label="Schwarz"]')`);
+      await klickAuf(`[...document.querySelectorAll('.sidebar-footer button')].find((b) => b.textContent.trim().startsWith("Einstellungen"))`);
+      await klickAuf(`document.querySelector('[role="dialog"] [role="radio"][aria-label="Blau"]')`);
+      await taste("Escape");
+      const css = `(() => { const s = getComputedStyle(document.documentElement); return { modus: document.documentElement.dataset.theme, akzent: document.documentElement.dataset.accent, fenster: s.getPropertyValue("--color-window").trim(), farbe: s.getPropertyValue("--color-accent").trim(), knopf: getComputedStyle(document.querySelector(".home-schnell-notiz")).backgroundColor }; })()`;
+      const sofort = await evaluate(css);
+      await send("Page.reload");
+      await waitFor(`document.querySelector('[role="tree"] .tree-row')`);
+      const danach = await evaluate(css);
+      erwarte(sofort.modus === "black" && sofort.akzent === "blau" && sofort.fenster === "#000000" && sofort.farbe === "#2a65db", `sofort: ${JSON.stringify(sofort)}`);
+      erwarte(danach.modus === "black" && danach.akzent === "blau", `nach dem Neuladen: ${JSON.stringify(danach)}`);
+      return `sofort ${JSON.stringify(sofort)}; nach dem Neuladen Modus „${danach.modus}“, Akzent „${danach.akzent}“`;
+    });
+
+    await pruefen(8, "Tabelle in einer Notiz bearbeiten", async () => {
+      await klickAuf(`document.querySelector('.tree [title="Lernen"]')`);
+      erwarte(await waitFor(`document.querySelector('.tree [title="Lernen/Subnetting.md"]')`), "Lernen nicht aufgeklappt");
+      await klickAuf(`document.querySelector('.tree [title="Lernen/Subnetting.md"]')`);
+      erwarte(await waitFor(`document.querySelector('.bn-editor [data-content-type="table"] td')`), "Tabelle fehlt");
+      await klickAuf(`[...document.querySelectorAll('.bn-editor [data-content-type="table"] td')].find((z) => z.textContent.trim() === "64")`, 0.9);
+      await taste("End");
+      await tippen(" Adr.");
+      await sleep(1200);
+      const zelle = await zeilen("Lernen/Subnetting.md", /\/26/);
+      erwarte(/^\| \/26 \| 64 Adr\. \|$/.test(zelle[0] ?? ""), `Zelle: ${JSON.stringify(zelle)}`);
+      // Zeile über das „+“ unter der Tabelle anfügen (erscheint beim Überfahren der Tabelle; ohne zu scrollen klicken)
+      const tabelle = await rechteck(`document.querySelector('.bn-editor [data-content-type="table"] table')`);
+      await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: tabelle.left + tabelle.width / 2, y: tabelle.bottom - 8, button: "none" });
+      await sleep(400);
+      erwarte(await waitFor(`document.querySelector(".bn-extend-button-add-remove-rows")`), "„+“ für Zeilen fehlt");
+      const plus = await rechteck(`document.querySelector(".bn-extend-button-add-remove-rows")`);
+      await klick(plus.left + plus.width / 2, plus.top + plus.height / 2);
+      await sleep(1200);
+      const tabellenZeilen = await zeilen("Lernen/Subnetting.md", /^\|/);
+      erwarte(tabellenZeilen.length === 6 && /^\|\s*\|\s*\|$/.test(tabellenZeilen.at(-1)), `Tabelle: ${JSON.stringify(tabellenZeilen)}`);
+      return `Zelle „64“ → „64 Adr.“ und neue Zeile über „+“: ${tabellenZeilen.join(" ")}`;
     });
   } else {
     // Klickliste „Version 2.0“ (Etappe 15): HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein,
