@@ -328,6 +328,9 @@ export function installDevBackend(): void {
           const was = pfad === "" ? "den Vault-Ordner" : folders.has(pfad) ? `den Ordner „${pfad}“` : `„${pfad}“ markiert in seinem Ordner`;
           return `Browser-Vorschau: Hier gibt es keinen Explorer. In der App öffnet sich jetzt der Windows-Explorer und zeigt ${was}.`;
         }
+        // Android-Statusleiste: Ein Browser-Tab hat keine, wie am PC passiert nichts.
+        case "statusleiste_setzen":
+          return null;
         // Eigener Fensterrahmen: Die Vorschau merkt sich nur die Befehle (ein Browser-Tab hat kein eigenes Fenster).
         case "plugin:window|minimize":
         case "plugin:window|close":

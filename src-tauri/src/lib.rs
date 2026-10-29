@@ -7,6 +7,7 @@ mod export;
 mod page_scheme;
 mod search_index;
 mod security_test;
+mod statusleiste;
 mod vault;
 mod watcher;
 
@@ -282,6 +283,12 @@ fn app_platform() -> &'static str {
     std::env::consts::OS
 }
 
+/// Android: Symbole der Statusleiste passend zum Modus der App (siehe statusleiste.rs). Am PC ohne Wirkung.
+#[tauri::command]
+async fn statusleiste_setzen(app: AppHandle, dunkel: bool) -> Result<(), String> {
+    statusleiste::setzen(&app, dunkel)
+}
+
 /// Startpunkte für die eigene Ordnerauswahl auf dem Handy.
 #[tauri::command]
 async fn storage_locations(app: AppHandle) -> Result<Vec<vault::FolderEntry>, String> {
@@ -371,6 +378,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(statusleiste::init())
         .manage(state)
         // HTML-Seiten für die abgeschottete Anzeige (siehe page_scheme.rs).
         .register_asynchronous_uri_scheme_protocol(page_scheme::SCHEME, |ctx, request, responder| {
@@ -435,6 +443,7 @@ pub fn run() {
             import_attachment,
             vault_index,
             app_platform,
+            statusleiste_setzen,
             storage_locations,
             list_folders,
             create_folder_at,

@@ -211,6 +211,11 @@ export function appPlatform(): Promise<string> {
   return invoke<string>("app_platform");
 }
 
+/** Android: Symbole der Statusleiste passend zum Modus der App (dunkel = helle Symbole). Am PC tut die Rust-Seite nichts. */
+export function statusleisteSetzen(dunkel: boolean): Promise<void> {
+  return invoke<void>("statusleiste_setzen", { dunkel });
+}
+
 /** Startpunkte für die eigene Ordnerauswahl (Android: interner Speicher und App-Speicher). */
 export function storageLocations(): Promise<FolderEntry[]> {
   return invoke<FolderEntry[]>("storage_locations");

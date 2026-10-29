@@ -3,7 +3,9 @@
 // Vault): „theme“ = light | dark | black (fehlt bei „Wie System“; alte Werte light/dark gelten weiter),
 // „theme-dunkel“ = zuletzt gewählter dunkler Modus, „akzent“ = orange | blau | gruen | lila.
 // `themaAnwenden()` setzt data-theme und data-accent schon vor dem ersten Zeichnen (src/main.tsx), damit nichts flackert.
+// Auf Android richten sich die Symbole der Statusleiste nach dem Modus, der gerade gilt (beim Start und bei jedem Wechsel).
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { statusleisteSetzen } from "./vault-api";
 
 export type Modus = "light" | "dark" | "black";
 export type DunklerModus = Exclude<Modus, "light">;
@@ -115,8 +117,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resolved = aufloesen(wahl, system);
+  const dark = resolved !== "light";
 
   useEffect(() => setzen(resolved, wahl.akzent), [resolved, wahl.akzent]);
+
+  // Ohne Tauri (Browser-Vorschau vor dem Start, Tests) gibt es keine Statusleiste.
+  useEffect(() => {
+    if ("__TAURI_INTERNALS__" in window) void statusleisteSetzen(dark).catch(() => {});
+  }, [dark]);
 
   const setModus = (modus: Modus) => {
     const dunkel = modus === "light" ? wahl.dunkel : modus;
@@ -136,7 +144,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ resolved, dark: resolved !== "light", wieSystem: wahl.modus === null, akzent: wahl.akzent, setModus, setWieSystem, setAkzent }}>
+    <ThemeContext.Provider value={{ resolved, dark, wieSystem: wahl.modus === null, akzent: wahl.akzent, setModus, setWieSystem, setAkzent }}>
       {children}
     </ThemeContext.Provider>
   );
