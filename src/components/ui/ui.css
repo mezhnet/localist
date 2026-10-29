@@ -713,6 +713,24 @@
   .ui-menu__item {
     min-height: var(--size-row-touch);
   }
+
+  /* Tippflächen mindestens 44 × 44 px (Etappe 20) */
+  .ui-button,
+  .ui-icon-button,
+  .ui-tab,
+  .ui-input,
+  .ui-select__control,
+  .ui-segmented__option {
+    min-height: var(--size-control-touch);
+  }
+
+  .ui-icon-button {
+    min-width: var(--size-control-touch);
+  }
+
+  .ui-checkbox {
+    min-height: var(--size-control-touch);
+  }
 }
 
 /* ---------- Schalter (an/aus) ---------- */

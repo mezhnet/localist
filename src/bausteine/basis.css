@@ -175,3 +175,10 @@ video {
     font-size: var(--font-size-xl);
   }
 }
+
+/* Handy und Touch (Etappe 20): Tippflächen mindestens 44 px (Knöpfe der Lern-Bausteine) */
+@media (max-width: 768px), (pointer: coarse) {
+  .l-knopf {
+    min-height: var(--size-control-touch);
+  }
+}

@@ -19,6 +19,9 @@
   --color-backdrop: rgba(19, 19, 17, 0.32);
   /* Handy (Vorlage 03–05): Seiten liegen auf dem Fensterhintergrund, Karten und Leisten darauf */
   --color-handy-karte: #ffffff;
+  /* Leeres Häkchen-Kästchen (weiß wie in den Vorlagen 02 und 04, auch im Dunklen) */
+  --color-checkbox: #ffffff;
+  --color-checkbox-border: #c9c9c6;
 
   /* Text */
   --color-text: #131311;
@@ -152,7 +155,8 @@
   --size-control-xl: 44px;
   --size-control-touch: 44px;
   --size-row: 28px;
-  --size-row-touch: 36px;
+  /* Tippflächen auf dem Handy mindestens 44 × 44 px (Etappe 20) */
+  --size-row-touch: 44px;
   --size-table-row: 36px;
   --size-badge: 18px;
   --size-avatar: 22px;
@@ -256,7 +260,7 @@
   --size-handy-avatar: 26px;
   --size-handy-schnell: 60px;
   --size-handy-zeile: 52px;
-  --size-handy-chip: 38px;
+  --size-handy-chip: 44px;
   --size-handy-nav: 60px;
   --size-handy-tastaturleiste: 50px;
   --size-handy-checkbox: 17px;
@@ -369,6 +373,8 @@
   --color-menu-selected: #2e2e2c;
   --color-backdrop: rgba(0, 0, 0, 0.55);
   --color-handy-karte: #1f1f1d;
+  --color-checkbox: #ffffff;
+  --color-checkbox-border: #ffffff;
 
   --color-text: #ececea;
   --color-text-muted: #a3a3a0;
@@ -490,6 +496,8 @@
   --color-menu-selected: #262626;
   --color-backdrop: rgba(0, 0, 0, 0.55);
   --color-handy-karte: #141414;
+  --color-checkbox: #ffffff;
+  --color-checkbox-border: #ffffff;
 
   --color-text: #f4f4f4;
   --color-text-muted: #a1a1a1;

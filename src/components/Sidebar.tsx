@@ -283,7 +283,7 @@ export function Sidebar(props: Props) {
               {isFolder && (
                 <IconButton
                   size="sm"
-                  className="tree-action"
+                  className="tree-action tree-neu"
                   label={`Neu in „${node.name}“`}
                   onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: node.path })}
                 >

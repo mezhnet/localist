@@ -949,6 +949,19 @@ button.tree-toggle:hover {
     min-height: var(--size-row-touch);
   }
 
+  /* Tippflächen mindestens 44 × 44 px: Auf- und Zuklappen, „…“ und „+“ im Kopf; das „+“ je Ordner steht auf dem
+     Handy im „…“-Menü (Neu in „…“) und unten in der Navigationsleiste. */
+  .tree-toggle,
+  .tree-action.ui-icon-button,
+  .sidebar-section-head .ui-icon-button {
+    width: var(--size-control-touch);
+    height: var(--size-control-touch);
+  }
+
+  .tree-neu.ui-icon-button {
+    display: none;
+  }
+
   .sidebar-item .ui-button__trailing {
     display: none;
   }
@@ -1176,6 +1189,14 @@ button.tree-toggle:hover {
 /* Beim Schreiben: keine Navigationsleiste, und der Text kann bis über die Leiste geschoben werden. */
 body:has(.tastaturleiste) .handy-nav {
   display: none;
+}
+
+/* Auch beim Tippen in andere Felder (Code-Editor, Titel, Eigenschaften) nimmt die Leiste über der Bildschirmtastatur
+   keinen Platz weg (nur mit Finger, damit sie in schmalen Fenstern am PC stehen bleibt). */
+@media (max-width: 768px) and (pointer: coarse) {
+  .workspace:has(.main :is(input, textarea, [contenteditable="true"]):focus) .handy-nav {
+    display: none;
+  }
 }
 
 body:has(.tastaturleiste) .workspace.is-handy .main-scroll {

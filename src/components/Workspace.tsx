@@ -904,7 +904,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           {seitenleisteSeite === "rechts" ? eingeklappt ? <PanelRightOpen /> : <PanelRightClose /> : eingeklappt ? <PanelLeftOpen /> : <PanelLeftClose />}
         </IconButton>
       </Fensterleiste>
-      <main className="main">
+      {/* Handy: Hinter der Ansicht „Seiten“ ist der Inhalt nicht erreichbar (weder per Tippen noch per Tab). */}
+      <main className="main" inert={schmal && menuOpen ? true : undefined}>
         {!ohneLeiste && (
           <Reiterleiste
             stand={stand}

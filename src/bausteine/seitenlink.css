@@ -24,3 +24,12 @@ a.l-seitenlink[href*=".html#" i]::before {
 a.l-seitenlink:hover {
   background: var(--color-hover);
 }
+
+/* Handy und Touch (Etappe 20): Seitenlinks mindestens 44 px hoch */
+@media (max-width: 768px), (pointer: coarse) {
+  a.l-seitenlink {
+    align-items: center;
+    min-height: var(--size-control-touch);
+    vertical-align: middle;
+  }
+}

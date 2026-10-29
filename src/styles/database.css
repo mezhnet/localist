@@ -635,3 +635,26 @@ button.column-header:hover {
     font-size: var(--font-size-2xs);
   }
 }
+
+/* Tippflächen auf dem Handy mindestens 44 px: Spaltenköpfe, „Neue Zeile“ und Einträge im Kalender (über die ganze
+   Breite der Tageszelle; bei 360 px ist eine Zelle etwa 46 px breit) */
+@media (max-width: 768px) {
+  .column-header,
+  .table-add-row {
+    min-height: var(--size-control-touch);
+  }
+
+  .calendar-day {
+    padding: var(--space-0-5) 0;
+  }
+
+  .calendar-day-number {
+    padding: 0 var(--space-0-5);
+  }
+
+  .calendar-entry {
+    min-width: var(--size-control-touch);
+    min-height: var(--size-control-touch);
+    border-radius: 0;
+  }
+}

@@ -97,3 +97,12 @@ l-quizfrage[data-ergebnis="falsch"] > .l-quiz-rueckmeldung {
   border-top: var(--border-width) solid var(--color-border);
   font-weight: var(--font-weight-medium);
 }
+
+/* Handy und Touch (Etappe 20): Antworten mindestens 44 px hoch */
+@media (max-width: 768px), (pointer: coarse) {
+  l-quiz:defined l-quizfrage li {
+    display: flex;
+    align-items: center;
+    min-height: var(--size-control-touch);
+  }
+}

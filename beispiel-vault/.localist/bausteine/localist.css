@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+b6f2dfc8 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+641f4e07 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -234,6 +234,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-backdrop: rgba(19, 19, 17, 0.32);
   /* Handy (Vorlage 03–05): Seiten liegen auf dem Fensterhintergrund, Karten und Leisten darauf */
   --color-handy-karte: #ffffff;
+  /* Leeres Häkchen-Kästchen (weiß wie in den Vorlagen 02 und 04, auch im Dunklen) */
+  --color-checkbox: #ffffff;
+  --color-checkbox-border: #c9c9c6;
 
   /* Text */
   --color-text: #131311;
@@ -367,7 +370,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --size-control-xl: 44px;
   --size-control-touch: 44px;
   --size-row: 28px;
-  --size-row-touch: 36px;
+  /* Tippflächen auf dem Handy mindestens 44 × 44 px (Etappe 20) */
+  --size-row-touch: 44px;
   --size-table-row: 36px;
   --size-badge: 18px;
   --size-avatar: 22px;
@@ -471,7 +475,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --size-handy-avatar: 26px;
   --size-handy-schnell: 60px;
   --size-handy-zeile: 52px;
-  --size-handy-chip: 38px;
+  --size-handy-chip: 44px;
   --size-handy-nav: 60px;
   --size-handy-tastaturleiste: 50px;
   --size-handy-checkbox: 17px;
@@ -584,6 +588,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-menu-selected: #2e2e2c;
   --color-backdrop: rgba(0, 0, 0, 0.55);
   --color-handy-karte: #1f1f1d;
+  --color-checkbox: #ffffff;
+  --color-checkbox-border: #ffffff;
 
   --color-text: #ececea;
   --color-text-muted: #a3a3a0;
@@ -705,6 +711,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --color-menu-selected: #262626;
   --color-backdrop: rgba(0, 0, 0, 0.55);
   --color-handy-karte: #141414;
+  --color-checkbox: #ffffff;
+  --color-checkbox-border: #ffffff;
 
   --color-text: #f4f4f4;
   --color-text-muted: #a1a1a1;
@@ -1074,6 +1082,13 @@ video {
   }
 }
 
+/* Handy und Touch (Etappe 20): Tippflächen mindestens 44 px (Knöpfe der Lern-Bausteine) */
+@media (max-width: 768px), (pointer: coarse) {
+  .l-knopf {
+    min-height: var(--size-control-touch);
+  }
+}
+
 /* ---- bild.css ---- */
 /* Bild: <figure><img src="…" alt="…"><figcaption>…</figcaption></figure> */
 
@@ -1176,6 +1191,63 @@ ul.l-checkliste > li:has(> input[type="checkbox"]:checked) {
   color: var(--color-text-muted);
   text-decoration: line-through;
   text-decoration-color: var(--color-text-faint);
+}
+
+/* Handy und Touch (Etappe 20): sichtbar so groß wie bisher, Tippfläche 44 × 44 px. Das Kästchen wird gezeichnet
+   (appearance: none), damit die Fläche größer sein kann als das sichtbare Kästchen (wie in der Notiz). Die zusätzliche
+   Fläche liegt rechts vom Kästchen über dem Anfang des Textes, weil der Inhalt links bis an den Rand reichen kann. */
+@media (max-width: 768px), (pointer: coarse) {
+  ul.l-checkliste > li {
+    align-items: center;
+  }
+
+  ul.l-checkliste > li > input[type="checkbox"] {
+    appearance: none;
+    top: 0;
+    width: var(--size-control-touch);
+    height: var(--size-control-touch);
+    margin: calc((var(--size-checkbox) - var(--size-control-touch)) / 2) calc(var(--size-checkbox) - var(--size-control-touch)) calc((var(--size-checkbox) - var(--size-control-touch)) / 2) 0;
+    border: 0;
+    background: none;
+  }
+
+  ul.l-checkliste > li > input[type="checkbox"]::before {
+    content: "";
+    position: absolute;
+    top: calc((var(--size-control-touch) - var(--size-checkbox)) / 2);
+    left: 0;
+    width: var(--size-checkbox);
+    height: var(--size-checkbox);
+    box-sizing: border-box;
+    border: var(--border-width) solid var(--color-checkbox-border);
+    border-radius: var(--radius-xs);
+    background: var(--color-checkbox);
+  }
+
+  ul.l-checkliste > li > input[type="checkbox"]:checked::before {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+  }
+
+  ul.l-checkliste > li > input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    top: calc((var(--size-control-touch) - var(--size-checkbox)) / 2 + var(--space-0-5));
+    left: var(--space-0-5);
+    width: calc(var(--size-checkbox) - 2 * var(--space-0-5));
+    height: calc(var(--size-checkbox) - 2 * var(--space-0-5));
+    background: var(--color-text-on-accent);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  ul.l-checkliste > li > input[type="checkbox"]:focus-visible {
+    outline: none;
+  }
+
+  ul.l-checkliste > li > input[type="checkbox"]:focus-visible::before {
+    box-shadow: var(--shadow-focus);
+  }
 }
 
 /* ---- code.css ---- */
@@ -1681,6 +1753,15 @@ l-quizfrage[data-ergebnis="falsch"] > .l-quiz-rueckmeldung {
   font-weight: var(--font-weight-medium);
 }
 
+/* Handy und Touch (Etappe 20): Antworten mindestens 44 px hoch */
+@media (max-width: 768px), (pointer: coarse) {
+  l-quiz:defined l-quizfrage li {
+    display: flex;
+    align-items: center;
+    min-height: var(--size-control-touch);
+  }
+}
+
 /* ---- seitenlink.css ---- */
 /* Seitenlink: <a class="l-seitenlink" href="../Notizen/Ideen.md">Ideen</a> – Verweis auf eine andere Seite
    mit Symbol (Notiz oder HTML-Seite). In der App öffnet ein Klick die Seite. */
@@ -1707,6 +1788,15 @@ a.l-seitenlink[href*=".html#" i]::before {
 
 a.l-seitenlink:hover {
   background: var(--color-hover);
+}
+
+/* Handy und Touch (Etappe 20): Seitenlinks mindestens 44 px hoch */
+@media (max-width: 768px), (pointer: coarse) {
+  a.l-seitenlink {
+    align-items: center;
+    min-height: var(--size-control-touch);
+    vertical-align: middle;
+  }
 }
 
 /* ---- spalten.css ---- */
@@ -1836,6 +1926,14 @@ details > summary:focus-visible {
 
 details > :not(summary) {
   margin-left: calc(var(--space-4) + var(--space-1-5));
+}
+
+/* Handy und Touch (Etappe 20): Titel mindestens 44 px hoch */
+@media (max-width: 768px), (pointer: coarse) {
+  details > summary {
+    align-items: center;
+    min-height: var(--size-control-touch);
+  }
 }
 
 /* ---- trennlinie.css ---- */

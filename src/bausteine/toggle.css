@@ -47,3 +47,11 @@ details > summary:focus-visible {
 details > :not(summary) {
   margin-left: calc(var(--space-4) + var(--space-1-5));
 }
+
+/* Handy und Touch (Etappe 20): Titel mindestens 44 px hoch */
+@media (max-width: 768px), (pointer: coarse) {
+  details > summary {
+    align-items: center;
+    min-height: var(--size-control-touch);
+  }
+}

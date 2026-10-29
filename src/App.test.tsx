@@ -623,6 +623,64 @@ describe("Untere Navigationsleiste und Handy-Startseite (Etappe 20)", () => {
   });
 });
 
+describe("Ab 360 px bedienbar, Tippflächen mindestens 44 px (Etappe 20, jsdom misst kein Layout)", () => {
+  /** Inhalt aller Regeln für einen Selektor in einer CSS-Datei (auch in @media). */
+  const regeln = (css: string, selektor: string) => {
+    const text = css.replace(/\r\n/g, "\n");
+    const teile: string[] = [];
+    for (let i = text.indexOf(selektor); i >= 0; i = text.indexOf(selektor, i + 1)) {
+      const auf = text.indexOf("{", i);
+      if (/[;}]/.test(text.slice(i, auf))) continue;
+      teile.push(text.slice(auf, text.indexOf("}", auf)));
+    }
+    return teile.join("\n");
+  };
+
+  it("Tokens und Regeln: Zeilen, Menüs, Knöpfe, Felder, Reiter, Listen, Kalender und Häkchen mindestens 44 px", async () => {
+    const tokens = (await import("./styles/tokens.css?raw")).default;
+    const ui = (await import("./components/ui/ui.css?raw")).default;
+    const layout = (await import("./styles/layout.css?raw")).default;
+    const page = (await import("./styles/page.css?raw")).default;
+    const db = (await import("./styles/database.css?raw")).default;
+    const dialoge = (await import("./styles/dialogs.css?raw")).default;
+    const home = (await import("./styles/home.css?raw")).default;
+    expect(tokens).toContain("--size-control-touch: 44px;");
+    expect(tokens).toContain("--size-row-touch: 44px;");
+    expect(regeln(ui, ".ui-segmented__option {")).toContain("min-height: var(--size-control-touch);");
+    expect(regeln(ui, ".ui-icon-button {")).toContain("min-width: var(--size-control-touch);");
+    expect(regeln(ui, ".ui-menu__item {")).toContain("min-height: var(--size-row-touch);");
+    expect(regeln(layout, ".sidebar-section-head .ui-icon-button {")).toMatch(/width: var\(--size-control-touch\);\s*height: var\(--size-control-touch\);/);
+    expect(regeln(layout, ".tree-neu.ui-icon-button {")).toContain("display: none;");
+    expect(regeln(page, ".baustein-menu-eintrag {")).toContain("min-height: var(--size-control-touch);");
+    expect(regeln(page, '.workspace.is-handy .block-editor .bn-block-content[data-content-type="checkListItem"] > div > input {')).toMatch(/appearance: none;[\s\S]*width: var\(--size-control-touch\);/);
+    expect(regeln(db, ".calendar-entry {")).toMatch(/min-width: var\(--size-control-touch\);\s*min-height: var\(--size-control-touch\);/);
+    expect(regeln(dialoge, ".dialog-list li {")).toContain("min-height: var(--size-control-touch);");
+    expect(regeln(dialoge, ".handy-seite .ui-switch {")).toContain("height: var(--size-control-touch);");
+    expect(regeln(home, ".is-handy .home-schnell-feld {")).toContain("min-height: var(--size-control-touch);");
+  });
+
+  it("Bausteine in HTML-Seiten: auf schmalen Bildschirmen und mit Finger Knöpfe, Toggle, Quiz, Seitenlinks und Häkchen mindestens 44 px", async () => {
+    const dateien = import.meta.glob("./bausteine/*.css", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+    const css = (name: string) => dateien[`./bausteine/${name}.css`].replace(/\r\n/g, "\n");
+    for (const name of ["basis", "toggle", "quiz", "seitenlink", "checkliste"]) {
+      expect(css(name), name).toMatch(/@media \(max-width: 768px\), \(pointer: coarse\) \{[\s\S]*var\(--size-control-touch\)/);
+    }
+    expect(css("checkliste")).toMatch(/appearance: none;[\s\S]*width: var\(--size-control-touch\);[\s\S]*height: var\(--size-control-touch\);/);
+  });
+
+  it("hinter der Ansicht „Seiten“ ist der Inhalt nicht erreichbar (inert), geschlossen ist „Seiten“ selbst inert", async () => {
+    handyBildschirm();
+    await openVaultFromStart();
+    const main = document.querySelector("main.main")!;
+    const seiten = document.getElementById("seitenleiste")!;
+    expect(main.hasAttribute("inert")).toBe(false);
+    expect(seiten.hasAttribute("inert")).toBe(true);
+    fireEvent.click(navigation().getByRole("button", { name: "Seiten" }));
+    expect(main.hasAttribute("inert")).toBe(true);
+    expect(seiten.hasAttribute("inert")).toBe(false);
+  });
+});
+
 describe("Handy-Einstellungen → Darstellung nach der Vorlage 05 (Etappe 20)", () => {
   it("eigene Seiten mit Zurück-Pfeil: Übersicht → Darstellung (Karten, „Wie System“, Schwarz-Hinweis, Akzentfarbe, ohne Seitenleiste) → zurück → schließen", async () => {
     localStorage.setItem("dev-platform", "android");

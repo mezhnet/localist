@@ -755,3 +755,21 @@
   padding: var(--space-1-5);
   border-width: var(--border-width-strong);
 }
+
+/* Schalter: sichtbar 48 × 28 px, Tippfläche 44 px hoch (Hintergrund nur im Inhalt) */
+.handy-seite .ui-switch {
+  height: var(--size-control-touch);
+  padding: calc((var(--size-control-touch) - var(--size-switch-height)) / 2) 0;
+  background-clip: content-box;
+}
+
+.handy-seite .ui-switch__knopf {
+  top: calc((var(--size-control-touch) - var(--size-switch-height)) / 2 + var(--space-0-5));
+}
+
+/* Tippflächen auf dem Handy mindestens 44 px hoch: Einträge der Such- und Auswahllisten */
+@media (max-width: 768px) {
+  .dialog-list li {
+    min-height: var(--size-control-touch);
+  }
+}
