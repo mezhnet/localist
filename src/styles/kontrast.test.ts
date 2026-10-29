@@ -67,7 +67,7 @@ const kontrast = (a: Rgba, b: Rgba) => {
   return (x + 0.05) / (y + 0.05);
 };
 
-const FLAECHEN = ["--color-window", "--color-bg", "--color-bg-subtle", "--color-surface", "--color-surface-raised"];
+const FLAECHEN = ["--color-window", "--color-bg", "--color-bg-subtle", "--color-surface", "--color-surface-raised", "--color-handy-karte"];
 /** [Vordergrund, Hintergründe, Mindestkontrast] */
 const PAARE: [string, string[], number][] = [
   ["--color-text", [...FLAECHEN, "--color-bg-muted", "--color-surface-selected", "--color-menu-selected", "--color-accent-callout", "--color-accent-soft"], 4.5],

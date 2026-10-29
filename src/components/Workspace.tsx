@@ -68,6 +68,7 @@ import { Backlinks } from "./Backlinks";
 import { DatabaseView, loadRows } from "./DatabaseView";
 import { MoveDialog, QuickSwitcher, SearchDialog, SettingsDialog, TemplatePicker } from "./Dialogs";
 import { HomePage } from "./HomePage";
+import { Navigationsleiste, type NavZiel } from "./Navigationsleiste";
 import { BausteinBibliothek } from "./BausteinBibliothek";
 import { HtmlPageView } from "./HtmlPageView";
 import { NotizbuchView } from "./NotizbuchView";
@@ -125,7 +126,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const [databaseVersion, setDatabaseVersion] = useState(0);
   /** Wird bei jeder Änderung im Vault erhöht (z. B. damit Backlinks neu berechnet werden). */
   const [vaultVersion, setVaultVersion] = useState(0);
-  /** Auf dem Handy ist die Sidebar ein ausklappbares Menü. */
+  /** Auf dem Handy zeigt „Seiten“ in der Navigationsleiste die Sidebar (Ordnerbaum mit Favoriten) über dem Inhalt. */
   const [menuOpen, setMenuOpen] = useState(false);
   /** Seitenleiste links oder rechts (Einstellungen → Darstellung) und eingeklappt (nur auf dem PC). */
   const [seitenleisteSeite] = useSeitenleisteSeite();
@@ -134,7 +135,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   fensterrahmenRef.current = fensterrahmen;
   const [eingeklapptGemerkt] = useEingeklappt();
   const eingeklappt = fensterrahmen && eingeklapptGemerkt;
-  /** Auf dem Handy und in schmalen Fenstern gibt es keine Reiterleiste. */
+  /** Auf dem Handy und in schmalen Fenstern gibt es keine Reiterleiste, dafür die untere Navigationsleiste. */
   const schmal = useSchmal();
   const ohneLeiste = !fensterrahmen || schmal;
   const ohneLeisteRef = useRef(ohneLeiste);
@@ -820,10 +821,13 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       }
     : null;
 
+  /** Hervorgehobener Eintrag der Navigationsleiste (Handy). */
+  const navAktiv: NavZiel | null =
+    dialog?.kind === "settings" ? "einstellungen" : dialog?.kind === "quick" || dialog?.kind === "search" ? "suchen" : menuOpen ? "seiten" : homeActive ? "start" : null;
+
   return (
-    <div className={cx("workspace", `seitenleiste-${seitenleisteSeite}`, fensterrahmen && "hat-fensterleiste", eingeklappt && "is-eingeklappt")}>
-      {menuOpen && <div className="drawer-backdrop" aria-hidden="true" onClick={() => setMenuOpen(false)} />}
-      <div id="seitenleiste" className={cx("sidebar-shell", menuOpen && "open")}>
+    <div className={cx("workspace", `seitenleiste-${seitenleisteSeite}`, fensterrahmen && "hat-fensterleiste", eingeklappt && "is-eingeklappt", schmal && "is-handy")}>
+      <div id="seitenleiste" className={cx("sidebar-shell", menuOpen && "open")} inert={schmal && !menuOpen ? true : undefined}>
         <Sidebar
           vaultName={vault.name}
           tree={tree}
@@ -837,6 +841,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           onRenamingDone={() => setRenamingPath(null)}
           fensterrahmen={fensterrahmen}
           seite={seitenleisteSeite}
+          handy={schmal}
           onOpen={(path, neu) => void openPage(path, false, neu)}
           onOpenDatabase={(path, neu) => void openDatabase(path, neu)}
           onOpenHome={() => void openHome()}
@@ -896,9 +901,6 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           onFavorit={() => current && void updateFavorites((list) => toggleFavorite(list, current))}
           aktionen={kopfAktionen}
           start={homeActive}
-          menuOffen={menuOpen}
-          onMenu={() => setMenuOpen(true)}
-          onSuche={() => setDialog({ kind: "quick" })}
         />
         {notice && (
           <div className={`notice toast ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>
@@ -1002,11 +1004,51 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
             onCreateDatabase={() => void handleCreateDatabase("")}
             onCreateFromTemplate={() => setDialog({ kind: "template", dir: "" })}
             onQuickNote={schnellNotieren}
+            handy={
+              schmal
+                ? {
+                    vaultName: vault.name,
+                    onSwitchVault: async () => {
+                      await saverRef.current?.flush();
+                      onSwitchVault();
+                    },
+                    onRevealVault: explorer ? () => void revealInExplorer("") : undefined,
+                    onOpenSettings: () => setDialog({ kind: "settings" }),
+                  }
+                : undefined
+            }
           />
         )}
         </ScrollGedaechtnisContext.Provider>
         </div>
       </main>
+      {schmal && (
+        <Navigationsleiste
+          aktiv={navAktiv}
+          tree={tree}
+          onStart={() => {
+            setDialog(null);
+            setMenuOpen(false);
+            void openHome();
+          }}
+          onSuchen={() => {
+            setMenuOpen(false);
+            setDialog({ kind: "quick" });
+          }}
+          onSeiten={() => {
+            setDialog(null);
+            setMenuOpen(!menuOpen);
+          }}
+          onEinstellungen={() => {
+            setMenuOpen(false);
+            setDialog({ kind: "settings" });
+          }}
+          onCreate={(kind, dir) => {
+            setMenuOpen(false);
+            handleCreate(kind, dir);
+          }}
+        />
+      )}
       {dialog?.kind === "quick" && (
         <QuickSwitcher
           pages={pages}

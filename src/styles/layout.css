@@ -744,16 +744,9 @@ button.tree-toggle:hover {
   background: var(--color-bg);
 }
 
-.topbar-menu.ui-icon-button,
-.topbar-search.ui-icon-button {
+/* Die Startseite hat keine Kopfzeile (Vorlage 01); auf dem Handy hat sie einen eigenen Kopf (Vorlage 03, home.css). */
+.topbar.is-start {
   display: none;
-}
-
-/* Die Startseite hat auf dem PC keine Kopfzeile (Vorlage 01), auf dem Handy trägt sie den Menü-Knopf. */
-@media (min-width: 769px) {
-  .topbar.is-start {
-    display: none;
-  }
 }
 
 .breadcrumb {
@@ -856,44 +849,53 @@ button.tree-toggle:hover {
   margin: 0 0 var(--space-5);
 }
 
-/* ---------- Handy ---------- */
+/* ---------- Handy (Vorlage 03–05) ----------
+   Die Seiten liegen auf dem Fensterhintergrund, Karten und Leisten darauf. Unten steht die Navigationsleiste
+   (Start, Suchen, „+“, Seiten, Einstellungen); „Seiten“ zeigt die Sidebar über dem Inhalt. */
 @media (max-width: 768px) {
   .workspace {
+    position: relative;
     display: flex;
     flex-direction: column;
+    /* Platz unter der Ansicht „Seiten“ für die Navigationsleiste (mit Gestenleiste des Systems) */
+    --handy-nav-platz: calc(var(--size-handy-nav) + var(--space-2) + max(var(--handy-nav-gap), env(safe-area-inset-bottom)));
   }
 
   .main {
     flex: 1;
+    background: var(--color-window);
+  }
+
+  /* Inhalte, die die Inhaltsfläche als Hintergrund nutzen (Editor, Kopf), liegen hier auf dem Fensterhintergrund. */
+  .workspace.is-handy .main {
+    --color-bg: var(--color-window);
   }
 
   .sidebar-shell {
-    position: fixed;
+    position: absolute;
     top: 0;
-    bottom: 0;
+    right: 0;
+    bottom: var(--handy-nav-platz);
     left: 0;
     z-index: var(--z-drawer);
     display: flex;
-    width: min(var(--sidebar-drawer-width), 85vw);
-    transform: translateX(-100%);
-    transition: transform var(--duration-normal) var(--ease-out);
+    background: var(--color-window);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(var(--space-3));
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out),
+      visibility 0s linear var(--duration-fast);
   }
 
   .sidebar-shell.open {
+    opacity: 1;
+    visibility: visible;
     transform: none;
-    box-shadow: var(--shadow-drawer);
-  }
-
-  /* Seitenleiste rechts: Die Schublade kommt von rechts. */
-  .seitenleiste-rechts .sidebar-shell {
-    right: 0;
-    left: auto;
-    transform: translateX(100%);
-  }
-
-  .seitenleiste-rechts .sidebar-shell.open {
-    transform: none;
-    box-shadow: var(--shadow-drawer-right);
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
   }
 
   .sidebar-shell .sidebar {
@@ -901,12 +903,9 @@ button.tree-toggle:hover {
     padding-top: env(safe-area-inset-top);
   }
 
-  .drawer-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: calc(var(--z-drawer) - 1);
-    background: var(--color-backdrop);
-    animation: ui-fade var(--duration-fast) var(--ease-out);
+  .sidebar-handy-titel {
+    margin: 0;
+    padding: max(var(--space-4), env(safe-area-inset-top)) var(--handy-padding) var(--space-2);
   }
 
   .topbar {
@@ -915,16 +914,9 @@ button.tree-toggle:hover {
     border-bottom: var(--border-width) solid var(--color-border);
   }
 
-  /* Auf dem Handy ist die Seitenleiste eine Schublade (Menü-Knopf oben), Einklappen gibt es dort nicht. */
+  /* Auf dem Handy gibt es die Navigationsleiste unten, Einklappen gibt es dort nicht. */
   .seitenleiste-knopf.ui-icon-button {
     display: none;
-  }
-
-  .topbar-menu.ui-icon-button,
-  .topbar-search.ui-icon-button {
-    display: inline-flex;
-    width: var(--size-control-touch);
-    height: var(--size-control-touch);
   }
 
   .topbar .ui-icon-button .ui-button__icon svg {
@@ -956,4 +948,109 @@ button.tree-toggle:hover {
   .sidebar-item .ui-button__trailing {
     display: none;
   }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .sidebar-shell,
+  .sidebar-shell.open {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Großer Titel einer Handy-Ansicht („Seiten“, „Einstellungen“, „Darstellung“) */
+.handy-titel {
+  color: var(--color-text);
+  font-size: var(--font-size-handy-titel);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-display);
+}
+
+/* ---------- Untere Navigationsleiste (Handy, Vorlage 03) ---------- */
+.handy-nav {
+  position: relative;
+  z-index: var(--z-sticky);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--size-handy-nav);
+  margin: var(--space-2) var(--handy-nav-gap) max(var(--handy-nav-gap), env(safe-area-inset-bottom));
+  padding: 0 var(--space-1);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-handy-leiste);
+  background: var(--color-handy-karte);
+  box-shadow: var(--shadow-handy-nav);
+}
+
+.handy-nav-eintrag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-0-5);
+  min-width: var(--size-control-touch);
+  height: 100%;
+  min-height: var(--size-control-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-handy-knopf);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.handy-nav-eintrag svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+.handy-nav-eintrag.is-aktiv {
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.handy-nav-eintrag:active {
+  background: var(--color-active);
+}
+
+.handy-nav-eintrag:focus-visible,
+.handy-nav-neu:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.handy-nav-text {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Der mittlere Knopf ist dunkel hervorgehoben (im Dunklen hell). */
+.handy-nav-neu {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: var(--size-handy-nav-neu-width);
+  height: var(--size-handy-nav-neu-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-handy-knopf);
+  background: var(--color-text);
+  color: var(--color-bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.handy-nav-neu svg {
+  width: var(--size-icon-xl);
+  height: var(--size-icon-xl);
+}
+
+.handy-nav-neu:active {
+  opacity: 0.85;
 }

@@ -17,6 +17,8 @@
   --color-surface-selected: #ffffff;
   --color-menu-selected: #efefed;
   --color-backdrop: rgba(19, 19, 17, 0.32);
+  /* Handy (Vorlage 03–05): Seiten liegen auf dem Fensterhintergrund, Karten und Leisten darauf */
+  --color-handy-karte: #ffffff;
 
   /* Text */
   --color-text: #131311;
@@ -244,6 +246,24 @@
   /* Seite „Bausteine“: Breite der Liste und Höchstbreite (greift erst bei sehr breiten Fenstern) */
   --library-list-width: 340px;
   --library-max-width: 1760px;
+  /* Handy (Vorlage 03–05, gemessen bei 375 px Breite): Seitenrand, Kopf, Titel, Karten, Zeilen, untere
+     Navigationsleiste mit hervorgehobenem „+“ und Abstand zum Rand */
+  --handy-padding: var(--space-4);
+  --handy-padding-notiz: var(--space-5);
+  --size-handy-kopf: 44px;
+  --font-size-handy-titel: 32px;
+  --font-size-handy-vault: 17px;
+  --size-handy-avatar: 26px;
+  --size-handy-schnell: 60px;
+  --size-handy-zeile: 52px;
+  --size-handy-chip: 38px;
+  --size-handy-nav: 60px;
+  --size-handy-nav-neu-width: 50px;
+  --size-handy-nav-neu-height: 44px;
+  --handy-nav-gap: var(--space-3);
+  --radius-handy-karte: 14px;
+  --radius-handy-leiste: 18px;
+  --radius-handy-knopf: 12px;
   /* Schalter (an/aus) */
   --size-switch-width: 40px;
   --size-switch-height: 24px;
@@ -263,6 +283,7 @@
   --shadow-lg: 0 0 0 1px rgba(18, 18, 17, 0.05), 0 12px 40px rgba(18, 18, 17, 0.18);
   --shadow-drawer: 4px 0 24px rgba(18, 18, 17, 0.18);
   --shadow-drawer-right: -4px 0 24px rgba(18, 18, 17, 0.18);
+  --shadow-handy-nav: 0 2px 12px rgba(18, 18, 17, 0.06);
   --shadow-focus: 0 0 0 2px var(--color-focus-ring);
   /* Aktiver Eintrag der Seitenleiste: im Hellen eine Karte mit leichtem Schatten, im Dunklen nur die Linie */
   --shadow-sidebar-active: 0 1px 2px rgba(18, 18, 17, 0.04);
@@ -336,6 +357,7 @@
   --color-surface-selected: #2e2e2c;
   --color-menu-selected: #2e2e2c;
   --color-backdrop: rgba(0, 0, 0, 0.55);
+  --color-handy-karte: #1f1f1d;
 
   --color-text: #ececea;
   --color-text-muted: #a3a3a0;
@@ -401,6 +423,7 @@
   --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
   --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
   --shadow-drawer-right: -4px 0 24px rgba(0, 0, 0, 0.5);
+  --shadow-handy-nav: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-theme="dark"][data-accent="blau"] {
@@ -455,6 +478,7 @@
   --color-surface-selected: #262626;
   --color-menu-selected: #262626;
   --color-backdrop: rgba(0, 0, 0, 0.55);
+  --color-handy-karte: #141414;
 
   --color-text: #f4f4f4;
   --color-text-muted: #a1a1a1;
@@ -520,6 +544,7 @@
   --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
   --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
   --shadow-drawer-right: -4px 0 24px rgba(0, 0, 0, 0.5);
+  --shadow-handy-nav: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-theme="black"][data-accent="blau"] {
@@ -640,5 +665,6 @@
     --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 16px 48px rgba(0, 0, 0, 0.6);
     --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.5);
     --shadow-drawer-right: -4px 0 24px rgba(0, 0, 0, 0.5);
+  --shadow-handy-nav: 0 2px 12px rgba(0, 0, 0, 0.4);
   }
 }

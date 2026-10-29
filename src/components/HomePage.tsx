@@ -1,18 +1,31 @@
 // Startseite nach der Vorlage (01-desktop-startseite-hell.png): Datum und Begrüßung, „Schnell notieren …“ mit
 // Knöpfen für Datenbank, Vorlage und „+ Notiz“, „Zuletzt bearbeitet“ als Tabelle (mit „Alle Seiten“) und die
 // Favoriten als Chips. Ein Klick öffnet im aktuellen Reiter, Strg+Klick oder Mittelklick in einem neuen.
-import { CornerDownLeft, Database, FileCode, FileText, LayoutTemplate, Plus, Star } from "lucide-react";
+// Auf dem Handy (Vorlage 03-handy-startseite-hell.png) stehen oben Vault-Umschalter, „Darstellung“ und
+// „Einstellungen“; „Schnell notieren“ hat nur „+“, „Zuletzt bearbeitet“ ist eine Karte mit „Alle“ und kurzen Zeiten.
+import { ChevronsUpDown, CornerDownLeft, Database, FileCode, FileText, FolderOpen, FolderSearch, LayoutTemplate, Plus, Settings, SlidersHorizontal, Star } from "lucide-react";
 import { useMemo, useState } from "react";
-import { allePagesNachZeit, greeting, kurzesDatum, recentPages, relativeTime } from "../lib/home";
+import { allePagesNachZeit, greeting, kurzesDatum, kurzeZeit, recentPages, relativeTime } from "../lib/home";
 import { isHtmlPath } from "../lib/html";
 import type { IndexEntry } from "../lib/search";
 import { parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
+import { ModusKnopf } from "./Darstellung";
 import { oeffnenKlick } from "./Reiterleiste";
-import { Button, cx, IconButton } from "./ui";
+import { Button, cx, IconButton, Menu, MenuItem, type MenuAnchor } from "./ui";
 
-/** So viele Seiten zeigt „Zuletzt bearbeitet“, bis „Alle Seiten“ gewählt ist. */
+/** So viele Seiten zeigt „Zuletzt bearbeitet“, bis „Alle Seiten“ gewählt ist (auf dem Handy wie in der Vorlage 4). */
 const ZULETZT = 5;
+const ZULETZT_HANDY = 4;
+
+/** Kopf der Handy-Startseite: Vault-Umschalter, „Darstellung“ und „Einstellungen“. */
+export interface HandyKopf {
+  vaultName: string;
+  onSwitchVault: () => void;
+  /** „Vault im Explorer öffnen“ (fehlt auf Android). */
+  onRevealVault?: () => void;
+  onOpenSettings: () => void;
+}
 
 interface Props {
   index: IndexEntry[];
@@ -25,14 +38,19 @@ interface Props {
   onCreateFromTemplate: () => void;
   /** „Schnell notieren“: legt die Notiz an; true, wenn es geklappt hat (dann wird das Feld geleert). */
   onQuickNote: (text: string) => Promise<boolean>;
+  /** Handy-Layout (schmaler Bildschirm) mit eigenem Kopf. */
+  handy?: HandyKopf;
 }
 
 export function HomePage(props: Props) {
   const now = new Date();
   const [alle, setAlle] = useState(false);
-  const seiten = useMemo(() => (alle ? allePagesNachZeit(props.index) : recentPages(props.index, ZULETZT)), [props.index, alle]);
+  const handy = props.handy !== undefined;
+  const seiten = useMemo(() => (alle ? allePagesNachZeit(props.index) : recentPages(props.index, handy ? ZULETZT_HANDY : ZULETZT)), [props.index, alle, handy]);
+  const zeit = handy ? kurzeZeit : relativeTime;
   return (
-    <div className="home" role="region" aria-label="Startseite">
+    <div className={cx("home", handy && "is-handy")} role="region" aria-label="Startseite">
+      {props.handy && <HandyStartKopf {...props.handy} />}
       <header className="home-hero">
         <p className="home-date">{kurzesDatum(now)}</p>
         <h1 className="home-greeting">{greeting(now)}</h1>
@@ -40,11 +58,12 @@ export function HomePage(props: Props) {
 
       <SchnellNotieren onQuickNote={props.onQuickNote} onCreateNote={props.onCreateNote} onCreateDatabase={props.onCreateDatabase} onCreateFromTemplate={props.onCreateFromTemplate} />
 
-      <section className="home-section" aria-label={alle ? "Alle Seiten" : "Zuletzt bearbeitet"}>
+      <section className="home-section home-zuletzt" aria-label={alle ? "Alle Seiten" : "Zuletzt bearbeitet"}>
         <div className="home-section-head">
           <h2 className="home-section-title">{alle ? "Alle Seiten" : "Zuletzt bearbeitet"}</h2>
-          <button type="button" className="home-link" aria-pressed={alle} onClick={() => setAlle(!alle)}>
-            {alle ? "Zuletzt bearbeitet" : "Alle Seiten"}
+          {/* Auf dem Handy heißt der Link kurz „Alle“ (Vorlage 03). */}
+          <button type="button" className="home-link" aria-pressed={alle} aria-label={alle ? "Zuletzt bearbeitet" : "Alle Seiten"} onClick={() => setAlle(!alle)}>
+            {alle ? (handy ? "Zuletzt" : "Zuletzt bearbeitet") : handy ? "Alle" : "Alle Seiten"}
           </button>
         </div>
         {seiten.length === 0 ? (
@@ -65,7 +84,7 @@ export function HomePage(props: Props) {
                       <span className="home-table-titel">{entry.title}</span>
                     </span>
                     <span className="home-table-ort">{parentDir(entry.path) || "Vault"}</span>
-                    <span className="home-table-zeit">{entry.modified ? relativeTime(entry.modified, now.getTime()) : "–"}</span>
+                    <span className="home-table-zeit">{entry.modified ? zeit(entry.modified, now.getTime()) : "–"}</span>
                   </button>
                 </li>
               ))}
@@ -91,6 +110,47 @@ export function HomePage(props: Props) {
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+function HandyStartKopf({ vaultName, onSwitchVault, onRevealVault, onOpenSettings }: HandyKopf) {
+  const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  return (
+    <div className="home-handy-kopf">
+      <button
+        type="button"
+        className="vault-switcher home-handy-vault"
+        title="Vault wechseln oder Einstellungen öffnen"
+        aria-haspopup="menu"
+        aria-expanded={menu !== null}
+        onClick={(event) => setMenu(menu ? null : { element: event.currentTarget })}
+      >
+        <span className="vault-avatar" aria-hidden="true">
+          {vaultName.trim().charAt(0).toUpperCase() || "V"}
+        </span>
+        <span className="vault-name">{vaultName}</span>
+        <ChevronsUpDown className="vault-switcher-chevron" aria-hidden="true" />
+      </button>
+      <ModusKnopf className="home-handy-knopf" />
+      <IconButton className="home-handy-knopf" label="Einstellungen" onClick={onOpenSettings}>
+        <SlidersHorizontal />
+      </IconButton>
+      {menu && (
+        <Menu anchor={menu} label="Vault" onClose={() => setMenu(null)}>
+          <MenuItem icon={<FolderOpen />} onSelect={onSwitchVault}>
+            Anderen Vault öffnen …
+          </MenuItem>
+          {onRevealVault && (
+            <MenuItem icon={<FolderSearch />} onSelect={onRevealVault}>
+              Vault im Explorer öffnen
+            </MenuItem>
+          )}
+          <MenuItem icon={<Settings />} onSelect={onOpenSettings}>
+            Einstellungen
+          </MenuItem>
+        </Menu>
+      )}
     </div>
   );
 }
@@ -153,7 +213,7 @@ function SchnellNotieren(props: Pick<Props, "onQuickNote" | "onCreateNote" | "on
           title={text.trim() ? "Als neue Notiz speichern (Enter)" : "Neue leere Notiz"}
           onClick={() => (text.trim() ? void speichern() : props.onCreateNote())}
         >
-          Notiz
+          <span className="home-schnell-notiz-text">Notiz</span>
         </Button>
       </div>
     </div>

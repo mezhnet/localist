@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allePagesNachZeit, greeting, gueltigerName, kurzesDatum, pageIcons, recentPages, relativeTime, schnellNotiz } from "./home";
+import { allePagesNachZeit, greeting, gueltigerName, kurzesDatum, kurzeZeit, pageIcons, recentPages, relativeTime, schnellNotiz } from "./home";
 
 describe("Startseite nach der Vorlage (Etappe 19)", () => {
   it("Datum wie „Mo, 26.10.2026“", () => {
@@ -66,5 +66,17 @@ describe("Startseite", () => {
     expect(relativeTime(new Date(2026, 9, 24, 23, 0).getTime(), now)).toBe("gestern");
     expect(relativeTime(new Date(2026, 9, 21, 9, 0).getTime(), now)).toBe("vor 4 Tagen");
     expect(relativeTime(new Date(2026, 8, 1, 9, 0).getTime(), now)).toBe("01.09.2026");
+  });
+
+  it("kurze Zeitangabe für die Handy-Startseite wie in der Vorlage 03 (Etappe 20)", () => {
+    const now = new Date(2026, 9, 25, 15, 0).getTime();
+    expect(kurzeZeit(now - 20_000, now)).toBe("jetzt");
+    expect(kurzeZeit(now - 60_000, now)).toBe("1 Min.");
+    expect(kurzeZeit(now - 7 * 60_000, now)).toBe("7 Min.");
+    expect(kurzeZeit(now - 3 * 3_600_000, now)).toBe("3 Std.");
+    expect(kurzeZeit(new Date(2026, 9, 24, 23, 0).getTime(), now)).toBe("gestern");
+    expect(kurzeZeit(new Date(2026, 9, 21, 9, 0).getTime(), now)).toBe("4 Tage");
+    expect(kurzeZeit(new Date(2026, 8, 1, 9, 0).getTime(), now)).toBe("01.09.");
+    expect(kurzeZeit(new Date(2025, 11, 31, 9, 0).getTime(), now)).toBe("31.12.25");
   });
 });

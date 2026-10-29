@@ -276,10 +276,121 @@
   fill: currentColor;
 }
 
-/* Handy: weniger Rand, die Ort-Spalte entfällt */
+/* ---------- Handy (Vorlage 03-handy-startseite-hell.png, gemessen bei 375 px Breite) ----------
+   Oben Vault-Umschalter, „Darstellung“ und „Einstellungen“; Karten auf dem Fensterhintergrund; die Ort-Spalte
+   entfällt. Der Kopf gehört nur zur Handy-Startseite (HomePage mit `handy`). */
+.home-handy-kopf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--size-handy-kopf);
+  margin: 0 calc(-1 * var(--space-2)) var(--space-4) 0;
+}
+
+.home-handy-vault.vault-switcher {
+  flex: 0 1 auto;
+  gap: var(--space-3);
+  min-width: 0;
+  height: var(--size-control-touch);
+  margin-right: auto;
+  padding: 0 var(--space-2) 0 0;
+}
+
+.home-handy-vault .vault-switcher-chevron {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+.home-handy-vault .vault-avatar {
+  width: var(--size-handy-avatar);
+  height: var(--size-handy-avatar);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+}
+
+.home-handy-vault .vault-name {
+  font-size: var(--font-size-handy-vault);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.home-handy-knopf.ui-icon-button {
+  width: var(--size-control-touch);
+  height: var(--size-control-touch);
+  color: var(--color-text);
+}
+
+.home-handy-knopf.ui-icon-button .ui-button__icon svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
 @media (max-width: 768px) {
   .home {
     padding: var(--space-6) var(--space-4) var(--space-16);
+  }
+
+  .home.is-handy {
+    max-width: none;
+    padding: max(var(--space-4), env(safe-area-inset-top)) var(--handy-padding) var(--space-8);
+  }
+
+  .is-handy .home-hero {
+    gap: var(--space-2);
+  }
+
+  .is-handy .home-date {
+    font-size: var(--font-size-sm);
+  }
+
+  .is-handy .home-greeting {
+    font-size: var(--font-size-handy-titel);
+  }
+
+  /* „Schnell notieren …“ als Karte mit einem „+“ (Datenbank und Vorlage gibt es über „+“ unten). */
+  .is-handy .home-schnell {
+    flex-direction: row;
+    align-items: center;
+    min-height: var(--size-handy-schnell);
+    margin-top: var(--space-4);
+    padding: var(--space-1-5) var(--space-1-5) var(--space-1-5) var(--space-5);
+    border-radius: var(--radius-handy-karte);
+    background: var(--color-handy-karte);
+  }
+
+  .is-handy .home-schnell-feld {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    font-size: var(--font-size-lg);
+  }
+
+  .is-handy .home-schnell-hinweis,
+  .is-handy .home-schnell-knopf {
+    display: none;
+  }
+
+  .is-handy .home-schnell-notiz.ui-button {
+    width: var(--size-control-touch);
+    height: var(--size-control-touch);
+    margin-left: var(--space-2);
+    padding: 0;
+    border-radius: var(--radius-handy-knopf);
+  }
+
+  .is-handy .home-schnell-notiz .ui-button__icon svg {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+  }
+
+  .home-schnell-notiz-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .home-table-kopf,
@@ -290,5 +401,93 @@
   .home-table-kopf > :nth-child(2),
   .home-table-ort {
     display: none;
+  }
+
+  /* „Zuletzt bearbeitet“ als Karte: Kopf mit „Alle“, Zeilen mit Symbol, Name und kurzer Zeit */
+  .is-handy .home-zuletzt {
+    margin-top: var(--space-4);
+    overflow: hidden;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-handy-karte);
+    background: var(--color-handy-karte);
+  }
+
+  .is-handy .home-zuletzt .home-section-head {
+    align-items: center;
+    min-height: var(--size-control-touch);
+    padding: 0 var(--space-4);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  .is-handy .home-section-title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .is-handy .home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-control-touch);
+    padding: 0 0 0 var(--space-3);
+    font-size: var(--font-size-lg);
+  }
+
+  .is-handy .home-zuletzt .home-empty {
+    padding: var(--space-4);
+  }
+
+  .is-handy .home-table-kopf {
+    display: none;
+  }
+
+  .is-handy .home-table-zeilen > li:last-child .home-table-zeile {
+    border-bottom: 0;
+  }
+
+  .is-handy .home-table-zeile {
+    height: var(--size-handy-zeile);
+    padding: 0 var(--space-4) 0 var(--space-4);
+    font-size: var(--font-size-lg);
+  }
+
+  .is-handy .home-table-name {
+    gap: var(--space-4);
+  }
+
+  .is-handy .home-table-symbol svg {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+  }
+
+  .is-handy .home-table-symbol.is-emoji {
+    width: var(--size-icon-lg);
+    justify-content: center;
+    font-size: var(--font-size-lg);
+  }
+
+  .is-handy .home-table-zeile .home-table-zeit {
+    font-size: var(--font-size-sm);
+  }
+
+  /* Favoriten: Überschrift und Chips als Karten */
+  .is-handy .home-zuletzt + .home-section {
+    margin-top: var(--space-6);
+  }
+
+  .is-handy .home-zuletzt + .home-section .home-section-title {
+    margin-bottom: var(--space-3);
+  }
+
+  .is-handy .home-chips {
+    gap: var(--space-2);
+  }
+
+  .is-handy .home-chip {
+    height: var(--size-handy-chip);
+    padding: 0 var(--space-4);
+    gap: var(--space-3);
+    background: var(--color-handy-karte);
+    font-size: var(--font-size-lg);
   }
 }

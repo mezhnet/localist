@@ -1,10 +1,10 @@
 // Darstellung: Modus (Hell, Dunkel, Schwarz), „Wie System“ und Akzentfarbe. Der kleine Umschalter steht unten in
 // der Seitenleiste, die ausführliche Wahl in Einstellungen → „Darstellung“ (Vorlage 05-handy-darstellung-dunkel.png).
-import { Check, Circle, Moon, Sun } from "lucide-react";
-import type { ReactNode } from "react";
+import { Check, Circle, Monitor, Moon, Sun } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { SEITENLEISTE_SEITEN, useSeitenleisteSeite, type SeitenleisteSeite } from "../lib/seitenleiste";
 import { AKZENTE, MODI, useTheme, type Modus } from "../lib/theme";
-import { cx, IconButton, Segmented } from "./ui";
+import { cx, IconButton, Menu, MenuItem, MenuSeparator, Segmented, type MenuAnchor } from "./ui";
 import { Switch } from "./ui/Switch";
 
 const SYMBOL: Record<Modus, typeof Sun> = { light: Sun, dark: Moon, black: Circle };
@@ -33,6 +33,46 @@ export function ModusUmschalter() {
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Knopf „Darstellung“ oben auf der Handy-Startseite (Vorlage 03): zeigt den Modus, der gerade gilt, und öffnet ein
+ * Menü mit „Wie System“, Hell, Dunkel und Schwarz.
+ */
+export function ModusKnopf({ className }: { className?: string }) {
+  const { resolved, wieSystem, setModus, setWieSystem } = useTheme();
+  const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  const Symbol = SYMBOL[resolved];
+  return (
+    <>
+      <IconButton
+        className={className}
+        label="Darstellung"
+        title="Darstellung: Hell, Dunkel oder Schwarz"
+        aria-haspopup="menu"
+        aria-expanded={menu !== null}
+        onClick={(event) => setMenu(menu ? null : { element: event.currentTarget })}
+      >
+        <Symbol />
+      </IconButton>
+      {menu && (
+        <Menu anchor={menu} label="Darstellung" align="end" onClose={() => setMenu(null)}>
+          <MenuItem icon={<Monitor />} checked={wieSystem} onSelect={() => setWieSystem(true)}>
+            Wie System
+          </MenuItem>
+          <MenuSeparator />
+          {MODI.map(({ value, label }) => {
+            const Eintrag = SYMBOL[value];
+            return (
+              <MenuItem key={value} icon={<Eintrag />} checked={!wieSystem && resolved === value} onSelect={() => setModus(value)}>
+                {label}
+              </MenuItem>
+            );
+          })}
+        </Menu>
+      )}
+    </>
   );
 }
 

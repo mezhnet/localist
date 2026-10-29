@@ -4,13 +4,18 @@
 // von Startseite (Hell, wie 01-…) und Notiz mit offenem Menü „Baustein wählen …“ (Schwarz, wie 02-…) in Microsoft
 // Edge (unsichtbar im Hintergrund) und misst die Lage der wichtigsten Elemente in Pixeln der Vorlage (× 1,5).
 //
+// Etappe 20, drittes Argument `handy`: dieselben Inhalte auf dem Handy (375 × 812 bei Faktor 2,6 = 975 × 2111 Pixel
+// wie 03-…, 04-… und 05-…, Android in der Vorschau): Startseite (Hell), Notiz beim Schreiben (Schwarz) und
+// Einstellungen → Darstellung (Dunkel).
+//
 // Aufruf, während die Vorschau läuft: node scripts/vorlage-vergleich.mjs http://localhost:1430 docs/screenshots/etappe-19
+//                                     node scripts/vorlage-vergleich.mjs http://localhost:1430 docs/screenshots/etappe-20 handy
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const [base = "http://localhost:1430", outDir = "docs/screenshots/etappe-19"] = process.argv.slice(2);
+const [base = "http://localhost:1430", outDir = "docs/screenshots/etappe-19", geraet = "pc"] = process.argv.slice(2);
 const EDGE = process.env.EDGE_PATH ?? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 const PORT = 9400 + Math.floor(Math.random() * 500);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -164,14 +169,53 @@ async function oeffnen({ modus, hoehe, aktiv }) {
   await sleep(600);
 }
 
-/** Lage eines Elements in Pixeln der Vorlage (× 1,5). */
-const LAGE = `(sel) => { const e = typeof sel === "string" ? document.querySelector(sel) : sel; if (!e) return null; const r = e.getBoundingClientRect(); const f = (n) => Math.round(n * 1.5); return [f(r.left), f(r.top), f(r.right), f(r.bottom)].join(","); }`;
+/** Handy wie in den Vorlagen 03–05: 375 × 812 bei Faktor 2,6, Android in der Vorschau, ohne Reiter. */
+async function oeffnenHandy({ modus }) {
+  await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 812, deviceScaleFactor: 2.6, mobile: true });
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: modus === "light" ? "light" : "dark" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+  await send("Page.navigate", { url: base });
+  await waitFor("document.body");
+  await ev(`localStorage.clear(); localStorage.setItem("dev-last-vault", ${JSON.stringify(VAULT)}); localStorage.setItem("theme", ${JSON.stringify(modus)});
+    localStorage.setItem("dev-platform", "android"); true`);
+  await send("Page.navigate", { url: base });
+  await waitFor(`document.querySelector('.handy-nav') && document.querySelectorAll('.home-table-zeile').length >= 4`);
+  await sleep(600);
+}
+
+/** Lage eines Elements in Pixeln der Vorlage (× 1,5, auf dem Handy × 2,6). */
+const FAKTOR = geraet === "handy" ? 2.6 : 1.5;
+const LAGE = `(sel) => { const e = typeof sel === "string" ? document.querySelector(sel) : sel; if (!e) return null; const r = e.getBoundingClientRect(); const f = (n) => Math.round(n * ${FAKTOR}); return [f(r.left), f(r.top), f(r.right), f(r.bottom)].join(","); }`;
+
+/** Handy-Vergleiche mit 03-…, 04-… und 05-… */
+async function handyVergleich(zeilen) {
+  // 03: Startseite, Hell
+  await oeffnenHandy({ modus: "light" });
+  zeilen.push(`03 Handy-Startseite (Hell): ${await shot("vergleich-03-handy-startseite-hell")}`);
+  zeilen.push(
+    `   Maße (Pixel der Vorlage, links,oben,rechts,unten): ${JSON.stringify(
+      await ev(`(() => { const lage = ${LAGE}; return {
+        vault: lage(".home-handy-vault"), darstellung: lage('.home-handy-kopf [aria-label="Darstellung"]'), einstellungen: lage('.home-handy-kopf [aria-label="Einstellungen"]'),
+        datum: lage(".home-date"), begruessung: lage(".home-greeting"), schnellNotieren: lage(".home-schnell"), plus: lage(".home-schnell-notiz"),
+        zuletzt: lage(".home-zuletzt"), ersteZeile: lage(".home-table-zeile"), favoritChip: lage(".home-chip"), navigation: lage(".handy-nav"), navPlus: lage(".handy-nav-neu"),
+        texte: { datum: document.querySelector(".home-date").textContent, begruessung: document.querySelector(".home-greeting").textContent,
+          zeilen: [...document.querySelectorAll(".home-table-zeile")].map((z) => [...z.children].filter((s) => getComputedStyle(s).display !== "none").map((s) => s.textContent).join(" | ")),
+          navigation: [...document.querySelectorAll(".handy-nav button")].map((b) => b.textContent || b.getAttribute("aria-label")) },
+        farben: { hintergrund: getComputedStyle(document.querySelector(".main")).backgroundColor, karte: getComputedStyle(document.querySelector(".home-schnell")).backgroundColor,
+          navigation: getComputedStyle(document.querySelector(".handy-nav")).backgroundColor, navPlus: getComputedStyle(document.querySelector(".handy-nav-neu")).backgroundColor } }; })()`),
+    )}`,
+  );
+}
 
 const zeilen = [];
 try {
   await send("Page.enable");
   await send("Runtime.enable");
   await send("Page.addScriptToEvaluateOnNewDocument", { source: VORBEREITUNG });
+  if (geraet === "handy") {
+    await handyVergleich(zeilen);
+    console.log(`Vergleich mit der Vorlage (Handy), Vorschau ${base}:`);
+    console.log(zeilen.join("\n"));
+  } else {
 
   // 01: Startseite, Hell, 1200 × 767
   await oeffnen({ modus: "light", hoehe: 767, aktiv: -1 });
@@ -216,6 +260,7 @@ try {
   );
   console.log(`Vergleich mit der Vorlage, Vorschau ${base}:`);
   console.log(zeilen.join("\n"));
+  }
 } catch (error) {
   console.log(zeilen.join("\n"));
   console.log(`FEHLER: ${error.message}`);

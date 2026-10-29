@@ -57,6 +57,19 @@ export function relativeTime(then: number, now: number): string {
   return thenDay.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+/**
+ * Kurze Zeitangabe für die Handy-Startseite (Vorlage 03): „jetzt“, „7 Min.“, „3 Std.“, „gestern“, „4 Tage“,
+ * „01.09.“ (im selben Jahr) bzw. „01.09.25“.
+ */
+export function kurzeZeit(then: number, now: number): string {
+  const lang = relativeTime(then, now);
+  if (lang === "gerade eben") return "jetzt";
+  if (lang.startsWith("vor ")) return lang.slice(4).replace(/ Tagen$/, " Tage");
+  const datum = /^(\d\d)\.(\d\d)\.(\d{2})(\d\d)$/.exec(lang);
+  if (datum) return new Date(then).getFullYear() === new Date(now).getFullYear() ? `${datum[1]}.${datum[2]}.` : `${datum[1]}.${datum[2]}.${datum[4]}`;
+  return lang;
+}
+
 const WOCHENTAGE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
 /** Datum oben auf der Startseite (Vorlage): „Mo, 26.10.2026“. */

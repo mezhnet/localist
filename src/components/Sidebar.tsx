@@ -93,6 +93,11 @@ interface Props extends SidebarActions {
   fensterrahmen?: boolean;
   /** Steht die Seitenleiste rechts, öffnen sich die Menüs ihrer Knöpfe nach links (bleiben im Fenster). */
   seite?: "links" | "rechts";
+  /**
+   * Handy: Ansicht „Seiten“ der Navigationsleiste. Vault-Umschalter, Suchen, Startseite, „Neue Seite“, Modus und
+   * Einstellungen stehen dann auf der Startseite bzw. in der Navigationsleiste und fehlen hier.
+   */
+  handy?: boolean;
 }
 
 type MenuState =
@@ -318,27 +323,33 @@ export function Sidebar(props: Props) {
   return (
     <nav className="sidebar" aria-label="Seiten" onContextMenu={(event) => setMenu({ kind: "new", anchor: atPointer(event), dir: "" })}>
       {/* Steht die Seitenleiste links, liegt der Kopf in der oberen Leiste: Freie Stellen ziehen das Fenster. */}
-      <div className="sidebar-header" data-tauri-drag-region={props.fensterrahmen ? "deep" : undefined}>
-        <button
-          type="button"
-          className="vault-switcher"
-          title="Vault wechseln oder Einstellungen öffnen"
-          aria-haspopup="menu"
-          onClick={(event) => openMenu({ kind: "vault", anchor: below(event) })}
-        >
-          <span className="vault-avatar" aria-hidden="true">
-            {props.vaultName.trim().charAt(0).toUpperCase() || "V"}
-          </span>
-          <span className="vault-name">{props.vaultName}</span>
-          <ChevronsUpDown className="vault-switcher-chevron" aria-hidden="true" />
-        </button>
-      </div>
+      {props.handy ? (
+        <h1 className="handy-titel sidebar-handy-titel">Seiten</h1>
+      ) : (
+        <div className="sidebar-header" data-tauri-drag-region={props.fensterrahmen ? "deep" : undefined}>
+          <button
+            type="button"
+            className="vault-switcher"
+            title="Vault wechseln oder Einstellungen öffnen"
+            aria-haspopup="menu"
+            onClick={(event) => openMenu({ kind: "vault", anchor: below(event) })}
+          >
+            <span className="vault-avatar" aria-hidden="true">
+              {props.vaultName.trim().charAt(0).toUpperCase() || "V"}
+            </span>
+            <span className="vault-name">{props.vaultName}</span>
+            <ChevronsUpDown className="vault-switcher-chevron" aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       <div className="sidebar-scroll">
         <div className="sidebar-nav">
-          <Button variant="ghost" className="sidebar-item" icon={<Search />} trailing={<Kbd>Strg P</Kbd>} onClick={props.onQuickOpen} title="Seite nach Titel öffnen (Strg+P)">
-            Suchen
-          </Button>
+          {!props.handy && (
+            <Button variant="ghost" className="sidebar-item" icon={<Search />} trailing={<Kbd>Strg P</Kbd>} onClick={props.onQuickOpen} title="Seite nach Titel öffnen (Strg+P)">
+              Suchen
+            </Button>
+          )}
           <Button
             variant="ghost"
             className="sidebar-item"
@@ -349,9 +360,11 @@ export function Sidebar(props: Props) {
           >
             Volltextsuche
           </Button>
-          <Button variant="ghost" className={cx("sidebar-item", props.homeActive && "active")} icon={<House />} onClick={props.onOpenHome}>
-            Startseite
-          </Button>
+          {!props.handy && (
+            <Button variant="ghost" className={cx("sidebar-item", props.homeActive && "active")} icon={<House />} onClick={props.onOpenHome}>
+              Startseite
+            </Button>
+          )}
           <Button
             variant="ghost"
             className={cx("sidebar-item", props.libraryActive && "active")}
@@ -361,16 +374,18 @@ export function Sidebar(props: Props) {
           >
             Bausteine
           </Button>
-          <Button
-            variant="ghost"
-            className="sidebar-item"
-            icon={<Plus />}
-            aria-haspopup="menu"
-            title="Neue Notiz, HTML-Seite, Ordner, Datenbank oder Notiz aus Vorlage"
-            onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}
-          >
-            Neue Seite
-          </Button>
+          {!props.handy && (
+            <Button
+              variant="ghost"
+              className="sidebar-item"
+              icon={<Plus />}
+              aria-haspopup="menu"
+              title="Neue Notiz, HTML-Seite, Ordner, Datenbank oder Notiz aus Vorlage"
+              onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}
+            >
+              Neue Seite
+            </Button>
+          )}
         </div>
 
         <section className="sidebar-section" aria-label="Favoriten">
@@ -412,18 +427,20 @@ export function Sidebar(props: Props) {
         </section>
       </div>
 
-      <div className="sidebar-footer">
-        <div className="sidebar-darstellung">
-          <span className="sidebar-section-label">Darstellung</span>
-          <ModusUmschalter />
+      {!props.handy && (
+        <div className="sidebar-footer">
+          <div className="sidebar-darstellung">
+            <span className="sidebar-section-label">Darstellung</span>
+            <ModusUmschalter />
+          </div>
+          <div className="sidebar-footer-zeile">
+            <Button variant="ghost" className="sidebar-item" icon={<SlidersHorizontal />} onClick={props.onOpenSettings}>
+              Einstellungen
+            </Button>
+            <span className="app-version">v{packageInfo.version}</span>
+          </div>
         </div>
-        <div className="sidebar-footer-zeile">
-          <Button variant="ghost" className="sidebar-item" icon={<SlidersHorizontal />} onClick={props.onOpenSettings}>
-            Einstellungen
-          </Button>
-          <span className="app-version">v{packageInfo.version}</span>
-        </div>
-      </div>
+      )}
 
       {menu?.kind === "new" && (
         <Menu anchor={menu.anchor} label="Neu" align={menuAlign} onClose={() => setMenu(null)}>
@@ -469,7 +486,7 @@ export function Sidebar(props: Props) {
 }
 
 /** Einträge des „Neu“-Menüs: Notiz, Ordner, Datenbank und Notiz aus Vorlage. */
-function NewItems({ dir, tree, onCreate }: { dir: string; tree: TreeNode[]; onCreate: (kind: CreateKind, dir: string) => void }) {
+export function NewItems({ dir, tree, onCreate }: { dir: string; tree: TreeNode[]; onCreate: (kind: CreateKind, dir: string) => void }) {
   const where = dir ? findNode(tree, dir)?.name ?? dir : null;
   return (
     <>

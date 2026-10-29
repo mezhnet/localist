@@ -419,10 +419,11 @@ async function run(theme, device) {
   await shot(`${prefix}startseite-${theme}`);
 
   if (mobile) {
-    await click(".topbar-menu");
+    // Seit Etappe 20: „Seiten“ in der unteren Navigationsleiste statt Menü-Knopf oben
+    await evaluate(`[...document.querySelectorAll(".handy-nav button")].find((knopf) => knopf.textContent === "Seiten").click()`);
     await sleep(400);
     await shot(`${prefix}menue-${theme}`);
-    await click(".drawer-backdrop");
+    await evaluate(`[...document.querySelectorAll(".handy-nav button")].find((knopf) => knopf.textContent === "Seiten").click()`);
   }
 
   await evaluate(SAMPLE_DATA);

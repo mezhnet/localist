@@ -474,18 +474,152 @@ describe("Handy (Android)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("Seiten lassen sich über das ausklappbare Menü öffnen und bearbeiten, das Menü klappt danach zu", async () => {
+  it("Seiten lassen sich über „Seiten“ in der Navigationsleiste öffnen und bearbeiten, die Ansicht schließt danach (bis Etappe 19 über den Menü-Knopf oben)", async () => {
+    handyBildschirm();
     await openVaultFromStart();
-    const menuButton = screen.getByRole("button", { name: "Menü öffnen" });
-    expect(menuButton.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(menuButton);
-    expect(menuButton.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.queryByRole("button", { name: "Menü öffnen" })).toBeNull();
+    const seiten = navigation().getByRole("button", { name: "Seiten" });
+    expect(seiten.getAttribute("aria-current")).toBeNull();
+    fireEvent.click(seiten);
+    expect(seiten.getAttribute("aria-current")).toBe("page");
     expect(document.querySelector(".sidebar-shell.open")).toBeTruthy();
 
     await openPage("Notizen", "Ideen");
     await screen.findByText("Hier sammle ich lose Gedanken.");
     await waitFor(() => expect(document.querySelector(".sidebar-shell.open")).toBeNull());
+    expect(seiten.getAttribute("aria-current")).toBeNull();
     expect(document.querySelector(".topbar-title")?.textContent).toBe("Ideen");
+  });
+});
+
+/** Handy-Bildschirm (unter 769 px) vortäuschen: Dann gibt es die untere Navigationsleiste statt der Reiterleiste. */
+function handyBildschirm() {
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query) => ({ matches: query === "(max-width: 768px)", media: query, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList,
+  );
+}
+
+/** Die untere Navigationsleiste (Handy). */
+function navigation() {
+  return within(screen.getByRole("navigation", { name: "Navigation" }));
+}
+
+describe("Untere Navigationsleiste und Handy-Startseite (Etappe 20)", () => {
+  it("nur auf dem Handy: Start, Suchen, „+“, Seiten und Einstellungen ersetzen Menü-Knopf und Suche oben", async () => {
+    await openVaultFromStart();
+    expect(screen.queryByRole("navigation", { name: "Navigation" })).toBeNull();
+    cleanup();
+
+    localStorage.setItem("dev-platform", "android");
+    handyBildschirm();
+    await openVaultFromStart();
+    const nav = navigation();
+    expect(nav.getAllByRole("button").map((knopf) => knopf.getAttribute("aria-label") ?? knopf.textContent)).toEqual(["Start", "Suchen", "Neu", "Seiten", "Einstellungen"]);
+    expect(nav.getByRole("button", { name: "Einstellungen" }).textContent).toBe("Einstell.");
+    expect(nav.getByRole("button", { name: "Start" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.queryByRole("button", { name: "Menü öffnen" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Seite suchen" })).toBeNull();
+    expect(screen.queryByRole("tablist", { name: "Offene Reiter" })).toBeNull();
+
+    // Suchen = Schnellsuche (Strg+P), Einstellungen = Einstellungen; Start schließt beides wieder.
+    fireEvent.click(nav.getByRole("button", { name: "Suchen" }));
+    expect(await screen.findByRole("dialog", { name: "Schnellsuche" })).toBeTruthy();
+    expect(nav.getByRole("button", { name: "Suchen" }).getAttribute("aria-current")).toBe("page");
+    fireEvent.click(nav.getByRole("button", { name: "Einstellungen" }));
+    expect(await screen.findByRole("dialog", { name: "Einstellungen" })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "Schnellsuche" })).toBeNull();
+    expect(nav.getByRole("button", { name: "Einstellungen" }).getAttribute("aria-current")).toBe("page");
+    fireEvent.click(nav.getByRole("button", { name: "Start" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(nav.getByRole("button", { name: "Start" }).getAttribute("aria-current")).toBe("page");
+
+    // „Seiten“: Ordnerbaum mit Favoriten, ohne das, was Startseite und Navigationsleiste schon haben.
+    fireEvent.click(nav.getByRole("button", { name: "Seiten" }));
+    const seiten = within(document.querySelector<HTMLElement>(".sidebar-shell.open")!);
+    expect(seiten.getByRole("heading", { level: 1, name: "Seiten" })).toBeTruthy();
+    expect(seiten.getByRole("region", { name: "Favoriten" })).toBeTruthy();
+    expect(seiten.getByRole("tree")).toBeTruthy();
+    expect(seiten.getByRole("button", { name: /^Volltextsuche/ })).toBeTruthy();
+    expect(seiten.getByRole("button", { name: "Bausteine" })).toBeTruthy();
+    for (const weg of ["Suchen", "Startseite", "Neue Seite", "Einstellungen"]) expect(seiten.queryByRole("button", { name: weg })).toBeNull();
+    expect(seiten.queryByTitle("Vault wechseln oder Einstellungen öffnen")).toBeNull();
+    expect(seiten.queryByRole("group", { name: "Modus" })).toBeNull();
+
+    // „+“ öffnet das Neu-Menü; eine neue Notiz wird angelegt und geöffnet, „Seiten“ schließt sich.
+    const neu = nav.getByRole("button", { name: "Neu" });
+    fireEvent.click(neu);
+    expect(neu.getAttribute("aria-expanded")).toBe("true");
+    const menu = within(screen.getByRole("menu", { name: "Neu" }));
+    expect(menu.getAllByRole("menuitem").map((eintrag) => eintrag.textContent)).toEqual(["Notiz", "HTML-Seite", "Ordner", "Datenbank", "Notiz aus Vorlage …"]);
+    fireEvent.click(menu.getByRole("menuitem", { name: "Notiz" }));
+    await waitFor(() => expect(vault().files.has("Unbenannt.md")).toBe(true));
+    await waitFor(() => expect(document.querySelector(".topbar-title")?.textContent).toBe("Unbenannt"));
+    expect(document.querySelector(".sidebar-shell.open")).toBeNull();
+    expect(nav.getByRole("button", { name: "Start" }).getAttribute("aria-current")).toBeNull();
+  });
+
+  it("Handy-Startseite nach der Vorlage 03: Kopf mit Vault-Umschalter, Darstellung und Einstellungen, „+“ zum Schnell notieren, Karte „Zuletzt bearbeitet“ mit „Alle“ und kurzen Zeiten", async () => {
+    localStorage.setItem("dev-platform", "android");
+    handyBildschirm();
+    await openVaultFromStart();
+    const start = within(screen.getByRole("region", { name: "Startseite" }));
+
+    // Vault-Umschalter (auf Android ohne Explorer)
+    fireEvent.click(start.getByTitle("Vault wechseln oder Einstellungen öffnen"));
+    const vaultMenu = within(screen.getByRole("menu", { name: "Vault" }));
+    expect(vaultMenu.getAllByRole("menuitem").map((eintrag) => eintrag.textContent)).toEqual(["Anderen Vault öffnen …", "Einstellungen"]);
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    // Darstellung: „Wie System“, Hell, Dunkel, Schwarz
+    fireEvent.click(start.getByRole("button", { name: "Darstellung" }));
+    const modi = within(screen.getByRole("menu", { name: "Darstellung" }));
+    expect(modi.getAllByRole("menuitemradio").map((eintrag) => [eintrag.textContent, eintrag.getAttribute("aria-checked")])).toEqual([
+      ["Wie System", "true"],
+      ["Hell", "false"],
+      ["Dunkel", "false"],
+      ["Schwarz", "false"],
+    ]);
+    fireEvent.click(modi.getByRole("menuitemradio", { name: "Schwarz" }));
+    expect(document.documentElement.dataset.theme).toBe("black");
+    expect(localStorage.getItem("theme")).toBe("black");
+
+    fireEvent.click(start.getByRole("button", { name: "Einstellungen" }));
+    expect(await screen.findByRole("dialog", { name: "Einstellungen" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    // „Schnell notieren“ nur mit „+“ (heißt weiterhin „Notiz“), Datenbank und Vorlage gibt es über „+“ unten.
+    expect(start.getByRole("button", { name: "Notiz" })).toBeTruthy();
+    fireEvent.change(start.getByRole("textbox", { name: "Schnell notieren" }), { target: { value: "Einkauf vom Handy" } });
+    fireEvent.click(start.getByRole("button", { name: "Notiz" }));
+    await waitFor(() => expect(vault().files.has("Einkauf vom Handy.md")).toBe(true));
+
+    // „Zuletzt bearbeitet“: vier Seiten, „Alle“, kurze Zeiten wie „jetzt“ und „7 Min.“
+    vault().setModified("Notizen/Ideen.md", Date.now() - 7 * 60_000);
+    const alle = start.getByRole("button", { name: "Alle Seiten" });
+    expect(alle.textContent).toBe("Alle");
+    await waitFor(() => expect(document.querySelectorAll(".home-zuletzt .home-table-zeile")).toHaveLength(4));
+    const zeiten = () => [...document.querySelectorAll(".home-zuletzt .home-table-zeile")].map((zeile) => [zeile.querySelector(".home-table-titel")?.textContent, zeile.querySelector(".home-table-zeit")?.textContent]);
+    await waitFor(() => expect(zeiten()[0]).toEqual(["Einkauf vom Handy", "jetzt"]));
+    fireEvent.click(alle);
+    expect(document.querySelectorAll(".home-zuletzt .home-table-zeile").length).toBeGreaterThan(4);
+    await waitFor(() => expect(zeiten().find(([titel]) => titel === "Ideen")?.[1]).toBe("7 Min."));
+  });
+
+  it("CSS: Navigationsleiste mit Platz für die Gestenleiste (safe-area-inset-bottom), Handy-Seiten auf dem Fensterhintergrund", async () => {
+    const { default: layout } = await import("./styles/layout.css?raw");
+    const { default: index } = await import("../index.html?raw");
+    const text = layout.replace(/\r\n/g, "\n");
+    const regel = (selektor: string) => {
+      const start = text.indexOf(`\n${selektor} {`);
+      return start < 0 ? "" : text.slice(start, text.indexOf("}", start));
+    };
+    expect(regel(".handy-nav")).toContain("env(safe-area-inset-bottom)");
+    expect(regel(".handy-nav")).toContain("grid-template-columns: repeat(5, minmax(0, 1fr));");
+    expect(regel(".handy-nav-neu")).toMatch(/background: var\(--color-text\);[\s\S]*color: var\(--color-bg\);/);
+    expect(text).toMatch(/\.workspace\.is-handy \.main \{\s*--color-bg: var\(--color-window\);/);
+    expect(text).not.toContain(".topbar-menu");
+    // env(safe-area-inset-*) liefert nur mit viewport-fit=cover Werte.
+    expect(index).toContain("viewport-fit=cover");
   });
 });
 
@@ -2098,15 +2232,16 @@ describe("Seitenleiste links oder rechts (Etappe 18)", () => {
     await waitFor(() => expect(vault().files.has("Unbenannt.md")).toBe(true));
   });
 
-  it("CSS: rechts gespiegelt (Raster, Rand der Inhaltsfläche, Schublade von rechts), obere Leiste über die ganze Breite", async () => {
+  it("CSS: rechts gespiegelt (Raster, Rand der Inhaltsfläche; auf dem Handy seit Etappe 20 „Seiten“ über die ganze Breite statt Schublade), obere Leiste über die ganze Breite", async () => {
     const { default: css } = await import("./styles/layout.css?raw");
     const text = css.replace(/\r\n/g, "\n");
     // Breite über --seitenleiste-breite (= --sidebar-width, eingeklappt 0, siehe „Seitenleiste ein- und ausklappen“)
     expect(text).toMatch(/\.workspace\.seitenleiste-rechts \{\s*grid-template-columns: minmax\(0, 1fr\) var\(--seitenleiste-breite\);\s*grid-template-areas:\s*"leiste leiste"\s*"inhalt seitenleiste";/);
     expect(text).toMatch(/\.workspace \{\s*--seitenleiste-breite: var\(--sidebar-width\);/);
     expect(text).toMatch(/\.workspace\.seitenleiste-rechts \.main \{\s*margin-right: 0;\s*margin-left: var\(--window-gap\);/);
-    expect(text).toMatch(/\.seitenleiste-rechts \.sidebar-shell \{\s*right: 0;\s*left: auto;\s*transform: translateX\(100%\);/);
-    expect(text).toMatch(/\.seitenleiste-rechts \.sidebar-shell\.open \{\s*transform: none;\s*box-shadow: var\(--shadow-drawer-right\);/);
+    // Handy: Die Ansicht „Seiten“ der Navigationsleiste füllt die Breite, links oder rechts spielt dort keine Rolle.
+    expect(text).toMatch(/\.sidebar-shell \{\s*position: absolute;\s*top: 0;\s*right: 0;\s*bottom: var\(--handy-nav-platz\);\s*left: 0;/);
+    expect(text).not.toMatch(/\.seitenleiste-rechts \.sidebar-shell(\.open)? \{\s*(right|transform)/);
   });
 });
 

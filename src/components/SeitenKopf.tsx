@@ -1,8 +1,8 @@
 // Seitenkopf über dem Inhalt (Vorlage 02): links der Pfad „Ordner / Seite“, rechts der Speicherstatus in Monospace
 // („Speichert …“, „gerade eben gespeichert“, „vor 3 Min. gespeichert“, Fehler deutlich in Rot), der Stern für
 // Favoriten (gefüllt in Akzentfarbe) und „…“ mit denselben Aktionen wie das Kontextmenü der Seitenleiste.
-// Auf dem Handy trägt der Kopf außerdem den Menü-Knopf und die Suche.
-import { AlertTriangle, Menu as MenuIcon, MoreHorizontal, Search, Star } from "lucide-react";
+// Auf dem Handy übernimmt die untere Navigationsleiste Menü und Suche (Navigationsleiste.tsx).
+import { AlertTriangle, MoreHorizontal, Star } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { aktuellerSpeicherZustand, speicherZustandAbonnieren } from "../lib/autosave";
 import { relativeTime } from "../lib/home";
@@ -24,20 +24,14 @@ interface Props {
   onFavorit: () => void;
   /** Aktionen für „…“ (wie im Kontextmenü der Seitenleiste). */
   aktionen: Omit<NodeItemsProps, "node" | "favorite" | "onToggleFavorite"> | null;
-  /** Startseite: auf dem PC ohne Kopf. */
+  /** Startseite: ohne Kopf (auf dem Handy hat sie einen eigenen, siehe HomePage.tsx). */
   start: boolean;
-  menuOffen: boolean;
-  onMenu: () => void;
-  onSuche: () => void;
 }
 
 export function SeitenKopf(props: Props) {
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
   return (
     <header className={cx("topbar", props.start && "is-start")}>
-      <IconButton className="topbar-menu" label="Menü öffnen" aria-expanded={props.menuOffen} onClick={props.onMenu}>
-        <MenuIcon />
-      </IconButton>
       <nav className="breadcrumb" aria-label="Pfad">
         {props.ordner.map((name, i) => (
           <span key={i} className="breadcrumb-folder">
@@ -66,9 +60,6 @@ export function SeitenKopf(props: Props) {
             <MoreHorizontal />
           </IconButton>
         )}
-        <IconButton className="topbar-search" label="Seite suchen" onClick={props.onSuche}>
-          <Search />
-        </IconButton>
       </div>
       {menu && props.node && props.aktionen && (
         <Menu anchor={menu} label={`Aktionen für „${props.node.name}“`} align="end" onClose={() => setMenu(null)}>
