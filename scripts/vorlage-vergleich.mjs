@@ -113,6 +113,28 @@ const HTML = (titel, id) => `<!doctype html>
 </html>
 `;
 
+// Die Notiz auf dem Handy (Vorlage 04) zeigt eine kürzere Fassung derselben Seite.
+const RAID_HANDY = `---
+id: 3f2a9c1e-5b7d-4e8a-9c21-7d4e6b1a0c55
+Tags:
+  - AP2
+  - IT-Systeme
+Erstellt: 2026-10-26
+---
+RAID verteilt Daten auf mehrere Festplatten – für mehr Tempo, mehr Ausfallsicherheit oder beides.
+
+> [!info] **RAID ersetzt kein Backup.** Gegen Löschen oder Ransomware hilft nur eine getrennte Sicherung.
+
+## Aufgaben für heute
+
+- [x] RAID 0, 1, 5, 6 und 10 verstehen
+- [ ] Aufgaben aus dem Pool lösen
+- [ ] 5–10 Karten zum Thema anlegen
+
+> [!note]- Hot-Spare, NAS, SAN und iSCSI
+> Ein Hot-Spare springt bei einem Ausfall sofort ein.
+`;
+
 // Vor dem Start der App: feste Uhrzeit und der Vault der Vorlage (die Vorschau hält den Vault im Arbeitsspeicher).
 const VORBEREITUNG = `(() => {
   const ZIEL = new Date(2026, 9, 26, 8, 30).getTime();
@@ -202,6 +224,33 @@ async function handyVergleich(zeilen) {
           navigation: [...document.querySelectorAll(".handy-nav button")].map((b) => b.textContent || b.getAttribute("aria-label")) },
         farben: { hintergrund: getComputedStyle(document.querySelector(".main")).backgroundColor, karte: getComputedStyle(document.querySelector(".home-schnell")).backgroundColor,
           navigation: getComputedStyle(document.querySelector(".handy-nav")).backgroundColor, navPlus: getComputedStyle(document.querySelector(".handy-nav-neu")).backgroundColor } }; })()`),
+    )}`,
+  );
+
+  // 04: Notiz beim Schreiben, Schwarz (Cursor am Ende der letzten Aufgabe, Leiste über der Tastatur)
+  await oeffnenHandy({ modus: "black" });
+  await ev(`window.__devVault.files.set("AP2 Lernen/RAID und Speicher.md", ${JSON.stringify(RAID_HANDY)}); true`);
+  await ev(`[...document.querySelectorAll(".home-table-zeile")].find((z) => z.textContent.includes("RAID und Speicher")).click(); true`);
+  await waitFor(`document.querySelectorAll('[data-content-type="checkListItem"]').length === 3 && document.querySelector(".callout-frame")`);
+  await sleep(500);
+  const ende = await ev(`(() => { const t = [...document.querySelectorAll('[data-content-type="checkListItem"] .bn-inline-content')].pop(); const r = t.getBoundingClientRect(); return { x: r.right - 2, y: r.top + r.height / 2 }; })()`);
+  await maus("mousePressed", ende.x, ende.y);
+  await maus("mouseReleased", ende.x, ende.y);
+  await waitFor(`document.querySelector(".tastaturleiste")`);
+  zeilen.push(`04 Handy-Notiz beim Schreiben (Schwarz): ${await shot("vergleich-04-handy-notiz-schwarz")}`);
+  zeilen.push(
+    `   Maße (Pixel der Vorlage, links,oben,rechts,unten): ${JSON.stringify(
+      await ev(`(() => { const lage = ${LAGE}; return {
+        zurueck: lage(".topbar-zurueck"), ort: lage(".topbar-ort"), stern: lage(".topbar .favorite-toggle"), mehr: lage(".topbar-mehr"),
+        titel: lage(".page-title"), chips: lage(".properties-chips"), ersterChip: lage(".properties-chip"), ersterAbsatz: lage('.bn-editor [data-content-type="paragraph"] .bn-inline-content'),
+        callout: lage(".callout-frame"), ueberschrift: lage('[data-content-type="heading"] .bn-inline-content'), checkliste: lage('[data-content-type="checkListItem"]'),
+        haekchen: lage('[data-content-type="checkListItem"] input'), leiste: lage(".tastaturleiste-knoepfe"), plus: lage(".tastaturleiste-knopf"), fertig: lage(".tastaturleiste-fertig"),
+        navigationSichtbar: getComputedStyle(document.querySelector(".handy-nav")).display !== "none",
+        texte: { ort: document.querySelector(".topbar-ort").textContent, chips: [...document.querySelectorAll(".properties-chip")].map((c) => c.textContent),
+          leiste: [...document.querySelectorAll(".tastaturleiste button")].map((b) => b.getAttribute("aria-label") ?? b.textContent) },
+        farben: { hintergrund: getComputedStyle(document.querySelector(".main")).backgroundColor, akzentChip: getComputedStyle(document.querySelector(".properties-chip.is-akzent")).backgroundColor,
+          callout: getComputedStyle(document.querySelector(".callout-frame")).backgroundColor, leiste: getComputedStyle(document.querySelector(".tastaturleiste-knoepfe")).backgroundColor,
+          fertig: getComputedStyle(document.querySelector(".tastaturleiste-fertig")).backgroundColor } }; })()`),
     )}`,
   );
 }

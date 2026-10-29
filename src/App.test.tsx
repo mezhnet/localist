@@ -623,6 +623,121 @@ describe("Untere Navigationsleiste und Handy-Startseite (Etappe 20)", () => {
   });
 });
 
+describe("Handy-Notiz nach der Vorlage 04 (Etappe 20)", () => {
+  /** Der Block-Editor der offenen Seite (contenteditable). */
+  const editorFlaeche = () => document.querySelector<HTMLElement>(".bn-editor")!;
+
+  it("Kopf mit Zurück-Pfeil und Ordnername, Stern und „…“; Zurück führt zur vorigen Ansicht und am Ende zur Startseite", async () => {
+    localStorage.setItem("dev-platform", "android");
+    handyBildschirm();
+    await openVaultFromStart();
+    fireEvent.click(navigation().getByRole("button", { name: "Seiten" }));
+    fireEvent.click(await (await inTree()).findByText("Projekte"));
+    const ort = () => document.querySelector(".topbar-ort")?.textContent;
+    // Projekte liegt in der Vault-Wurzel: Ort ist der Vault-Name.
+    await waitFor(() => expect(ort()).toBe("Testvault"));
+    fireEvent.click(await screen.findByText("Website-Relaunch"));
+    await screen.findByText("Domain prüfen");
+    expect(ort()).toBe("Projekte");
+    const kopf = within(document.querySelector<HTMLElement>(".topbar.is-handy")!);
+    expect(kopf.getByRole("button", { name: "Zurück" })).toBeTruthy();
+    expect(kopf.getByRole("button", { name: /Favoriten/ })).toBeTruthy();
+    expect(kopf.getByRole("button", { name: "Weitere Aktionen" })).toBeTruthy();
+    expect(kopf.queryByRole("navigation", { name: "Pfad" })).toBeNull();
+    expect(kopf.queryByRole("status")).toBeNull();
+
+    // Zurück: Website-Relaunch → Projekte → Startseite
+    fireEvent.click(kopf.getByRole("button", { name: "Zurück" }));
+    await waitFor(() => expect(document.querySelector(".database-view, .database-table")).toBeTruthy());
+    fireEvent.click(within(document.querySelector<HTMLElement>(".topbar.is-handy")!).getByRole("button", { name: "Zurück" }));
+    await waitFor(() => expect(navigation().getByRole("button", { name: "Start" }).getAttribute("aria-current")).toBe("page"));
+    expect(screen.getByRole("region", { name: "Startseite" })).toBeTruthy();
+  });
+
+  it("Eigenschaften als Chips in einer Zeile; ein Tipp klappt die Liste zum Bearbeiten auf, „+“ fügt eine hinzu", async () => {
+    handyBildschirm();
+    await openVaultFromStart();
+    fireEvent.click(navigation().getByRole("button", { name: "Seiten" }));
+    await openPage("Projekte", "Website-Relaunch");
+    await screen.findByText("Domain prüfen");
+    const leiste = () => screen.getByLabelText("Eigenschaften");
+    const chips = [...leiste().querySelectorAll(".properties-chip")].map((chip) => [chip.textContent, chip.className.replace("properties-chip ", "")]);
+    expect(chips.length).toBeGreaterThan(0);
+    expect(chips.some(([, art]) => art === "is-datum")).toBe(true);
+    expect(leiste().querySelector(".property-row")).toBeNull();
+    // aufklappen, Liste wie am PC, wieder zuklappen
+    fireEvent.click(within(leiste()).getByRole("button", { name: /^Eigenschaften bearbeiten/ }));
+    expect(leiste().querySelectorAll(".property-row").length).toBeGreaterThan(0);
+    fireEvent.click(within(leiste()).getByRole("button", { name: "Eigenschaften zuklappen" }));
+    expect(leiste().querySelector(".property-row")).toBeNull();
+    // „+“: gleich das Formular für eine neue Eigenschaft
+    fireEvent.click(within(leiste()).getByRole("button", { name: "Eigenschaft hinzufügen" }));
+    expect(within(leiste()).getByRole("textbox", { name: "Name der Eigenschaft" })).toBeTruthy();
+  });
+
+  it("Leiste über der Tastatur beim Schreiben: „+“, Checkliste, Callout, Toggle, Bild und „Fertig“; nur auf dem Handy", async () => {
+    await openVaultFromStart();
+    await openPage("Notizen", "Ideen");
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    act(() => editorFlaeche().focus());
+    expect(screen.queryByRole("toolbar", { name: "Schreiben" })).toBeNull();
+    cleanup();
+    localStorage.clear(); // ohne gemerkte Reiter (sonst ist „Notizen“ schon aufgeklappt)
+
+    handyBildschirm();
+    await openVaultFromStart();
+    fireEvent.click(navigation().getByRole("button", { name: "Seiten" }));
+    await openPage("Notizen", "Ideen");
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    expect(screen.queryByRole("toolbar", { name: "Schreiben" })).toBeNull();
+    const tiptap = (window as unknown as { ProseMirror: { commands: { focus: (pos: string) => void } } }).ProseMirror;
+    act(() => tiptap.commands.focus("end"));
+    const leiste = within(await screen.findByRole("toolbar", { name: "Schreiben" }));
+    expect(leiste.getAllByRole("button").map((knopf) => knopf.getAttribute("aria-label") ?? knopf.textContent)).toEqual(["Baustein wählen", "Checkliste", "Callout", "Toggle", "Bild", "Fertig"]);
+
+    // Knöpfe nehmen dem Editor den Fokus nicht (die Tastatur bleibt offen) und ändern den Block am Cursor.
+    const anzahl = (typ: string) => document.querySelectorAll(`.bn-editor [data-content-type="${typ}"]`).length;
+    const checklisten = anzahl("checkListItem");
+    const knopf = leiste.getByRole("button", { name: "Checkliste" });
+    expect(fireEvent.mouseDown(knopf)).toBe(false);
+    expect(fireEvent.pointerDown(knopf)).toBe(false);
+    fireEvent.click(knopf);
+    await waitFor(() => expect(anzahl("checkListItem")).toBe(checklisten + 1));
+    // Wie im Menü „Baustein wählen …“: Ein leerer Block wird umgewandelt, sonst kommt der neue Block darunter.
+    const callouts = anzahl("callout");
+    fireEvent.click(leiste.getByRole("button", { name: "Callout" }));
+    await waitFor(() => expect(anzahl("callout")).toBe(callouts + 1));
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toMatch(/\n> \[!info\]\s*\n/));
+    fireEvent.click(leiste.getByRole("button", { name: "Toggle" }));
+    await waitFor(() => expect(vault().files.get("Notizen/Ideen.md")).toMatch(/\n> \[!note\]-\s*\n/));
+    expect(anzahl("callout")).toBe(callouts + 1);
+
+    // „Fertig“ schließt die Tastatur: Fokus weg, Leiste weg.
+    fireEvent.click(leiste.getByRole("button", { name: "Fertig" }));
+    await waitFor(() => expect(screen.queryByRole("toolbar", { name: "Schreiben" })).toBeNull());
+    expect(editorFlaeche().contains(document.activeElement)).toBe(false);
+  });
+
+  it("„+“ in der Leiste öffnet das Menü „Baustein wählen …“, „Bild“ legt wie dort einen Bild-Block an", async () => {
+    handyBildschirm();
+    await openVaultFromStart();
+    fireEvent.click(navigation().getByRole("button", { name: "Seiten" }));
+    await openPage("Notizen", "Ideen");
+    await screen.findByText("Hier sammle ich lose Gedanken.");
+    const tiptap = (window as unknown as { ProseMirror: { commands: { focus: (pos: string) => void } } }).ProseMirror;
+    act(() => tiptap.commands.focus("end"));
+    const leiste = within(await screen.findByRole("toolbar", { name: "Schreiben" }));
+    const rechteck = { x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 };
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({ ...rechteck, toJSON: () => rechteck } as DOMRect);
+    fireEvent.click(leiste.getByRole("button", { name: "Baustein wählen" }));
+    expect(await screen.findByRole("listbox", { name: "Baustein wählen", hidden: true })).toBeTruthy();
+    fireEvent.keyDown(editorFlaeche(), { key: "Escape" });
+    const bilder = document.querySelectorAll('.bn-editor [data-content-type="image"]').length;
+    fireEvent.click(leiste.getByRole("button", { name: "Bild" }));
+    await waitFor(() => expect(document.querySelectorAll('.bn-editor [data-content-type="image"]').length).toBe(bilder + 1));
+  });
+});
+
 describe("Seiten im Editor", () => {
   it("öffnet eine Seite im Block-Editor", async () => {
     await openVaultFromStart();

@@ -38,6 +38,8 @@ import { schema, type VaultEditor, type VaultPartialBlock } from "../editor/sche
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { useTheme } from "../lib/theme";
 import { abfrageSpeicher, bausteinMenu } from "./BausteinMenu";
+import { useSchmal } from "./Reiterleiste";
+import { Tastaturleiste, useSchreibt } from "./Tastaturleiste";
 
 interface Props {
   initialBlocks: VaultPartialBlock[];
@@ -208,8 +210,12 @@ export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }
   useEffect(() => {
     onReady?.(editor);
   }, [editor, onReady]);
+  // Handy: Beim Schreiben steht über der Tastatur die Leiste mit „+“, Checkliste, Callout, Toggle, Bild und „Fertig“.
+  const schmal = useSchmal();
+  const schreibt = useSchreibt(editor);
 
   return (
+    <>
     <BlockNoteView
       editor={editor}
       theme={dark ? "dark" : "light"}
@@ -237,5 +243,7 @@ export function BlockEditor({ initialBlocks, onChange, onReady, resolveFileUrl }
       />
       <SuggestionMenuController triggerCharacter="[[" getItems={async (query) => linkMenuItems(editor, links, query)} />
     </BlockNoteView>
+    {schmal && schreibt && <Tastaturleiste editor={editor} onBild={() => slashMenuItems(editor).find((item) => item.title === "Bild")?.onItemClick()} />}
+    </>
   );
 }

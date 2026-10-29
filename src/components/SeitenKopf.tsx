@@ -1,8 +1,10 @@
 // Seitenkopf über dem Inhalt (Vorlage 02): links der Pfad „Ordner / Seite“, rechts der Speicherstatus in Monospace
 // („Speichert …“, „gerade eben gespeichert“, „vor 3 Min. gespeichert“, Fehler deutlich in Rot), der Stern für
 // Favoriten (gefüllt in Akzentfarbe) und „…“ mit denselben Aktionen wie das Kontextmenü der Seitenleiste.
-// Auf dem Handy übernimmt die untere Navigationsleiste Menü und Suche (Navigationsleiste.tsx).
-import { AlertTriangle, MoreHorizontal, Star } from "lucide-react";
+// Auf dem Handy übernimmt die untere Navigationsleiste Menü und Suche (Navigationsleiste.tsx); der Kopf zeigt dort
+// wie in der Vorlage 04 einen Zurück-Pfeil mit dem Ordnernamen in Monospace, Stern und „…“ (Speicherstatus nur bei
+// einem Fehler).
+import { AlertTriangle, ChevronLeft, MoreHorizontal, Star } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { aktuellerSpeicherZustand, speicherZustandAbonnieren } from "../lib/autosave";
 import { relativeTime } from "../lib/home";
@@ -26,13 +28,25 @@ interface Props {
   aktionen: Omit<NodeItemsProps, "node" | "favorite" | "onToggleFavorite"> | null;
   /** Startseite: ohne Kopf (auf dem Handy hat sie einen eigenen, siehe HomePage.tsx). */
   start: boolean;
+  /** Handy: Zurück-Pfeil mit diesem Namen (Ordner der Seite bzw. Vault) statt des Pfads. */
+  handy?: { ort: string; onZurueck: () => void };
 }
 
 export function SeitenKopf(props: Props) {
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
   return (
-    <header className={cx("topbar", props.start && "is-start")}>
-      <nav className="breadcrumb" aria-label="Pfad">
+    <header className={cx("topbar", props.start && "is-start", props.handy && "is-handy")}>
+      {props.handy && (
+        <>
+          <IconButton className="topbar-zurueck" label="Zurück" title={`Zurück (${props.handy.ort})`} onClick={props.handy.onZurueck}>
+            <ChevronLeft />
+          </IconButton>
+          <span className="topbar-ort" title={props.titel}>
+            {props.handy.ort}
+          </span>
+        </>
+      )}
+      <nav className="breadcrumb" aria-label="Pfad" hidden={props.handy !== undefined}>
         {props.ordner.map((name, i) => (
           <span key={i} className="breadcrumb-folder">
             <span className="breadcrumb-name">{name}</span>
@@ -44,7 +58,7 @@ export function SeitenKopf(props: Props) {
         <span className="topbar-title">{props.titel}</span>
       </nav>
       <div className="topbar-actions">
-        {props.istSeite && <Speicherstatus geaendert={props.geaendert} />}
+        {props.istSeite && <Speicherstatus geaendert={props.geaendert} nurFehler={props.handy !== undefined} />}
         {props.node && (
           <IconButton
             label={props.favorit ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
@@ -79,7 +93,8 @@ export function gespeichertText(zeit: number, jetzt: number): string {
 /** Wie oft die relative Zeit („vor 3 Min.“) nachgezogen wird. */
 const TAKT_MS = 30_000;
 
-function Speicherstatus({ geaendert }: { geaendert?: number }) {
+/** `nurFehler` (Handy): nur ein Fehler beim Speichern ist zu sehen, sonst nichts (Vorlage 04). */
+function Speicherstatus({ geaendert, nurFehler = false }: { geaendert?: number; nurFehler?: boolean }) {
   const zustand = useSyncExternalStore(speicherZustandAbonnieren, aktuellerSpeicherZustand);
   const [jetzt, setJetzt] = useState(() => Date.now());
   useEffect(() => {
@@ -95,6 +110,7 @@ function Speicherstatus({ geaendert }: { geaendert?: number }) {
       </span>
     );
   }
+  if (nurFehler) return null;
   const text =
     zustand.art === "speichert"
       ? "Speichert …"

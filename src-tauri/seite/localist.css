@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.0.0+14f5a102 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.0.0+e6d24142 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -473,6 +473,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --size-handy-zeile: 52px;
   --size-handy-chip: 38px;
   --size-handy-nav: 60px;
+  --size-handy-tastaturleiste: 50px;
+  --size-handy-checkbox: 17px;
+  --font-size-handy-ort: var(--font-size-xs);
+  --font-size-handy-editor: var(--font-size-lg);
+  --font-size-handy-h2: 20px;
+  --line-height-handy-editor: 1.625;
   --size-handy-nav-neu-width: 50px;
   --size-handy-nav-neu-height: 44px;
   --handy-nav-gap: var(--space-3);

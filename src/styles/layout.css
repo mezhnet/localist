@@ -749,6 +749,10 @@ button.tree-toggle:hover {
   display: none;
 }
 
+.breadcrumb[hidden] {
+  display: none;
+}
+
 .breadcrumb {
   flex: 1;
   min-width: 0;
@@ -1053,4 +1057,127 @@ button.tree-toggle:hover {
 
 .handy-nav-neu:active {
   opacity: 0.85;
+}
+
+/* ---------- Kopf auf dem Handy (Vorlage 04): Zurück-Pfeil, Ordnername in Monospace, Stern und „…“ ---------- */
+.topbar.is-handy {
+  gap: 0;
+  min-height: var(--size-handy-kopf);
+  padding: env(safe-area-inset-top) var(--space-1) 0;
+  border-bottom: 0;
+}
+
+.topbar.is-handy .ui-icon-button {
+  width: var(--size-control-touch);
+  height: var(--size-control-touch);
+}
+
+.topbar.is-handy .ui-icon-button .ui-button__icon svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+.topbar-zurueck.ui-icon-button {
+  color: var(--color-text);
+}
+
+.topbar-ort {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-handy-ort);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar.is-handy .topbar-actions {
+  gap: 0;
+}
+
+/* ---------- Leiste über der Tastatur (Handy, Vorlage 04) ----------
+   Ersetzt beim Schreiben die Navigationsleiste. Über der Bildschirmtastatur: --tastatur-ueberdeckung kommt aus
+   Tastaturleiste.tsx (visualViewport), wenn die Tastatur die Seite überdeckt statt sie zu verkleinern. */
+.tastaturleiste {
+  position: fixed;
+  right: var(--handy-nav-gap);
+  bottom: max(var(--handy-nav-gap), env(safe-area-inset-bottom));
+  left: var(--handy-nav-gap);
+  z-index: var(--z-popover);
+  display: flex;
+  gap: var(--space-2);
+  height: var(--size-handy-tastaturleiste);
+}
+
+.tastaturleiste[data-ueberdeckt] {
+  bottom: calc(var(--tastatur-ueberdeckung, 0px) + var(--space-2));
+}
+
+.tastaturleiste-knoepfe {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 var(--space-1-5);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-handy-leiste);
+  background: var(--color-handy-karte);
+  box-shadow: var(--shadow-handy-nav);
+}
+
+.tastaturleiste-knopf {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--size-control-touch);
+  height: var(--size-control-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-handy-knopf);
+  background: none;
+  color: var(--color-text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tastaturleiste-knopf svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+.tastaturleiste-knopf.is-plus {
+  color: var(--color-accent-text);
+}
+
+.tastaturleiste-knopf:active {
+  background: var(--color-active);
+}
+
+.tastaturleiste-fertig {
+  flex-shrink: 0;
+  min-width: var(--size-control-touch);
+  padding: 0 var(--space-5);
+  border: 0;
+  border-radius: var(--radius-handy-leiste);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tastaturleiste-knopf:focus-visible,
+.tastaturleiste-fertig:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Beim Schreiben: keine Navigationsleiste, und der Text kann bis über die Leiste geschoben werden. */
+body:has(.tastaturleiste) .handy-nav {
+  display: none;
+}
+
+body:has(.tastaturleiste) .workspace.is-handy .main-scroll {
+  padding-bottom: calc(var(--size-handy-tastaturleiste) + 2 * var(--handy-nav-gap) + var(--tastatur-ueberdeckung, 0px));
 }

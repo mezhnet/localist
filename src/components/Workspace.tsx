@@ -307,6 +307,10 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     return scrollWiederherstellen(element, aktivRef.current.scroll?.haupt ?? 0);
   }, [aktiv.ansicht, baumGeladen]);
 
+  /** Handy: zuletzt gezeigte Inhalte für den Zurück-Pfeil im Kopf (ohne Reiterleiste gibt es nur einen Reiter). */
+  const verlaufRef = useRef<ReiterInhalt[]>([]);
+  const zurueckRef = useRef(false);
+
   /**
    * Wechselt Reiter oder Inhalt: Vorher ist gespeichert, und der verlassene Reiter merkt sich seine Scrollposition
    * (wenn er offen bleibt und dasselbe zeigt). Alle Wege zum Öffnen, Schließen und Wechseln laufen hierüber.
@@ -318,6 +322,9 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     if (neu === alt) return;
     const war = aktiverReiter(alt);
     const wird = aktiverReiter(neu);
+    if (ohneLeisteRef.current && !zurueckRef.current && inhaltSchluessel(war.inhalt) !== inhaltSchluessel(wird.inhalt)) {
+      verlaufRef.current = [...verlaufRef.current, war.inhalt].slice(-VERLAUF_MAX);
+    }
     if (wird.id !== war.id || wird.ansicht !== war.ansicht) {
       const bleibt = neu.reiter.find((reiter) => reiter.id === war.id);
       if (bleibt && bleibt.ansicht === war.ansicht) neu = verlassen(neu, war.id, { ...laufendScroll.current, haupt: mainScroll.current?.scrollTop ?? 0 });
@@ -410,6 +417,22 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
 
   /** „Startseite“ in der Seitenleiste: zum festen Reiter „Startseite“. */
   const openHome = () => wechsel((stand) => aktivieren(stand, START_REITER));
+
+  /** Zurück-Pfeil (Handy): zum zuletzt gezeigten Inhalt, den es noch gibt, sonst zur Startseite. */
+  const zurueck = async () => {
+    let ziel: ReiterInhalt | undefined;
+    while ((ziel = verlaufRef.current.pop())) {
+      const node = "pfad" in ziel ? findNode(treeRef.current, ziel.pfad) : null;
+      const gibtEs = ziel.art === "seite" ? !!node : ziel.art === "datenbank" ? !!node?.database : ziel.art === "notizbuch" ? !!node?.notebook : true;
+      if (gibtEs && inhaltSchluessel(ziel) !== inhaltSchluessel(aktiverReiter(standRef.current).inhalt)) break;
+    }
+    zurueckRef.current = true;
+    try {
+      await wechsel((stand) => (!ziel || ziel.art === "start" ? aktivieren(stand, START_REITER) : oeffnen(stand, ziel, { ohneLeiste: true })));
+    } finally {
+      zurueckRef.current = false;
+    }
+  };
 
   const openLibrary = (neu = false) => oeffnenIn({ art: "bausteine" }, neu);
 
@@ -901,6 +924,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           onFavorit={() => current && void updateFavorites((list) => toggleFavorite(list, current))}
           aktionen={kopfAktionen}
           start={homeActive}
+          handy={schmal ? { ort: (current ? ancestorNames(current).pop() : undefined) ?? vault.name, onZurueck: () => void zurueck() } : undefined}
         />
         {notice && (
           <div className={`notice toast ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>
@@ -1029,7 +1053,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           onStart={() => {
             setDialog(null);
             setMenuOpen(false);
-            void openHome();
+            // „Start“ beginnt von vorn: Der Zurück-Pfeil führt danach wieder zur Startseite.
+            void openHome().then(() => (verlaufRef.current = []));
           }}
           onSuchen={() => {
             setMenuOpen(false);
@@ -1107,6 +1132,14 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       )}
     </div>
   );
+}
+
+/** So viele Inhalte merkt sich der Zurück-Pfeil (Handy). */
+const VERLAUF_MAX = 50;
+
+/** Gleicher Inhalt (Art und Pfad), egal in welchem Reiter. */
+function inhaltSchluessel(inhalt: ReiterInhalt): string {
+  return `${inhalt.art}:${"pfad" in inhalt ? inhalt.pfad : ""}`;
 }
 
 /** Ordnernamen auf dem Weg zu einer Seite, z. B. "Notizen/Ideen.md" → ["Notizen"]. */

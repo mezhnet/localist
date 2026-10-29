@@ -251,3 +251,13 @@ h3 {
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg);
 }
+
+/* Nur für Bildschirmleser (z. B. „Eigenschaften bearbeiten:“ vor den Chips auf dem Handy) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

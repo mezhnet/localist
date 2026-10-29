@@ -258,6 +258,12 @@
   --size-handy-zeile: 52px;
   --size-handy-chip: 38px;
   --size-handy-nav: 60px;
+  --size-handy-tastaturleiste: 50px;
+  --size-handy-checkbox: 17px;
+  --font-size-handy-ort: var(--font-size-xs);
+  --font-size-handy-editor: var(--font-size-lg);
+  --font-size-handy-h2: 20px;
+  --line-height-handy-editor: 1.625;
   --size-handy-nav-neu-width: 50px;
   --size-handy-nav-neu-height: 44px;
   --handy-nav-gap: var(--space-3);

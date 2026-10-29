@@ -398,6 +398,8 @@
 .bn-container .bn-editor {
   /* Rechts kein eigener Rand: Text und Tabellen nutzen die ganze Spalte (598 px wie in der Vorlage). */
   padding-right: 0;
+  /* BlockNote setzt am Editor (.bn-default-styles) fest Inter; die App nutzt ihre eigene Schrift. */
+  font-family: var(--font-sans);
   font-size: var(--font-size-editor);
   line-height: var(--line-height-normal);
 }
@@ -428,6 +430,8 @@
   height: var(--size-checkbox);
   margin: 0 var(--space-2-5) 0 0;
   accent-color: var(--color-accent);
+  /* Leere Kästchen weiß wie in den Vorlagen 02 und 04, auch im Dunklen */
+  color-scheme: light;
 }
 
 .block-editor .bn-block-content[data-content-type="checkListItem"][data-checked="true"] .bn-inline-content {
@@ -1551,4 +1555,120 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+/* ---------- Notiz auf dem Handy (Vorlage 04-handy-notiz-schwarz.png, gemessen bei 375 px Breite) ----------
+   Text ab 20 px vom Rand (Seite 16 px + 4 px im Editor), Titel 30 px, Eigenschaften als Chips in einer Zeile,
+   Text 16 px mit 26 px Zeilenabstand. Das „+“ neben dem Block ersetzt die Leiste über der Tastatur. */
+@media (max-width: 768px) {
+  .workspace.is-handy .page {
+    padding: 0 var(--handy-padding) var(--space-16);
+  }
+
+  .workspace.is-handy .page-header-inner {
+    padding: var(--space-2) var(--handy-padding) 0 calc(var(--handy-padding) + var(--space-1));
+  }
+
+  .workspace.is-handy .page-title {
+    margin-bottom: var(--space-2);
+    padding-left: var(--space-1);
+  }
+
+  .workspace.is-handy .properties {
+    margin: 0 0 var(--space-6) var(--space-1);
+  }
+
+  .workspace.is-handy .bn-container .bn-editor {
+    font-size: var(--font-size-handy-editor);
+    line-height: var(--line-height-handy-editor);
+  }
+
+  .workspace.is-handy .block-editor .bn-block-content[data-content-type="heading"][data-level="2"] {
+    --level: var(--font-size-handy-h2);
+  }
+
+  .workspace.is-handy .block-editor .bn-block-content[data-content-type="checkListItem"] > div > input {
+    width: var(--size-handy-checkbox);
+    height: var(--size-handy-checkbox);
+  }
+
+  .bn-side-menu {
+    display: none;
+  }
+
+  /* „Icon hinzufügen“ und „Cover hinzufügen“ erst, wenn der Titel angetippt ist (Vorlage 04 zeigt sie nicht). */
+  .workspace.is-handy .page-view:not(:has(.page-title:focus, .page-header-actions:focus-within)) .page-header-actions {
+    display: none;
+  }
+}
+
+/* Eigenschaften auf dem Handy: Chips in einer Zeile, ein Tipp klappt die Liste auf (PropertiesBar.tsx) */
+.properties.is-kompakt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.properties-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: var(--size-control-touch);
+  padding: 0;
+  overflow-x: auto;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  scrollbar-width: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.properties-chip {
+  flex-shrink: 0;
+  padding: var(--space-0-5) var(--space-2);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-handy-karte);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-snug);
+  white-space: nowrap;
+}
+
+.properties-chip.is-akzent {
+  border-color: transparent;
+  background: var(--color-accent-chip);
+  color: var(--color-accent-chip-text);
+}
+
+.properties-chip.is-datum {
+  padding-inline: var(--space-1);
+  border-color: transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.properties-plus.ui-icon-button {
+  flex-shrink: 0;
+  width: var(--size-control-touch);
+  height: var(--size-control-touch);
+  color: var(--color-text-faint);
+}
+
+.properties.is-offen {
+  position: relative;
+}
+
+.properties-zuklappen.ui-icon-button {
+  position: absolute;
+  top: calc(-1 * var(--space-1));
+  right: 0;
+  z-index: 1;
+  width: var(--size-control-touch);
+  height: var(--size-control-touch);
+  color: var(--color-text-muted);
 }

@@ -1,8 +1,11 @@
 // Eigenschaften-Leiste oben auf einer Seite (wie bei Notion). Werte stehen im Frontmatter;
 // die Typen kommen aus der Datenbank des Ordners oder aus den Vault-Einstellungen.
-import { AlignLeft, CalendarDays, CheckSquare, ChevronDownCircle, CircleDot, Hash, Link, Plus, Tag, Trash2 } from "lucide-react";
+// Auf dem Handy (Vorlage 04) stehen die Werte kompakt als Chips in einer Zeile; ein Tipp klappt die Liste auf.
+import { AlignLeft, CalendarDays, CheckSquare, ChevronDownCircle, ChevronUp, CircleDot, Hash, Link, Plus, Tag, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
+  asList,
+  formatValue,
   inferType,
   PROPERTY_TYPES,
   RESERVED_FIELDS,
@@ -11,7 +14,8 @@ import {
   type PropertyValue,
 } from "../lib/properties";
 import { PropertyInput } from "./PropertyInput";
-import { Button, Input, Menu, MenuItem, MenuLabel, MenuSeparator, Select, type MenuAnchor } from "./ui";
+import { useSchmal } from "./Reiterleiste";
+import { Button, cx, IconButton, Input, Menu, MenuItem, MenuLabel, MenuSeparator, Select, type MenuAnchor } from "./ui";
 
 export interface PropertySchema {
   /** Typen bekannter Eigenschaften (Datenbank oder Vault-Einstellungen). */
@@ -33,14 +37,36 @@ interface Props {
 export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove }: Props) {
   const [adding, setAdding] = useState(false);
   const [menu, setMenu] = useState<{ name: string; anchor: MenuAnchor } | null>(null);
+  /** Handy: Liste aufgeklappt (sonst nur die Chips in einer Zeile). */
+  const schmal = useSchmal();
+  const [offen, setOffen] = useState(false);
 
   const names = [...new Set([...schema.always, ...Object.keys(values)])].filter(
     (name) => !RESERVED_FIELDS.has(name) && !isNested(values[name]),
   );
   const typeOf = (name: string) => schema.types[name] ?? inferType(name, values[name]);
 
+  if (schmal && !offen) {
+    return (
+      <EigenschaftenKompakt
+        names={names}
+        values={values}
+        typeOf={typeOf}
+        onOeffnen={(hinzufuegen) => {
+          setOffen(true);
+          setAdding(hinzufuegen);
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="properties" aria-label="Eigenschaften">
+    <div className={cx("properties", schmal && "is-offen")} aria-label="Eigenschaften">
+      {schmal && (
+        <IconButton size="sm" className="properties-zuklappen" label="Eigenschaften zuklappen" aria-expanded={true} onClick={() => setOffen(false)}>
+          <ChevronUp />
+        </IconButton>
+      )}
       {names.map((name) => {
         const type = typeOf(name);
         return (
@@ -105,6 +131,50 @@ export function PropertiesBar({ values, schema, onSetValue, onSetType, onRemove 
           Eigenschaft hinzufügen
         </Button>
       )}
+    </div>
+  );
+}
+
+/**
+ * Handy (Vorlage 04): alle Werte als Chips in einer Zeile – Mehrfachwerte einzeln (der erste in Akzentfarbe),
+ * Datumswerte in Monospace ohne Rahmen, Häkchen als Name. Ein Tipp klappt die Liste zum Bearbeiten auf, „+“ fügt
+ * gleich eine Eigenschaft hinzu.
+ */
+function EigenschaftenKompakt({
+  names,
+  values,
+  typeOf,
+  onOeffnen,
+}: {
+  names: string[];
+  values: Record<string, unknown>;
+  typeOf: (name: string) => PropertyType;
+  onOeffnen: (hinzufuegen: boolean) => void;
+}) {
+  const chips: { text: string; art: "akzent" | "chip" | "datum" }[] = [];
+  for (const name of names) {
+    const type = typeOf(name);
+    const value = values[name];
+    if (type === "mehrfachauswahl") for (const wert of asList(value)) chips.push({ text: wert, art: chips.some((c) => c.art === "akzent") ? "chip" : "akzent" });
+    else if (type === "datum") formatValue(type, value) && chips.push({ text: formatValue(type, value), art: "datum" });
+    else if (type === "checkbox") value === true && chips.push({ text: name, art: "chip" });
+    else if (formatValue(type, value)) chips.push({ text: formatValue(type, value), art: "chip" });
+  }
+  return (
+    <div className="properties is-kompakt" aria-label="Eigenschaften">
+      {chips.length > 0 && (
+        <button type="button" className="properties-chips" aria-expanded={false} title="Eigenschaften bearbeiten" onClick={() => onOeffnen(false)}>
+          <span className="visually-hidden">Eigenschaften bearbeiten: </span>
+          {chips.map((chip, i) => (
+            <span key={i} className={cx("properties-chip", `is-${chip.art}`)}>
+              {chip.text}
+            </span>
+          ))}
+        </button>
+      )}
+      <IconButton size="sm" className="properties-plus" label="Eigenschaft hinzufügen" onClick={() => onOeffnen(true)}>
+        <Plus />
+      </IconButton>
     </div>
   );
 }
