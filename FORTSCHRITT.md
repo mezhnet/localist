@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 20 – Handy und Version 2.1 (Version 2.1, Auftrag in `docs/design/auftrag-version-2.1.md`)
-- Zuletzt aktualisiert: 2026-10-29 01:57
-- Nächster Schritt: Etappe 20, Kriterium 6 (Android im eigenen Emulator „Medium_Phone_API_37.0“ auf Port 5556 prüfen, nie `emulator-5554` „Kartei_Test“ anfassen; adb immer mit `-s emulator-5556` bzw. `ANDROID_SERIAL=emulator-5556`; `scripts/android-pruefung.mjs` um Startseite, Navigationsleiste, Notiz mit Leiste und „Fertig“, Darstellung (drei Modi, andere Akzentfarbe), Seite „Bausteine“, HTML-Seite Lesen/Code erweitern; Screenshots nach `docs/screenshots/etappe-20/android/`). Die Klickliste „Version 2.1“ ist in `scripts/klickliste.mjs` schon eingebaut (Argument `2.1`, alle 8 Punkte bestanden, noch nicht in FORTSCHRITT eingetragen); `README.md` und `ANLEITUNG.md` haben schon „Neu in Version 2.1“ (noch nicht committet). Hinweise: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`); dort gibt es die Navigationsleiste `src/components/Navigationsleiste.tsx` und `HomePage` mit `handy`. (b) In `.workspace.is-handy .main` gilt `--color-bg: var(--color-window)` (Seiten auf dem Fensterhintergrund), Karten und Leisten nutzen `--color-handy-karte`. (c) Vergleich mit der Vorlage: `node scripts/vorlage-vergleich.mjs http://localhost:<port> docs/screenshots/etappe-20 handy` (bisher nur 03; 04 und 05 dort ergänzen). (d) Im eingebauten Browserfenster von Claude laufen abgeschottete iframes nicht; Prüfungen und Screenshots mit den Edge-Skripten. (e) Bash-Heredocs verschlucken `\\` und brechen bei manchen Zeichen ab: Umbau-Skripte mit dem Write-Werkzeug schreiben. (f) Tests, die das Handy brauchen, täuschen mit `handyBildschirm()` in `src/App.test.tsx` einen schmalen Bildschirm vor.
+- Zuletzt aktualisiert: 2026-10-29 02:10
+- Nächster Schritt: Etappe 20, Kriterium 7 (Klicklisten 1.0, 2.0 und die neue 2.1 mit `scripts/klickliste.mjs` durchlaufen und in FORTSCHRITT eintragen; die Liste 2.1 ist im Skript fertig), danach Kriterium 8 (`README.md`/`ANLEITUNG.md` „Neu in Version 2.1“ sind geschrieben, TODO-Prüfung ist leer) und der Abschluss (Arbeitsregel 5–7). Den eigenen Emulator am Ende mit `adb -s emulator-5556 emu kill` beenden. Hinweise: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`); dort gibt es die Navigationsleiste `src/components/Navigationsleiste.tsx` und `HomePage` mit `handy`. (b) In `.workspace.is-handy .main` gilt `--color-bg: var(--color-window)` (Seiten auf dem Fensterhintergrund), Karten und Leisten nutzen `--color-handy-karte`. (c) Vergleich mit der Vorlage: `node scripts/vorlage-vergleich.mjs http://localhost:<port> docs/screenshots/etappe-20 handy` (bisher nur 03; 04 und 05 dort ergänzen). (d) Im eingebauten Browserfenster von Claude laufen abgeschottete iframes nicht; Prüfungen und Screenshots mit den Edge-Skripten. (e) Bash-Heredocs verschlucken `\\` und brechen bei manchen Zeichen ab: Umbau-Skripte mit dem Write-Werkzeug schreiben. (f) Tests, die das Handy brauchen, täuschen mit `handyBildschirm()` in `src/App.test.tsx` einen schmalen Bildschirm vor.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Untere Navigationsleiste nach `03-handy-startseite-hell.png`: Start, Suchen, „+“ (Neu-Menü), Seiten (Ordnerbaum mit Favoriten) und Einstellungen. Sie berücksichtigt `safe-area-inset-bottom` und ersetzt den Menü-Knopf oben. Die Handy-Startseite sieht aus wie in der Vorlage.
@@ -66,7 +66,59 @@
   - `cargo test --manifest-path src-tauri/Cargo.toml`: 44 von 44 grün; `npm test`: 455 von 455 grün.
   - Windows (`npm run tauri build`, EXIT=0, 01:54): `src-tauri\target\release\localist.exe`, `src-tauri\target\release\bundle\msi\Localist_2.1.0_x64_de-DE.msi` (3,38 MiB), `src-tauri\target\release\bundle\nsis\Localist_2.1.0_x64-setup.exe` (2,64 MiB).
   - Android (`npx tauri android build --debug --apk --target aarch64 --target x86_64`, EXIT=0, 01:55): `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk` (285 MiB, Debug mit WebView-Entwicklerschnittstelle), `output-metadata.json`: `"versionCode": 2001000`, `"versionName": "2.1.0"`.
-- [ ] Android im Emulator mit `adb`-Befehlen samt Ausgabe und Screenshots geprüft: Startseite, Navigationsleiste, Notiz bearbeiten mit Leiste und „Fertig“, Darstellung (alle drei Modi und eine andere Akzentfarbe), Seite „Bausteine“, HTML-Seite in „Lesen“ und „Code“.
+- [x] Android im Emulator mit `adb`-Befehlen samt Ausgabe und Screenshots geprüft: Startseite, Navigationsleiste, Notiz bearbeiten mit Leiste und „Fertig“, Darstellung (alle drei Modi und eine andere Akzentfarbe), Seite „Bausteine“, HTML-Seite in „Lesen“ und „Code“.
+  - Eigener Emulator „Medium_Phone_API_37.0“ (Android 17) auf Port 5556 (`emulator -avd Medium_Phone_API_37.0 -port 5556 -no-window -no-snapshot-save -no-boot-anim -no-audio`); der fremde Emulator „Kartei_Test“ (`emulator-5554`, `adb -s emulator-5554 emu avd name` → „Kartei_Test“) wurde nicht benutzt. Neues Prüfskript `scripts/android-handy-pruefung.mjs` (bedient mit `adb shell input tap` und der echten Bildschirmtastatur über `adb shell input text`/`keyevent`, liest über die WebView-Entwicklerschnittstelle der Debug-APK; Gerät nur über `ANDROID_SERIAL=emulator-5556`): `node scripts/android-handy-pruefung.mjs <adb.exe> src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk beispiel-vault docs/screenshots/etappe-20/android` (Exit-Code 0, 60 adb-Befehle). Auszug:
+    ```
+    > adb devices
+          emulator-5554	device
+          emulator-5556	device
+    > adb shell getprop ro.build.version.release
+          17
+    > adb install -r src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+          Performing Streamed Install
+          Success
+    > adb shell dumpsys package de.localist.desktop | grep versionName
+          versionName=2.1.0
+    > adb push …\Localist-Handy /sdcard/Documents/Localist-Handy
+          17 files pushed, 0 skipped.
+    > adb shell am start -n de.localist.desktop/.MainActivity
+    Bildschirm 1080×2400 px, WebView 411×914 CSS-Pixel, devicePixelRatio 2.625, WebView beginnt bei y=1 px
+    Startseite: {"kopf":["Localist-Handy","Darstellung","Einstellungen"],"datum":"Do, 29.10.2026","begruessung":"Gute Nacht","zuletzt":4,"navigation":["Start","Suchen","Neu","Seiten","Einstell."],"navUnten":24,"safeAreaUnten":"24px","menueKnopfOben":false}
+    > adb shell input tap 738 2259   („Seiten“ in der Navigationsleiste)
+    Nach „Seiten“: aktiv „Seiten“, Ordner: ["Anhänge","Lernen","Notizen","Projekte","Vorlagen"]
+    > adb shell input tap 342 2259   („Suchen“)
+    Nach „Suchen“: Dialog „Schnellsuche“, aktiv „Suchen“
+    > adb shell input tap 540 2259   („+“ in der Navigationsleiste)
+    Nach „+“: ["Notiz","HTML-Seite","Ordner","Datenbank","Notiz aus Vorlage …"]
+    Nach „Start“: aktiv „Start“, Startseite: true
+    Notiz „Ideen“, Kopf: {"zurueck":true,"ort":"Notizen","stern":true,"mehr":true}, Tastatur offen: nein
+    > adb shell input tap 550 1002   (Ende der letzten Zeile (Tastatur öffnet sich))
+    Nach dem Fingertipp in den Text: Tastatur offen: ja, {"knoepfe":["Baustein wählen","Checkliste","Callout","Toggle","Bild","Fertig"],"navigation":"none","fenster":914,"sichtbar":578,"leisteOben":520,"leisteUnten":570,"cursorUnten":394,"fokusImEditor":true}
+      Leiste über der Tastatur: ja (Unterkante 570 ≤ sichtbare Höhe 578); Cursor über der Leiste: ja (394 ≤ 520)
+    > adb shell input keyevent KEYCODE_ENTER
+    > adb shell input text "Zeile%s1%svom%sHandy"      (sechsmal)
+    Nach 6 neuen Zeilen über die Bildschirmtastatur: {"leisteOben":520,"leisteUnten":570,"cursorUnten":506,…}
+      Cursor über der Leiste: ja (506 ≤ 520), Tastatur offen: ja
+    > adb shell input tap 223 1432   („Checkliste“ in der Leiste)
+    Nach „Checkliste“: Tastatur offen: ja, Fokus im Editor: true
+    > adb shell grep -n "vom Handy" /sdcard/Documents/Localist-Handy/Notizen/Ideen.md
+          10:- Zeile 3 vom Handy … 13:- Zeile 6 vom Handy
+    > adb shell input tap 935 1432   („Fertig“)
+    Nach „Fertig“: Tastatur offen: nein, Leiste: weg, Navigationsleiste: grid, Fokus im Editor: false
+    Nach „Hell“: {"modus":"light","akzent":"orange","hintergrund":"rgb(240, 240, 238)"}
+    Nach „Dunkel“: {"modus":"dark","akzent":"orange","hintergrund":"rgb(19, 19, 19)"}
+    Nach „Schwarz“: {"modus":"black","akzent":"orange","hintergrund":"rgb(0, 0, 0)"}
+    > adb shell input tap 673 1679   (Akzentfarbe „Grün“)
+    Nach „Grün“: {"modus":"black","akzent":"gruen","hintergrund":"rgb(0, 0, 0)"}
+    Startseite in Schwarz mit Grün: Akzent-Knopf rgb(36, 110, 93)
+    Seite „Bausteine“: {"eintraege":14,"quer":false,"kopf":"Localist-Handy"}
+    HTML-Seite „DNS“ in „Lesen“: {"titel":"DNS","callout":"Tipp","karte":true,"modus":"black","akzent":"gruen"}
+    > adb shell input tap 946 961   (Zeile im Code-Editor (Tastatur öffnet sich))
+    Code-Editor mit Tastatur: Tastatur offen: ja, Navigationsleiste: none, sichtbare Höhe 578 von 914
+    Konsole: keine Fehler.
+    ```
+  - Screenshots (`adb exec-out screencap -p`) in `docs/screenshots/etappe-20/android/`: `01-startseite`, `02-navigation-seiten`, `03-navigation-suchen`, `04-navigation-neu`, `05-notiz`, `06-notiz-schreiben-tastatur`, `07-notiz-getippt`, `08-notiz-checkliste`, `09-notiz-fertig`, `10-einstellungen`, `11-darstellung-hell`, `12-darstellung-dunkel`, `13-darstellung-schwarz`, `14-darstellung-schwarz-gruen`, `15-startseite-schwarz-gruen`, `16-bausteine`, `17-bausteine-hilfe`, `18-html-lesen`, `19-html-code`, `20-html-code-tastatur` (20 Dateien).
+  - Erkenntnisse und behobene Fehler: Android 17 zeichnet die App bis unter Status- und Gestenleiste (`safe-area-inset-bottom` 24 px, die Navigationsleiste steht 24 px über dem Rand). Die Bildschirmtastatur verkleinert die Seite nicht, sondern überdeckt sie (Fenster 914 px, sichtbar 578 px) – genau der Fall, für den die Leiste `visualViewport` auswertet. Behoben: (1) BlockNote zeigt auf Touch-Geräten eine eigene Formatierungsleiste über der Tastatur (`.bn-mobile-formatting-toolbar`), die hinter der Leiste der Vorlage hervorschaute; sie erscheint jetzt nur, solange Text markiert ist (dann fett, kursiv, Link …), und nimmt dann den Platz der Leiste ein (`data-auswahl` an der Leiste). (2) Eine Notiz ohne Eigenschaften zeigte nur ein einzelnes „+“; jetzt steht dort wie am PC „+ Eigenschaft hinzufügen“. Offen (siehe „Offene Probleme“): Die Symbole der Android-Statusleiste richten sich nach dem System, nicht nach dem Modus der App.
 - [ ] Neue Klickliste „Version 2.1“ in `FORTSCHRITT.md` (Tab/Shift+Tab in Liste und Code, „Im Explorer öffnen“ in der Vorschau-Simulation, Seitenleiste rechts und eingeklappt, Code rechts und Trennlinie ziehen, Reiter öffnen/wechseln/schließen, Schnell notieren, Modus Schwarz mit Akzent Blau, Tabelle in einer Notiz bearbeiten) ist abgehakt, ebenso „Version 1.0“ und „Version 2.0“, möglichst automatisch mit `scripts/klickliste.mjs` (neues Argument `2.1`).
 - [ ] `README.md` und `ANLEITUNG.md` haben einen Abschnitt „Neu in Version 2.1“ für Einsteiger, die Pfade zeigen auf `Localist`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
 
@@ -898,6 +950,7 @@ Stand: am 2026-10-29 um 00:42 mit dem Abschluss-Stand von Etappe 19 (Port 1430, 
 - Etappe 0 – Fundament (abgeschlossen am 2026-10-24). Am 2026-10-25 auf dem Stand `09838e1` erneut nachgeprüft: `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (EXE `src-tauri\target\release\localprojekt.exe`, Installer `src-tauri\target\release\bundle\msi\localprojekt_0.1.0_x64_en-US.msi` und `src-tauri\target\release\bundle\nsis\localprojekt_0.1.0_x64-setup.exe`). Zweite Nachprüfung am 2026-10-25 um 10:57 bestanden, nachdem drei Probleme gelöst waren (siehe „Offene Probleme“): `npm test` 2 von 2 Tests grün, `npx tsc --noEmit` ohne Fehler, `npm run tauri build` ohne Fehler und Warnungen (Rust-Teil in 1 min 56 s, EXE und beide Installer neu erzeugt, Pfade wie oben), „Hallo Vault“ in `src/App.tsx` und im Build `dist/assets/`, `git status` sauber, `CLAUDE.md` unverändert (Hash `f4a432f…` gleich in Arbeitskopie und Commit).
 
 ## Offene Probleme
+- Offen seit 2026-10-29 (Etappe 20, kein Fertig-Kriterium): Auf Android färbt das System die Symbole der Statusleiste (Uhrzeit, WLAN, Akku) nach dem System-Modus. Ist das Handy hell eingestellt und Localist auf Dunkel oder Schwarz, sind sie dunkel auf dunklem Grund kaum zu sehen (`docs/screenshots/etappe-20/android/13-darstellung-schwarz.png`). Beheben ließe sich das nur mit nativem Android-Code (z. B. ein kleiner Befehl, der `WindowInsetsControllerCompat.isAppearanceLightStatusBars` passend zum Modus setzt). Der Nutzer muss nichts tun; Vorschlag für eine spätere Etappe.
 - Gelöst am 2026-10-28 (neue Sitzung im Ordner `Localist` läuft, ihre Vorschau startet Vite aus `Localist\node_modules`): Die bisherige Sitzung wurde im alten Ordner `LocalProjekt` gestartet. Ihre Browser-Vorschau liest `.claude/launch.json` nur aus dem alten Ordner und startet `npm run dev` auch dort, selbst nach dem Umstellen des Arbeitsordners. Für alle Prüfungen in der Vorschau muss Claude Code in einer **neuen Sitzung im Ordner `Localist`** laufen: in der Claude-App unter „Code“ eine neue Sitzung anlegen, als Ordner `Localist` wählen und schreiben: „Lies FORTSCHRITT.md und mach mit Etappe 17 weiter.“ Die gemerkten Arbeitsregeln (Memory) liegen schon unter dem neuen Pfad.
 - Gelöst am 2026-10-28 20:45 (Etappe 16, Korrektur; `npm run dev` und beide Klicklisten im neuen Ordner wiederholt und bestanden, Nachweis bei Etappe 16 unter „Abgeschlossene Etappen“): Der Nachweis „`npm run dev` startet“ und die Klicklisten 1.0/2.0 zu Etappe 16 liefen versehentlich gegen einen Vite-Server aus dem **alten** Ordner `LocalProjekt` (die Vorschau dieser Sitzung startet Server im ursprünglichen Sitzungsordner; erkannt an der Befehlszeile des Prozesses: vite.js aus LocalProjekt/node_modules). Der Quellcode war dort identisch (gleicher Commit), der Nachweis „im neuen Ordner“ fehlt aber. Server beendet, Sitzung auf `Localist` umgestellt; `npm run dev` und beide Klicklisten werden im neuen Ordner wiederholt. Die Nachstellung von Tab/Shift+Tab (Stand 2.0) lief ebenfalls gegen diesen Server, also gegen denselben Code von Version 2.0.
 - Gelöst am 2026-10-28 (Etappe 16): Der Nutzer hat den Projektordner nach `C:\Users\emre\Documents\eigen_apps\Localist` kopiert; den alten Ordner `LocalProjekt` archiviert er selbst. Ursprüngliche Anleitung: Projektordner von `C:\Users\emre\Documents\eigen_apps\LocalProjekt` in `C:\Users\emre\Documents\eigen_apps\Localist` umbenennen. Claude Code kann den Ordner, in dem es selbst läuft, nicht umbenennen. Schritte:

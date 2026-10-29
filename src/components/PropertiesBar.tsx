@@ -172,9 +172,15 @@ function EigenschaftenKompakt({
           ))}
         </button>
       )}
-      <IconButton size="sm" className="properties-plus" label="Eigenschaft hinzufügen" onClick={() => onOeffnen(true)}>
-        <Plus />
-      </IconButton>
+      {chips.length > 0 ? (
+        <IconButton size="sm" className="properties-plus" label="Eigenschaft hinzufügen" onClick={() => onOeffnen(true)}>
+          <Plus />
+        </IconButton>
+      ) : (
+        <Button variant="ghost" size="sm" className="property-add" icon={<Plus />} onClick={() => onOeffnen(true)}>
+          Eigenschaft hinzufügen
+        </Button>
+      )}
     </div>
   );
 }

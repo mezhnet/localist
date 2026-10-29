@@ -1186,6 +1186,16 @@ button.tree-toggle:hover {
   box-shadow: var(--shadow-focus);
 }
 
+/* Auf Touch-Geräten hat BlockNote eine eigene Formatierungsleiste über der Tastatur. Sie erscheint nur, solange Text
+   markiert ist (fett, kursiv, Link …), und nimmt dann den Platz dieser Leiste ein. */
+body:has(.tastaturleiste:not([data-auswahl])) .bn-mobile-formatting-toolbar {
+  display: none;
+}
+
+.tastaturleiste[data-auswahl] {
+  visibility: hidden;
+}
+
 /* Beim Schreiben: keine Navigationsleiste, und der Text kann bis über die Leiste geschoben werden. */
 body:has(.tastaturleiste) .handy-nav {
   display: none;

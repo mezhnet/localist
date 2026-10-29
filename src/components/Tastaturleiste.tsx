@@ -73,6 +73,8 @@ interface Props {
 export function Tastaturleiste({ editor, onBild }: Props) {
   const leiste = useRef<HTMLDivElement>(null);
   const [ueberdeckt, setUeberdeckt] = useState(() => tastaturUeberdeckung());
+  /** Text markiert: Dann zeigt BlockNote auf Touch-Geräten seine Formatierungsleiste (fett, kursiv …) an dieser Stelle. */
+  const [auswahl, setAuswahl] = useState(false);
 
   // Über der Bildschirmtastatur bleiben; die Seite bekommt unten so viel Platz, dass der Text darüber passt.
   useLayoutEffect(() => {
@@ -99,6 +101,7 @@ export function Tastaturleiste({ editor, onBild }: Props) {
   useEffect(() => {
     let rahmen = 0;
     const pruefen = () => {
+      setAuswahl(window.getSelection()?.isCollapsed === false);
       cancelAnimationFrame(rahmen);
       rahmen = requestAnimationFrame(() => {
         const cursor = cursorRechteck();
@@ -141,7 +144,7 @@ export function Tastaturleiste({ editor, onBild }: Props) {
   };
 
   return createPortal(
-    <div ref={leiste} className="tastaturleiste" role="toolbar" aria-label="Schreiben" data-ueberdeckt={ueberdeckt > 0 ? "" : undefined}>
+    <div ref={leiste} className="tastaturleiste" role="toolbar" aria-label="Schreiben" data-ueberdeckt={ueberdeckt > 0 ? "" : undefined} data-auswahl={auswahl ? "" : undefined}>
       <div className="tastaturleiste-knoepfe">
         {knopf("Baustein wählen", <Plus aria-hidden="true" />, bausteinWaehlen, "tastaturleiste-knopf is-plus")}
         {knopf("Checkliste", <CheckSquare aria-hidden="true" />, () => insertOrUpdateBlockForSlashMenu(editor, { type: "checkListItem" }))}
