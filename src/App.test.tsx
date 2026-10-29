@@ -623,6 +623,59 @@ describe("Untere Navigationsleiste und Handy-Startseite (Etappe 20)", () => {
   });
 });
 
+describe("Handy-Einstellungen → Darstellung nach der Vorlage 05 (Etappe 20)", () => {
+  it("eigene Seiten mit Zurück-Pfeil: Übersicht → Darstellung (Karten, „Wie System“, Schwarz-Hinweis, Akzentfarbe, ohne Seitenleiste) → zurück → schließen", async () => {
+    localStorage.setItem("dev-platform", "android");
+    handyBildschirm();
+    await openVaultFromStart();
+    fireEvent.click(navigation().getByRole("button", { name: "Einstellungen" }));
+    const uebersicht = within(await screen.findByRole("dialog", { name: "Einstellungen" }));
+    expect(uebersicht.getByRole("heading", { level: 1, name: "Einstellungen" })).toBeTruthy();
+    expect(uebersicht.getAllByRole("region").map((bereich) => bereich.getAttribute("aria-label"))).toEqual(["HTML-Seiten", "Vault", "Über Localist"]);
+    expect(uebersicht.getByRole("button", { name: /^Darstellung/ }).textContent).toBe("DarstellungWie System (Hell) · Orange");
+    expect(uebersicht.getByRole("button", { name: "Anderen Vault öffnen …" })).toBeTruthy();
+
+    fireEvent.click(uebersicht.getByRole("button", { name: /^Darstellung/ }));
+    const seite = within(await screen.findByRole("dialog", { name: "Darstellung" }));
+    expect(seite.getByRole("heading", { level: 1, name: "Darstellung" })).toBeTruthy();
+    expect(seite.getByRole("button", { name: "Zurück zu „Einstellungen“" }).textContent).toBe("Einstellungen");
+    const darstellung = within(seite.getByRole("group", { name: "Darstellung" }));
+    expect(darstellung.getAllByRole("button", { pressed: false }).map((karte) => karte.textContent)).toEqual(["Dunkel", "Schwarz"]);
+    expect(darstellung.getByRole("switch", { name: "Wie System" }).getAttribute("aria-checked")).toBe("true");
+    expect(darstellung.getByText(/nutzt echtes Schwarz statt Dunkelgrau/)).toBeTruthy();
+    expect(darstellung.getAllByRole("radio").map((farbe) => farbe.getAttribute("aria-label"))).toEqual(["Orange", "Blau", "Grün", "Lila"]);
+    expect(darstellung.queryByRole("group", { name: "Seitenleiste" })).toBeNull();
+    expect(darstellung.queryByText("Seitenleiste")).toBeNull();
+
+    fireEvent.click(darstellung.getByRole("button", { name: "Schwarz" }));
+    fireEvent.click(darstellung.getByRole("radio", { name: "Blau" }));
+    expect(document.documentElement.dataset.theme).toBe("black");
+    expect(document.documentElement.dataset.accent).toBe("blau");
+    expect(darstellung.getByRole("button", { name: "Schwarz" }).getAttribute("aria-pressed")).toBe("true");
+    expect(darstellung.getByRole("switch", { name: "Wie System" }).getAttribute("aria-checked")).toBe("false");
+
+    // Zurück zur Übersicht (Pfeil oder Escape), dort schließt der Pfeil die Einstellungen.
+    fireEvent.click(seite.getByRole("button", { name: "Zurück zu „Einstellungen“" }));
+    const wieder = within(await screen.findByRole("dialog", { name: "Einstellungen" }));
+    expect(wieder.getByRole("button", { name: /^Darstellung/ }).textContent).toBe("DarstellungSchwarz · Blau");
+    fireEvent.click(wieder.getByRole("button", { name: /^Darstellung/ }));
+    fireEvent.keyDown(await screen.findByRole("dialog", { name: "Darstellung" }), { key: "Escape" });
+    expect(await screen.findByRole("dialog", { name: "Einstellungen" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen schließen" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(navigation().getByRole("button", { name: "Start" }).getAttribute("aria-current")).toBe("page");
+  });
+
+  it("am PC bleibt es der Dialog mit allen Abschnitten (auch Seitenleiste)", async () => {
+    await openVaultFromStart();
+    fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Einstellungen" }));
+    expect(dialog.getByRole("group", { name: "Darstellung" })).toBeTruthy();
+    expect(dialog.getByText("Seitenleiste")).toBeTruthy();
+    expect(document.querySelector(".handy-seite")).toBeNull();
+  });
+});
+
 describe("Handy-Notiz nach der Vorlage 04 (Etappe 20)", () => {
   /** Der Block-Editor der offenen Seite (contenteditable). */
   const editorFlaeche = () => document.querySelector<HTMLElement>(".bn-editor")!;

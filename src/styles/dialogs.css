@@ -378,7 +378,7 @@
 }
 
 .modus-karte.is-active .modus-vorschau {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-text);
 }
 
 .modus-karte:focus-visible {
@@ -549,4 +549,209 @@
 
 .akzent-punkt.is-lila {
   --accent-swatch: var(--accent-swatch-lila);
+}
+
+/* ---------- Einstellungen auf dem Handy (Vorlage 05-handy-darstellung-dunkel.png, gemessen bei 375 px) ----------
+   Eine Seite über dem ganzen Bildschirm auf dem Fensterhintergrund: Zurück-Pfeil, großer Titel, Karten. */
+.handy-seite {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: env(safe-area-inset-top) var(--handy-padding) max(var(--space-8), env(safe-area-inset-bottom));
+  background: var(--color-window);
+  color: var(--color-text);
+  outline: none;
+  /* Schalter „Wie System“ etwas größer für den Finger */
+  --size-switch-width: var(--size-handy-switch-width);
+  --size-switch-height: var(--size-handy-switch-height);
+}
+
+.handy-seite-kopf {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-handy-kopf);
+  margin: 0 calc(-1 * var(--space-3));
+}
+
+.handy-zurueck {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-control-touch);
+  padding: 0 var(--space-3) 0 var(--space-2-5);
+  border: 0;
+  border-radius: var(--radius-handy-knopf);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.handy-zurueck svg {
+  width: var(--size-icon-xl);
+  height: var(--size-icon-xl);
+  color: var(--color-text);
+}
+
+.handy-zurueck:active {
+  background: var(--color-active);
+}
+
+.handy-zurueck:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.handy-seite-titel {
+  margin: var(--space-1) 0 var(--space-5);
+}
+
+.handy-karte {
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-handy-karte);
+  background: var(--color-handy-karte);
+}
+
+.handy-einstellungen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.handy-einstellung {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--size-handy-einstellung);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.handy-einstellung:active {
+  background: var(--color-active);
+}
+
+.handy-einstellung:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.handy-einstellung > svg {
+  flex-shrink: 0;
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  color: var(--color-text-muted);
+}
+
+.handy-einstellung-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.handy-einstellung-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.handy-einstellung-wert {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.handy-einstellungen .settings-text h3 {
+  font-size: var(--font-size-lg);
+}
+
+.handy-einstellungen .settings-text p {
+  font-size: var(--font-size-handy-text);
+}
+
+.handy-einstellungen-knopf.ui-button {
+  min-height: var(--size-control-touch);
+  margin-top: var(--space-3);
+}
+
+/* Darstellung auf dem Handy */
+.darstellung.is-handy {
+  padding: 0;
+}
+
+.darstellung.is-handy .settings-label {
+  margin: var(--space-6) 0 var(--space-2-5);
+  font-size: var(--font-size-handy-text);
+}
+
+.darstellung.is-handy .settings-label:first-of-type {
+  margin-top: 0;
+}
+
+.darstellung.is-handy .modus-karten {
+  gap: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-handy-karte);
+  background: var(--color-handy-karte);
+}
+
+.darstellung.is-handy .modus-vorschau {
+  aspect-ratio: 1;
+  border-radius: var(--radius-handy-knopf);
+}
+
+.darstellung.is-handy .modus-name {
+  min-height: var(--space-6);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.darstellung.is-handy .modus-name svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+.darstellung.is-handy .settings-karte {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-handy-karte);
+  background: var(--color-handy-karte);
+}
+
+.darstellung.is-handy .settings-karte h4 {
+  font-size: var(--font-size-handy-vault);
+  font-weight: var(--font-weight-bold);
+}
+
+.darstellung.is-handy .settings-karte p,
+.darstellung.is-handy .settings-hinweis {
+  font-size: var(--font-size-handy-text);
+  line-height: var(--line-height-snug);
+}
+
+.darstellung.is-handy .settings-hinweis {
+  margin: var(--space-5) var(--space-1) 0;
+}
+
+.darstellung.is-handy .akzent-wahl {
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-handy-karte);
+  background: var(--color-handy-karte);
+}
+
+/* Farbkreis mit Ring und Abstand wie in der Vorlage */
+.darstellung.is-handy .akzent-punkt {
+  width: var(--size-handy-akzent);
+  height: var(--size-handy-akzent);
+  padding: var(--space-1-5);
+  border-width: var(--border-width-strong);
 }

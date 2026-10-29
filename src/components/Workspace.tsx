@@ -1120,6 +1120,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       )}
       {dialog?.kind === "settings" && (
         <SettingsDialog
+          handy={schmal}
           vaultName={vault.name}
           vaultRoot={vault.root}
           onClose={() => setDialog(null)}

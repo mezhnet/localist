@@ -1,7 +1,8 @@
 // Dialoge über dem Arbeitsbereich: Schnellsuche (Strg+P), Volltextsuche, Vorlagen-Auswahl und Einstellungen.
 // Die drei Such-Dialoge sind Listen mit Eingabefeld, die sich mit Pfeiltasten, Enter und Escape bedienen lassen.
-import { FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Search, TextSearch } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Palette, Search, TextSearch } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import packageInfo from "../../package.json";
 import type { PageRef } from "../lib/links";
 import { quickSwitch, searchEntries, type IndexEntry } from "../lib/search";
@@ -9,6 +10,7 @@ import { isHtmlPath } from "../lib/html";
 import { CODE_SEITEN, useCodeSeite, type CodeSeite } from "../lib/html-editor";
 import { isInside, parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
+import { AKZENTE, MODI, useTheme } from "../lib/theme";
 import { DarstellungEinstellungen } from "./Darstellung";
 import { oeffnenKlick } from "./Reiterleiste";
 import { Button, Dialog, Input, Kbd, Segmented } from "./ui";
@@ -294,8 +296,18 @@ export function MoveDialog({ node, tree, onPick, onClose }: { node: TreeNode; tr
 }
 
 /** Einstellungen: Darstellung, Vault und Informationen zur App. */
-export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose }: { vaultName: string; vaultRoot: string; onSwitchVault: () => void; onClose: () => void }) {
+interface SettingsProps {
+  vaultName: string;
+  vaultRoot: string;
+  onSwitchVault: () => void;
+  onClose: () => void;
+  /** Handy: eigene Seiten über dem ganzen Bildschirm statt Dialog (Vorlage 05). */
+  handy?: boolean;
+}
+
+export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose, handy = false }: SettingsProps) {
   const [codeSeite, setCodeSeite] = useCodeSeite();
+  if (handy) return <HandyEinstellungen vaultName={vaultName} vaultRoot={vaultRoot} onSwitchVault={onSwitchVault} onClose={onClose} />;
   return (
     <Dialog label="Einstellungen" title="Einstellungen" onClose={onClose} size="md" className="settings-dialog">
       <DarstellungEinstellungen />
@@ -332,5 +344,98 @@ export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose }:
         </div>
       </section>
     </Dialog>
+  );
+}
+
+/**
+ * Einstellungen auf dem Handy (Vorlage 05-handy-darstellung-dunkel.png): eine Seite über dem ganzen Bildschirm mit
+ * Zurück-Pfeil und großem Titel. Die Übersicht führt zu „Darstellung“ (Vorschaukarten, „Wie System“, Erklärung zu
+ * Schwarz, Akzentfarbe); dort führt der Pfeil „Einstellungen“ zurück. Escape geht ebenfalls eine Seite zurück.
+ */
+function HandyEinstellungen({ vaultName, vaultRoot, onSwitchVault, onClose }: Omit<SettingsProps, "handy">) {
+  const [seite, setSeite] = useState<"uebersicht" | "darstellung">("uebersicht");
+  const [codeSeite, setCodeSeite] = useCodeSeite();
+  const { resolved, wieSystem, akzent } = useTheme();
+  const ref = useRef<HTMLDivElement>(null);
+  const zurueck = () => (seite === "darstellung" ? setSeite("uebersicht") : onClose());
+  // Fokus auf die Seite (für Bildschirmleser und Escape), danach zurück, wo er war.
+  useEffect(() => {
+    const vorher = document.activeElement as HTMLElement | null;
+    ref.current?.focus({ preventScroll: true });
+    return () => {
+      if (vorher?.isConnected) vorher.focus({ preventScroll: true });
+    };
+  }, []);
+  useEffect(() => {
+    ref.current?.scrollTo?.({ top: 0 });
+    ref.current?.focus({ preventScroll: true });
+  }, [seite]);
+  const modus = wieSystem ? `Wie System (${MODI.find((m) => m.value === resolved)?.label})` : MODI.find((m) => m.value === resolved)?.label;
+  const titel = seite === "darstellung" ? "Darstellung" : "Einstellungen";
+  return createPortal(
+    <div
+      ref={ref}
+      className="handy-seite"
+      role="dialog"
+      aria-modal="true"
+      aria-label={titel}
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.stopPropagation();
+        zurueck();
+      }}
+    >
+      <header className="handy-seite-kopf">
+        <button type="button" className="handy-zurueck" aria-label={seite === "darstellung" ? "Zurück zu „Einstellungen“" : "Einstellungen schließen"} onClick={zurueck}>
+          <ChevronLeft aria-hidden="true" />
+          <span>{seite === "darstellung" ? "Einstellungen" : "Zurück"}</span>
+        </button>
+      </header>
+      <h1 className="handy-titel handy-seite-titel">{titel}</h1>
+      {seite === "darstellung" ? (
+        <DarstellungEinstellungen handy />
+      ) : (
+        <div className="handy-einstellungen">
+          <button type="button" className="handy-einstellung handy-karte" onClick={() => setSeite("darstellung")}>
+            <Palette aria-hidden="true" />
+            <span className="handy-einstellung-text">
+              <span className="handy-einstellung-name">Darstellung</span>
+              <span className="handy-einstellung-wert">
+                {modus} · {AKZENTE.find((a) => a.value === akzent)?.label}
+              </span>
+            </span>
+            <ChevronRight aria-hidden="true" />
+          </button>
+          <section className="handy-karte settings-row" aria-label="HTML-Seiten">
+            <div className="settings-text">
+              <h3>HTML-Seiten</h3>
+              <p>Code-Editor in der Ansicht „Geteilt“: auf dem Handy „Links“ oben, „Rechts“ unten.</p>
+            </div>
+            <Segmented<CodeSeite> label="Code-Editor" options={CODE_SEITEN} value={codeSeite} onChange={setCodeSeite} />
+          </section>
+          <section className="handy-karte" aria-label="Vault">
+            <div className="settings-text">
+              <h3>Vault</h3>
+              <p className="settings-vault-name">{vaultName}</p>
+              <p className="settings-path">{vaultRoot}</p>
+            </div>
+            <Button className="handy-einstellungen-knopf" icon={<FolderOpen />} onClick={onSwitchVault}>
+              Anderen Vault öffnen …
+            </Button>
+          </section>
+          <section className="handy-karte" aria-label="Über Localist">
+            <div className="settings-text">
+              <h3>Über Localist</h3>
+              <p>
+                Version <span className="app-version">{packageInfo.version}</span>. Alle Seiten liegen als normale Dateien in deinem Vault. Keine Konten,
+                kein Server, keine Telemetrie – Localist funktioniert komplett offline.
+              </p>
+            </div>
+          </section>
+        </div>
+      )}
+    </div>,
+    document.body,
   );
 }

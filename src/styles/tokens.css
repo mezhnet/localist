@@ -264,6 +264,11 @@
   --font-size-handy-editor: var(--font-size-lg);
   --font-size-handy-h2: 20px;
   --line-height-handy-editor: 1.625;
+  --font-size-handy-text: 15px;
+  --size-handy-einstellung: 64px;
+  --size-handy-akzent: 50px;
+  --size-handy-switch-width: 48px;
+  --size-handy-switch-height: 28px;
   --size-handy-nav-neu-width: 50px;
   --size-handy-nav-neu-height: 44px;
   --handy-nav-gap: var(--space-3);

@@ -253,6 +253,27 @@ async function handyVergleich(zeilen) {
           fertig: getComputedStyle(document.querySelector(".tastaturleiste-fertig")).backgroundColor } }; })()`),
     )}`,
   );
+
+  // 05: Einstellungen → Darstellung, Dunkel (über „Einstell.“ in der Navigationsleiste)
+  await oeffnenHandy({ modus: "dark" });
+  await ev(`[...document.querySelectorAll(".handy-nav button")].find((b) => b.getAttribute("aria-label") === "Einstellungen").click(); true`);
+  await waitFor(`document.querySelector(".handy-einstellung")`);
+  await ev(`document.querySelector(".handy-einstellung").click(); true`);
+  await waitFor(`document.querySelector(".darstellung.is-handy .modus-karte")`);
+  zeilen.push(`05 Handy-Einstellungen → Darstellung (Dunkel): ${await shot("vergleich-05-handy-darstellung-dunkel")}`);
+  zeilen.push(
+    `   Maße (Pixel der Vorlage, links,oben,rechts,unten): ${JSON.stringify(
+      await ev(`(() => { const lage = ${LAGE}; return {
+        zurueck: lage(".handy-zurueck"), titel: lage(".handy-seite-titel"), modusLabel: lage(".darstellung .settings-label"), modusKarten: lage(".modus-karten"),
+        vorschauHell: lage(".modus-vorschau.is-light"), name: lage(".modus-name"), wieSystem: lage(".darstellung .settings-karte"), schalter: lage(".ui-switch"),
+        hinweis: lage(".settings-hinweis"), akzentKarte: lage(".akzent-wahl"), akzent: lage(".akzent-punkt"),
+        texte: { zurueck: document.querySelector(".handy-zurueck").textContent, titel: document.querySelector(".handy-seite-titel").textContent,
+          modi: [...document.querySelectorAll(".modus-name")].map((n) => n.textContent + (n.querySelector("svg") ? " ✓" : "")),
+          seitenleiste: Boolean([...document.querySelectorAll(".darstellung h4")].find((h) => h.textContent === "Seitenleiste")) },
+        farben: { hintergrund: getComputedStyle(document.querySelector(".handy-seite")).backgroundColor, karte: getComputedStyle(document.querySelector(".modus-karten")).backgroundColor,
+          aktivRand: getComputedStyle(document.querySelector(".modus-karte.is-active .modus-vorschau")).borderColor, schalter: getComputedStyle(document.querySelector(".ui-switch")).backgroundColor } }; })()`),
+    )}`,
+  );
 }
 
 const zeilen = [];

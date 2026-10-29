@@ -77,13 +77,13 @@ export function ModusKnopf({ className }: { className?: string }) {
 }
 
 /** Abschnitt „Darstellung“ in den Einstellungen: Vorschaukarten, „Wie System“, Erklärung zu Schwarz, Akzentfarbe,
- * Seite der Seitenleiste. */
-export function DarstellungEinstellungen({ children }: { children?: ReactNode }) {
+ * Seite der Seitenleiste. `handy`: eigene Seite mit großem Titel (Vorlage 05), ohne Seitenleiste (gibt es dort nicht). */
+export function DarstellungEinstellungen({ children, handy = false }: { children?: ReactNode; handy?: boolean }) {
   const { resolved, wieSystem, akzent, setModus, setWieSystem, setAkzent } = useTheme();
   const [seitenleiste, setSeitenleiste] = useSeitenleisteSeite();
   return (
-    <section className="settings-section darstellung" role="group" aria-label="Darstellung">
-      <h3 className="settings-titel">Darstellung</h3>
+    <section className={cx("settings-section darstellung", handy && "is-handy")} role="group" aria-label="Darstellung">
+      {!handy && <h3 className="settings-titel">Darstellung</h3>}
       <p className="settings-label">Modus</p>
       <div className="modus-karten">
         {MODI.map(({ value, label }) => (
@@ -132,13 +132,15 @@ export function DarstellungEinstellungen({ children }: { children?: ReactNode })
           />
         ))}
       </div>
-      <div className="settings-row settings-karte">
-        <div className="settings-text">
-          <h4>Seitenleiste</h4>
-          <p>Links oder rechts vom Inhalt. Die Fensterknöpfe bleiben oben rechts.</p>
+      {!handy && (
+        <div className="settings-row settings-karte">
+          <div className="settings-text">
+            <h4>Seitenleiste</h4>
+            <p>Links oder rechts vom Inhalt. Die Fensterknöpfe bleiben oben rechts.</p>
+          </div>
+          <Segmented<SeitenleisteSeite> label="Seitenleiste" options={SEITENLEISTE_SEITEN} value={seitenleiste} onChange={setSeitenleiste} />
         </div>
-        <Segmented<SeitenleisteSeite> label="Seitenleiste" options={SEITENLEISTE_SEITEN} value={seitenleiste} onChange={setSeitenleiste} />
-      </div>
+      )}
       {children}
     </section>
   );
