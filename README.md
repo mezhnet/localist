@@ -10,6 +10,24 @@ kein Server, keine Telemetrie, alles funktioniert offline.
 - HTML-Seiten (`.html`) mit Code-Editor und Bausteinen wie Karteikarten, Quiz und Diagrammen
 - Notizbücher: ein Ordner als kleine Website mit Inhaltsverzeichnis
 
+## Neu in Version 2.1
+
+- **Neues Aussehen:** ruhiges Design in den Modi **Hell, Dunkel und Schwarz** (echtes Schwarz für OLED-Displays) mit
+  „Wie System“ und vier Akzentfarben (Orange, Blau, Grün, Lila), neue Schriften, eigener Fensterrahmen ohne
+  Windows-Titelleiste. Die **Seitenleiste** steht links oder rechts und lässt sich mit `Strg+.` einklappen.
+- **Reiter** wie im Browser: Strg+Klick oder Mittelklick öffnet eine Seite in einem neuen Reiter, `Strg+T`, `Strg+W`
+  und `Strg+Tab` wie gewohnt. Die offenen Reiter merkt sich Localist.
+- **Startseite** mit „Schnell notieren …“: Tippen und Enter drücken legt sofort eine Notiz an.
+- **Seitenkopf** mit Pfad, Speicherstatus („gerade eben gespeichert“), Stern für Favoriten und „…“.
+- **Tabellen in Notizen** lassen sich direkt bearbeiten (Zeilen und Spalten hinzufügen und entfernen); gespeichert
+  wird weiterhin eine normale Markdown-Tabelle.
+- **Tab und Umschalt+Tab** rücken Listen ein und aus, auch im Code-Editor der HTML-Seiten.
+- **„Im Explorer öffnen“** im Rechtsklick-Menü zeigt die Datei im Windows-Explorer.
+- **HTML-Seiten:** in „Geteilt“ Code links oder rechts und eine Trennlinie zum Verschieben.
+- **Auf dem Handy:** unten eine Navigationsleiste (Start, Suchen, „+“, Seiten, Einstellungen), beim Schreiben eine
+  Leiste über der Tastatur mit „Fertig“, große Tippflächen (mindestens 44 px) und eigene Einstellungsseiten.
+- Der Projektordner heißt jetzt `Localist` (`C:\Users\emre\Documents\eigen_apps\Localist`).
+
 ## Neu in Version 2.0
 
 - **Neues Design** in Hell und Dunkel mit Startseite, Favoriten und „Neu“-Menü, bedienbar ab Handy-Breite.

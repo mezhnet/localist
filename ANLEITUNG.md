@@ -1,9 +1,48 @@
-# Anleitung für Localist 2.0.0
+# Anleitung für Localist 2.1.0
 
 Localist ist ein Notiz- und Projektmanager im Stil von Notion, der alle Seiten als Markdown-Dateien in einem Ordner
 deiner Wahl speichert. Neben Notizen gibt es interaktive HTML-Seiten mit Bausteinen wie Karteikarten, Quiz und
 Diagrammen. Diese Anleitung erklärt, wie du Localist installierst, benutzt, im Entwicklungsmodus startest, testest
 und selbst baust.
+
+## Neu in Version 2.1
+
+Version 2.1 bringt vor allem ein neues Aussehen und eine bessere Bedienung, auf dem PC und auf dem Handy. Deine
+Seiten und Vaults bleiben, wie sie sind; es ändert sich nichts an den Dateien.
+
+- **Hell, Dunkel und Schwarz:** Unten in der Seitenleiste stehen drei Knöpfe (Sonne = Hell, Mond = Dunkel, gefüllter
+  Kreis = Schwarz). Schwarz nutzt echtes Schwarz statt Dunkelgrau; auf OLED-Displays bleiben diese Pixel aus. Unter
+  **Einstellungen → Darstellung** wählst du zusätzlich **„Wie System“** (Localist folgt Windows bzw. Android) und eine
+  von vier **Akzentfarben** (Orange, Blau, Grün, Lila). HTML-Seiten und Notizbücher übernehmen Modus und Farbe sofort.
+- **Fenster und Seitenleiste:** Localist hat einen eigenen, schlichten Fensterrahmen. Ziehen an der oberen Leiste
+  verschiebt das Fenster, ein Doppelklick maximiert es, `Win+Pfeiltasten` docken es an. Die Seitenleiste stellst du
+  unter „Darstellung“ **links oder rechts**; mit dem Knopf oben oder **`Strg+.`** klappst du sie ein und aus.
+- **Reiter:** Über dem Inhalt stehen Reiter wie im Browser. Ein Klick öffnet eine Seite im aktuellen Reiter,
+  **Strg+Klick** oder ein Klick mit dem **Mausrad** in einem neuen. `Strg+T` öffnet einen neuen Reiter, `Strg+W`
+  schließt ihn, `Strg+Tab` und `Strg+Umschalt+Tab` wechseln. Vor jedem Wechsel ist gespeichert, und beim nächsten
+  Start sind deine Reiter wieder da.
+- **Startseite mit „Schnell notieren …“:** Schreib einen Gedanken und drück **Enter**. Die erste Zeile wird zum Titel
+  einer neuen Notiz in der Vault-Wurzel, der Rest zum Inhalt (`Umschalt+Enter` macht eine neue Zeile). Darunter stehen
+  „Zuletzt bearbeitet“ (mit „Alle Seiten“) und deine Favoriten.
+- **Seitenkopf:** Oben auf jeder Seite stehen der Pfad, ob gespeichert ist („gerade eben gespeichert“; ein Fehler
+  erscheint rot), der **Stern** für Favoriten und **„…“** mit allen Aktionen.
+- **Tabellen in Notizen:** Über `/` → „Tabelle“ einfügen, Zellen direkt bearbeiten, mit „+“ am Rand Zeilen und Spalten
+  hinzufügen. In der Datei steht weiterhin eine normale Markdown-Tabelle, die auch Obsidian anzeigt.
+- **Ein- und Ausrücken:** `Tab` rückt Listenpunkte und Checklisten ein, `Umschalt+Tab` rückt sie aus. Im Code-Editor
+  der HTML-Seiten rückt `Tab` die Zeile ein; mit `Esc` und danach `Tab` verlässt du den Editor.
+- **„Im Explorer öffnen“:** Rechtsklick auf eine Seite oder einen Ordner (oder „…“ im Seitenkopf) zeigt sie im
+  Windows-Explorer; im Vault-Menü oben gibt es „Vault im Explorer öffnen“.
+- **HTML-Seiten in „Geteilt“:** Der Knopf „Seiten tauschen“ stellt den Code links oder rechts (auch unter
+  Einstellungen). Die Trennlinie lässt sich mit Maus, Finger oder Pfeiltasten verschieben; ein Doppelklick setzt sie
+  auf die Mitte zurück.
+- **Seite „Bausteine“:** nutzt jetzt die ganze Fensterbreite; die Hilfe zeigt Erklärung und Beispielcode nebeneinander.
+- **Auf dem Handy:** Unten steht eine **Navigationsleiste** mit **Start**, **Suchen**, **„+“** (neue Notiz,
+  HTML-Seite, Ordner, Datenbank oder Vorlage), **Seiten** (Ordnerbaum mit Favoriten) und **Einstellungen**. Eine Seite
+  hat oben einen **Zurück-Pfeil** mit dem Ordnernamen, die Eigenschaften stehen als kleine Chips in einer Zeile (antippen
+  zum Bearbeiten). Beim Schreiben erscheint über der Tastatur eine Leiste mit **„+“** (Baustein wählen),
+  **Checkliste**, **Callout**, **Toggle**, **Bild** und **„Fertig“** (schließt die Tastatur). Alle Knöpfe sind
+  mindestens 44 px groß, damit sie sich gut mit dem Finger treffen lassen.
+- **Neuer Ordnername:** Das Projekt liegt jetzt in `C:\Users\emre\Documents\eigen_apps\Localist`.
 
 ## Neu in Version 2.0
 
@@ -27,7 +66,7 @@ und selbst baust.
 
 Wer nur die fertige App möchte, braucht keine der Entwicklerwerkzeuge unten:
 
-1. `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe` doppelklicken (oder die MSI-Datei daneben).
+1. `src-tauri\target\release\bundle\nsis\Localist_2.1.0_x64-setup.exe` doppelklicken (oder die MSI-Datei daneben).
 2. Den Schritten des deutschen Installationsassistenten folgen. Danach steht **Localist** im Startmenü.
 3. Beim ersten Start einen Vault-Ordner wählen (siehe Abschnitt 8, für HTML-Seiten Abschnitt 9).
 
@@ -120,14 +159,14 @@ Der Befehl prüft zuerst die TypeScript-Typen, baut dann die Oberfläche und kom
 Rust-Hülle im Release-Modus. Ergebnis (Pfade relativ zum Projektordner):
 
 - Programm zum direkten Starten: `src-tauri\target\release\localist.exe`
-- Installer (MSI, deutsch): `src-tauri\target\release\bundle\msi\Localist_2.0.0_x64_de-DE.msi`
-- Installer (Setup-EXE, deutsch): `src-tauri\target\release\bundle\nsis\Localist_2.0.0_x64-setup.exe`
+- Installer (MSI, deutsch): `src-tauri\target\release\bundle\msi\Localist_2.1.0_x64_de-DE.msi`
+- Installer (Setup-EXE, deutsch): `src-tauri\target\release\bundle\nsis\Localist_2.1.0_x64-setup.exe`
 
 Beim allerersten Build lädt Tauri die Installer-Werkzeuge (WiX und NSIS) einmalig herunter, dafür ist eine
 Internetverbindung nötig.
 
-**Version und Icon ändern:** Die Versionsnummer steht in `package.json`, `src-tauri/Cargo.toml` und
-`src-tauri/tauri.conf.json` (alle drei gleich halten). Das App-Icon entsteht aus `app-icon.svg`. Nach einer Änderung
+**Version und Icon ändern:** Die Versionsnummer steht in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`
+und `src-tauri/tauri.conf.json` (alle gleich halten; `Cargo.lock` zieht `cargo` beim nächsten Bauen selbst nach). Das App-Icon entsteht aus `app-icon.svg`. Nach einer Änderung
 erzeugt `npx tauri icon app-icon.svg` alle Größen in `src-tauri/icons/` neu.
 
 ## 5. Tests ausführen
@@ -182,13 +221,13 @@ der App (abgeschottete Anzeige, kein Internet).
 
 1. Beim ersten Start auf **„Vault-Ordner öffnen …“** klicken und einen Ordner wählen. Zum Ausprobieren eignet sich eine
    **Kopie** von `beispiel-vault/` (nicht den Ordner im Projekt selbst, damit die Testdaten unverändert bleiben).
-   Die App merkt sich den Ordner und öffnet ihn beim nächsten Start automatisch. „Wechseln“ oben in der Sidebar
-   öffnet einen anderen Ordner.
-2. **Sidebar:** Oben stehen „Startseite“, „Suchen“, „Volltextsuche“, „Neu“, „Bausteine“ und deine **Favoriten** (über „⋯“ →
-   „Zu Favoriten hinzufügen“ anheften), darunter alle Seiten. Ein Klick auf einen Ordner klappt ihn auf, ein Klick auf
+   Die App merkt sich den Ordner und öffnet ihn beim nächsten Start automatisch. Ein Klick auf den Vault-Namen oben
+   in der Sidebar öffnet einen anderen Ordner.
+2. **Sidebar:** Oben stehen „Suchen“, „Volltextsuche“, „Startseite“, „Bausteine“, „Neue Seite“ und deine **Favoriten**
+   (Stern im Seitenkopf oder „⋯“ → „Zu Favoriten hinzufügen“), darunter unter „Seiten“ alle Seiten. Ein Klick auf einen Ordner klappt ihn auf, ein Klick auf
    eine Seite öffnet sie. Notizen (`.md`) und HTML-Seiten (`.html`) haben verschiedene Symbole. Versteckte Ordner wie
    `.localist` und andere Dateien werden nicht angezeigt.
-3. **Anlegen:** „Neu“ in der Sidebar (Notiz, HTML-Seite, Ordner, Datenbank, Notiz aus Vorlage), das „+“ neben einem
+3. **Anlegen:** „Neue Seite“ in der Sidebar (Notiz, HTML-Seite, Ordner, Datenbank, Notiz aus Vorlage), das „+“ neben einem
    Ordner oder ein Rechtsklick. Eine neue Seite bekommt sofort eine eindeutige `id`. Den Titel tippst du gleich oben
    auf der Seite ein. **Verschieben:** Seiten und Ordner in der Sidebar auf einen anderen Ordner ziehen oder „⋯“ →
    „Verschieben nach …“; Links im Vault werden dabei angepasst.
@@ -207,7 +246,8 @@ der App (abgeschottete Anzeige, kein Internet).
     Seite. Fehlt sie noch, wird sie angelegt. Benennst du eine Seite um, passt die App alle Links darauf im Vault an.
 11. **Icon und Cover:** Beim Überfahren des Seitenkopfs erscheinen „Icon hinzufügen“ und „Cover hinzufügen“.
     Beides steht im Frontmatter (`icon`, `cover`). Bilder von außerhalb werden nach `Anhänge/` kopiert.
-12. **Hell/Dunkel:** „Einstellungen“ unten in der Sidebar → „Darstellung“. „Wie System“ folgt der Windows-Einstellung.
+12. **Hell, Dunkel, Schwarz:** die drei Knöpfe unten in der Sidebar oder „Einstellungen“ → „Darstellung“ (dort auch
+    „Wie System“, das der Windows-Einstellung folgt, und die Akzentfarbe).
 13. **Eigenschaften:** Unter dem Seitentitel stehen die Eigenschaften der Seite (Text, Zahl, Auswahl, Mehrfachauswahl,
     Status, Datum, Checkbox, URL). „+ Eigenschaft hinzufügen“ legt eine neue an, ein Klick auf den Namen ändert den Typ.
     Gespeichert wird im Frontmatter, z. B. `fällig: 2026-11-15`. Andere Felder im Frontmatter bleiben unverändert.
@@ -315,8 +355,9 @@ andere Seiten deines Vaults funktionieren in der exportierten Datei nicht.
 
 ## 10. Android-App (APK)
 
-Localist läuft auch auf Android-Handys und -Tablets. Die Oberfläche passt sich an: Die Seitenleiste ist dort ein
-ausklappbares Menü (☰ oben links).
+Localist läuft auch auf Android-Handys und -Tablets. Die Oberfläche passt sich an: Unten steht eine
+Navigationsleiste (Start, Suchen, „+“, Seiten, Einstellungen), „Seiten“ zeigt den Ordnerbaum mit den Favoriten. Beim
+Schreiben erscheint über der Tastatur eine Leiste mit Bausteinen und „Fertig“.
 
 ### Einmalige Einrichtung am PC
 
@@ -391,7 +432,7 @@ holst du sie mit jedem Dateimanager zurück.
 | Deine eigenen Bausteine | `<Vault>\.localist\bausteine\eigene\` (eine `.html`-Datei pro Baustein) |
 | Zuletzt geöffneter Vault | `%APPDATA%\de.localist.desktop\zustand.json` |
 | Suchindex (jederzeit löschbar) | `%LOCALAPPDATA%\de.localist.desktop\suchindex\` |
-| Hell/Dunkel, zuletzt gewählte Ansicht einer Datenbank oder HTML-Seite | im Browser-Speicher der App (WebView2) |
+| Modus und Akzentfarbe, Seitenleiste (links/rechts, eingeklappt), offene Reiter, Code links/rechts und Teilung in „Geteilt“, zuletzt gewählte Ansicht einer Datenbank oder HTML-Seite | im Browser-Speicher der App (WebView2), nicht im Vault |
 | Gelöschte Seiten | Windows: Papierkorb des Systems; Android: `<Vault>\.localist\Papierkorb\` |
 
 Vaults aus der Vorabversion mit dem Einstellungsordner `.meinapp` werden beim ersten Öffnen automatisch übernommen:
