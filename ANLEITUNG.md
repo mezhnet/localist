@@ -1,9 +1,23 @@
-# Anleitung für Localist 2.1.0
+# Anleitung für Localist 2.2.0
 
 Localist ist ein Notiz- und Projektmanager im Stil von Notion, der alle Seiten als Markdown-Dateien in einem Ordner
 deiner Wahl speichert. Neben Notizen gibt es interaktive HTML-Seiten mit Bausteinen wie Karteikarten, Quiz und
 Diagrammen. Diese Anleitung erklärt, wie du Localist installierst, benutzt, im Entwicklungsmodus startest, testest
 und selbst baust.
+
+## Neu in Version 2.2
+
+- **Updates:** Unter **Einstellungen → „Über Localist“** steht die Versionsnummer und der Knopf **„Nach Updates
+  suchen“**. Erst nach diesem Klick fragt Localist bei GitHub Releases nach – nie beim Start und nie im Hintergrund,
+  und außer dieser Anfrage wird nichts gesendet. Gibt es eine neue Version, zeigt Localist „Update verfügbar“ mit den
+  Neuigkeiten. **„Jetzt installieren“** speichert zuerst alle Änderungen, lädt das Update (mit Prozentanzeige),
+  installiert es und startet Localist neu. Klappt etwas nicht (z. B. kein Internet), erscheint eine Meldung, und
+  Localist läuft normal weiter.
+- **Handy:** Auf Android gibt es kein automatisches Update. „Neue Versionen auf GitHub ansehen“ öffnet die
+  Releases-Seite im Browser.
+- **Neue Versionen veröffentlichen:** `node scripts/version.mjs 2.2.1` setzt die Versionsnummer überall gleich und legt
+  den Tag an, `git push --follow-tags` startet auf GitHub den automatischen Build. Was du dafür einmal auf github.com
+  einrichten musst (Repository, Schlüssel, Secrets), steht Schritt für Schritt in `ANLEITUNG-RELEASE.md`.
 
 ## Neu in Version 2.1
 
@@ -66,7 +80,7 @@ Seiten und Vaults bleiben, wie sie sind; es ändert sich nichts an den Dateien.
 
 Wer nur die fertige App möchte, braucht keine der Entwicklerwerkzeuge unten:
 
-1. `src-tauri\target\release\bundle\nsis\Localist_2.1.0_x64-setup.exe` doppelklicken (oder die MSI-Datei daneben).
+1. `src-tauri\target\release\bundle\nsis\Localist_2.2.0_x64-setup.exe` doppelklicken (oder die MSI-Datei daneben).
 2. Den Schritten des deutschen Installationsassistenten folgen. Danach steht **Localist** im Startmenü.
 3. Beim ersten Start einen Vault-Ordner wählen (siehe Abschnitt 8, für HTML-Seiten Abschnitt 9).
 
@@ -159,8 +173,8 @@ Der Befehl prüft zuerst die TypeScript-Typen, baut dann die Oberfläche und kom
 Rust-Hülle im Release-Modus. Ergebnis (Pfade relativ zum Projektordner):
 
 - Programm zum direkten Starten: `src-tauri\target\release\localist.exe`
-- Installer (MSI, deutsch): `src-tauri\target\release\bundle\msi\Localist_2.1.0_x64_de-DE.msi`
-- Installer (Setup-EXE, deutsch): `src-tauri\target\release\bundle\nsis\Localist_2.1.0_x64-setup.exe`
+- Installer (MSI, deutsch): `src-tauri\target\release\bundle\msi\Localist_2.2.0_x64_de-DE.msi`
+- Installer (Setup-EXE, deutsch): `src-tauri\target\release\bundle\nsis\Localist_2.2.0_x64-setup.exe`
 
 Beim allerersten Build lädt Tauri die Installer-Werkzeuge (WiX und NSIS) einmalig herunter, dafür ist eine
 Internetverbindung nötig.

@@ -10,6 +10,15 @@ kein Server, keine Telemetrie, alles funktioniert offline.
 - HTML-Seiten (`.html`) mit Code-Editor und Bausteinen wie Karteikarten, Quiz und Diagrammen
 - Notizbücher: ein Ordner als kleine Website mit Inhaltsverzeichnis
 
+## Neu in Version 2.2
+
+- **Nach Updates suchen:** Unter Windows in den Einstellungen bei „Über Localist“. Erst nach dem Klick fragt Localist
+  bei GitHub Releases nach einer neuen Version – nie von selbst, und außer dieser Anfrage wird nichts gesendet. Ein
+  Update lässt sich direkt installieren; Localist speichert vorher alles und startet danach neu.
+- **Auf dem Handy** öffnet „Neue Versionen auf GitHub ansehen“ die Releases-Seite im Browser.
+- **Neue Versionen** baut eine GitHub Action, sobald ein Versions-Tag hochgeladen wird (`node scripts/version.mjs
+  X.Y.Z`, dann `git push --follow-tags`). Einrichten Schritt für Schritt: [ANLEITUNG-RELEASE.md](ANLEITUNG-RELEASE.md).
+
 ## Neu in Version 2.1
 
 - **Neues Aussehen:** ruhiges Design in den Modi **Hell, Dunkel und Schwarz** (echtes Schwarz für OLED-Displays) mit
