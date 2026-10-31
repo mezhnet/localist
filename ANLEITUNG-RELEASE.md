@@ -10,6 +10,8 @@ Schon erledigt (von Claude Code): Workflow, Release-Einstellungen (`src-tauri/ta
 
 Was du **einmal** tun musst: Schritte 1 bis 3. Für jede neue Version danach: Schritt 4.
 
+> **Stand 2026-10-31:** Schritt 1 und 2 sind erledigt. Das öffentliche Repository [mezhnet/localist](https://github.com/mezhnet/localist) (Weg a) ist angelegt, der Code (Branch `main`) ist hochgeladen, und die Update-Adresse zeigt auf `mezhnet/localist`. Der Tag `v2.2.0` liegt nur auf deinem PC. **Weiter geht es mit Schritt 3** (Schlüssel eintragen, dann `git push --follow-tags`).
+
 Befehle tippst du in ein Terminal im Projektordner `C:\Users\emre\Documents\eigen_apps\Localist` (z. B. in VS Code über „Terminal → Neues Terminal“).
 
 ---
@@ -63,16 +65,14 @@ Hinweis: Für öffentliche Repositories sind GitHub Actions kostenlos. Bei einem
 
 ## 2. Platzhalter ersetzen
 
-An zwei Stellen steht noch `EMRE_GITHUB_NAME/localist`. Ersetze es durch deinen GitHub-Namen, bei **Weg (b)** durch `DEIN_NAME/localist-releases`:
+**Erledigt für `mezhnet/localist`.** Diesen Schritt brauchst du nur noch, wenn sich das Repository ändert (z. B. Wechsel zu Weg b: dann `mezhnet/localist-releases`). Die Adresse steht an zwei Stellen:
 
 | Datei | Stelle | heute |
 |---|---|---|
-| `src-tauri/tauri.conf.json` | Zeile 92, unter `"plugins"` → `"updater"` → `"endpoints"` | `https://github.com/EMRE_GITHUB_NAME/localist/releases/latest/download/latest.json` |
-| `src/lib/updates.ts` | Zeile 10, `RELEASES_SEITE` (Knopf „Neue Versionen auf GitHub ansehen“ auf dem Handy) | `https://github.com/EMRE_GITHUB_NAME/localist/releases` |
+| `src-tauri/tauri.conf.json` | Zeile 92, unter `"plugins"` → `"updater"` → `"endpoints"` | `https://github.com/mezhnet/localist/releases/latest/download/latest.json` |
+| `src/lib/updates.ts` | Zeile 10, `RELEASES_SEITE` (Knopf „Neue Versionen auf GitHub ansehen“ auf dem Handy) | `https://github.com/mezhnet/localist/releases` |
 
-Beispiel für Weg (a) mit dem Namen `emre123`: `https://github.com/emre123/localist/releases/latest/download/latest.json` und `https://github.com/emre123/localist/releases`.
-
-Danach prüfen und speichern:
+Nach einer Änderung prüfen und speichern:
 
 ```
 npm test
@@ -80,7 +80,7 @@ git commit -am "Update-Adresse auf GitHub gesetzt"
 git tag -f -a v2.2.0 -m "Localist v2.2.0"
 ```
 
-Der letzte Befehl setzt den Tag `v2.2.0` auf diesen neuen Stand. Sonst würde die Version 2.2.0 noch mit dem Platzhalter gebaut und fände keine Updates.
+Der letzte Befehl setzt den Tag `v2.2.0` auf diesen neuen Stand, damit die Version 2.2.0 mit der richtigen Adresse gebaut wird. Das geht nur, solange `v2.2.0` noch nicht hochgeladen ist; danach die Änderung mit der nächsten Version veröffentlichen (Schritt 4).
 
 ---
 

@@ -6,8 +6,8 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
 import { errorMessage } from "./autosave";
 
-/** Releases-Seite für Android (dort gibt es keinen Updater). Platzhalter, siehe ANLEITUNG-RELEASE.md. */
-export const RELEASES_SEITE = "https://github.com/EMRE_GITHUB_NAME/localist/releases";
+/** Releases-Seite für Android (dort gibt es keinen Updater), passend zum Endpoint in tauri.conf.json. */
+export const RELEASES_SEITE = "https://github.com/mezhnet/localist/releases";
 
 /** Auf Android und iOS gibt es den Updater nicht, dort führt ein Knopf zur Releases-Seite. */
 export function hatUpdater(platform: string): boolean {

@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31). Version 2.2 ist fertig. Version 2.1 (Etappen 16–20) und der Nachtrag „Android-Statusleiste“: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-10-31 10:30
+- Zuletzt aktualisiert: 2026-10-31 17:55
 - Nächster Schritt: keiner offen in `CLAUDE.md`. Emre richtet GitHub nach `ANLEITUNG-RELEASE.md` ein (siehe „Offene Probleme“). Neue Arbeit erst mit einem neuen Auftrag; dann Version 2.2 nach `archiv/` verschieben.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
@@ -63,7 +63,7 @@ Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 9 Punkte bestan
 - Etappe 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31): Phase 0 6c17a73, a9c78f1; Phase 1 ea0d930, 23f251b, a66a877, 3d3a049; Phase 2 bec972e; Doku 3120431; Version 2.2.0 1453dee (Tag `v2.2.0`); Screenshots 2261070 (`docs/screenshots/etappe-21/`, 10 Bilder). Prüfrunde 1: unabhängige Prüfung (Sonnet, lesend) ohne Funde A/B.
 
 ## Offene Probleme
-- Für Emre, blockiert die Etappe nicht: Updates über GitHub brauchen noch Schritte auf github.com, die nur du machen kannst. Sie stehen in `ANLEITUNG-RELEASE.md`: (1) Repository anlegen (Weg a öffentlich oder Weg b privat + `localist-releases` mit `RELEASES_TOKEN`, `RELEASE_OWNER`, `RELEASE_REPO`) und `git push -u origin main`, (2) Platzhalter `EMRE_GITHUB_NAME/localist` in `src-tauri/tauri.conf.json` und `src/lib/updates.ts` ersetzen und den Tag `v2.2.0` neu setzen, (3) Secret `TAURI_SIGNING_PRIVATE_KEY` eintragen und `%USERPROFILE%\.tauri\localist.key` sichern, (4)–(5) veröffentlichen und den ersten echten Update-Test machen.
+- Für Emre, blockiert die Etappe nicht: Schritt 1 und 2 aus `ANLEITUNG-RELEASE.md` sind seit 2026-10-31 erledigt (öffentliches Repository `mezhnet/localist`, `main` hochgeladen, Update-Adresse eingetragen, Tag `v2.2.0` lokal neu gesetzt). Offen: (3) Secret `TAURI_SIGNING_PRIVATE_KEY` auf github.com eintragen und `%USERPROFILE%\.tauri\localist.key` sichern, dann `git push --follow-tags` (startet das Release v2.2.0), (4)–(5) nächste Version und erster echter Update-Test.
 - Beobachtet, nicht behoben: Läuft `npm test` neben anderer Last (z. B. Build), scheitern einzelne Tests in `App.test.tsx`/`bausteine.test.ts` (meist an der 5- bzw. 15-s-Grenze, einmal „inert“ der Handy-Ansicht „Seiten“). Einzeln und ohne Last sind sie grün, der volle Lauf auch (484/484).
 - Erledigte Einträge bis Version 2.1 stehen im Archiv.
 
