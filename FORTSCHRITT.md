@@ -1,24 +1,24 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 21 – Updates über GitHub Releases (Version 2.2, Auftrag `docs/auftrag-version-2.2.md`). Version 2.1 (Etappen 16–20) und der Nachtrag „Android-Statusleiste“ sind abgeschlossen, Nachweise in `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-10-31 10:20
-- Nächster Schritt: Version 2.2.0 mit `node scripts/version.mjs 2.2.0` setzen, dann Prüfrunde: `npm run tauri build` (ohne Schlüssel), Release-Build mit `.sig`, Sicherheitstest, APK, Klicklisten 1.0/2.0/2.1, Screenshots `docs/screenshots/etappe-21/`, unabhängige Prüfung (ein Sonnet-Agent). Phase 1: ea0d930, 23f251b, a66a877, 3d3a049; Phase 2: bec972e.
+- Etappe: 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31). Version 2.2 ist fertig. Version 2.1 (Etappen 16–20) und der Nachtrag „Android-Statusleiste“: `archiv/FORTSCHRITT-bis-2.1.md`.
+- Zuletzt aktualisiert: 2026-10-31 10:30
+- Nächster Schritt: keiner offen in `CLAUDE.md`. Emre richtet GitHub nach `ANLEITUNG-RELEASE.md` ein (siehe „Offene Probleme“). Neue Arbeit erst mit einem neuen Auftrag; dann Version 2.2 nach `archiv/` verschieben.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Phase 0 erledigt: `FORTSCHRITT.md` ist unter 20 KB, das Archiv liegt in `archiv/`, `CLAUDE.md` ist ergänzt und committet.
 - [x] „Über Localist“ mit Version und „Nach Updates suchen“ auf PC und Handy, alle Zustände umgesetzt und getestet, kein Netz ohne Klick, Speichern vor dem Installieren. (`src/components/UeberLocalist.tsx`, Tests `UeberLocalist.test.tsx` 12, `App.test.tsx` „Updates über GitHub Releases“, `autosave.test.ts` „sicherSpeichern“; ea0d930, 3d3a049)
-- [ ] `scripts/version.mjs` funktioniert. Die Version ist 2.2.0.
-- [ ] `release.yml` ist gültig. Ein lokaler Release-Build erzeugt die `.sig`-Datei. Ein normales `npm run tauri build` läuft ohne Schlüssel.
-- [ ] `ANLEITUNG-RELEASE.md` ist vorhanden. Kein privater Schlüssel und kein Token im Repo.
-- [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten abgehakt.
+- [x] `scripts/version.mjs` funktioniert. Die Version ist 2.2.0. (Test `scripts/version.test.mjs` 3; `node scripts/version.mjs 2.2.0` → 1453dee „Version 2.2.0“, Tag `v2.2.0` mit Beschreibung)
+- [x] `release.yml` ist gültig. Ein lokaler Release-Build erzeugt die `.sig`-Datei. Ein normales `npm run tauri build` läuft ohne Schlüssel. (`src/lib/release-workflow.test.ts` 7, actionlint nicht installiert; Release-Build → `Localist_2.2.0_x64-setup.exe.sig`, Schlüssel-ID 6BEE31F67A3C789E wie `tauri.conf.json`; normaler Build EXIT=0 ohne `.sig`)
+- [x] `ANLEITUNG-RELEASE.md` ist vorhanden. Kein privater Schlüssel und kein Token im Repo. (`git log -p --all`: 0 Treffer; keine `*.key`/`*.sig` versioniert; unabhängige Prüfung ohne Funde A/B)
+- [x] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten abgehakt. (`npm test` 42 Dateien/484 Tests, `cargo test` 44, `tsc` ohne Fehler, `npm run tauri build` EXIT=0, APK EXIT=0, Sicherheitstest 21/21, Klicklisten 12/12, 7/7, 9/9)
 - [x] `README.md`/`ANLEITUNG.md` haben „Neu in Version 2.2“ (kurz). In „Offene Probleme“ steht der Hinweis auf die Schritte für Emre aus `ANLEITUNG-RELEASE.md`.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 1.0` (echte Tastatur und Maus in Microsoft Edge).
 
-Letzter Stand: 2026-10-29 02:10, Etappe 20 (Version 2.1.0), alle 12 Punkte bestanden.
+Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 12 Punkte bestanden.
 - [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
 - [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
 - [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
@@ -35,7 +35,7 @@ Letzter Stand: 2026-10-29 02:10, Etappe 20 (Version 2.1.0), alle 12 Punkte besta
 ## Klickliste „Version 2.0“
 Feste Liste für Version 2.0, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.0`.
 
-Letzter Stand: 2026-10-29 02:10, Etappe 20 (Version 2.1.0), alle 7 Punkte bestanden.
+Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 7 Punkte bestanden.
 - [x] HTML-Seite anlegen: „Neu“ → „HTML-Seite“ legt `Unbenannt.html` nach dem Speicherformat an (mit `localist-id`) und öffnet sie in „Geteilt“.
 - [x] Code bearbeiten: Im Code-Editor tippen; gespeichert wird nur die geänderte Stelle, die Vorschau zeigt den neuen Text.
 - [x] Jeder Baustein: alle 13 Bausteine über die Werkzeugleiste einfügen (Bild und Seitenlink mit Auswahl), in „Lesen“ dargestellt, Karteikarte per Klick umdrehen.
@@ -47,7 +47,7 @@ Letzter Stand: 2026-10-29 02:10, Etappe 20 (Version 2.1.0), alle 7 Punkte bestan
 ## Klickliste „Version 2.1“
 Feste Liste für Version 2.1, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.1` (1280 × 800).
 
-Letzter Stand: 2026-10-29 02:10, Etappe 20 (Version 2.1.0), Punkte 1–8 bestanden; Punkt 9 kommt mit Etappe 21 dazu.
+Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 9 Punkte bestanden.
 - [x] Tab/Shift+Tab in Liste und Code: In „Ideen“ einen Listenpunkt mit Tab einrücken und mit Umschalt+Tab ausrücken (gespeichert, Fokus bleibt im Editor); im Code-Editor von „DNS“ eine Zeile mit dem Cursor mitten darin ein- und ausrücken.
 - [x] „Im Explorer öffnen“ in der Vorschau-Simulation: Rechtsklick auf eine Seite → „Im Explorer öffnen“ zeigt die Meldung der Vorschau mit dem Pfad.
 - [x] Seitenleiste rechts und eingeklappt: Einstellungen → Darstellung → „Rechts“, dann Strg+. ein- und wieder ausklappen; beides wird gemerkt.
@@ -56,13 +56,15 @@ Letzter Stand: 2026-10-29 02:10, Etappe 20 (Version 2.1.0), Punkte 1–8 bestand
 - [x] Schnell notieren: Auf der Startseite zwei Zeilen tippen (Umschalt+Enter), Enter legt die Notiz an.
 - [x] Modus Schwarz mit Akzent Blau: Knopf „Schwarz“ unten in der Seitenleiste, Akzent „Blau“ in den Einstellungen; wirkt sofort und bleibt nach dem Neuladen.
 - [x] Tabelle in einer Notiz bearbeiten: In „Subnetting“ eine Zelle ändern und über „+“ eine Zeile anfügen; gespeichert als Markdown-Tabelle.
-- [ ] Nach Updates suchen (Vorschau-Simulation): Update verfügbar → installieren.
+- [x] Nach Updates suchen (Vorschau-Simulation): Update verfügbar → installieren.
 
 ## Abgeschlossene Etappen
 - Etappen 0–20 und der Nachtrag „Android-Statusleiste“: `archiv/FORTSCHRITT-bis-2.1.md`.
+- Etappe 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31): Phase 0 6c17a73, a9c78f1; Phase 1 ea0d930, 23f251b, a66a877, 3d3a049; Phase 2 bec972e; Doku 3120431; Version 2.2.0 1453dee (Tag `v2.2.0`); Screenshots 2261070 (`docs/screenshots/etappe-21/`, 10 Bilder). Prüfrunde 1: unabhängige Prüfung (Sonnet, lesend) ohne Funde A/B.
 
 ## Offene Probleme
 - Für Emre, blockiert die Etappe nicht: Updates über GitHub brauchen noch Schritte auf github.com, die nur du machen kannst. Sie stehen in `ANLEITUNG-RELEASE.md`: (1) Repository anlegen (Weg a öffentlich oder Weg b privat + `localist-releases` mit `RELEASES_TOKEN`, `RELEASE_OWNER`, `RELEASE_REPO`) und `git push -u origin main`, (2) Platzhalter `EMRE_GITHUB_NAME/localist` in `src-tauri/tauri.conf.json` und `src/lib/updates.ts` ersetzen und den Tag `v2.2.0` neu setzen, (3) Secret `TAURI_SIGNING_PRIVATE_KEY` eintragen und `%USERPROFILE%\.tauri\localist.key` sichern, (4)–(5) veröffentlichen und den ersten echten Update-Test machen.
+- Beobachtet, nicht behoben: Läuft `npm test` neben anderer Last (z. B. Build), scheitern einzelne Tests in `App.test.tsx`/`bausteine.test.ts` (meist an der 5- bzw. 15-s-Grenze, einmal „inert“ der Handy-Ansicht „Seiten“). Einzeln und ohne Last sind sie grün, der volle Lauf auch (484/484).
 - Erledigte Einträge bis Version 2.1 stehen im Archiv.
 
 ## Entscheidungen
