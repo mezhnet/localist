@@ -315,8 +315,11 @@ export function SettingsDialog({ handy = false, ...props }: SettingsProps) {
   const [codeSeite, setCodeSeite] = useCodeSeite();
   // Solange ein Update lädt oder installiert wird, bleiben die Einstellungen offen: So kann nichts Neues
   // ungespeichert sein, wenn sich die App für den Installer beendet.
-  const [updateLaeuft, setUpdateLaeuft] = useState(false);
-  const onClose = updateLaeuft ? () => {} : props.onClose;
+  const updateLaeuft = useRef(false);
+  const setUpdateLaeuft = (laeuft: boolean) => (updateLaeuft.current = laeuft);
+  const onClose = () => {
+    if (!updateLaeuft.current) props.onClose();
+  };
   if (handy) return <HandyEinstellungen {...props} onClose={onClose} onUpdateLaeuft={setUpdateLaeuft} />;
   return (
     <Dialog label="Einstellungen" title="Einstellungen" onClose={onClose} size="md" className="settings-dialog">

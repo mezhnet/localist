@@ -2,9 +2,9 @@
 // Handy-Variante ohne Updater. Gefragt wird nur nach dem Klick, vor der Installation wird gespeichert.
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
-import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import packageInfo from "../../package.json";
+import cargoToml from "../../src-tauri/Cargo.toml?raw";
 import tauriConf from "../../src-tauri/tauri.conf.json";
 import { ThemeProvider } from "../lib/theme";
 import { RELEASES_SEITE } from "../lib/updates";
@@ -84,7 +84,7 @@ describe("Über Localist: Version", () => {
   it("zeigt die Version aus getVersion(), gleich der in tauri.conf.json (und überall gleich)", async () => {
     oeffnen();
     await waitFor(() => expect(document.querySelector(".app-version")?.textContent).toBe(tauriConf.version));
-    const cargo = readFileSync("src-tauri/Cargo.toml", "utf8").match(/^version = "([^"]+)"/m)?.[1];
+    const cargo = cargoToml.match(/^version = "([^"]+)"/m)?.[1];
     expect([packageInfo.version, cargo]).toEqual([tauriConf.version, tauriConf.version]);
   });
 });
@@ -168,20 +168,27 @@ describe("Über Localist: Zustände (gemockter Updater)", () => {
       throw "Die Signatur ist ungültig.\nDetails: minisign …";
     });
     updater.check.mockResolvedValue(update);
-    oeffnen();
+    const { onClose } = oeffnen();
     fireEvent.click(suchenKnopf());
     fireEvent.click(await screen.findByRole("button", { name: "Jetzt installieren" }));
     await waitFor(() => expect(status()).toBe("Update fehlgeschlagen: Die Signatur ist ungültig."));
     expect(updater.relaunch).not.toHaveBeenCalled();
     expect(suchenKnopf()).toBeTruthy();
+    // Nach dem Fehler lassen sich die Einstellungen wieder schließen.
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("während Download und Installation bleiben die Einstellungen offen (Escape schließt nicht)", async () => {
+  it("ab „Jetzt installieren“ (Speichern, Download, Installation) bleiben die Einstellungen offen (Escape schließt nicht)", async () => {
     const fertig = zurueckhalten();
+    const gespeichert = zurueckhalten();
     updater.check.mockResolvedValue(einUpdate(() => fertig.versprechen));
-    const { onClose } = oeffnen();
+    const { onClose } = oeffnen({ vorDemUpdate: () => gespeichert.versprechen });
     fireEvent.click(suchenKnopf());
     fireEvent.click(await screen.findByRole("button", { name: "Jetzt installieren" }));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    await act(async () => gespeichert.loesen());
     await waitFor(() => expect(status()).toBe("Wird heruntergeladen …"));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).not.toHaveBeenCalled();

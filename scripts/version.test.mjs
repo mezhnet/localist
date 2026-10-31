@@ -10,9 +10,9 @@ const SKRIPT = resolve("scripts/version.mjs");
 const DATEIEN = ["package.json", "package-lock.json", "src-tauri/tauri.conf.json", "src-tauri/Cargo.toml", "src-tauri/Cargo.lock"];
 let ordner = "";
 
-const git = (...args: string[]) => execFileSync("git", args, { cwd: ordner, encoding: "utf8" }).trim();
-const skript = (...args: string[]) => spawnSync(process.execPath, [SKRIPT, ...args, "--root", ordner, "--ohne-build"], { encoding: "utf8" });
-const lesen = (datei: string) => readFileSync(join(ordner, datei), "utf8");
+const git = (...args) => execFileSync("git", args, { cwd: ordner, encoding: "utf8" }).trim();
+const skript = (...args) => spawnSync(process.execPath, [SKRIPT, ...args, "--root", ordner, "--ohne-build"], { encoding: "utf8" });
+const lesen = (datei) => readFileSync(join(ordner, datei), "utf8");
 
 function versionen() {
   const lock = JSON.parse(lesen("package-lock.json"));

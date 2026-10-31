@@ -14,7 +14,7 @@ interface Props {
   vorDemUpdate: () => Promise<void>;
   /** Öffnet eine Adresse im Standardbrowser (vorhandener Weg für externe Links). */
   onOpenExternal: (url: string) => void;
-  /** Meldet, ob gerade ein Update lädt oder installiert wird (dann bleiben die Einstellungen offen). */
+  /** Meldet sofort, ob gerade ein Update gespeichert, geladen oder installiert wird (dann bleiben die Einstellungen offen). */
   onLaeuft?: (laeuft: boolean) => void;
   handy?: boolean;
 }
@@ -36,8 +36,6 @@ export function UeberLocalist({ platform, vorDemUpdate, onOpenExternal, onLaeuft
     };
   }, []);
 
-  useEffect(() => onLaeuft?.(laeuft), [laeuft, onLaeuft]);
-
   // Ein gefundenes, aber nicht installiertes Update gibt seine Ressource auf der Rust-Seite wieder frei.
   const offenRef = useRef<Update | null>(null);
   const freigeben = () => {
@@ -56,9 +54,14 @@ export function UeberLocalist({ platform, vorDemUpdate, onOpenExternal, onLaeuft
 
   const installieren = async () => {
     if (zustand.art !== "verfuegbar") return;
-    // Ab hier gehört die Ressource der Installation.
+    // Ab hier gehört die Ressource der Installation, und die Einstellungen bleiben offen (sofort, ohne neues Rendern),
+    // bis ein Fehler die Installation beendet.
     offenRef.current = null;
-    await updateInstallieren(zustand.update, vorDemUpdate, setZustand);
+    onLaeuft?.(true);
+    await updateInstallieren(zustand.update, vorDemUpdate, (neu) => {
+      if (neu.art === "fehler") onLaeuft?.(false);
+      setZustand(neu);
+    });
   };
 
   const text = updateText(zustand);

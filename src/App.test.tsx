@@ -2676,6 +2676,9 @@ describe("CSS: übrige Ansichten und Bausteine im Stil der Vorlage (Etappe 19)",
 
 describe("Seitenkopf (Etappe 19)", () => {
   it("Pfad „Ordner / Seite“, Speicherstatus (Speichert …, gerade eben, vor 3 Min., Fehler deutlich), Stern und „…“ mit den Aktionen des Kontextmenüs", async () => {
+    // Genau einen Tag alt, damit „gestern“ nicht von der Uhrzeit des Testlaufs abhängt (die Beispiel-Dateien sind nur
+    // „jetzt minus N × 47 Minuten“ alt und gelten vormittags schon als „heute“ geändert).
+    vault().setModified("Projekte/Website-Relaunch.md", Date.now() - 24 * 60 * 60_000);
     await openVaultFromStart();
     await openPage("Projekte", "Website-Relaunch");
     await screen.findByText("Domain prüfen");
@@ -2684,7 +2687,7 @@ describe("Seitenkopf (Etappe 19)", () => {
     expect(document.querySelector(".breadcrumb-name")?.textContent).toBe("Projekte");
     expect(document.querySelector(".topbar-title")?.textContent).toBe("Website-Relaunch");
     const status = () => document.querySelector(".speicherstatus")?.textContent;
-    // Vor der ersten Eingabe: die letzte Änderung der Datei (die Beispiel-Dateien gelten als „gestern“ geändert)
+    // Vor der ersten Eingabe: die letzte Änderung der Datei
     await waitFor(() => expect(status()).toBe("gestern gespeichert"));
 
     const tiptap = (window as unknown as { ProseMirror: { commands: { setTextSelection: (pos: number) => void; insertContent: (text: string) => void } } }).ProseMirror;
