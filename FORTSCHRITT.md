@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31). Version 2.2 ist fertig. Version 2.1 (Etappen 16–20) und der Nachtrag „Android-Statusleiste“: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-10-31 18:14
+- Zuletzt aktualisiert: 2026-10-31 18:39
 - Nächster Schritt: keiner offen in `CLAUDE.md`. Emre richtet GitHub nach `ANLEITUNG-RELEASE.md` ein (siehe „Offene Probleme“). Neue Arbeit erst mit einem neuen Auftrag; dann Version 2.2 nach `archiv/` verschieben.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
@@ -63,12 +63,14 @@ Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 9 Punkte bestan
 - Etappe 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31): Phase 0 6c17a73, a9c78f1; Phase 1 ea0d930, 23f251b, a66a877, 3d3a049; Phase 2 bec972e; Doku 3120431; Version 2.2.0 1453dee (Tag `v2.2.0`); Screenshots 2261070 (`docs/screenshots/etappe-21/`, 10 Bilder). Prüfrunde 1: unabhängige Prüfung (Sonnet, lesend) ohne Funde A/B.
 
 ## Offene Probleme
-- Release noch offen (Stand 2026-10-31): Repository `mezhnet/localist` (öffentlich), `main` hochgeladen, Update-Adresse eingetragen, Secret `TAURI_SIGNING_PRIVATE_KEY` gesetzt. Der erste Lauf für Tag `v2.2.0` (Run 41223027838) scheiterte in `npm test`, weil GitHubs Windows-Rechner mit CRLF auscheckt; behoben in e45b1d2 (LF vor dem Auschecken). Der Tag `v2.2.0` zeigt noch auf 3c539d9 ohne diese Korrektur: entweder Tag verschieben (Force-Push, vom Auto-Modus abgelehnt) oder als 2.2.1 veröffentlichen (`node scripts/version.mjs 2.2.1`, `git push --follow-tags`). Emre sichert `%USERPROFILE%\.tauri\localist.key` selbst.
+- Für Emre: `%USERPROFILE%\.tauri\localist.key` sichern und den ersten echten Update-Test machen (2.2.1 installieren, 2.2.2 veröffentlichen, in der App aktualisieren; `ANLEITUNG-RELEASE.md`, Schritt 5). Erstes Release [v2.2.1](https://github.com/mezhnet/localist/releases/tag/v2.2.1) ist veröffentlicht (Run 41224614969 grün, `latest.json` mit Version 2.2.1, Signaturen mit Schlüssel-ID 6BEE31F67A3C789E).
+- Hinweis von GitHub, nicht dringend: `actions/checkout@v4` und `actions/setup-node@v4` nutzen noch Node 20 und laufen erzwungen mit Node 24. Bei Gelegenheit auf neuere Hauptversionen anheben.
 - Beobachtet, nicht behoben: Läuft `npm test` neben anderer Last (z. B. Build), scheitern einzelne Tests in `App.test.tsx`/`bausteine.test.ts` (meist an der 5- bzw. 15-s-Grenze, einmal „inert“ der Handy-Ansicht „Seiten“). Einzeln und ohne Last sind sie grün, der volle Lauf auch (484/484).
 - Erledigte Einträge bis Version 2.1 stehen im Archiv.
 
 ## Entscheidungen
 Entscheidungen bis Version 2.1: `archiv/FORTSCHRITT-bis-2.1.md`, Abschnitt „Entscheidungen“.
+- 2026-10-31: Erstes Release als 2.2.1 statt 2.2.0: Der Lauf für `v2.2.0` scheiterte an CRLF (behoben in e45b1d2, LF vor dem Auschecken); den schon hochgeladenen Tag zu verschieben hätte einen Force-Push gebraucht. `v2.2.0` bleibt ohne Release stehen.
 - 2026-10-31: „Neue Sitzung nach jeder Phase“ ging nicht: Der Auto-Modus hat das Starten einer neuen Sitzung abgelehnt. Etappe 21 läuft deshalb in einer Sitzung, die Phasen sind getrennt committet.
 - 2026-10-31: Die Browser-Vorschau dieser Sitzung startet Vite aus dem alten Ordner `LocalProjekt` (bekannt seit Etappe 16). Vite läuft deshalb aus `Localist` auf Port 1431 (`npm run dev -- --port 1431 --strictPort`), geprüft an der Befehlszeile des Prozesses.
 - 2026-10-31: Updater: Die Abfrage stellt der Rust-Teil des Plugins, die App-CSP bleibt unverändert. Ob es den Updater gibt, entscheidet `app_platform` (Android/iOS nein), nicht die Bildschirmbreite: Ein schmales PC-Fenster zeigt den Updater, ein breites Android-Gerät den GitHub-Knopf.

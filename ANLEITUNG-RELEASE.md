@@ -10,7 +10,7 @@ Schon erledigt (von Claude Code): Workflow, Release-Einstellungen (`src-tauri/ta
 
 Was du **einmal** tun musst: Schritte 1 bis 3. Für jede neue Version danach: Schritt 4.
 
-> **Stand 2026-10-31:** Schritt 1 und 2 sind erledigt. Das öffentliche Repository [mezhnet/localist](https://github.com/mezhnet/localist) (Weg a) ist angelegt, der Code (Branch `main`) ist hochgeladen, und die Update-Adresse zeigt auf `mezhnet/localist`. Der Tag `v2.2.0` liegt nur auf deinem PC. **Weiter geht es mit Schritt 3** (Schlüssel eintragen, dann `git push --follow-tags`).
+> **Stand 2026-10-31:** Schritt 1 bis 3 sind erledigt. Das öffentliche Repository [mezhnet/localist](https://github.com/mezhnet/localist) (Weg a) ist angelegt, der Code ist hochgeladen, die Update-Adresse zeigt auf `mezhnet/localist`, und das Secret `TAURI_SIGNING_PRIVATE_KEY` ist eingetragen. Das erste Release ist [Localist v2.2.1](https://github.com/mezhnet/localist/releases/tag/v2.2.1). Zu `v2.2.0` gibt es kein Release: Der Lauf scheiterte an den Zeilenenden auf GitHubs Windows-Rechner, die Korrektur kam erst danach. **Offen für dich:** den Schlüssel sichern (Schritt 3, „Sichern“) und der erste echte Test (Schritt 5, mit 2.2.1 → 2.2.2).
 
 Befehle tippst du in ein Terminal im Projektordner `C:\Users\emre\Documents\eigen_apps\Localist` (z. B. in VS Code über „Terminal → Neues Terminal“).
 
@@ -131,11 +131,13 @@ git push --follow-tags
 
 ## 5. Erster echter Test
 
-1. Im Release **„Localist v2.2.0“** die Datei `Localist_2.2.0_x64-setup.exe` herunterladen und installieren (zur Warnung von Windows siehe Schritt 6).
-2. Localist starten: **Einstellungen → „Über Localist“** zeigt Version 2.2.0. **„Nach Updates suchen“** → „Du bist auf dem neuesten Stand (v2.2.0)“.
-3. Version 2.2.1 veröffentlichen (Schritt 4) und warten, bis der Lauf grün ist.
-4. In Localist erneut **„Nach Updates suchen“** → „Update verfügbar: v2.2.1“ → **„Jetzt installieren“**. Localist speichert alles, lädt das Update („Wird heruntergeladen … NN %“), installiert es und startet neu.
-5. **Einstellungen → „Über Localist“** zeigt jetzt 2.2.1.
+Das erste Release ist 2.2.1, der Test geht deshalb von 2.2.1 auf 2.2.2:
+
+1. Im Release **„Localist v2.2.1“** die Datei `Localist_2.2.1_x64-setup.exe` herunterladen und installieren (zur Warnung von Windows siehe Schritt 6).
+2. Localist starten: **Einstellungen → „Über Localist“** zeigt Version 2.2.1. **„Nach Updates suchen“** → „Du bist auf dem neuesten Stand (v2.2.1)“.
+3. Version 2.2.2 veröffentlichen (Schritt 4, also `node scripts/version.mjs 2.2.2` und `git push --follow-tags`) und warten, bis der Lauf grün ist.
+4. In Localist erneut **„Nach Updates suchen“** → „Update verfügbar: v2.2.2“ → **„Jetzt installieren“**. Localist speichert alles, lädt das Update („Wird heruntergeladen … NN %“), installiert es und startet neu.
+5. **Einstellungen → „Über Localist“** zeigt jetzt 2.2.2.
 
 ---
 
