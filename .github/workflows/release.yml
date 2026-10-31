@@ -1,0 +1,91 @@
+# Release von Localist für Windows (Etappe 21).
+# Läuft, sobald ein Versions-Tag wie v2.2.1 gepusht wird (siehe scripts/version.mjs und ANLEITUNG-RELEASE.md).
+# Erst laufen alle Tests; schlägt einer fehl, entsteht kein Release. Danach baut tauri-action den Installer,
+# signiert ihn für den Updater und lädt Installer, .sig-Datei und latest.json in ein GitHub-Release hoch.
+#
+# Release-Ziel: Sind die Repository-Variablen RELEASE_OWNER und RELEASE_REPO gesetzt, geht das Release in jenes
+# (öffentliche) Repository, mit dem Token aus dem Secret RELEASES_TOKEN. Sonst geht es in dieses Repository.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Windows-Installer bauen und veröffentlichen
+    runs-on: windows-latest
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Rust einrichten
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust-Build zwischenspeichern
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Pakete installieren
+        run: npm ci
+
+      - name: Tests der Oberfläche
+        run: npm test
+
+      - name: Tests des Rust-Teils
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Release in dieses Repository
+        if: ${{ vars.RELEASE_OWNER == '' || vars.RELEASE_REPO == '' }}
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          args: --config src-tauri/tauri.release.conf.json
+          tagName: v__VERSION__
+          releaseName: "Localist v__VERSION__"
+          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen."
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          # latest.json zeigt unter "windows-x86_64" auf den NSIS-Installer (Localist_X.Y.Z_x64-setup.exe).
+          updaterJsonPreferNsis: true
+
+      - name: Release in das Repository aus RELEASE_OWNER/RELEASE_REPO
+        if: ${{ vars.RELEASE_OWNER != '' && vars.RELEASE_REPO != '' }}
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          owner: ${{ vars.RELEASE_OWNER }}
+          repo: ${{ vars.RELEASE_REPO }}
+          # Im Release-Repository gibt es diesen Commit nicht; der Tag entsteht dort auf dessen Branch main.
+          releaseCommitish: main
+          args: --config src-tauri/tauri.release.conf.json
+          tagName: v__VERSION__
+          releaseName: "Localist v__VERSION__"
+          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen."
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          # latest.json zeigt unter "windows-x86_64" auf den NSIS-Installer (Localist_X.Y.Z_x64-setup.exe).
+          updaterJsonPreferNsis: true
