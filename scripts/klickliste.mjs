@@ -1,4 +1,4 @@
-// Klicklisten „Version 1.0“ (Arbeitsregel 7), „Version 2.0“ (Etappe 15) und „Version 2.1“ (Etappe 20) automatisch
+// Klicklisten „Version 1.0“ (Arbeitsregel 7), „Version 2.0“ (Etappe 15) und „Version 2.1“ (Etappe 20, Punkt 9 seit Etappe 21) automatisch
 // in der Browser-Vorschau:
 // steuert Microsoft Edge im Hintergrund mit echter Tastatur und Maus (DevTools-Protokoll) und prüft nach jedem
 // Schritt die Datei im Arbeitsspeicher der Vorschau (dev-backend.ts). Echte Dateien ändern sich nicht.
@@ -475,6 +475,34 @@ try {
       const tabellenZeilen = await zeilen("Lernen/Subnetting.md", /^\|/);
       erwarte(tabellenZeilen.length === 6 && /^\|\s*\|\s*\|$/.test(tabellenZeilen.at(-1)), `Tabelle: ${JSON.stringify(tabellenZeilen)}`);
       return `Zelle „64“ → „64 Adr.“ und neue Zeile über „+“: ${tabellenZeilen.join(" ")}`;
+    });
+
+    await pruefen(9, "Nach Updates suchen (Vorschau-Simulation): Update verfügbar → installieren", async () => {
+      const befehle = () => evaluate(`JSON.stringify(window.__devVault.update.befehle)`);
+      const meldung = () => evaluate(`document.querySelector('.ueber-localist .update-meldung')?.textContent ?? ""`);
+      const vorher = await befehle();
+      await klickAuf(`[...document.querySelectorAll('.sidebar-footer button')].find((b) => b.textContent.trim().startsWith("Einstellungen"))`);
+      erwarte(await waitFor(`document.querySelector('[role="dialog"] .ueber-localist .app-version')?.textContent.match(/^\\d/)`), "„Über Localist“ ohne Version");
+      const version = await evaluate(`document.querySelector('.ueber-localist .app-version').textContent`);
+      await sleep(500);
+      const offen = await befehle();
+      erwarte(vorher === "[]" && offen === "[]", `Abfrage ohne Klick: vorher ${vorher}, nach dem Öffnen ${offen}`);
+      await klickAuf(knopf("Nach Updates suchen"));
+      erwarte(await waitFor(`document.querySelector('.ueber-localist .update-meldung')?.textContent.startsWith("Update verfügbar: v")`), `keine Meldung „Update verfügbar“: ${await meldung()}`);
+      const verfuegbar = await meldung();
+      const notizen = await evaluate(`document.querySelector('.ueber-localist .update-notizen')?.textContent.split("\\n")[0] ?? ""`);
+      await klickAuf(knopf("Jetzt installieren"));
+      let fortschritt = "";
+      for (let t = 0; t < 8000 && !fortschritt; t += 50) {
+        const text = await meldung();
+        if (/^Wird heruntergeladen … \d+ %$/.test(text) && !text.startsWith("Wird heruntergeladen … 0 ")) fortschritt = text;
+        else await sleep(50);
+      }
+      erwarte(fortschritt, "kein Fortschritt in Prozent");
+      erwarte(await waitFor(`document.querySelector('.ueber-localist .update-meldung')?.textContent === "Wird installiert, Localist startet neu …"`), `Ende: ${await meldung()}`);
+      erwarte(await waitFor(`window.__devVault.update.befehle.join() === "check,download_and_install,restart"`), `Befehle: ${await befehle()}`);
+      await taste("Escape");
+      return `Version ${version}; ohne Klick keine Abfrage (${offen}); „${verfuegbar}“ mit Notizen „${notizen}“; „Jetzt installieren“: „${fortschritt}“ → „Wird installiert, Localist startet neu …“; Befehle ${await befehle()}`;
     });
   } else {
     // Klickliste „Version 2.0“ (Etappe 15): HTML-Seite anlegen, Code bearbeiten, jeder Baustein, eigener Baustein,
