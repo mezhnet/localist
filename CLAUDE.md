@@ -10,13 +10,14 @@ Localist ist eine App für Windows (und Android) für Notizen, Projekte und inte
 - **Speicherung wie Obsidian:** Alles liegt als normale Dateien in einem Ordner („Vault“), den der Nutzer selbst wählt. Jede Datei lässt sich jederzeit auch ohne die App öffnen.
 - **Aussehen inspiriert von Notion:** clean, ruhig, viel Weißraum. Notion ist Vorbild für den Stil, nicht für jede Funktion. Eigene Elemente sind ausdrücklich erwünscht, solange das Gesamtbild aufgeräumt bleibt. Keine Logos, Grafiken oder Texte von Notion übernehmen.
 - **Lokale Website:** Neben normalen Notizen gibt es HTML-Seiten. Sie werden mit Bausteinen wie Karteikarten, Diagrammen und Tabellen gebaut und im Lesemodus als fertige, interaktive Seite angezeigt.
-- **Local-first:** keine Accounts, kein Server, keine Telemetrie, funktioniert komplett offline.
+- **Local-first:** keine Accounts, kein Server, keine Telemetrie, funktioniert komplett offline. Einzige Ausnahme: Nach Klick auf ‚Nach Updates suchen' fragt die App GitHub Releases ab. Das passiert nie automatisch, und außer der Anfrage selbst werden keine Daten gesendet.
 
 ## Versionen
 
 - **Version 1.0 (Etappen 0–8): abgeschlossen.** Block-Editor für Markdown-Notizen, Eigenschaften, Datenbanken mit Tabelle, Kanban und Kalender, Suche, Strg+P, Vorlagen, Backlinks, Windows-Installer und Android-APK. Details, Nachweise und Entscheidungen stehen in `FORTSCHRITT.md`.
 - **Version 2.0 (Etappen 9–15): abgeschlossen.** Neues Design, zweiter Seitentyp „HTML-Seite“ mit Code-Editor und Lesemodus, Baustein-Bibliothek, Notizbücher.
-- **Version 2.1 (Etappen 16–20): in Arbeit.** Ordnername „Localist“, bessere Bedienung, neues Design nach der Vorlage in `docs/design/`, Handy-Design. Auftrag mit Design-Vorlage und Befunden: `docs/design/auftrag-version-2.1.md`.
+- **Version 2.1 (Etappen 16–20): abgeschlossen.** Ordnername „Localist“, bessere Bedienung, neues Design nach der Vorlage in `docs/design/`, Handy-Design. Auftrag mit Design-Vorlage und Befunden: `docs/design/auftrag-version-2.1.md`.
+- **Version 2.2 (Etappe 21): in Arbeit.** Updates über GitHub Releases. Auftrag: `docs/auftrag-version-2.2.md`.
 
 ## Kommunikation
 
@@ -237,6 +238,17 @@ seiten:
 10. **Diese Datei nicht überschreiben.**
 11. **Fehlt etwas, das der Nutzer selbst tun muss** (Programm installieren, Systemeinstellung, Geschmacksentscheidung), genau sagen was und wie, es in `FORTSCHRITT.md` unter „Offene Probleme“ notieren und anhalten. Fehlende Werkzeuge dürfen nach Rückfrage per `winget` installiert werden.
 
+## Sparsam arbeiten (Vorrang vor allen Aufträgen und vor den Arbeitsregeln oben)
+
+- Umsetzen in der Hauptsitzung, ohne Workflows und ohne Arbeitsagenten in eigenen Arbeitskopien. Funde behebt die Hauptsitzung selbst.
+- Unteragenten nur für die unabhängige Prüfung: höchstens 2, nur lesend, Sonnet, einmal pro Auftrag in der Runde, die fertig aussieht.
+- Prüfrunden: höchstens 3, Schluss bei der ersten Runde ohne Funde A/B. Regression über automatische Tests und scripts/klickliste.mjs, keine alten Prüflisten von Hand.
+- Lesen zu Beginn und nach Komprimierung: nur CLAUDE.md, der aktuelle Auftrag und die Stand-Zeile plus Hinweise aus FORTSCHRITT.md. Archiv, ANLEITUNG.md und Design-Dokumente nur gezielt per grep und offset/limit.
+- Tests während der Arbeit nur für betroffene Dateien. Voller Lauf einmal pro Phase und pro Runde. Ausgaben in Datei, nur tail -20 lesen.
+- Screenshots nur von etwa 10 Kernbildschirmen ansehen. Design-Regeln automatisch testen.
+- Neue Sitzung nach jeder Phase, spätestens ab etwa 150.000 Tokens Kontext.
+- FORTSCHRITT.md unter 20 KB halten: Einträge ein bis drei Zeilen, Commit-Hash statt Dateilisten. Abgeschlossene Versionen beim Start eines neuen Auftrags nach archiv/ verschieben.
+
 ## Fortschrittsdatei
 
 `FORTSCHRITT.md` im Projektordner ist das Gedächtnis zwischen den Sitzungen. Wer sie liest, muss ohne weiteren Kontext wissen, wo das Projekt steht und was als Nächstes kommt. Aufbau:
@@ -273,7 +285,7 @@ Etappe 0 Fundament · 1 Vault und Seiten · 2 Notion-Feeling · 3 Eigenschaften 
 
 Etappe 9 Neues Design · 10 HTML-Seiten: Grundlage und sichere Anzeige · 11 HTML-Seiten: Code-Editor · 12 Baustein-Bibliothek: Grundbausteine · 13 Lernen, Diagramme und eigene Bausteine · 14 Notizbücher, Umwandeln und Export · 15 Version 2.0. Kriterien und Nachweise stehen in `FORTSCHRITT.md`.
 
-### Version 2.1 – in Arbeit
+### Version 2.1 – abgeschlossen
 
 Auftrag, Design-Vorlage und Befunde zu jeder Etappe: `docs/design/auftrag-version-2.1.md`. Zu Beginn jeder dieser Etappen erneut lesen.
 
@@ -350,6 +362,20 @@ Auftrag, Design-Vorlage und Befunde zu jeder Etappe: `docs/design/auftrag-versio
 - [ ] Neue Klickliste „Version 2.1“ in `FORTSCHRITT.md` (Tab/Shift+Tab in Liste und Code, „Im Explorer öffnen“ in der Vorschau-Simulation, Seitenleiste rechts und eingeklappt, Code rechts und Trennlinie ziehen, Reiter öffnen/wechseln/schließen, Schnell notieren, Modus Schwarz mit Akzent Blau, Tabelle in einer Notiz bearbeiten) ist abgehakt, ebenso „Version 1.0“ und „Version 2.0“, möglichst automatisch mit `scripts/klickliste.mjs` (neues Argument `2.1`).
 - [ ] `README.md` und `ANLEITUNG.md` haben einen Abschnitt „Neu in Version 2.1“ für Einsteiger, die Pfade zeigen auf `Localist`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
 
+### Version 2.2 – in Arbeit
+
+Auftrag mit allen Details: `docs/auftrag-version-2.2.md`.
+
+### Etappe 21 – Updates über GitHub Releases
+
+- [ ] Phase 0 erledigt: `FORTSCHRITT.md` ist unter 20 KB, das Archiv liegt in `archiv/`, `CLAUDE.md` ist ergänzt und committet.
+- [ ] „Über Localist“ mit Version und „Nach Updates suchen“ auf PC und Handy, alle Zustände umgesetzt und getestet, kein Netz ohne Klick, Speichern vor dem Installieren.
+- [ ] `scripts/version.mjs` funktioniert. Die Version ist 2.2.0.
+- [ ] `release.yml` ist gültig. Ein lokaler Release-Build erzeugt die `.sig`-Datei. Ein normales `npm run tauri build` läuft ohne Schlüssel.
+- [ ] `ANLEITUNG-RELEASE.md` ist vorhanden. Kein privater Schlüssel und kein Token im Repo.
+- [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten abgehakt.
+- [ ] `README.md`/`ANLEITUNG.md` haben „Neu in Version 2.2“ (kurz). In „Offene Probleme“ steht der Hinweis auf die Schritte für Emre aus `ANLEITUNG-RELEASE.md`.
+
 ## Zukunft (noch nicht umsetzen)
 
 - Anbindung an den Google Kalender über die Google Calendar API: zuerst Google-Termine im Kalender anzeigen, später in beide Richtungen. Deshalb gelten das einheitliche Datumsformat und die feste `id` pro Eintrag.
@@ -359,7 +385,7 @@ Auftrag, Design-Vorlage und Befunde zu jeder Etappe: `docs/design/auftrag-versio
 
 ## Was die App nicht macht
 
-- Keine Accounts, kein eigener Server, keine Telemetrie.
+- Keine Accounts, kein eigener Server, keine Telemetrie. Einzige Ausnahme: Nach Klick auf ‚Nach Updates suchen' fragt die App GitHub Releases ab. Das passiert nie automatisch, und außer der Anfrage selbst werden keine Daten gesendet.
 - Keine Inhalte in einer eigenen Datenbank, nur Dateien im Vault.
 - Keine Inhalte, Logos oder Grafiken von Notion.
 
