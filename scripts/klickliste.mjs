@@ -650,5 +650,11 @@ try {
   socket.close();
   spawnSync("taskkill", ["/PID", String(edge.pid), "/T", "/F"], { stdio: "ignore" });
   await sleep(500);
-  rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  try {
+    rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
+  } catch {
+    // Edge gibt das Profil unter Last manchmal erst später frei; es liegt nur im Temp-Ordner.
+  }
+  // Exit-Code 1, wenn ein Punkt nicht bestanden ist
+  if (ergebnisse.some((zeile) => zeile.startsWith("[ ]"))) process.exitCode = 1;
 }
