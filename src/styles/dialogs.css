@@ -163,9 +163,12 @@
   gap: var(--space-3);
 }
 
+/* Die Versionsnummer im Fließtext (ohne den Abstand aus der Fußzeile der Seitenleiste) */
 .ueber-localist .app-version {
-  font-family: var(--font-mono);
+  padding-right: 0;
   color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
 }
 
 .update-status {
