@@ -37,15 +37,17 @@ describe("release.yml", () => {
     for (const schritt of schritte) expect(Boolean(schritt.uses) !== Boolean(schritt.run), JSON.stringify(schritt)).toBe(true);
   });
 
-  it("richtet Node und Rust ein und lässt npm ci, npm test und cargo test vor jedem Release laufen", () => {
+  it("stellt LF-Zeilenenden ein, richtet Node und Rust ein und lässt npm ci, npm test und cargo test vor jedem Release laufen", () => {
     const checkout = position((s) => s.uses?.startsWith("actions/checkout@") ?? false);
     const node = position((s) => s.uses?.startsWith("actions/setup-node@") ?? false);
     const rust = position((s) => s.uses?.startsWith("dtolnay/rust-toolchain@") ?? false);
     const ci = position((s) => s.run === "npm ci");
     const test = position((s) => s.run === "npm test");
     const cargo = position((s) => s.run === "cargo test --manifest-path src-tauri/Cargo.toml");
-    expect([checkout, node, rust, ci, test, cargo].every((i) => i >= 0)).toBe(true);
-    expect(checkout < node && node < ci && rust < cargo && ci < test && test < cargo).toBe(true);
+    // Vor dem Auschecken: Zeilenenden LF wie im Repository (sonst CRLF unter Windows, und Tests mit LF-Erwartung scheitern)
+    const lf = position((s) => (s.run ?? "").includes("git config --global core.autocrlf false") && (s.run ?? "").includes("git config --global core.eol lf"));
+    expect([lf, checkout, node, rust, ci, test, cargo].every((i) => i >= 0)).toBe(true);
+    expect(lf < checkout && checkout < node && node < ci && rust < cargo && ci < test && test < cargo).toBe(true);
     // Tests ohne „continue-on-error“: Schlägt einer fehl, bricht der Job ab, und es entsteht kein Release.
     expect(workflowText).not.toContain("continue-on-error");
     expect(tauriSchritte).toHaveLength(2);

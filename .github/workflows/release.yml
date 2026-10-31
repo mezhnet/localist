@@ -24,6 +24,13 @@ jobs:
     name: Windows-Installer bauen und veröffentlichen
     runs-on: windows-latest
     steps:
+      # Git für Windows wandelt beim Auschecken sonst alle Zeilenenden in CRLF um. Tests und Beispiel-Vault erwarten
+      # LF, so wie die Dateien im Repository stehen.
+      - name: Zeilenenden wie im Repository (LF)
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
       - name: Code holen
         uses: actions/checkout@v4
 
