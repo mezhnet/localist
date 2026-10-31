@@ -6,6 +6,7 @@ import { emit } from "@tauri-apps/api/event";
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import bundledCss from "../../src-tauri/seite/localist.css?raw";
 import bundledJs from "../../src-tauri/seite/localist.js?raw";
+import tauriConf from "../../src-tauri/tauri.conf.json";
 import { EIGENE_DIR, eigenerBausteinDatei, eigenerBausteinLesen, eigenerBausteinName } from "./eigene-bausteine";
 import { newHtmlPage, resolveRelative } from "./html";
 import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-api";
@@ -21,6 +22,11 @@ const pageSeed = import.meta.glob(["../../beispiel-vault/**/*.md", "../../beispi
 const assetSeed = import.meta.glob(["../../beispiel-vault/**/*", "!**/*.md", "!**/*.html", "!**/*.yaml"], { query: "?url", import: "default", eager: true });
 
 const PAGE_FILE = /\.(md|html)$/i;
+
+/** Kurze Pause für nachgestellte Abläufe (Updater); in Tests ohne Wartezeit. */
+function warten(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, import.meta.env.MODE === "test" ? 0 : ms));
+}
 
 /**
  * Meldet HTML-Seiten an die Vite-Middleware, damit die abgeschottete Anzeige auch in der Vorschau angelegte
@@ -52,7 +58,14 @@ interface DevVault {
   explorer: string[];
   /** Fensterbefehle der eigenen Fensterknöpfe und der Fensterleiste (z. B. "minimize"); in der Vorschau ohne Wirkung. */
   fenster: string[];
+  /**
+   * Simulierter Updater (Vorschau ohne Netz): Was „Nach Updates suchen“ findet, und welche Befehle des Updaters
+   * kamen ("check", "download_and_install", "restart"). Startwert aus localStorage "dev-update".
+   */
+  update: { szenario: UpdateSzenario; befehle: string[] };
 }
+
+export type UpdateSzenario = "verfuegbar" | "aktuell" | "fehler" | "installfehler";
 
 declare global {
   interface Window {
@@ -170,6 +183,11 @@ export function installDevBackend(): void {
   const explorer: string[] = [];
   const fenster: string[] = [];
   let maximiert = false;
+  const gespeichertesSzenario = localStorage.getItem("dev-update");
+  const update: DevVault["update"] = {
+    szenario: (["verfuegbar", "aktuell", "fehler", "installfehler"] as const).find((s) => s === gespeichertesSzenario) ?? "verfuegbar",
+    befehle: [],
+  };
 
   let missing = false;
   // Simulierter Gerätespeicher für die Ordnerauswahl auf Android (localStorage "dev-platform" = "android").
@@ -346,6 +364,43 @@ export function installDevBackend(): void {
           return maximiert;
         case "sicherheitstest_info":
           return null;
+        // Versionsnummer wie in der App aus tauri.conf.json.
+        case "plugin:app|version":
+          return tauriConf.version;
+        // Updater: In der Vorschau gibt es kein Netz; die Zustände werden nur nachgestellt.
+        case "plugin:updater|check": {
+          update.befehle.push("check");
+          await warten(400);
+          if (update.szenario === "fehler") throw "error sending request for url (https://github.com/…/latest.json)";
+          if (update.szenario === "aktuell") return null;
+          const [major, minor, patch] = tauriConf.version.split(".").map(Number);
+          return {
+            rid: 1,
+            currentVersion: tauriConf.version,
+            version: `${major}.${minor}.${patch + 1}`,
+            date: "2026-11-02T10:00:00Z",
+            body: "Neu in dieser Version:\n- Kleine Verbesserungen und Fehlerbehebungen\n- Simuliertes Update der Browser-Vorschau",
+            rawJson: {},
+          };
+        }
+        case "plugin:updater|download_and_install": {
+          update.befehle.push("download_and_install");
+          const kanal = a.onEvent as { onmessage: (ereignis: unknown) => void };
+          const gesamt = 4_200_000;
+          kanal.onmessage({ event: "Started", data: { contentLength: gesamt } });
+          for (let i = 1; i <= 10; i++) {
+            await warten(150);
+            if (update.szenario === "installfehler" && i === 6) throw "Die Signatur des Updates ist ungültig.";
+            kanal.onmessage({ event: "Progress", data: { chunkLength: gesamt / 10 } });
+          }
+          kanal.onmessage({ event: "Finished" });
+          return null;
+        }
+        case "plugin:process|restart":
+          update.befehle.push("restart");
+          return null;
+        case "plugin:resources|close":
+          return null;
         case "app_platform":
           return localStorage.getItem("dev-platform") ?? "browser";
         case "storage_locations":
@@ -409,6 +464,7 @@ export function installDevBackend(): void {
     darstellungen,
     explorer,
     fenster,
+    update,
     externalWrite(path, content) {
       const isNew = !files.has(path);
       files.set(path, content);

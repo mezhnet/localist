@@ -1130,6 +1130,11 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
             await saverRef.current?.flush();
             onSwitchVault();
           }}
+          platform={platform}
+          vorDemUpdate={async () => {
+            await saverRef.current?.sicherSpeichern();
+          }}
+          onOpenExternal={(url) => void openExternal(url)}
         />
       )}
     </div>

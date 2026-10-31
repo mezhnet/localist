@@ -46,6 +46,8 @@ export class AutoSaver {
   private produce: (() => string) | null = null;
   private queue: Promise<void> = Promise.resolve();
   private saving = 0;
+  /** Meldung des letzten Speicherversuchs, falls er gescheitert ist (sonst null). */
+  private fehler: string | null = null;
   /** Die letzten selbst geschriebenen Fassungen, um Meldungen des Dateiwächters darüber zu erkennen. */
   private recent: string[] = [];
 
@@ -100,6 +102,15 @@ export class AutoSaver {
     return this.queue;
   }
 
+  /**
+   * Speichert sofort und meldet einen Fehler, statt ihn nur anzuzeigen: Das Versprechen scheitert, wenn danach noch
+   * etwas nicht in der Datei steht (z. B. vor einem Update, bei dem sich die App beendet).
+   */
+  async sicherSpeichern(): Promise<void> {
+    await this.flush();
+    if (this.fehler !== null) throw new Error(this.fehler);
+  }
+
   /** Verwirft vorgemerkte Änderungen (z. B. wenn die Datei von außen gelöscht wurde). */
   cancel(): void {
     if (this.timer !== null) clearTimeout(this.timer);
@@ -115,8 +126,10 @@ export class AutoSaver {
         this.lastSaved = text;
         this.recent = [text, ...this.recent].slice(0, 5);
       }
+      this.fehler = null;
       if (this.produce === null) this.melden({ art: "gespeichert", zeit: Date.now() });
     } catch (error) {
+      this.fehler = errorMessage(error);
       const meldung = `Speichern fehlgeschlagen: ${errorMessage(error)}`;
       this.melden({ art: "fehler", meldung });
       this.onError(meldung);

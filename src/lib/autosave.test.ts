@@ -58,6 +58,25 @@ describe("AutoSaver (automatisches Speichern)", () => {
     expect(saver.dirty).toBe(false);
   });
 
+  it("sicherSpeichern (vor einem Update): schreibt sofort, scheitert bei einem Speicherfehler, danach wieder ok", async () => {
+    let scheitern = true;
+    const write = vi.fn(async () => {
+      if (scheitern) throw new Error("Datenträger voll");
+    });
+    const onError = vi.fn();
+    const saver = new AutoSaver("alt", write, onError);
+    saver.schedule(() => "neu");
+    await expect(saver.sicherSpeichern()).rejects.toThrow("Datenträger voll");
+    expect(write).toHaveBeenCalledWith("neu");
+    expect(onError).toHaveBeenCalledWith("Speichern fehlgeschlagen: Datenträger voll");
+    // Auch ohne neue Eingabe bleibt der Fehler bestehen: In der Datei steht noch nicht der neueste Text.
+    await expect(saver.sicherSpeichern()).rejects.toThrow("Datenträger voll");
+    scheitern = false;
+    saver.schedule(() => "neuer");
+    await expect(saver.sicherSpeichern()).resolves.toBeUndefined();
+    expect(saver.lastSaved).toBe("neuer");
+  });
+
   it("schreibt nicht, wenn sich der Text nicht geändert hat", async () => {
     const write = vi.fn(async () => {});
     const saver = new AutoSaver("gleich", write);

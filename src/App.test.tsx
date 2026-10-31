@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { today, weekDays } from "./lib/calendar";
 import { installDevBackend } from "./lib/dev-backend";
+import tauriConf from "../src-tauri/tauri.conf.json";
 
 function vault() {
   return window.__devVault!;
@@ -2929,5 +2930,27 @@ describe("Reiter (Etappe 19)", () => {
     render(<App />);
     await screen.findByRole("tree");
     expect(screen.queryByRole("tablist", { name: "Offene Reiter" })).toBeNull();
+  });
+});
+
+describe("Updates über GitHub Releases (Etappe 21)", () => {
+  it("keine Abfrage beim Start und beim Öffnen der Einstellungen; erst der Klick fragt, „Jetzt installieren“ lädt, installiert und startet neu", async () => {
+    await openVaultFromStart();
+    await act(async () => new Promise((ok) => setTimeout(ok, 50)));
+    expect(vault().update.befehle).toEqual([]);
+
+    fireEvent.click(screen.getAllByTitle("Vault wechseln oder Einstellungen öffnen")[0]);
+    fireEvent.click(within(screen.getByRole("menu", { name: "Vault" })).getByRole("menuitem", { name: "Einstellungen" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Einstellungen" }));
+    await waitFor(() => expect(document.querySelector(".ueber-localist .app-version")?.textContent).toBe(tauriConf.version));
+    await act(async () => new Promise((ok) => setTimeout(ok, 50)));
+    expect(vault().update.befehle).toEqual([]);
+
+    fireEvent.click(dialog.getByRole("button", { name: "Nach Updates suchen" }));
+    expect(await dialog.findByText(/^Update verfügbar: v/)).toBeTruthy();
+    expect(vault().update.befehle).toEqual(["check"]);
+    fireEvent.click(dialog.getByRole("button", { name: "Jetzt installieren" }));
+    expect(await dialog.findByText("Wird installiert, Localist startet neu …")).toBeTruthy();
+    await waitFor(() => expect(vault().update.befehle).toEqual(["check", "download_and_install", "restart"]));
   });
 });

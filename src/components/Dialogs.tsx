@@ -3,7 +3,6 @@
 import { ChevronLeft, ChevronRight, FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Palette, Search, TextSearch } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import packageInfo from "../../package.json";
 import type { PageRef } from "../lib/links";
 import { quickSwitch, searchEntries, type IndexEntry } from "../lib/search";
 import { isHtmlPath } from "../lib/html";
@@ -13,6 +12,7 @@ import type { TreeNode } from "../lib/vault-api";
 import { AKZENTE, MODI, useTheme } from "../lib/theme";
 import { DarstellungEinstellungen } from "./Darstellung";
 import { oeffnenKlick } from "./Reiterleiste";
+import { UeberLocalist } from "./UeberLocalist";
 import { Button, Dialog, Input, Kbd, Segmented } from "./ui";
 
 interface ListDialogProps<T> {
@@ -301,13 +301,23 @@ interface SettingsProps {
   vaultRoot: string;
   onSwitchVault: () => void;
   onClose: () => void;
+  /** Betriebssystem ("windows", "android", "browser" …): Auf Android gibt es keinen Updater. */
+  platform: string;
+  /** Speichert vor einem Update alle ausstehenden Änderungen (scheitert bei einem Speicherfehler). */
+  vorDemUpdate: () => Promise<void>;
+  onOpenExternal: (url: string) => void;
   /** Handy: eigene Seiten über dem ganzen Bildschirm statt Dialog (Vorlage 05). */
   handy?: boolean;
 }
 
-export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose, handy = false }: SettingsProps) {
+export function SettingsDialog({ handy = false, ...props }: SettingsProps) {
+  const { vaultName, vaultRoot, onSwitchVault, platform, vorDemUpdate, onOpenExternal } = props;
   const [codeSeite, setCodeSeite] = useCodeSeite();
-  if (handy) return <HandyEinstellungen vaultName={vaultName} vaultRoot={vaultRoot} onSwitchVault={onSwitchVault} onClose={onClose} />;
+  // Solange ein Update lädt oder installiert wird, bleiben die Einstellungen offen: So kann nichts Neues
+  // ungespeichert sein, wenn sich die App für den Installer beendet.
+  const [updateLaeuft, setUpdateLaeuft] = useState(false);
+  const onClose = updateLaeuft ? () => {} : props.onClose;
+  if (handy) return <HandyEinstellungen {...props} onClose={onClose} onUpdateLaeuft={setUpdateLaeuft} />;
   return (
     <Dialog label="Einstellungen" title="Einstellungen" onClose={onClose} size="md" className="settings-dialog">
       <DarstellungEinstellungen />
@@ -334,14 +344,8 @@ export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose, h
           </Button>
         </div>
       </section>
-      <section className="settings-section">
-        <div className="settings-text">
-          <h3>Über Localist</h3>
-          <p>
-            Version {packageInfo.version}. Alle Seiten liegen als normale Dateien in deinem Vault. Keine Konten, kein Server, keine
-            Telemetrie – Localist funktioniert komplett offline.
-          </p>
-        </div>
+      <section className="settings-section" aria-label="Über Localist">
+        <UeberLocalist platform={platform} vorDemUpdate={vorDemUpdate} onOpenExternal={onOpenExternal} onLaeuft={setUpdateLaeuft} />
       </section>
     </Dialog>
   );
@@ -352,7 +356,16 @@ export function SettingsDialog({ vaultName, vaultRoot, onSwitchVault, onClose, h
  * Zurück-Pfeil und großem Titel. Die Übersicht führt zu „Darstellung“ (Vorschaukarten, „Wie System“, Erklärung zu
  * Schwarz, Akzentfarbe); dort führt der Pfeil „Einstellungen“ zurück. Escape geht ebenfalls eine Seite zurück.
  */
-function HandyEinstellungen({ vaultName, vaultRoot, onSwitchVault, onClose }: Omit<SettingsProps, "handy">) {
+function HandyEinstellungen({
+  vaultName,
+  vaultRoot,
+  onSwitchVault,
+  onClose,
+  platform,
+  vorDemUpdate,
+  onOpenExternal,
+  onUpdateLaeuft,
+}: Omit<SettingsProps, "handy"> & { onUpdateLaeuft: (laeuft: boolean) => void }) {
   const [seite, setSeite] = useState<"uebersicht" | "darstellung">("uebersicht");
   const [codeSeite, setCodeSeite] = useCodeSeite();
   const { resolved, wieSystem, akzent } = useTheme();
@@ -425,13 +438,7 @@ function HandyEinstellungen({ vaultName, vaultRoot, onSwitchVault, onClose }: Om
             </Button>
           </section>
           <section className="handy-karte" aria-label="Über Localist">
-            <div className="settings-text">
-              <h3>Über Localist</h3>
-              <p>
-                Version <span className="app-version">{packageInfo.version}</span>. Alle Seiten liegen als normale Dateien in deinem Vault. Keine Konten,
-                kein Server, keine Telemetrie – Localist funktioniert komplett offline.
-              </p>
-            </div>
+            <UeberLocalist handy platform={platform} vorDemUpdate={vorDemUpdate} onOpenExternal={onOpenExternal} onLaeuft={onUpdateLaeuft} />
           </section>
         </div>
       )}

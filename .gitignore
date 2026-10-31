@@ -28,6 +28,9 @@ target
 src-tauri/target
 src-tauri/gen/schemas
 
+# Signaturschlüssel für Updates liegen nur in %USERPROFILE%\.tauri\, nie im Repository
+*.key
+
 # Test- und Werkzeug-Ausgaben
 coverage
 *.tsbuildinfo
