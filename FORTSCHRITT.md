@@ -2,7 +2,7 @@
 
 ## Aktueller Stand
 - Etappe: 22 – Ziehen und Ablegen auf PC und Handy (Version 2.3, in Arbeit). Auftrag: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 03:25
+- Zuletzt aktualisiert: 2026-11-01 03:12
 - Nächster Schritt: Prüfrunde 1 – Arbeitsregel 6, Klicklisten 1.0/2.0/2.1/2.3, unabhängige Prüfung (ein Sonnet-Agent, lesend); danach `README.md`/`ANLEITUNG.md` „Neu in Version 2.3“ und `node scripts/version.mjs 2.3.0`.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
@@ -41,7 +41,7 @@ Letzter Stand: 2026-11-01 02:54, Etappe 22, alle 4 Punkte bestanden.
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 1.0` (echte Tastatur und Maus in Microsoft Edge).
 
-Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 12 Punkte bestanden.
+Letzter Stand: 2026-11-01 03:20, Etappe 22, alle 12 Punkte bestanden (Punkt 6 zieht seit Etappe 22 mit der Maus).
 - [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
 - [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
 - [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
@@ -58,7 +58,7 @@ Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 12 Punkte besta
 ## Klickliste „Version 2.0“
 Feste Liste für Version 2.0, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.0`.
 
-Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 7 Punkte bestanden.
+Letzter Stand: 2026-11-01 03:21, Etappe 22, alle 7 Punkte bestanden.
 - [x] HTML-Seite anlegen: „Neu“ → „HTML-Seite“ legt `Unbenannt.html` nach dem Speicherformat an (mit `localist-id`) und öffnet sie in „Geteilt“.
 - [x] Code bearbeiten: Im Code-Editor tippen; gespeichert wird nur die geänderte Stelle, die Vorschau zeigt den neuen Text.
 - [x] Jeder Baustein: alle 13 Bausteine über die Werkzeugleiste einfügen (Bild und Seitenlink mit Auswahl), in „Lesen“ dargestellt, Karteikarte per Klick umdrehen.
@@ -70,7 +70,7 @@ Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 7 Punkte bestan
 ## Klickliste „Version 2.1“
 Feste Liste für Version 2.1, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.1` (1280 × 800).
 
-Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 9 Punkte bestanden.
+Letzter Stand: 2026-11-01 03:22, Etappe 22, alle 9 Punkte bestanden.
 - [x] Tab/Shift+Tab in Liste und Code: In „Ideen“ einen Listenpunkt mit Tab einrücken und mit Umschalt+Tab ausrücken (gespeichert, Fokus bleibt im Editor); im Code-Editor von „DNS“ eine Zeile mit dem Cursor mitten darin ein- und ausrücken.
 - [x] „Im Explorer öffnen“ in der Vorschau-Simulation: Rechtsklick auf eine Seite → „Im Explorer öffnen“ zeigt die Meldung der Vorschau mit dem Pfad.
 - [x] Seitenleiste rechts und eingeklappt: Einstellungen → Darstellung → „Rechts“, dann Strg+. ein- und wieder ausklappen; beides wird gemerkt.
@@ -99,6 +99,7 @@ Entscheidungen bis Version 2.1: `archiv/FORTSCHRITT-bis-2.1.md`, Version 2.2: `a
 - 2026-11-01: Der Hook ersetzt HTML5-Drag-and-Drop in Seitenleiste, Kanban und Notizbuch auch am PC (ein Weg für Maus und Finger). Der Kalender bleibt bei HTML5 (nicht Teil des Auftrags, geht am PC wieder dank `dragDropEnabled: false`). Bewusst geänderte Tests (Verhalten gleich, nur Pointer- statt Drag-Ereignisse): `App.test.tsx` „Drag & Drop in eine andere Spalte …“, „Verschieben per Drag & Drop …“, „Reihenfolge per Drag & Drop …“; Klickliste 1.0 Punkt 6 zieht die Kanban-Karte jetzt mit der Maus statt per Skript-Ereignis.
 - 2026-11-01: Mit `dragDropEnabled: false` würde die WebView eine aus dem Explorer fallengelassene Datei selbst öffnen (App weg). `fremdeDateienAbweisen()` in `main.tsx` verhindert das (Zeiger „nicht erlaubt“). Ein Bild aus dem Explorer in eine Notiz ziehen ging schon vorher nicht (Phase 1) und bleibt so.
 - 2026-11-01: Namenskonflikt, Meldung mit „Rückgängig“ und Rückgängig selbst gelten für jedes Verschieben (Ziehen und „Verschieben nach …“), ein Weg in `Workspace.move`. Die Meldung liegt jetzt außerhalb von `<main>`, weil `<main>` auf dem Handy hinter der Ansicht „Seiten“ inert ist.
+- 2026-11-01: `scripts/version.mjs` prüft nur noch versionierte Dateien auf Änderungen (`--untracked-files=no`): Die Aufträge 2.4–2.6 liegen unversioniert im Ordner und sollen unangetastet bleiben; committet wird ohnehin nur mit `git add -u`. Neuer Test in `scripts/version.test.mjs`.
 - 2026-11-01: Berechtigung `VIBRATE` im Android-Manifest (normale Berechtigung ohne Rückfrage) für das kurze Vibrieren beim Greifen (`navigator.vibrate`); ohne sie vibriert einfach nichts.
 - 2026-11-01: Die Kopie beim Ziehen liegt neben dem Zeiger (Maus: rechts darunter; Finger: darüber), nicht auf der gegriffenen Stelle: Sonst verdeckte sie in der 360-px-Vorschau genau die Hervorhebung des Ziels.
 - 2026-11-01: Mit-Scrollen am Rand steigt quadratisch an: Linear scrollte die Liste schon beim Streifen der Randzone so schnell, dass in der Klickliste (Handy) das Ziel unter dem ruhenden Finger wegrutschte und in der obersten Ebene landete.

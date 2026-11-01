@@ -10,6 +10,15 @@ kein Server, keine Telemetrie, alles funktioniert offline.
 - HTML-Seiten (`.html`) mit Code-Editor und Bausteinen wie Karteikarten, Quiz und Diagrammen
 - Notizbücher: ein Ordner als kleine Website mit Inhaltsverzeichnis
 
+## Neu in Version 2.3
+
+- **Ziehen und Ablegen geht wieder – auch in der installierten App und auf dem Handy:** Seiten und Ordner in der
+  Seitenleiste in einen anderen Ordner ziehen, Kanban-Karten in eine andere Spalte, Einträge im Notizbuch umsortieren.
+  Am PC mit gedrückter Maustaste, auf dem Handy durch langes Drücken (die Zeile hebt sich an, dann ziehen).
+- **Beim Ziehen:** Das Ziel ist farbig markiert, ein zugeklappter Ordner klappt nach kurzem Verweilen auf, die Liste
+  scrollt am Rand mit, **Escape** bricht ab. Gibt es im Ziel schon eine Seite mit demselben Namen, wird nichts
+  verschoben. Nach dem Verschieben erscheint eine Meldung mit **„Rückgängig“**; Links passen sich jeweils an.
+
 ## Neu in Version 2.2
 
 - **Nach Updates suchen:** Unter Windows in den Einstellungen bei „Über Localist“. Erst nach dem Klick fragt Localist

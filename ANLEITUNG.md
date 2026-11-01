@@ -5,6 +5,26 @@ deiner Wahl speichert. Neben Notizen gibt es interaktive HTML-Seiten mit Baustei
 Diagrammen. Diese Anleitung erklärt, wie du Localist installierst, benutzt, im Entwicklungsmodus startest, testest
 und selbst baust.
 
+## Neu in Version 2.3
+
+- **Ziehen und Ablegen:** Seiten und Ordner lassen sich in der Seitenleiste in einen anderen Ordner ziehen – jetzt
+  auch in der installierten App unter Windows und auf dem Handy. Am PC: Zeile mit gedrückter linker Maustaste greifen
+  und auf den Zielordner ziehen. Auf dem Handy: etwa eine halbe Sekunde auf die Zeile drücken, ohne den Finger zu
+  bewegen; die Zeile hebt sich an (das Handy vibriert kurz), dann mit dem Finger zum Ziel ziehen und loslassen.
+  Kurz antippen öffnet wie bisher, Wischen scrollt wie bisher, und wer lange drückt und ohne Bewegung loslässt,
+  bekommt wie bisher das Menü mit allen Aktionen.
+- **Hilfen beim Ziehen:** Der Zielordner ist farbig markiert. Bleibst du kurz über einem zugeklappten Ordner, klappt
+  er auf. Am oberen und unteren Rand scrollt die Liste von selbst weiter. Für die oberste Ebene des Vaults gibt es
+  beim Ziehen unten die Fläche „In die oberste Ebene“. **Escape** bricht ab, dann wird nichts verschoben.
+- **Sicher:** Liegt im Ziel schon eine Seite mit demselben Namen (auch als Notiz und HTML-Seite gemischt), wird nichts
+  verschoben, und eine Meldung sagt warum. Nach dem Verschieben steht unten „„Ideen“ nach „Projekte“ verschoben“ mit
+  dem Knopf **„Rückgängig“** (etwa 6 Sekunden lang). Links, Favoriten und offene Reiter folgen beim Verschieben und
+  beim Rückgängigmachen.
+- **Auch per Ziehen:** Kanban-Karten in eine andere Spalte und die Reihenfolge im Inhaltsverzeichnis eines
+  Notizbuchs – mit Maus und Finger.
+- **Dateien aus dem Explorer** (z. B. ein Bild) lassen sich nicht in Localist fallen lassen; der Mauszeiger zeigt
+  dann „nicht erlaubt“. So war es schon vorher, nur sicherer: Die App bleibt dabei unverändert offen.
+
 ## Neu in Version 2.2
 
 - **Updates:** Unter **Einstellungen → „Über Localist“** steht die Versionsnummer und der Knopf **„Nach Updates

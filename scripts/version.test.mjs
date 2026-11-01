@@ -65,6 +65,16 @@ describe("scripts/version.mjs", () => {
     expect(git("log", "-1", "--format=%s")).toBe("Start");
   });
 
+  it("unversionierte Dateien (z. B. Aufträge für später) stören nicht und werden nicht mitcommittet", () => {
+    mkdirSync(join(ordner, "docs"), { recursive: true });
+    writeFileSync(join(ordner, "docs", "auftrag-spaeter.md"), "# Für später\n");
+    const ergebnis = skript("9.8.7");
+    expect(ergebnis.status, ergebnis.stderr).toBe(0);
+    expect(git("log", "-1", "--format=%s")).toBe("Version 9.8.7");
+    expect(git("ls-files", "docs")).toBe("");
+    expect(git("status", "--porcelain")).toBe("?? docs/");
+  });
+
   it("bricht bei einer ungültigen Version oder einem vorhandenen Tag ab", () => {
     expect(skript("2.2").status).not.toBe(0);
     expect(skript("v2.2.0").status).not.toBe(0);

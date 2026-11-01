@@ -6,7 +6,7 @@
 // src-tauri/Cargo.lock (nur die Versionszeilen, sonst bleibt jede Datei Zeichen für Zeichen gleich). Danach baut es die
 // Oberfläche neu (`npm run build`, damit die gebündelten Bausteine die neue Version tragen), committet „Version X.Y.Z“
 // und legt den Tag vX.Y.Z an (mit Beschreibung, damit `git push --follow-tags` ihn mitschickt).
-// Es bricht ab, ohne etwas zu ändern, wenn die Arbeitskopie nicht sauber ist.
+// Es bricht ab, ohne etwas zu ändern, wenn versionierte Dateien geändert und nicht committet sind.
 //
 // Für Tests: --root <Ordner> (statt des Projektordners) und --ohne-build.
 import { execFileSync, execSync } from "node:child_process";
@@ -32,7 +32,8 @@ function abbruch(text) {
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 
 if (!version || !/^\d+\.\d+\.\d+$/.test(version)) abbruch("Bitte eine Version wie 2.2.1 angeben: node scripts/version.mjs 2.2.1");
-const status = git("status", "--porcelain");
+// Unversionierte Dateien (z. B. Aufträge für später) zählen nicht: Committet wird ohnehin nur mit `git add -u`.
+const status = git("status", "--porcelain", "--untracked-files=no");
 if (status) abbruch(`Die Arbeitskopie ist nicht sauber. Bitte erst committen oder verwerfen:\n${status}`);
 if (git("tag", "--list", `v${version}`)) abbruch(`Den Tag v${version} gibt es schon.`);
 
