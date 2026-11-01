@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-184 -184 1392 1392" width="1392" height="1392">
+  <!-- Vordergrund des Android-Symbols (Adaptive Icon): die Seiten aus app-icon.svg ohne blauen Grund.
+       Die Fläche steht für 108 dp. Der größere viewBox lässt rundherum Platz, damit Android das Logo
+       beim Zuschneiden (Kreis, Tropfen, Quadrat) nicht anschneidet: Der blaue Grund aus app-icon.svg
+       füllt genau die sichtbaren 72 dp, die Seiten bleiben in der sicheren Zone (Kreis mit 66 dp). -->
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+  </defs>
+  <!-- hintere Seite -->
+  <rect x="330" y="214" width="420" height="540" rx="44" fill="#ffffff" opacity="0.35" transform="rotate(8 540 484)"/>
+  <!-- vordere Seite mit Eselsohr -->
+  <path d="M310 250 h300 l120 120 v370 a44 44 0 0 1 -44 44 h-376 a44 44 0 0 1 -44 -44 v-446 a44 44 0 0 1 44 -44 z" fill="url(#page)"/>
+  <path d="M610 250 v76 a44 44 0 0 0 44 44 h76 z" fill="#c7d2fe"/>
+  <!-- "L" -->
+  <path d="M390 380 h76 v260 h170 v70 h-246 z" fill="#4f46e5"/>
+</svg>

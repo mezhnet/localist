@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-184 -184 1392 1392" width="1392" height="1392">
+  <!-- Hintergrund des Android-Symbols (Adaptive Icon): der blaue Verlauf aus app-icon.svg über die ganzen 108 dp.
+       Der Verlauf läuft wie im Original über das Quadrat 48…976, also über den sichtbaren Teil. -->
+  <defs>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="48" y1="48" x2="976" y2="976">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect x="-184" y="-184" width="1392" height="1392" fill="url(#bg)"/>
+</svg>

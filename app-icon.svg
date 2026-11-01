@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <!-- App-Icon von Localist: gestapelte Seiten mit einem "L" auf blauem Grund.
-       Daraus erzeugt `npx tauri icon app-icon.svg` alle Größen in src-tauri/icons. -->
+       Daraus erzeugt `npx tauri icon app-icon.json` alle Größen in src-tauri/icons und die Android-Symbole
+       in src-tauri/gen/android (Vorder- und Hintergrund: app-icon-android-*.svg). -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#3b82f6"/>
