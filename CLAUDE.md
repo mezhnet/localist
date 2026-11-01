@@ -18,7 +18,8 @@ Localist ist eine App für Windows (und Android) für Notizen, Projekte und inte
 - **Version 2.0 (Etappen 9–15): abgeschlossen.** Neues Design, zweiter Seitentyp „HTML-Seite“ mit Code-Editor und Lesemodus, Baustein-Bibliothek, Notizbücher.
 - **Version 2.1 (Etappen 16–20): abgeschlossen.** Ordnername „Localist“, bessere Bedienung, neues Design nach der Vorlage in `docs/design/`, Handy-Design. Auftrag mit Design-Vorlage und Befunden: `docs/design/auftrag-version-2.1.md`.
 - **Version 2.2 (Etappe 21): abgeschlossen.** Updates über GitHub Releases. Auftrag: `docs/auftrag-version-2.2.md`.
-- **Version 2.3 (Etappe 22): in Arbeit.** Ziehen und Ablegen auf PC und Handy. Auftrag: `docs/auftrag-version-2.3.md`.
+- **Version 2.3 (Etappe 22): abgeschlossen.** Ziehen und Ablegen auf PC und Handy. Auftrag: `docs/auftrag-version-2.3.md`.
+- **Version 2.4 (Etappe 23): in Arbeit.** Pomodoro, Grundversion. Auftrag: `docs/auftrag-version-2.4.md`.
 
 ## Kommunikation
 
@@ -60,6 +61,10 @@ Gemeinsame Regeln:
 - Suche, Strg+P, Vorlagen, Favoriten, Links und Backlinks funktionieren für beide Typen.
 - **Bestehende Vaults:** Die App benennt nie selbst etwas um. Liegen schon zwei gleichnamige Seiten in einem Ordner, markiert die Sidebar sie, und `[[Name]]` meint die `.md`. HTML-Seiten in einem Datenbank-Ordner erscheinen in der Sidebar, aber nicht in Tabelle, Kanban oder Kalender.
 
+## Werkzeuge
+
+Werkzeuge sind Funktionen, die keine Seite sind (Pomodoro, später Kalender). Sie stehen am PC in der Seitenleiste im Bereich ‚Werkzeuge‘ und öffnen sich wie die Startseite in einem Reiter.
+
 ## Speicherformat
 
 Die Dateien im Vault sind die Quelle der Wahrheit. Die App hat keine eigene Datenbank für Inhalte.
@@ -68,6 +73,8 @@ Die Dateien im Vault sind die Quelle der Wahrheit. Die App hat keine eigene Date
 MeinVault/
 ├── .localist/                 ← Einstellungen und Bausteine (in der Sidebar unsichtbar)
 │   ├── settings.json
+│   ├── pomodoro/              ← Verlauf der Pomodoro-Sessions
+│   │   └── 2026-11.jsonl
 │   └── bausteine/
 │       ├── localist.css       ← Aussehen der Bausteine, von der App verwaltet
 │       ├── localist.js        ← Funktion der Bausteine, von der App verwaltet
@@ -196,6 +203,17 @@ seiten:
 - Ein Ordner mit `_notizbuch.yaml` ist ein Notizbuch. Er wird wie eine kleine Website angezeigt.
 - Seiten, die in der Liste fehlen, erscheinen alphabetisch am Ende.
 - Ein Ordner ist entweder Datenbank oder Notizbuch, nicht beides. Liegen in einem bestehenden Ordner schon beide Dateien, gilt er als Datenbank, und die App zeigt einen Hinweis.
+
+### Pomodoro-Verlauf (`.localist/pomodoro/YYYY-MM.jsonl`)
+
+```json
+{"id":"…","start":"2026-11-03T09:00","ende":"2026-11-03T09:25","minuten":25,"ziel":"Subnetting üben","seite":"7c1e2b4a-0d3f-4a5e-9b8c-1f2e3d4c5b6a","abgebrochen":false}
+```
+
+- Eine Datei pro Monat, eine Zeile pro beendeter oder abgebrochener **Fokus**-Session. Pausen werden nicht gespeichert.
+- `seite` ist die feste `id` der verknüpften Seite (Frontmatter bzw. `localist-id`), nicht der Pfad; Umbenennen und Verschieben machen die Verknüpfung nicht kaputt.
+- Atomar schreiben. Eine kaputte Zeile wird beim Lesen übersprungen, nicht gelöscht.
+- Die Pomodoro-Einstellungen stehen in `.localist/settings.json` unter `pomodoro`.
 
 ### Eigene Bausteine (`.localist/bausteine/eigene/`)
 
@@ -377,7 +395,7 @@ Auftrag mit allen Details: `docs/auftrag-version-2.2.md`.
 - [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten abgehakt.
 - [ ] `README.md`/`ANLEITUNG.md` haben „Neu in Version 2.2“ (kurz). In „Offene Probleme“ steht der Hinweis auf die Schritte für Emre aus `ANLEITUNG-RELEASE.md`.
 
-### Version 2.3 – in Arbeit
+### Version 2.3 – abgeschlossen
 
 Auftrag mit allen Details: `docs/auftrag-version-2.3.md`.
 
@@ -390,6 +408,21 @@ Auftrag mit allen Details: `docs/auftrag-version-2.3.md`.
 - [ ] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat.
 - [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt.
 - [ ] Version 2.3.0 gesetzt, „Neu in Version 2.3“ in `README.md` und `ANLEITUNG.md`.
+
+### Version 2.4 – in Arbeit
+
+Auftrag mit allen Details: `docs/auftrag-version-2.4.md`.
+
+### Etappe 23 – Pomodoro, Grundversion
+
+- [ ] Phase 0 erledigt, `CLAUDE.md` ergänzt (Werkzeuge, Pomodoro-Verlauf) und committet.
+- [ ] `src/lib/benachrichtigungen.ts` mit Plugin auf Windows und Android, Berechtigung mit Erklärung, getestet, je eine echte Benachrichtigung in EXE und Emulator.
+- [ ] Pomodoro-Ansicht mit Phasen, einstellbaren Dauern, langer Pause nach N Runden, Leertaste und automatischem Start, getestet.
+- [ ] Der Timer läuft überall weiter, rechnet mit dem Endzeitpunkt und übersteht Ruhezustand und Neustart (Tests). Mini-Timer auf PC und Handy.
+- [ ] Ton und Benachrichtigung am Ende. Auf Android kommt sie auch bei App im Hintergrund (Nachweis mit `adb` im Chat).
+- [ ] Ziel, „Pomodoro für diese Seite starten“ und Verlauf in `.localist/pomodoro/YYYY-MM.jsonl` mit „Heute“ und „Diese Woche“, getestet.
+- [ ] Arbeitsregel 6 erfüllt, APK baut, Sicherheitstest 21/21, Klicklisten 1.0, 2.0, 2.1, 2.3 und 2.4 abgehakt.
+- [ ] Version 2.4.0 gesetzt, „Neu in Version 2.4“ in `README.md` und `ANLEITUNG.md`.
 
 ## Zukunft (noch nicht umsetzen)
 
