@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.3.2+97c4b7bc – Aussehen (localist.css)
+/*! Localist-Bausteine 2.3.2+9f4eac51 – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -494,6 +494,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --radius-handy-karte: 14px;
   --radius-handy-leiste: 18px;
   --radius-handy-knopf: 12px;
+  /* Pomodoro (Etappe 23): Ansicht, Ring (Strichbreite in Einheiten des SVG, Ring 120 breit) und Mini-Timer */
+  --pomodoro-width: 560px;
+  --size-pomodoro-ring: 288px;
+  --size-pomodoro-ring-handy: 252px;
+  --pomodoro-ring-strich: 4;
+  --font-size-pomodoro-zeit: 56px;
+  --font-size-pomodoro-zeit-handy: 48px;
+  --size-mini-timer: 34px;
+  --size-handy-mini-timer: 48px;
+  --size-mini-timer-balken: 2px;
   /* Schalter (an/aus) */
   --size-switch-width: 40px;
   --size-switch-height: 24px;
