@@ -163,6 +163,8 @@ const finger = async (von, nach, was, { halten = 0.9, schritte = 5, verweilen = 
 };
 const menuOffen = () => evaluate(`Boolean(document.querySelector('[role="menu"]'))`);
 const menuZu = async () => {
+  // Eine Meldung („… verschoben“, „Rückgängig“) liegt über den untersten Zeilen: vor dem nächsten Tippen schließen.
+  await evaluate(`document.querySelector('.toast [aria-label="Meldung schließen"]')?.click(); true`);
   if (await menuOffen()) {
     shell("input keyevent KEYCODE_ESCAPE", { log: false });
     await sleep(300);
@@ -261,8 +263,8 @@ try {
   const seiteOk = liegt("Archiv/Ideen.md") && !liegt("Notizen/Ideen.md");
   report.push(`Seite „Ideen“ → „Archiv“: ${seiteOk ? "verschoben" : "NICHT verschoben"}`);
   eintrag("Seite in einen Ordner", seiteOk, "");
-  await menuZu();
   if (nachher) await evaluate(`[...document.querySelectorAll('.toast button')].find((b) => b.textContent.includes("Rückgängig")) ? true : false`).then((da) => report.push(`Meldung mit „Rückgängig“ zu sehen: ${da ? "ja" : "NEIN"}`));
+  await menuZu();
 
   // 6. Ordner in einen Ordner
   await seitenOeffnen();
@@ -282,10 +284,13 @@ try {
   await sleep(600);
   const spalte = (n) => `[...document.querySelectorAll('.kanban-column')].find((c) => c.querySelector('.kanban-column-header').textContent.startsWith(${JSON.stringify(n)}))`;
   const karte = await wo(`${spalte("Geplant")}.querySelector('.kanban-card')`);
-  const zielSpalte = await evaluate(`(() => { const r = ${spalte("In Arbeit")}.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + Math.min(r.height / 2, 120), sichtbar: r.x + r.width / 2 < innerWidth }; })()`);
-  await finger(karte, aufGeraet(zielSpalte.x, zielSpalte.y), "Kanban-Karte „Umzug“ lange drücken und nach „In Arbeit“ ziehen", nachher ? { bild: "kanban-ziehen" } : {});
-  const kanbanOk = /status: In Arbeit/.test(shell(`cat "${VAULT_GERAET}/Projekte/Umzug.md"`).stdout);
-  report.push(`Kanban „Umzug“ → „In Arbeit“: ${kanbanOk ? "verschoben" : "NICHT verschoben"} (Ziel im Bild: ${zielSpalte.sichtbar ? "ja" : "nein"})`);
+  // „In Arbeit“ ist rechts nur angeschnitten: auf den sichtbaren Teil ziehen, außerhalb der Randzone, in der das Board
+  // mitscrollt (sonst rutschte eine andere Spalte unter den Finger).
+  const ziel = await evaluate(`(() => { const r = ${spalte("In Arbeit")}.getBoundingClientRect(); return { x: Math.min(r.left + 40, innerWidth - 60), y: r.top + 60 }; })()`);
+  await finger(karte, aufGeraet(ziel.x, ziel.y), "Kanban-Karte „Umzug“ lange drücken und auf „In Arbeit“ ziehen", nachher ? { bild: "kanban-ziehen" } : {});
+  const umzug = shell(`grep status "${VAULT_GERAET}/Projekte/Umzug.md"`).stdout.trim();
+  const kanbanOk = umzug === "status: In Arbeit";
+  report.push(`Kanban „Umzug“ → „In Arbeit“: ${kanbanOk ? "verschoben" : `NICHT verschoben (${umzug})`}`);
   eintrag("Kanban-Karte in eine andere Spalte", kanbanOk, "");
   await menuZu();
 
@@ -342,5 +347,4 @@ console.log(`Ziehen auf Android (${modus}), echte Fingereingaben per adb:`);
 for (const zeile of report) console.log(zeile.startsWith(">") ? zeile : `- ${zeile}`);
 console.log("\n| Ort | Handy (APK) | Hinweis |\n|---|---|---|");
 for (const z of tabelle) console.log(`| ${z.ort} | ${z.geht ? "geht" : "geht nicht"} | ${z.ursache} |`);
-writeFileSync(join(outDir, `android-ziehen-${modus}.json`), JSON.stringify({ report, tabelle }, null, 2));
 process.exit(report.some((z) => z.startsWith("FEHLER")) ? 1 : 0);

@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 22 – Ziehen und Ablegen auf PC und Handy (Version 2.3, in Arbeit). Auftrag: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 03:10
-- Nächster Schritt: Phase 3 – APK bauen (`npx tauri android build --debug --apk --target aarch64 --target x86_64`), im Emulator 5556 prüfen (`scripts/android-ziehen-pruefung.mjs … nachher`), Tippflächen mit `scripts/handy-pruefung.mjs`.
+- Zuletzt aktualisiert: 2026-11-01 03:25
+- Nächster Schritt: Prüfrunde 1 – Arbeitsregel 6, Klicklisten 1.0/2.0/2.1/2.3, unabhängige Prüfung (ein Sonnet-Agent, lesend); danach `README.md`/`ANLEITUNG.md` „Neu in Version 2.3“ und `node scripts/version.mjs 2.3.0`.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -11,7 +11,7 @@
 - [x] Phase 1: Die Tabelle „Ziehen vorher“ (PC-EXE und Android) steht in `FORTSCHRITT.md`. (Abschnitt „Ziehen vorher“; `scripts/ziehen-pruefung.mjs … vorher`, `scripts/android-ziehen-pruefung.mjs … vorher`)
 - [x] Am PC funktioniert Ziehen in der gebauten `localist.exe` mit echter Maus: Seitenleiste, Kanban, Ziehgriff, Notizbuch-Reihenfolge (Nachweis im Chat). (`node scripts/ziehen-pruefung.mjs src-tauri/target/release/localist.exe docs/screenshots/etappe-22 nachher`: alle 9 Orte „geht“, Ziehgriff `dragover 47`/`drop 1`; Bild aus dem Explorer wird abgewiesen (OLE-Effekt `None`), die Seite bleibt)
 - [x] Ziehen in der Seitenleiste mit Hervorhebung, Aufklappen beim Verweilen, Auto-Scroll, Escape, Namenskonflikt-Meldung und „Rückgängig“, getestet. (`src/lib/ziehen.ts`, Tests `src/lib/ziehen.test.tsx` 13, `tree.test.ts` „Regeln beim Ziehen …“ 2, `App.test.tsx` „Ziehen und Ablegen (Etappe 22)“ 6; Klickliste 2.3 4/4)
-- [ ] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat.
+- [x] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat. (`scripts/android-ziehen-pruefung.mjs … nachher` im Emulator 5556: alle 8 Punkte „geht“; Screenshots `docs/screenshots/etappe-22/android-seite-ziehen.png`, `android-kanban-ziehen.png`; Tests mit falschen Zeitgebern in `ziehen.test.tsx`; `scripts/handy-pruefung.mjs` 26/26, Tippflächen ≥ 44 px)
 - [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt.
 - [ ] Version 2.3.0 gesetzt, „Neu in Version 2.3“ in `README.md` und `ANLEITUNG.md`.
 
@@ -90,6 +90,7 @@ Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 9 Punkte bestan
 - Debug-APK 2.2.1 hängt am Release v2.2.1 (`Localist_2.2.1_android-debug.apk`, 299 244 782 Bytes, sha256 `60c5bc4e…0ea4`, im Emulator 5556 als 2.2.1 geprüft). Signierte Release-APK kommt mit einem späteren Auftrag.
 - Hinweis von GitHub, nicht dringend: `actions/checkout@v4` und `actions/setup-node@v4` nutzen noch Node 20 und laufen erzwungen mit Node 24. Bei Gelegenheit auf neuere Hauptversionen anheben.
 - Beobachtet, nicht behoben: Läuft `npm test` neben anderer Last (z. B. Build), scheitern einzelne Tests in `App.test.tsx`/`bausteine.test.ts` (meist an der 5- bzw. 15-s-Grenze, einmal „inert“ der Handy-Ansicht „Seiten“). Einzeln und ohne Last sind sie grün, der volle Lauf auch (484/484).
+- Ziehgriff im Block-Editor auf dem Handy: Senkrecht ziehen geht (Android-WebView startet HTML5-Ziehen nach langem Druck). Der Griff liegt aber am linken Bildschirmrand (x ≈ 8 CSS-px); wer von dort nach rechts zieht, löst die Zurück-Geste von Android aus, und die App schließt sich. Abhilfe bräuchte mehr Abstand links in Handy-Notizen (weicht von Vorlage 04 ab) oder einen eigenen Griff statt dem von BlockNote – ein Umbau für einen späteren Auftrag.
 - Erledigte Einträge bis Version 2.2 stehen im Archiv.
 
 ## Entscheidungen
@@ -98,4 +99,6 @@ Entscheidungen bis Version 2.1: `archiv/FORTSCHRITT-bis-2.1.md`, Version 2.2: `a
 - 2026-11-01: Der Hook ersetzt HTML5-Drag-and-Drop in Seitenleiste, Kanban und Notizbuch auch am PC (ein Weg für Maus und Finger). Der Kalender bleibt bei HTML5 (nicht Teil des Auftrags, geht am PC wieder dank `dragDropEnabled: false`). Bewusst geänderte Tests (Verhalten gleich, nur Pointer- statt Drag-Ereignisse): `App.test.tsx` „Drag & Drop in eine andere Spalte …“, „Verschieben per Drag & Drop …“, „Reihenfolge per Drag & Drop …“; Klickliste 1.0 Punkt 6 zieht die Kanban-Karte jetzt mit der Maus statt per Skript-Ereignis.
 - 2026-11-01: Mit `dragDropEnabled: false` würde die WebView eine aus dem Explorer fallengelassene Datei selbst öffnen (App weg). `fremdeDateienAbweisen()` in `main.tsx` verhindert das (Zeiger „nicht erlaubt“). Ein Bild aus dem Explorer in eine Notiz ziehen ging schon vorher nicht (Phase 1) und bleibt so.
 - 2026-11-01: Namenskonflikt, Meldung mit „Rückgängig“ und Rückgängig selbst gelten für jedes Verschieben (Ziehen und „Verschieben nach …“), ein Weg in `Workspace.move`. Die Meldung liegt jetzt außerhalb von `<main>`, weil `<main>` auf dem Handy hinter der Ansicht „Seiten“ inert ist.
+- 2026-11-01: Berechtigung `VIBRATE` im Android-Manifest (normale Berechtigung ohne Rückfrage) für das kurze Vibrieren beim Greifen (`navigator.vibrate`); ohne sie vibriert einfach nichts.
+- 2026-11-01: Die Kopie beim Ziehen liegt neben dem Zeiger (Maus: rechts darunter; Finger: darüber), nicht auf der gegriffenen Stelle: Sonst verdeckte sie in der 360-px-Vorschau genau die Hervorhebung des Ziels.
 - 2026-11-01: Mit-Scrollen am Rand steigt quadratisch an: Linear scrollte die Liste schon beim Streifen der Randzone so schnell, dass in der Klickliste (Handy) das Ziel unter dem ruhenden Finger wegrutschte und in der obersten Ebene landete.

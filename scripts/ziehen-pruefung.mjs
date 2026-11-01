@@ -377,5 +377,4 @@ for (const z of tabelle) console.log(`| ${z.ort} | ${z.pc ? "geht" : "geht nicht
 function kurzText(e) {
   return ["dragstart", "dragover", "drop", "pointermove", "pointercancel"].map((t) => `${t} ${e?.[t] ?? 0}`).join(", ");
 }
-writeFileSync(join(outDir, `ziehen-${modus}.json`), JSON.stringify({ report, tabelle }, null, 2));
 process.exit(report.some((z) => z.startsWith("FEHLER")) ? 1 : 0);
