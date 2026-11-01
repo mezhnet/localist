@@ -1,6 +1,6 @@
 [package]
 name = "localist"
-version = "2.3.2"
+version = "2.4.0"
 description = "Localist – Notizen und Projekte als Markdown-Dateien"
 authors = ["Localist"]
 edition = "2024"

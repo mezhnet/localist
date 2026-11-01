@@ -1,10 +1,10 @@
-/*! Localist-Bausteine 2.3.2+9f4eac51 – Funktion (localist.js)
+/*! Localist-Bausteine 2.4.0+9f4eac51 – Funktion (localist.js)
     Diese Datei verwaltet Localist. Sie entsteht aus src/bausteine/*.js und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
 (function () {
 "use strict";
-var VERSION = "2.3.2+9f4eac51";
+var VERSION = "2.4.0+9f4eac51";
 
 // ---- basis.js ----
 // Gemeinsame Hilfen aller Bausteine. localist.js ist ein klassisches Skript ohne Framework: Es läuft in der
