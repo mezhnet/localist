@@ -2,8 +2,8 @@
 
 ## Aktueller Stand
 - Etappe: 23 – Pomodoro, Grundversion (abgeschlossen am 2026-11-01, Version 2.4.0). Auftrag: `docs/auftrag-version-2.4.md`. Version 2.3: `archiv/FORTSCHRITT-2.3.md`, 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 14:50
-- Nächster Schritt: Etappe 23 ist abgeschlossen (Commit „Etappe 23 abgeschlossen …“, Tag v2.4.0 liegt nur lokal). Emre veröffentlicht mit `git push --follow-tags`. Der nächste Auftrag liegt als `docs/auftrag-version-2.5.md` bereit (Phase 0: Version 2.4 nach `archiv/` verschieben).
+- Zuletzt aktualisiert: 2026-11-01 18:05
+- Nächster Schritt: Version 2.4.0 ist veröffentlicht ([Release v2.4.0](https://github.com/mezhnet/localist/releases/tag/v2.4.0), Lauf 41332482603 grün: Installer, MSI, Signaturen, `latest.json` 2.4.0, signierte `Localist_2.4.0_android.apk`). Der nächste Auftrag liegt als `docs/auftrag-version-2.5.md` bereit (Phase 0: Version 2.4 nach `archiv/` verschieben).
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1|2.3`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -88,7 +88,6 @@ Letzter Stand: 2026-11-01 14:38, Etappe 23, alle 9 Punkte bestanden.
 - Runde 2 (eigene Prüfung ohne Agent: automatische Tests, Klicklisten, Builds): keine Funde A/B → Schluss.
 
 ## Offene Probleme
-- Für Emre: Version 2.4.0 ist committet und als Tag v2.4.0 angelegt, aber nicht gepusht. Veröffentlichen mit `git push --follow-tags` (der Release-Workflow baut Installer und signierte APK).
 - Für Emre: `%USERPROFILE%\.tauri\localist.key` sichern und den ersten echten Update-Test machen (2.2.1 installieren, 2.2.2 veröffentlichen, in der App aktualisieren; `ANLEITUNG-RELEASE.md`, Schritt 5). Erstes Release [v2.2.1](https://github.com/mezhnet/localist/releases/tag/v2.2.1) ist veröffentlicht (Run 41224614969 grün, `latest.json` mit Version 2.2.1, Signaturen mit Schlüssel-ID 6BEE31F67A3C789E).
 - Debug-APKs hängen an v2.2.1 und v2.3.0 (`…_android-debug.apk`, Debug-Schlüssel dieses PCs). Ab 2.3.1 baut der Release-Workflow eine signierte APK (`Localist_X.Y.Z_android.apk`); von 2.3.0 aus einmal deinstallieren (Android lehnt sie sonst mit `INSTALL_FAILED_UPDATE_INCOMPATIBLE` ab, im Emulator gesehen).
 - Für Emre: `C:\Users\emre\.localist-android\github-secrets.env` löschen (Secrets sind bei GitHub), den Ordner wie `.tauri` sichern. Auf dem Handy einmal die alte App deinstallieren und `Localist_2.3.1_android.apk` installieren.
