@@ -17,7 +17,8 @@ Localist ist eine App für Windows (und Android) für Notizen, Projekte und inte
 - **Version 1.0 (Etappen 0–8): abgeschlossen.** Block-Editor für Markdown-Notizen, Eigenschaften, Datenbanken mit Tabelle, Kanban und Kalender, Suche, Strg+P, Vorlagen, Backlinks, Windows-Installer und Android-APK. Details, Nachweise und Entscheidungen stehen in `FORTSCHRITT.md`.
 - **Version 2.0 (Etappen 9–15): abgeschlossen.** Neues Design, zweiter Seitentyp „HTML-Seite“ mit Code-Editor und Lesemodus, Baustein-Bibliothek, Notizbücher.
 - **Version 2.1 (Etappen 16–20): abgeschlossen.** Ordnername „Localist“, bessere Bedienung, neues Design nach der Vorlage in `docs/design/`, Handy-Design. Auftrag mit Design-Vorlage und Befunden: `docs/design/auftrag-version-2.1.md`.
-- **Version 2.2 (Etappe 21): in Arbeit.** Updates über GitHub Releases. Auftrag: `docs/auftrag-version-2.2.md`.
+- **Version 2.2 (Etappe 21): abgeschlossen.** Updates über GitHub Releases. Auftrag: `docs/auftrag-version-2.2.md`.
+- **Version 2.3 (Etappe 22): in Arbeit.** Ziehen und Ablegen auf PC und Handy. Auftrag: `docs/auftrag-version-2.3.md`.
 
 ## Kommunikation
 
@@ -362,7 +363,7 @@ Auftrag, Design-Vorlage und Befunde zu jeder Etappe: `docs/design/auftrag-versio
 - [ ] Neue Klickliste „Version 2.1“ in `FORTSCHRITT.md` (Tab/Shift+Tab in Liste und Code, „Im Explorer öffnen“ in der Vorschau-Simulation, Seitenleiste rechts und eingeklappt, Code rechts und Trennlinie ziehen, Reiter öffnen/wechseln/schließen, Schnell notieren, Modus Schwarz mit Akzent Blau, Tabelle in einer Notiz bearbeiten) ist abgehakt, ebenso „Version 1.0“ und „Version 2.0“, möglichst automatisch mit `scripts/klickliste.mjs` (neues Argument `2.1`).
 - [ ] `README.md` und `ANLEITUNG.md` haben einen Abschnitt „Neu in Version 2.1“ für Einsteiger, die Pfade zeigen auf `Localist`. `git grep -nE "TODO|FIXME" -- src src-tauri/src` liefert nichts.
 
-### Version 2.2 – in Arbeit
+### Version 2.2 – abgeschlossen
 
 Auftrag mit allen Details: `docs/auftrag-version-2.2.md`.
 
@@ -375,6 +376,20 @@ Auftrag mit allen Details: `docs/auftrag-version-2.2.md`.
 - [ ] `ANLEITUNG-RELEASE.md` ist vorhanden. Kein privater Schlüssel und kein Token im Repo.
 - [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten abgehakt.
 - [ ] `README.md`/`ANLEITUNG.md` haben „Neu in Version 2.2“ (kurz). In „Offene Probleme“ steht der Hinweis auf die Schritte für Emre aus `ANLEITUNG-RELEASE.md`.
+
+### Version 2.3 – in Arbeit
+
+Auftrag mit allen Details: `docs/auftrag-version-2.3.md`.
+
+### Etappe 22 – Ziehen und Ablegen auf PC und Handy
+
+- [ ] Phase 0 erledigt: Version 2.2 liegt im Archiv, `CLAUDE.md` ist ergänzt und committet.
+- [ ] Phase 1: Die Tabelle „Ziehen vorher“ (PC-EXE und Android) steht in `FORTSCHRITT.md`.
+- [ ] Am PC funktioniert Ziehen in der gebauten `localist.exe` mit echter Maus: Seitenleiste, Kanban, Ziehgriff, Notizbuch-Reihenfolge (Nachweis im Chat).
+- [ ] Ziehen in der Seitenleiste mit Hervorhebung, Aufklappen beim Verweilen, Auto-Scroll, Escape, Namenskonflikt-Meldung und „Rückgängig“, getestet.
+- [ ] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat.
+- [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt.
+- [ ] Version 2.3.0 gesetzt, „Neu in Version 2.3“ in `README.md` und `ANLEITUNG.md`.
 
 ## Zukunft (noch nicht umsetzen)
 
