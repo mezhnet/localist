@@ -1,4 +1,4 @@
-// Handy-Prüfung (Etappe 20): Geht in der Browser-Vorschau alle Ansichten bei 360 × 740 durch (Android, Microsoft Edge
+// Handy-Prüfung (Etappe 20, Pomodoro seit Etappe 23): Geht in der Browser-Vorschau alle Ansichten bei 360 × 740 durch (Android, Microsoft Edge
 // unsichtbar im Hintergrund) und prüft, dass alles bedienbar ist: nichts ragt seitlich aus dem Bildschirm (nur
 // Tabellen, Kanban und Code dürfen in sich waagerecht rollen), und jede Tippfläche ist mindestens 44 × 44 px groß.
 // Ausgenommen sind nur Textlinks im Fließtext und der Text im Editor selbst (WCAG 2.5.5 „inline“). In HTML-Seiten
@@ -290,6 +290,25 @@ async function szenen(modus, messen) {
   await pruefe("einstellungen");
   await klick(".handy-einstellung");
   await pruefe("einstellungen-darstellung");
+  await klick(".handy-zurueck");
+  await klick(".handy-einstellung", "Pomodoro");
+  await pruefe("einstellungen-pomodoro");
+  await klick(".handy-zurueck");
+  await klick(".handy-zurueck");
+
+  // Pomodoro (Etappe 23): Schnellaktion auf der Startseite, Ansicht, laufender Timer als Mini-Leiste auf einer Notiz
+  await nav("Start");
+  await klick(".home-schnellaktion", "Pomodoro");
+  await waitFor(`document.querySelector(".pomodoro")`, "Pomodoro");
+  await pruefe("pomodoro");
+  await klick(".pomodoro-start");
+  await waitFor(`document.querySelector(".pomodoro-start")?.textContent === "Pausieren"`, "Pomodoro läuft");
+  await seite("Notizen/Ideen.md");
+  await waitFor(`document.querySelector(".mini-timer.is-handy")`, "Mini-Leiste");
+  await pruefe("pomodoro-mini-notiz");
+  await klick(".mini-timer-oeffnen");
+  await waitFor(`document.querySelector(".pomodoro")`, "Pomodoro über die Mini-Leiste");
+  await pruefe("pomodoro-laeuft");
 }
 
 try {

@@ -483,6 +483,8 @@ try {
       await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
       await send("Page.navigate", { url: base });
       await waitFor(`document.querySelector('.handy-nav')`);
+      // Der gemerkte Reiter zeigt die Ansicht „Pomodoro“ (dort gibt es keine Mini-Leiste): zur Startseite.
+      await klickAuf(`[...document.querySelectorAll(".handy-nav button")].find((b) => b.textContent.trim() === "Start")`);
       erwarte(await waitFor(`document.querySelector('.mini-timer.is-handy')`), "keine Mini-Leiste auf dem Handy");
       const mini = await rechteck(`document.querySelector('.mini-timer.is-handy')`);
       const nav = await rechteck(`document.querySelector('.handy-nav')`);
