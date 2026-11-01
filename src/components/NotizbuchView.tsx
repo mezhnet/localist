@@ -1,15 +1,17 @@
 // Notizbuch: Ein Ordner mit `_notizbuch.yaml` wirkt wie eine kleine Website – links das Inhaltsverzeichnis,
 // rechts die Seite, unten „Zurück“ und „Weiter“. Notizen erscheinen fertig dargestellt in der abgeschotteten
 // Anzeige wie HTML-Seiten (umgewandelt mit src/lib/notiz-html.ts, ausgeliefert vom Schema). „Bearbeiten“ öffnet
-// die Seite im passenden Editor. Die Reihenfolge lässt sich per Drag & Drop (oder Alt+↑/↓) ändern.
+// die Seite im passenden Editor. Die Reihenfolge lässt sich per Ziehen (src/lib/ziehen.ts: Maus sofort, Finger nach
+// langem Drücken) oder mit Alt+↑/↓ ändern.
 import { BookOpen, ChevronLeft, ChevronRight, FileCode, FileText, GripVertical, Pencil } from "lucide-react";
-import { useEffect, useState, type DragEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { errorMessage } from "../lib/autosave";
 import { isHtmlPath } from "../lib/html";
 import type { PageRef } from "../lib/links";
 import { seiteAlsHtml } from "../lib/notiz-darstellung";
 import { NOTIZBUCH_DATEI, notizbuchLesen, notizbuchMitReihenfolge, notizbuchNeu, notizbuchReihenfolge, verschieben } from "../lib/notizbuch";
 import { pageTitle, parentDir } from "../lib/tree";
+import { useZiehen } from "../lib/ziehen";
 import { notizDarstellungSetzen, readPage, writePage, type TreeNode } from "../lib/vault-api";
 import { PagePreview } from "./PagePreview";
 import { Button, cx } from "./ui";
@@ -32,8 +34,7 @@ export function NotizbuchView({ folder, node, pages, version, onEdit, onOpenLink
   const [text, setText] = useState<string | null>(null);
   const [aktuell, setAktuell] = useState<string | null>(null);
   const [vorschau, setVorschau] = useState<{ pfad: string; version: number } | null>(null);
-  const [ziehe, setZiehe] = useState<string | null>(null);
-  const [ueber, setUeber] = useState<{ name: string; danach: boolean } | null>(null);
+  const liste = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
     let abgebrochen = false;
@@ -77,14 +78,21 @@ export function NotizbuchView({ folder, node, pages, version, onEdit, onOpenLink
     }
   };
 
-  const ablegen = (event: DragEvent, ziel: string) => {
-    event.preventDefault();
-    const quelle = ziehe ?? event.dataTransfer?.getData("text/plain");
-    const danach = ueber?.name === ziel ? ueber.danach : false;
-    setZiehe(null);
-    setUeber(null);
-    if (quelle && quelle !== ziel && reihenfolge.includes(quelle)) void speichern(verschieben(reihenfolge, quelle, ziel, danach));
-  };
+  /** Ziehen: Ziel ist ein anderer Eintrag, abgelegt wird davor (obere Hälfte) oder dahinter (untere Hälfte). */
+  const ziehen = useZiehen<string, { name: string; danach: boolean }>({
+    zielAn: (element, _x, y, quelle) => {
+      const eintrag = element.closest<HTMLElement>("[data-eintrag]");
+      const name = eintrag?.dataset.eintrag;
+      if (!eintrag || !name || name === quelle || !liste.current?.contains(eintrag)) return null;
+      const rect = eintrag.getBoundingClientRect();
+      return { name, danach: y > rect.top + rect.height / 2 };
+    },
+    onAblegen: (quelle, ziel) => {
+      if (reihenfolge.includes(quelle)) void speichern(verschieben(reihenfolge, quelle, ziel.name, ziel.danach));
+    },
+  });
+  const ziehe = ziehen.zustand?.quelle ?? null;
+  const ueber = ziehen.zustand?.ziel ?? null;
 
   /** Alt+↑/↓ verschiebt den Eintrag (Alternative zum Ziehen). */
   const tastatur = (event: KeyboardEvent, name: string) => {
@@ -118,31 +126,15 @@ export function NotizbuchView({ folder, node, pages, version, onEdit, onOpenLink
           {reihenfolge.length === 0 ? (
             <p className="muted">Noch keine Seiten. Lege im Ordner eine Notiz oder HTML-Seite an.</p>
           ) : (
-            <ol>
+            <ol ref={liste}>
               {reihenfolge.map((name, i) => {
                 const Symbol = isHtmlPath(name) ? FileCode : FileText;
                 return (
                   <li
                     key={name}
-                    draggable
-                    className={cx(ziehe === name && "is-dragging", ueber?.name === name && (ueber.danach ? "drop-after" : "drop-before"))}
-                    onDragStart={(event) => {
-                      setZiehe(name);
-                      event.dataTransfer?.setData("text/plain", name);
-                      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-                    }}
-                    onDragOver={(event) => {
-                      if (!ziehe || ziehe === name) return;
-                      event.preventDefault();
-                      const rect = event.currentTarget.getBoundingClientRect();
-                      setUeber({ name, danach: event.clientY > rect.top + rect.height / 2 });
-                    }}
-                    onDragLeave={() => setUeber((alt) => (alt?.name === name ? null : alt))}
-                    onDrop={(event) => ablegen(event, name)}
-                    onDragEnd={() => {
-                      setZiehe(null);
-                      setUeber(null);
-                    }}
+                    data-eintrag={name}
+                    className={cx(ziehe === name && (ziehen.zustand?.phase === "gegriffen" ? "is-gegriffen" : "is-dragging"), ueber?.name === name && (ueber.danach ? "drop-after" : "drop-before"))}
+                    {...ziehen.griff(name)}
                   >
                     <button
                       type="button"

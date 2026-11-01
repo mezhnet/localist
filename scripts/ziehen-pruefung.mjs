@@ -32,6 +32,8 @@ mkdirSync(join(vault, "Archiv"));
 mkdirSync(join(vault, "Entwürfe"));
 writeFileSync(join(vault, "Entwürfe", "Skizze.md"), "---\nid: 3f0c1a52-8d7e-4b6a-9c1d-2e3f4a5b6c7d\n---\n# Skizze\n\nErster Entwurf.\n");
 writeFileSync(join(vault, "Wurzel-Notiz.md"), "---\nid: 9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d\n---\nLiegt in der Wurzel.\n");
+// Für den Namenskonflikt (nachher): „Archiv/DNS.md“ heißt wie die HTML-Seite „Notizen/DNS.html“.
+if (nachher) writeFileSync(join(vault, "Archiv", "DNS.md"), "---\nid: 1b2c3d4e-5f60-4718-9a0b-c1d2e3f4a5b6\n---\nAndere Seite mit demselben Namen.\n");
 // Bild außerhalb des Vaults, wie es im Explorer liegen könnte
 const bildOrdner = mkdtempSync(join(tmpdir(), "localist-ziehen-bild-"));
 const bild = join(bildOrdner, "foto.png");
@@ -226,13 +228,61 @@ try {
   report.push(`Notizbuch „Subnetting“ hinter „Bausteine“: ${buchOk ? "umsortiert" : "NICHT umsortiert"} (${kurz(eN)})`);
   eintrag("Reihenfolge im Notizbuch", buchOk, eN);
 
-  // A. Seite in einen Ordner
+  // A. Seite in einen Ordner (nachher: mit Screenshot beim Ziehen, Hervorhebung und „Rückgängig“ per echtem Klick)
   await ereignisse();
-  await ziehe(await punkt(row("Notizen/Ideen.md")), await punkt(row("Archiv")));
+  let markiert = "";
+  await ziehe(await punkt(row("Notizen/Ideen.md")), await punkt(row("Archiv")), {
+    vorDemLoslassen: nachher
+      ? async () => {
+          markiert = await evaluate(`[...document.querySelectorAll('.drop-target')].map((e) => e.querySelector('.tree-name')?.textContent ?? e.className).join(", ")`);
+          await ps(`bild ${hwnd} ${resolve(outDir, "pc-seitenleiste-ziehen-hell.png")}`);
+        }
+      : undefined,
+  });
   const seiteOk = liegt("Archiv/Ideen.md") && !liegt("Notizen/Ideen.md");
   const eA = await ereignisse();
-  report.push(`Seitenleiste „Ideen“ → „Archiv“: ${seiteOk ? "verschoben" : "NICHT verschoben"} (${kurz(eA)})`);
+  report.push(`Seitenleiste „Ideen“ → „Archiv“: ${seiteOk ? "verschoben" : "NICHT verschoben"} (${kurz(eA)})${nachher ? `, hervorgehoben beim Ziehen: „${markiert}“` : ""}`);
   eintrag("Seite in einen Ordner", seiteOk, eA);
+  if (nachher) {
+    const meldung = await evaluate(`document.querySelector('.toast')?.textContent ?? ""`);
+    await ps(`bild ${hwnd} ${resolve(outDir, "meldung-rueckgaengig-hell.png")}`);
+    const knopf = await punkt(`[...document.querySelectorAll('.toast button')].find((b) => b.textContent === "Rückgängig")`);
+    await ps(`klick ${hwnd} ${knopf.x} ${knopf.y}`);
+    const zurueck = await bis(async () => liegt("Notizen/Ideen.md") && !liegt("Archiv/Ideen.md"), 5000);
+    const dns = lies("Notizen/DNS.html");
+    report.push(`Meldung „${meldung}“; Klick auf „Rückgängig“: „Ideen“ wieder in „Notizen“: ${zurueck ? "ja" : "NEIN"}, Link in DNS.html wieder „Ideen.md“: ${dns.includes('href="Ideen.md"') ? "ja" : "NEIN"}`);
+    eintrag("Rückgängig nach dem Verschieben", zurueck && dns.includes('href="Ideen.md"'), {});
+
+    // Aufklappen nach Verweilen über „Vorlagen“, dann Escape: nichts wird verschoben
+    await sleep(800);
+    await aufklappen("Notizen");
+    const zu = await evaluate(`${row("Vorlagen")}.closest('li').getAttribute('aria-expanded')`);
+    let auf = "";
+    await ziehe(await punkt(row("Notizen/Ideen.md")), await punkt(row("Vorlagen")), {
+      halten: 1100,
+      vorDemLoslassen: async () => {
+        auf = await evaluate(`${row("Vorlagen")}.closest('li').getAttribute('aria-expanded')`);
+        await ps(`tasten ${hwnd} escape`);
+        await sleep(300);
+      },
+    });
+    const abgebrochen = liegt("Notizen/Ideen.md") && !liegt("Vorlagen/Ideen.md");
+    report.push(`Verweilen über „Vorlagen“: aufgeklappt vorher ${zu}, nach 1,1 s ${auf}; Escape vor dem Loslassen: nichts verschoben ${abgebrochen ? "ja" : "NEIN"}`);
+    eintrag("Aufklappen beim Verweilen und Escape", zu === "false" && auf === "true" && abgebrochen, {});
+
+    // Namenskonflikt: „DNS“ (HTML) nach „Archiv“, dort liegt schon „DNS.md“
+    await sleep(800);
+    await aufklappen("Notizen");
+    await ziehe(await punkt(row("Notizen/DNS.html")), await punkt(row("Archiv")));
+    const konflikt = await evaluate(`document.querySelector('.toast.error')?.textContent ?? ""`);
+    const unveraendert = liegt("Notizen/DNS.html") && lies("Archiv/DNS.md").includes("Andere Seite");
+    report.push(`Namenskonflikt „DNS“ → „Archiv“ (dort „DNS.md“): Meldung „${konflikt}“, beide Dateien unverändert: ${unveraendert ? "ja" : "NEIN"}`);
+    eintrag("Namenskonflikt-Meldung", unveraendert && konflikt.includes("nicht verschoben"), {});
+    await evaluate(`document.querySelector('.toast [aria-label="Meldung schließen"]')?.click(); true`);
+    await sleep(500);
+    // Für die folgenden Schritte liegt „Ideen“ wie vorher in „Archiv“
+    await ziehe(await punkt(row("Notizen/Ideen.md")), await punkt(row("Archiv")));
+  }
 
   // B. Ordner in einen Ordner
   await ereignisse();
@@ -242,18 +292,39 @@ try {
   report.push(`Seitenleiste Ordner „Entwürfe“ → „Archiv“: ${ordnerOk ? "verschoben" : "NICHT verschoben"} (${kurz(eB)})`);
   eintrag("Ordner in einen Ordner", ordnerOk, eB);
 
-  // C. Seite in die Vault-Wurzel (Ablegen auf einer Seite der Wurzel legt in deren Ordner)
+  // C. Seite in die Vault-Wurzel (vorher: Ablegen auf einer Seite der Wurzel; nachher: Fläche „In die oberste Ebene“,
+  // die erst beim Ziehen erscheint – deshalb wird das Ziel erst während des Ziehens gemessen)
   await aufklappen("Notizen");
   await ereignisse();
-  const wurzelZiel = nachher ? `document.querySelector('.tree-wurzel')` : row("Wurzel-Notiz.md");
-  await ziehe(await punkt(row("Notizen/Formatierung.md")), await punkt(wurzelZiel));
+  const formatierung = await punkt(row("Notizen/Formatierung.md"));
+  if (nachher) {
+    await ps(`runter ${hwnd} ${formatierung.x} ${formatierung.y}`);
+    await sleep(150);
+    await ps(`gleiten ${hwnd} ${formatierung.x + 6} ${formatierung.y + 10} 4 30`);
+    await waitFor(`document.querySelector('.tree-wurzel')`, "Fläche „In die oberste Ebene“", 3000);
+    const flaeche = await punkt(`document.querySelector('.tree-wurzel')`);
+    await ps(`gleiten ${hwnd} ${flaeche.x} ${flaeche.y} 20 30`);
+    await sleep(400);
+    await ps(`hoch ${hwnd}`);
+    await sleep(900);
+  } else await ziehe(formatierung, await punkt(row("Wurzel-Notiz.md")));
   const wurzelOk = liegt("Formatierung.md") && !liegt("Notizen/Formatierung.md");
   const eC = await ereignisse();
   report.push(`Seitenleiste „Formatierung“ → Vault-Wurzel: ${wurzelOk ? "verschoben" : "NICHT verschoben"} (${kurz(eC)})`);
   eintrag("Seite in die Vault-Wurzel", wurzelOk, eC);
 
+  // Screenshot beim Ziehen im Modus Schwarz (Knopf unten in der Seitenleiste)
+  if (nachher) {
+    await evaluate(`document.querySelector('.modus-umschalter [aria-label="Schwarz"]').click(); true`);
+    await sleep(600);
+    await ziehe(await punkt(row("Wurzel-Notiz.md")), await punkt(row("Archiv")), {
+      vorDemLoslassen: () => ps(`bild ${hwnd} ${resolve(outDir, "pc-seitenleiste-ziehen-schwarz.png")}`),
+    });
+    report.push(`Modus Schwarz: „Wurzel-Notiz“ → „Archiv“: ${liegt("Archiv/Wurzel-Notiz.md") ? "verschoben" : "NICHT verschoben"}`);
+  }
+
   // G. Bild wie aus dem Explorer in eine Notiz ziehen (zuletzt: öffnet die WebView das Bild, ist die App weg)
-  await oeffne("Wurzel-Notiz.md");
+  await oeffne(nachher ? "Archiv/Wurzel-Notiz.md" : "Wurzel-Notiz.md");
   await waitFor(`document.querySelector('.bn-editor')`, "Editor");
   const i = await info();
   const ziel = await punkt(`document.querySelector('.bn-editor')`, 0.5, 0.3);
@@ -268,7 +339,7 @@ try {
   const urlNachher = await evaluate("location.href").catch(() => "(keine Antwort)");
   const eD = await ereignisse().catch(() => ({}));
   const dateien = await evaluate("window.__dateien ?? 0").catch(() => 0);
-  const notiz = lies("Wurzel-Notiz.md");
+  const notiz = lies(nachher ? "Archiv/Wurzel-Notiz.md" : "Wurzel-Notiz.md");
   const bildDa = /foto/.test(notiz) || JSON.stringify(readdir(join(vault, "Anhänge"))) !== anhaengeVorher;
   report.push(
     `Bild aus dem „Explorer“ (OLE-Ziehen, Ergebnis ${datei.effekt}) auf die Notiz: drop in der Seite ${eD.drop ?? 0} (Dateien ${dateien}), Seite ${urlNachher === urlVorher ? "unverändert" : `NAVIGIERT nach ${urlNachher}`}, Bild in der Notiz: ${bildDa ? "ja" : "nein"}`,

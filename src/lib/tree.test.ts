@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ancestorFolders, findNode, isInside, movePath, pageTitle, parentDir, sortTree, uniqueName } from "./tree";
+import { ablageGueltig, ancestorFolders, findNode, isInside, movePath, namensKonflikt, pageTitle, parentDir, sortTree, uniqueName } from "./tree";
 import type { TreeNode } from "./vault-api";
 
 const page = (path: string): TreeNode => ({ name: pageTitle(path), path, kind: "page" });
@@ -35,5 +35,40 @@ describe("Ordnerbaum-Hilfen", () => {
     expect(isInside("Projekte2/Umzug.md", "Projekte")).toBe(false);
     expect(movePath("Projekte/Umzug.md", "Projekte", "Archiv")).toBe("Archiv/Umzug.md");
     expect(ancestorFolders("a/b/c.md")).toEqual(["a", "a/b"]);
+  });
+});
+
+describe("Regeln beim Ziehen in der Seitenleiste (Etappe 22)", () => {
+  const ideen = page("Notizen/Ideen.md");
+  const archiv = folder("Archiv", [folder("Archiv/Alt")]);
+  const notizen = folder("Notizen", [ideen, folder("Notizen/Unter")]);
+
+  it("gültige Ziele: ein anderer Ordner oder die Wurzel, nicht der eigene Ordner und kein Ordner in sich selbst", () => {
+    expect(ablageGueltig(ideen, "Archiv")).toBe(true);
+    expect(ablageGueltig(ideen, "")).toBe(true);
+    expect(ablageGueltig(ideen, "Notizen")).toBe(false);
+    expect(ablageGueltig(notizen, "Archiv/Alt")).toBe(true);
+    expect(ablageGueltig(notizen, "")).toBe(false);
+    expect(ablageGueltig(notizen, "Notizen")).toBe(false);
+    expect(ablageGueltig(notizen, "Notizen/Unter")).toBe(false);
+    // „Notizen2“ beginnt nur mit „Notizen“, ist aber ein anderer Ordner
+    expect(ablageGueltig(notizen, "Notizen2")).toBe(true);
+  });
+
+  it("Namenskonflikt: Seiten über beide Typen und ohne Groß-/Kleinschreibung, Ordner nur mit Ordnern", () => {
+    const tree = [
+      folder("Projekte", [page("Projekte/ideen.html"), folder("Projekte/Unter")]),
+      folder("Leer"),
+      notizen,
+      archiv,
+      page("Unter.md"),
+    ];
+    expect(namensKonflikt(tree, ideen, "Projekte")?.path).toBe("Projekte/ideen.html");
+    expect(namensKonflikt(tree, ideen, "Leer")).toBeNull();
+    expect(namensKonflikt(tree, ideen, "")).toBeNull();
+    const unter = findNode(tree, "Notizen/Unter")!;
+    expect(namensKonflikt(tree, unter, "Projekte")?.path).toBe("Projekte/Unter");
+    // Ordner „Unter“ und Seite „Unter.md“ vertragen sich im selben Ordner
+    expect(namensKonflikt(tree, unter, "")).toBeNull();
   });
 });

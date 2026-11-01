@@ -339,6 +339,28 @@ button.column-header:hover {
   box-shadow: var(--shadow-sm);
 }
 
+/* Ziehen (Etappe 22): Karten mit Maus und Finger greifen, ohne Text zu markieren oder das Systemmenü zu öffnen */
+.kanban-card {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.kanban-card.is-gegriffen {
+  box-shadow: var(--shadow-md);
+  transform: var(--ziehen-anheben);
+}
+
+.kanban-card.is-gezogen {
+  opacity: var(--ziehen-quelle-deckkraft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kanban-card.is-gegriffen {
+    transform: none;
+  }
+}
+
 .kanban-card:focus-visible {
   outline: var(--border-width-strong) solid var(--color-focus-ring);
 }

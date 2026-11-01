@@ -2,15 +2,15 @@
 
 ## Aktueller Stand
 - Etappe: 22 – Ziehen und Ablegen auf PC und Handy (Version 2.3, in Arbeit). Auftrag: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 02:50
-- Nächster Schritt: Phase 2 – `dragDropEnabled: false` in `tauri.conf.json`, Schutz gegen Navigieren beim Ablegen fremder Dateien, gemeinsamer Zieh-Mechanismus `src/lib/ziehen.ts` (Pointer Events) für Seitenleiste, Kanban und Notizbuch, Regeln (Hervorhebung, Aufklappen, Auto-Scroll, Escape, Namenskonflikt, Rückgängig) mit Tests.
+- Zuletzt aktualisiert: 2026-11-01 02:55
+- Nächster Schritt: EXE mit echter Maus prüfen (`node scripts/ziehen-pruefung.mjs src-tauri/target/release/localist.exe docs/screenshots/etappe-22 nachher`), dann Phase 3 im Emulator (`scripts/android-ziehen-pruefung.mjs … nachher`, APK neu bauen).
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Phase 0 erledigt: Version 2.2 liegt im Archiv, `CLAUDE.md` ist ergänzt und committet.
 - [x] Phase 1: Die Tabelle „Ziehen vorher“ (PC-EXE und Android) steht in `FORTSCHRITT.md`. (Abschnitt „Ziehen vorher“; `scripts/ziehen-pruefung.mjs … vorher`, `scripts/android-ziehen-pruefung.mjs … vorher`)
 - [ ] Am PC funktioniert Ziehen in der gebauten `localist.exe` mit echter Maus: Seitenleiste, Kanban, Ziehgriff, Notizbuch-Reihenfolge (Nachweis im Chat).
-- [ ] Ziehen in der Seitenleiste mit Hervorhebung, Aufklappen beim Verweilen, Auto-Scroll, Escape, Namenskonflikt-Meldung und „Rückgängig“, getestet.
+- [x] Ziehen in der Seitenleiste mit Hervorhebung, Aufklappen beim Verweilen, Auto-Scroll, Escape, Namenskonflikt-Meldung und „Rückgängig“, getestet. (`src/lib/ziehen.ts`, Tests `src/lib/ziehen.test.tsx` 13, `tree.test.ts` „Regeln beim Ziehen …“ 2, `App.test.tsx` „Ziehen und Ablegen (Etappe 22)“ 6; Klickliste 2.3 4/4)
 - [ ] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat.
 - [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt.
 - [ ] Version 2.3.0 gesetzt, „Neu in Version 2.3“ in `README.md` und `ANLEITUNG.md`.
@@ -28,6 +28,15 @@ PC: gebaute `localist.exe` 2.2.1 mit echter Maus (`node scripts/ziehen-pruefung.
 | Reihenfolge im Notizbuch | geht nicht | geht | PC wie oben; Handy: Android-WebView startet HTML5-Ziehen nach langem Druck. |
 | Bild aus dem Explorer in eine Notiz | geht nicht | – | Tauri nimmt die Datei an (Effekt `Copy, Move, Link`), die Seite bekommt kein `drop`. Natives Ablegen (`onDragDropEvent`, `tauri://drag-drop`) nutzt die App nirgends (grep in `src`, `src-tauri/src`: 0 Treffer). |
 | Tippen, Wischen, langes Drücken (Seitenleiste) | – | geht | Tippen öffnet, Wischen scrollt (`scrollTop` 0 → 1045), langes Drücken ohne Bewegung zeigt „Aktionen für „Ideen““, kein markierter Text. |
+
+## Klickliste „Version 2.3“
+Feste Liste für Version 2.3, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.3` (Maus bei 1280 × 800, Finger bei 360 × 740 mit Touch).
+
+Letzter Stand: 2026-11-01 02:54, Etappe 22, alle 4 Punkte bestanden.
+- [x] Seite in einen Ordner ziehen, danach „Rückgängig“.
+- [x] Ordner in einen anderen Ordner ziehen; ein Link auf eine Seite darin funktioniert danach noch.
+- [x] Handy-Ansicht 360 × 740 mit Touch: lange drücken, ziehen, ablegen.
+- [x] Kanban-Karte auf dem Handy in eine andere Spalte ziehen.
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 1.0` (echte Tastatur und Maus in Microsoft Edge).
@@ -85,3 +94,8 @@ Letzter Stand: 2026-10-31 10:22, Etappe 21 (Version 2.2.0), alle 9 Punkte bestan
 
 ## Entscheidungen
 Entscheidungen bis Version 2.1: `archiv/FORTSCHRITT-bis-2.1.md`, Version 2.2: `archiv/FORTSCHRITT-2.2.md`, jeweils Abschnitt „Entscheidungen“.
+- 2026-11-01: Eigener Hook `src/lib/ziehen.ts` (Pointer Events) statt `@dnd-kit/core`: keine neue Bibliothek, und die Sonderfälle (Menü beim Loslassen ohne Bewegung, Aufklappen beim Verweilen, Mit-Scrollen in genau einem Bereich, kein Systemmenü von Android) hätte man bei dnd-kit ohnehin selbst bauen müssen. Maus greift ab 4 px Bewegung, Finger nach 400 ms ohne Bewegung (bis 8 px Toleranz); Bewegung vorher bleibt Wischen.
+- 2026-11-01: Der Hook ersetzt HTML5-Drag-and-Drop in Seitenleiste, Kanban und Notizbuch auch am PC (ein Weg für Maus und Finger). Der Kalender bleibt bei HTML5 (nicht Teil des Auftrags, geht am PC wieder dank `dragDropEnabled: false`). Bewusst geänderte Tests (Verhalten gleich, nur Pointer- statt Drag-Ereignisse): `App.test.tsx` „Drag & Drop in eine andere Spalte …“, „Verschieben per Drag & Drop …“, „Reihenfolge per Drag & Drop …“; Klickliste 1.0 Punkt 6 zieht die Kanban-Karte jetzt mit der Maus statt per Skript-Ereignis.
+- 2026-11-01: Mit `dragDropEnabled: false` würde die WebView eine aus dem Explorer fallengelassene Datei selbst öffnen (App weg). `fremdeDateienAbweisen()` in `main.tsx` verhindert das (Zeiger „nicht erlaubt“). Ein Bild aus dem Explorer in eine Notiz ziehen ging schon vorher nicht (Phase 1) und bleibt so.
+- 2026-11-01: Namenskonflikt, Meldung mit „Rückgängig“ und Rückgängig selbst gelten für jedes Verschieben (Ziehen und „Verschieben nach …“), ein Weg in `Workspace.move`. Die Meldung liegt jetzt außerhalb von `<main>`, weil `<main>` auf dem Handy hinter der Ansicht „Seiten“ inert ist.
+- 2026-11-01: Mit-Scrollen am Rand steigt quadratisch an: Linear scrollte die Liste schon beim Streifen der Randzone so schnell, dass in der Klickliste (Handy) das Ziel unter dem ruhenden Finger wegrutschte und in der obersten Ebene landete.

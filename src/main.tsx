@@ -8,10 +8,13 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { themaAnwenden } from "./lib/theme";
+import { fremdeDateienAbweisen } from "./lib/ziehen";
 
 async function start() {
   // Modus und Akzentfarbe vor dem ersten Zeichnen setzen (die Styles sind dann schon geladen).
   themaAnwenden();
+  // Eine aus dem Explorer gezogene Datei darf die WebView nicht öffnen (sonst wäre die App weg).
+  fremdeDateienAbweisen();
   if ("__TAURI_INTERNALS__" in window) {
     // Das Fenster startet unsichtbar (tauri.conf.json) und erscheint erst jetzt, in den richtigen Farben.
     void getCurrentWindow()

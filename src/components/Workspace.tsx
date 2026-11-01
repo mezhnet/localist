@@ -37,7 +37,7 @@ import { ScrollGedaechtnisContext, scrollWiederherstellen, type ScrollGedaechtni
 import { storedEingeklappt, storeEingeklappt, useEingeklappt, useSeitenleisteSeite } from "../lib/seitenleiste";
 import { useVaultSettings } from "../lib/settings";
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
-import { childrenOf, findNode, isInside, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
+import { childrenOf, findNode, isInside, namensKonflikt, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
 import { useSchemas } from "../lib/useSchemas";
 import type { EigenerBaustein } from "../lib/eigene-bausteine";
 import { eigenstaendigesHtml } from "../lib/export";
@@ -89,7 +89,12 @@ interface Props {
 interface Notice {
   kind: "error" | "info";
   text: string;
+  /** Knopf in der Meldung, z. B. „Rückgängig“ nach dem Verschieben. */
+  aktion?: { label: string; onClick: () => void };
 }
+
+/** „Links in 2 Seiten angepasst.“ (leer, wenn keine Seite geändert wurde). */
+const linksText = (changed: number) => (changed > 0 ? `Links in ${changed} ${changed === 1 ? "Seite" : "Seiten"} angepasst.` : "");
 
 export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const explorer = platform !== "android" && platform !== "ios";
@@ -670,9 +675,14 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
 
   /**
    * Umbenennen oder Verschieben (`action` liefert den neuen Pfad). Danach werden offene Seite, Favoriten,
-   * bei HTML-Seiten der <title> und alle Links im Vault angepasst.
+   * bei HTML-Seiten der <title> und alle Links im Vault angepasst. `meldung` ersetzt den Hinweis zu den Links.
    */
-  const relocate = async (node: TreeNode, action: () => Promise<string>, renamed: boolean): Promise<boolean> => {
+  const relocate = async (
+    node: TreeNode,
+    action: () => Promise<string>,
+    renamed: boolean,
+    meldung?: (newPath: string, changed: number) => Notice,
+  ): Promise<boolean> => {
     try {
       // Vorher speichern: Auch die offene Seite kann Links enthalten, die gleich angepasst werden.
       await saverRef.current?.flush();
@@ -690,9 +700,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       }
       await refreshTree();
       const changed = await updateLinksAfterRelocate(oldPages, pathMapper(node.path, newPath));
-      if (changed > 0) {
-        setNotice({ kind: "info", text: `Links in ${changed} ${changed === 1 ? "Seite" : "Seiten"} angepasst.` });
-      }
+      if (meldung) setNotice(meldung(newPath, changed));
+      else if (changed > 0) setNotice({ kind: "info", text: linksText(changed) });
       return true;
     } catch (error) {
       showError(errorMessage(error));
@@ -701,7 +710,42 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   };
 
   const rename = (node: TreeNode, newName: string) => relocate(node, () => renameEntry(node.path, newName), true);
-  const move = (node: TreeNode, targetDir: string) => relocate(node, () => moveEntry(node.path, targetDir), false);
+  /** Name eines Ordners für Meldungen ("" = der Vault). */
+  const ordnerName = (dir: string) => (dir ? pageTitle(dir) : vault.name);
+
+  /**
+   * Verschieben (per Ziehen oder „Verschieben nach …“): Gibt es im Ziel schon einen gleichnamigen Eintrag, bleibt
+   * alles, wie es ist, und eine Meldung sagt warum. Sonst erscheint „„Ideen“ nach „Archiv“ verschoben.“ mit
+   * „Rückgängig“ (verschwindet nach etwa 6 Sekunden). Rückgängig schiebt zurück und passt die Links wieder an.
+   */
+  const move = async (node: TreeNode, targetDir: string) => {
+    const konflikt = namensKonflikt(treeRef.current, node, targetDir);
+    if (konflikt) {
+      const was = node.kind === "folder" ? "einen Ordner" : "eine Seite";
+      showError(`„${node.name}“ wurde nicht verschoben: In „${ordnerName(targetDir)}“ gibt es schon ${was} „${konflikt.name}“.`);
+      return false;
+    }
+    const herkunft = parentDir(node.path);
+    return relocate(node, () => moveEntry(node.path, targetDir), false, (newPath, changed) => ({
+      kind: "info",
+      text: [`„${node.name}“ nach „${ordnerName(targetDir)}“ verschoben.`, linksText(changed)].filter(Boolean).join(" "),
+      aktion: { label: "Rückgängig", onClick: () => void rueckgaengig(newPath, herkunft) },
+    }));
+  };
+
+  /** „Rückgängig“ nach dem Verschieben: zurück in den alten Ordner, Links, Reiter und Favoriten folgen wieder. */
+  const rueckgaengig = async (path: string, herkunft: string) => {
+    setNotice(null);
+    const node = findNode(treeRef.current, path);
+    if (!node) {
+      showError(`„${pageTitle(path)}“ ist nicht mehr da und kann nicht zurückgeschoben werden.`);
+      return;
+    }
+    await relocate(node, () => moveEntry(path, herkunft), false, (_, changed) => ({
+      kind: "info",
+      text: [`„${node.name}“ ist wieder in „${ordnerName(herkunft)}“.`, linksText(changed)].filter(Boolean).join(" "),
+    }));
+  };
 
   /**
    * Passt nach Umbenennen/Verschieben alle Seiten an: in Notizen die [[Links]], in HTML-Seiten die relativen
@@ -927,14 +971,6 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           start={homeActive}
           handy={schmal ? { ort: (current ? ancestorNames(current).pop() : undefined) ?? vault.name, onZurueck: () => void zurueck() } : undefined}
         />
-        {notice && (
-          <div className={`notice toast ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>
-            <span>{notice.text}</span>
-            <IconButton size="sm" label="Meldung schließen" onClick={() => setNotice(null)}>
-              <X />
-            </IconButton>
-          </div>
-        )}
         <ScrollGedaechtnisContext.Provider value={gedaechtnis}>
         {vaultMissing ? (
           <div className="empty-state">
@@ -1047,6 +1083,21 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
         </ScrollGedaechtnisContext.Provider>
         </div>
       </main>
+      {/* Meldungen liegen außerhalb von <main>: Auf dem Handy ist <main> hinter der Ansicht „Seiten“ inert, der Knopf
+          „Rückgängig“ muss trotzdem erreichbar sein. */}
+      {notice && (
+        <div className={`notice toast ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"}>
+          <span>{notice.text}</span>
+          {notice.aktion && (
+            <Button size="sm" variant="ghost" className="toast-aktion" onClick={notice.aktion.onClick}>
+              {notice.aktion.label}
+            </Button>
+          )}
+          <IconButton size="sm" label="Meldung schließen" onClick={() => setNotice(null)}>
+            <X />
+          </IconButton>
+        </div>
+      )}
       {schmal && (
         <Navigationsleiste
           aktiv={navAktiv}

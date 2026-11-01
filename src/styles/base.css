@@ -126,6 +126,39 @@ h3 {
   background: var(--color-surface-raised);
 }
 
+/* Knopf in der Meldung, z. B. „Rückgängig“ nach dem Verschieben */
+.toast-aktion {
+  flex-shrink: 0;
+  color: var(--color-accent-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Handy: über der unteren Navigationsleiste */
+.workspace.is-handy > .toast {
+  bottom: calc(var(--size-handy-nav) + var(--space-2) + max(var(--handy-nav-gap), env(safe-area-inset-bottom)) + var(--space-2));
+}
+
+/* Ziehen und Ablegen (src/lib/ziehen.ts): Kopie, die dem Zeiger folgt; während des Ziehens wird nichts markiert. */
+.ziehen-geist {
+  position: fixed;
+  z-index: var(--z-ziehen);
+  box-sizing: border-box;
+  margin: 0;
+  list-style: none;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-lg);
+  opacity: var(--ziehen-geist-deckkraft);
+  pointer-events: none;
+}
+
+html.ist-ziehen,
+html.ist-ziehen * {
+  cursor: grabbing !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

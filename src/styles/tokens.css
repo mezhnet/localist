@@ -317,6 +317,11 @@
   --z-drawer: 60;
   --z-menu: 100;
   --z-dialog: 200;
+  /* Ziehen und Ablegen (Etappe 22): die Kopie, die dem Zeiger folgt, liegt über allem; die gegriffene Zeile hebt sich an */
+  --z-ziehen: 300;
+  --ziehen-anheben: scale(1.02);
+  --ziehen-quelle-deckkraft: 0.45;
+  --ziehen-geist-deckkraft: 0.94;
 }
 
 /* Akzentfarben im Modus Hell (Orange steht oben im :root). Die App setzt data-accent am <html>. */

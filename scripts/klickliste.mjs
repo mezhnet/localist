@@ -1,11 +1,10 @@
-// Klicklisten „Version 1.0“ (Arbeitsregel 7), „Version 2.0“ (Etappe 15) und „Version 2.1“ (Etappe 20, Punkt 9 seit Etappe 21) automatisch
-// in der Browser-Vorschau:
-// steuert Microsoft Edge im Hintergrund mit echter Tastatur und Maus (DevTools-Protokoll) und prüft nach jedem
-// Schritt die Datei im Arbeitsspeicher der Vorschau (dev-backend.ts). Echte Dateien ändern sich nicht.
-// Einzige Ausnahme: Das Ziehen einer Kanban-Karte nutzt Drag-Ereignisse per Skript (natives Drag & Drop lässt
-// sich über das Protokoll nicht auslösen).
+// Klicklisten „Version 1.0“ (Arbeitsregel 7), „Version 2.0“ (Etappe 15), „Version 2.1“ (Etappe 20, Punkt 9 seit
+// Etappe 21) und „Version 2.3“ (Etappe 22, Ziehen und Ablegen) automatisch in der Browser-Vorschau:
+// steuert Microsoft Edge im Hintergrund mit echter Tastatur, Maus und (Liste 2.3) Fingern über das DevTools-Protokoll
+// und prüft nach jedem Schritt die Datei im Arbeitsspeicher der Vorschau (dev-backend.ts). Echte Dateien ändern sich
+// nicht. Seit Etappe 22 zieht auch die Kanban-Karte mit der Maus (Pointer Events statt HTML5-Drag-and-Drop).
 //
-// Aufruf, während die Vorschau läuft: node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" [1.0|2.0|2.1]
+// Aufruf, während die Vorschau läuft: node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" [1.0|2.0|2.1|2.3]
 // Rückfragen der Seite (window.confirm) beantwortet das Skript wie ein Mensch mit „OK“.
 import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -73,15 +72,37 @@ const klick = async (x, y, { button = "left", modifiers = 0 } = {}) => {
   await sleep(200);
 };
 /** Mit gedrückter Maustaste von (x1, y1) nach (x2, y2) ziehen, in kleinen Schritten wie eine echte Hand. */
-const ziehen = async (x1, y1, x2, y2) => {
+const ziehen = async (x1, y1, x2, y2, { halten = 0 } = {}) => {
   await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x1, y: y1, button: "none" });
   await send("Input.dispatchMouseEvent", { type: "mousePressed", x: x1, y: y1, button: "left", buttons: 1, clickCount: 1 });
   for (let i = 1; i <= 12; i++) {
     await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x1 + ((x2 - x1) * i) / 12, y: y1 + ((y2 - y1) * i) / 12, button: "left", buttons: 1 });
     await sleep(30);
   }
+  if (halten) await sleep(halten);
   await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x2, y: y2, button: "left", buttons: 0, clickCount: 1 });
   await sleep(300);
+};
+/**
+ * Mit dem Finger: aufsetzen, `lang` ms ruhig liegen lassen (langes Drücken), in Schritten zum Ziel, loslassen
+ * (Touch-Ereignisse über das Protokoll; die Seite bekommt daraus Pointer Events mit pointerType „touch“).
+ */
+const finger = async (x1, y1, x2, y2, { lang = 700, schritte = 10 } = {}) => {
+  await send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x1, y: y1, id: 1 }] });
+  await sleep(lang);
+  for (let i = 1; i <= schritte; i++) {
+    await send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x1 + ((x2 - x1) * i) / schritte, y: y1 + ((y2 - y1) * i) / schritte, id: 1 }] });
+    await sleep(40);
+  }
+  await sleep(300);
+  await send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await sleep(500);
+};
+/** Mitte eines Elements (Ausdruck), scrollt es vorher in Sicht. */
+const mitte = async (elementExpr, fy = 0.5) => {
+  const r = await evaluate(`(() => { const el = ${elementExpr}; if (!el) return null; el.scrollIntoView({ block: "nearest" }); const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height * ${fy} }; })()`);
+  if (!r) throw new Error(`Nicht gefunden: ${elementExpr}`);
+  return r;
 };
 /** Klick auf ein Element (Ausdruck liefert das Element), an Position `wo` (Bruchteil der Breite). */
 const klickAuf = async (elementExpr, wo = 0.5, optionen) => {
@@ -218,15 +239,11 @@ try {
       await klickAuf(`document.querySelector('[aria-label="Ansicht hinzufügen"]')`);
       await klickAuf(knopf("Kanban"));
       await waitFor(`document.querySelector('.kanban-card')`);
-      await evaluate(`(() => {
-        const col = (n) => [...document.querySelectorAll('.kanban-column')].find((c) => c.querySelector('.kanban-column-header').textContent.startsWith(n));
-        const card = col("Geplant").querySelector('.kanban-card');
-        const ziel = col("Erledigt");
-        const dt = new DataTransfer();
-        card.dispatchEvent(new DragEvent("dragstart", { bubbles: true, dataTransfer: dt }));
-        for (const typ of ["dragenter", "dragover", "drop"]) ziel.dispatchEvent(new DragEvent(typ, { bubbles: true, cancelable: true, dataTransfer: dt }));
-        card.dispatchEvent(new DragEvent("dragend", { bubbles: true, dataTransfer: dt }));
-      })()`);
+      // Seit Etappe 22 mit der Maus (Pointer Events), vorher Drag-Ereignisse per Skript
+      const col = (n) => `[...document.querySelectorAll('.kanban-column')].find((c) => c.querySelector('.kanban-column-header').textContent.startsWith(${JSON.stringify(n)}))`;
+      const karte = await mitte(`${col("Geplant")}.querySelector('.kanban-card')`);
+      const ziel = await mitte(col("Erledigt"), 0.3);
+      await ziehen(karte.x, karte.y, ziel.x, ziel.y);
       await sleep(1000);
       erwarte((await datei("Projekte/Umzug.md")).includes("status: Erledigt"), "Karte nicht verschoben");
       return "„Umzug“ nach „Erledigt“ (status: Erledigt)";
@@ -304,6 +321,87 @@ try {
       const danach = await evaluate(`document.documentElement.dataset.theme`);
       erwarte(sofort === "dark" && danach === "dark", `${sofort} / ${danach}`);
       return `sofort „${sofort}“, nach dem Neuladen „${danach}“`;
+    });
+  } else if (liste === "2.3") {
+    // Etappe 22: Ziehen und Ablegen mit Maus (1280 × 800) und Finger (Handy 360 × 740 mit Touch)
+    const zeile = (pfad) => `document.querySelector('.tree [title=${JSON.stringify(pfad)}]')?.closest('.tree-row')`;
+    const aufklappen = async (pfad) => {
+      if ((await evaluate(`${zeile(pfad)}?.closest('li').getAttribute('aria-expanded')`)) !== "true") await klickAuf(`${zeile(pfad)}.querySelector('.tree-toggle')`);
+      await sleep(300);
+    };
+
+    await pruefen(1, "Seite in einen Ordner ziehen, danach „Rückgängig“", async () => {
+      await aufklappen("Notizen");
+      const von = await mitte(zeile("Notizen/Ideen.md"));
+      const nach = await mitte(zeile("Vorlagen"));
+      await ziehen(von.x, von.y, nach.x, nach.y);
+      erwarte(await waitFor(`window.__devVault.files.has("Vorlagen/Ideen.md") && !window.__devVault.files.has("Notizen/Ideen.md")`), "nicht verschoben");
+      const meldung = await evaluate(`document.querySelector('.toast')?.textContent ?? ""`);
+      erwarte(meldung.includes("„Ideen“ nach „Vorlagen“ verschoben."), `Meldung: ${meldung}`);
+      const link = await datei("Notizen/DNS.html");
+      erwarte(link.includes('href="../Vorlagen/Ideen.md"'), "Link in DNS.html nicht angepasst");
+      await klickAuf(`[...document.querySelectorAll('.toast button')].find((b) => b.textContent === "Rückgängig")`);
+      erwarte(await waitFor(`window.__devVault.files.has("Notizen/Ideen.md") && !window.__devVault.files.has("Vorlagen/Ideen.md")`), "Rückgängig ging nicht");
+      erwarte((await datei("Notizen/DNS.html")).includes('href="Ideen.md"'), "Link nach Rückgängig nicht zurück");
+      return `Meldung „${meldung}“, nach „Rückgängig“ wieder Notizen/Ideen.md, Link in DNS.html wieder „Ideen.md“`;
+    });
+
+    await pruefen(2, "Ordner in einen anderen Ordner ziehen; ein Link auf eine Seite darin geht danach noch", async () => {
+      await sleep(6500); // Meldung von Punkt 1 ist weg
+      const von = await mitte(zeile("Notizen"));
+      const nach = await mitte(zeile("Vorlagen"));
+      await ziehen(von.x, von.y, nach.x, nach.y);
+      erwarte(await waitFor(`window.__devVault.files.has("Vorlagen/Notizen/Ideen.md") && !window.__devVault.files.has("Notizen/Ideen.md")`), "Ordner nicht verschoben");
+      // Lernen/Bausteine.html verlinkt per <a href> auf „Ideen“ in „Notizen“: der Wert folgt dem Ordner
+      erwarte(await waitFor(`window.__devVault.files.get("Lernen/Bausteine.html").includes('href="../Vorlagen/Notizen/Ideen.md"')`), "Link in Bausteine.html nicht angepasst");
+      // Website-Relaunch verlinkt [[Ideen]]: Ein Klick öffnet die Seite am neuen Ort
+      await aufklappen("Projekte");
+      await klickAuf(`document.querySelector('.tree [title="Projekte/Website-Relaunch.md"]')`);
+      await waitFor(`[...document.querySelectorAll('.bn-editor .node-wikilink')].some((e) => e.textContent.trim() === "Ideen")`);
+      await klickAuf(`[...document.querySelectorAll('.bn-editor .node-wikilink')].find((e) => e.textContent.trim() === "Ideen")`);
+      erwarte(await waitFor(`document.querySelector('.page-title')?.value === "Ideen"`), "Link öffnet „Ideen“ nicht");
+      const aktiv = await evaluate(`document.querySelector('.tree-row.active .tree-label')?.title ?? ""`);
+      erwarte(aktiv === "Vorlagen/Notizen/Ideen.md", `geöffnet: ${aktiv}`);
+      return `„Notizen“ liegt in „Vorlagen“; Bausteine.html verlinkt „../Vorlagen/Notizen/Ideen.md“; [[Ideen]] in „Website-Relaunch“ öffnet ${aktiv}`;
+    });
+
+    // Handy mit Touch
+    await send("Emulation.setDeviceMetricsOverride", { width: 360, height: 740, deviceScaleFactor: 2, mobile: true });
+    await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+    await send("Page.navigate", { url: base });
+    await waitFor(`document.querySelector('.handy-nav')`);
+    await sleep(800);
+
+    await pruefen(3, "Handy 360 × 740 mit Touch: lange drücken, ziehen, ablegen", async () => {
+      await klickAuf(`[...document.querySelectorAll(".handy-nav button")].find((b) => b.textContent.trim() === "Seiten")`);
+      await waitFor(`document.querySelector(".sidebar-shell.open [role='tree']")`);
+      const z = (pfad) => `document.querySelector('.sidebar-shell.open .tree [title=${JSON.stringify(pfad)}]')?.closest('.tree-row')`;
+      if ((await evaluate(`${z("Notizen")}?.closest('li').getAttribute('aria-expanded')`)) !== "true") await klickAuf(`${z("Notizen")}.querySelector('.tree-toggle')`);
+      await sleep(300);
+      const von = await mitte(z("Notizen/Formatierung.md"));
+      const nach = await mitte(z("Projekte"));
+      await finger(von.x, von.y, nach.x, nach.y);
+      erwarte(await waitFor(`window.__devVault.files.has("Projekte/Formatierung.md")`), "nicht verschoben");
+      erwarte(!(await evaluate(`Boolean(document.querySelector('[role="menu"]'))`)), "Menü erschienen");
+      return "„Formatierung“ per Finger nach „Projekte“ gelegt, kein Menü";
+    });
+
+    await pruefen(4, "Kanban-Karte auf dem Handy in eine andere Spalte ziehen", async () => {
+      await sleep(6500);
+      const z = (pfad) => `document.querySelector('.sidebar-shell.open .tree [title=${JSON.stringify(pfad)}]')`;
+      if (!(await evaluate(`Boolean(document.querySelector(".sidebar-shell.open"))`))) await klickAuf(`[...document.querySelectorAll(".handy-nav button")].find((b) => b.textContent.trim() === "Seiten")`);
+      await klickAuf(z("Projekte"));
+      await waitFor(`document.querySelector('[aria-label="Ansicht hinzufügen"]')`);
+      await klickAuf(`document.querySelector('[aria-label="Ansicht hinzufügen"]')`);
+      await klickAuf(knopf("Kanban"));
+      await waitFor(`document.querySelector('.kanban-card')`);
+      await sleep(500);
+      const col = (n) => `[...document.querySelectorAll('.kanban-column')].find((c) => c.querySelector('.kanban-column-header').textContent.startsWith(${JSON.stringify(n)}))`;
+      const von = await mitte(`${col("Geplant")}.querySelector('.kanban-card')`);
+      const spalte = await evaluate(`(() => { const r = ${col("In Arbeit")}.getBoundingClientRect(); return { x: Math.min(r.x + 40, innerWidth - 20), y: r.y + 60 }; })()`);
+      await finger(von.x, von.y, spalte.x, spalte.y);
+      erwarte(await waitFor(`window.__devVault.files.get("Projekte/Umzug.md").includes("status: In Arbeit")`), "Karte nicht verschoben");
+      return "„Umzug“ per Finger von „Geplant“ nach „In Arbeit“ (status: In Arbeit)";
     });
   } else if (liste === "2.1") {
     // Klickliste „Version 2.1“ (Etappe 20)

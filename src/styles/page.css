@@ -1450,8 +1450,27 @@
   border-radius: var(--radius-md);
 }
 
+/* Ziehen (Etappe 22): Einträge mit Maus und Finger greifen, ohne Markieren und ohne Systemmenü */
+.notizbuch-inhalt li {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .notizbuch-inhalt li.is-dragging {
-  opacity: 0.4;
+  opacity: var(--ziehen-quelle-deckkraft);
+}
+
+.notizbuch-inhalt li.is-gegriffen {
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+  transform: var(--ziehen-anheben);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notizbuch-inhalt li.is-gegriffen {
+    transform: none;
+  }
 }
 
 .notizbuch-inhalt li.drop-before {

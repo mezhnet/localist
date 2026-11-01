@@ -59,6 +59,23 @@ export function childrenOf(nodes: readonly TreeNode[], dir: string): readonly Tr
   return findNode(nodes, dir)?.children ?? [];
 }
 
+/**
+ * Darf `node` in den Ordner `zielOrdner` ("" = Vault-Wurzel) gezogen werden? Nicht dorthin, wo er schon liegt, und
+ * kein Ordner in sich selbst oder in einen seiner Unterordner.
+ */
+export function ablageGueltig(node: TreeNode, zielOrdner: string): boolean {
+  return parentDir(node.path) !== zielOrdner && !(node.kind === "folder" && isInside(zielOrdner, node.path));
+}
+
+/**
+ * Eintrag im Zielordner mit demselben Namen (null = frei): Seiten zählen über beide Typen (`Ideen.md` und
+ * `Ideen.html`), Ordner über den Ordnernamen, jeweils ohne Rücksicht auf Groß-/Kleinschreibung wie im Dateisystem.
+ */
+export function namensKonflikt(nodes: readonly TreeNode[], node: TreeNode, zielOrdner: string): TreeNode | null {
+  const name = node.name.toLowerCase();
+  return childrenOf(nodes, zielOrdner).find((kind) => kind.kind === node.kind && kind.path !== node.path && kind.name.toLowerCase() === name) ?? null;
+}
+
 /** Alle Ordner auf dem Weg zu `path`, damit sie in der Sidebar aufgeklappt werden können. */
 export function ancestorFolders(path: string): string[] {
   const parts = path.split("/");

@@ -1,4 +1,4 @@
-/*! Localist-Bausteine 2.2.1+641f4e07 – Aussehen (localist.css)
+/*! Localist-Bausteine 2.2.1+6e4dc0fb – Aussehen (localist.css)
     Diese Datei verwaltet Localist. Sie entsteht aus den Schriften Plus Jakarta Sans und JetBrains Mono, src/styles/tokens.css und src/bausteine/*.css und wird beim Öffnen des Vaults
     erneuert, wenn sie fehlt oder abweicht – eigene Änderungen hier gehen dabei verloren. */
 
@@ -532,6 +532,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   --z-drawer: 60;
   --z-menu: 100;
   --z-dialog: 200;
+  /* Ziehen und Ablegen (Etappe 22): die Kopie, die dem Zeiger folgt, liegt über allem; die gegriffene Zeile hebt sich an */
+  --z-ziehen: 300;
+  --ziehen-anheben: scale(1.02);
+  --ziehen-quelle-deckkraft: 0.45;
+  --ziehen-geist-deckkraft: 0.94;
 }
 
 /* Akzentfarben im Modus Hell (Orange steht oben im :root). Die App setzt data-accent am <html>. */

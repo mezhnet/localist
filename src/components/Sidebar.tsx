@@ -1,7 +1,9 @@
 // Sidebar nach der Vorlage (01/02): oben der Vault-Umschalter, dann Suchen, Volltextsuche, Startseite, Bausteine und
 // „Neue Seite“ (öffnet das „Neu“-Menü), darunter die Favoriten und der Ordnerbaum („Seiten“), unten Modus und Einstellungen.
-// Seiten und Ordner lassen sich anlegen, umbenennen, anheften, verschieben (auch per Drag & Drop) und löschen
-// (per Rechtsklick, "⋯"-Knopf, F2 oder Entf). Notizen und HTML-Seiten haben verschiedene Symbole.
+// Seiten und Ordner lassen sich anlegen, umbenennen, anheften, verschieben und löschen (per Rechtsklick, "⋯"-Knopf,
+// F2 oder Entf). Verschieben geht auch per Ziehen (src/lib/ziehen.ts): mit der Maus sofort, mit dem Finger nach
+// langem Drücken; Verweilen über einem zugeklappten Ordner klappt ihn auf, Escape bricht ab. Notizen und
+// HTML-Seiten haben verschiedene Symbole.
 import {
   Blocks,
   BookOpen,
@@ -29,9 +31,10 @@ import {
   TextSearch,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import packageInfo from "../../package.json";
-import { ancestorFolders, findNode, isInside, parentDir } from "../lib/tree";
+import { ablageGueltig, ancestorFolders, findNode, parentDir } from "../lib/tree";
+import { useZiehen } from "../lib/ziehen";
 import { ModusUmschalter } from "./Darstellung";
 import { oeffnenKlick } from "./Reiterleiste";
 import type { TreeNode } from "../lib/vault-api";
@@ -48,7 +51,7 @@ export interface SidebarActions {
   onOpenLibrary: (neu?: boolean) => void;
   onCreate: (kind: CreateKind, dir: string) => void;
   onRename: (node: TreeNode, newName: string) => void;
-  /** Per Drag & Drop in einen Ordner gezogen ("" = Vault-Wurzel). */
+  /** Per Ziehen in einen Ordner gelegt ("" = Vault-Wurzel). */
   onMove: (node: TreeNode, targetDir: string) => void;
   /** „Verschieben nach …“ gewählt: Zielordner erfragen. */
   onRequestMove: (node: TreeNode) => void;
@@ -110,9 +113,31 @@ export function Sidebar(props: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
-  /** Gezogener Eintrag und Ordner, über dem er gerade ist ("" = Vault-Wurzel). */
-  const dragged = useRef<TreeNode | null>(null);
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  /**
+   * Ziehen: Ziel ist der Ordner unter dem Zeiger (`data-ziel-ordner`; eine Seite steht für ihren Ordner, "" für die
+   * Vault-Wurzel). Ungültige Ziele (gleicher Ordner, Ordner in sich selbst) gibt es nicht, sie werden nicht markiert.
+   */
+  const ziehen = useZiehen<TreeNode, string>({
+    zielAn: (element, _x, _y, node) => {
+      const ort = element.closest<HTMLElement>("[data-ziel-ordner]");
+      if (!ort || !navRef.current?.contains(ort)) return null;
+      const dir = ort.dataset.zielOrdner ?? "";
+      return ablageGueltig(node, dir) ? dir : null;
+    },
+    onAblegen: (node, dir) => {
+      if (dir) setExpanded((previous) => new Set([...previous, dir]));
+      props.onMove(node, dir);
+    },
+    // Finger lange gedrückt und ohne Bewegung losgelassen: Menü wie bisher beim langen Drücken.
+    onLangDruck: (node, x, y) => setMenu({ kind: "node", anchor: { x, y }, node }),
+    // Kurz über einem zugeklappten Ordner verweilen klappt ihn auf.
+    onVerweilen: (dir) => dir && setExpanded((previous) => (previous.has(dir) ? previous : new Set([...previous, dir]))),
+  });
+  const gezogen = ziehen.zustand;
+  /** Ordner, in den gerade abgelegt würde ("" = Vault-Wurzel), oder null. */
+  const dropTarget = gezogen?.ziel ?? null;
 
   // Ordner der geöffneten Seite und eines neu angelegten Eintrags aufklappen.
   useEffect(() => {
@@ -174,32 +199,6 @@ export function Sidebar(props: Props) {
 
   const isActive = (node: TreeNode) => node.path === openPath || node.path === props.openDatabase || node.path === props.openNotebook;
 
-  /** Darf `node` nach `targetDir` gezogen werden? Nicht dorthin, wo er schon liegt, und kein Ordner in sich selbst. */
-  const canDrop = (node: TreeNode | null, targetDir: string) =>
-    node !== null && parentDir(node.path) !== targetDir && !(node.kind === "folder" && isInside(targetDir, node.path));
-
-  /** Ziehen auf einen Ordner legt hinein, Ziehen auf eine Seite in deren Ordner. */
-  const dropProps = (targetDir: string) => ({
-    onDragOver: (event: ReactDragEvent) => {
-      if (!canDrop(dragged.current, targetDir)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-      setDropTarget(targetDir);
-    },
-    onDragLeave: () => setDropTarget((current) => (current === targetDir ? null : current)),
-    onDrop: (event: ReactDragEvent) => {
-      const node = dragged.current;
-      if (!canDrop(node, targetDir) || !node) return;
-      event.preventDefault();
-      event.stopPropagation();
-      dragged.current = null;
-      setDropTarget(null);
-      if (targetDir) setExpanded((previous) => new Set([...previous, targetDir]));
-      props.onMove(node, targetDir);
-    },
-  });
-
   const nodeIcon = (node: TreeNode, isOpen: boolean) => {
     if (node.kind === "page") {
       const emoji = icons.get(node.path);
@@ -227,19 +226,15 @@ export function Sidebar(props: Props) {
             <RenameInput node={node} style={indent} onDone={(name) => finishRename(node, name)} />
           ) : (
             <div
-              className={cx("tree-row", isActive(node) && "active", isFolder && dropTarget === node.path && "drop-target")}
+              className={cx(
+                "tree-row",
+                isActive(node) && "active",
+                isFolder && dropTarget === node.path && "drop-target",
+                gezogen?.quelle.path === node.path && (gezogen.phase === "gegriffen" ? "is-gegriffen" : "is-gezogen"),
+              )}
               style={indent}
-              draggable
-              onDragStart={(event) => {
-                dragged.current = node;
-                event.dataTransfer?.setData("text/plain", node.path);
-                if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-              }}
-              onDragEnd={() => {
-                dragged.current = null;
-                setDropTarget(null);
-              }}
-              {...dropProps(targetDir)}
+              data-ziel-ordner={targetDir}
+              {...ziehen.griff(node)}
               onContextMenu={(event) => setMenu({ kind: "node", anchor: atPointer(event), node })}
             >
               {isFolder ? (
@@ -302,7 +297,7 @@ export function Sidebar(props: Props) {
             </div>
           )}
           {isFolder && isOpen && node.children && (
-            <ul role="group">
+            <ul role="group" data-ziel-ordner={node.path}>
               {node.children.length === 0 ? (
                 <li className="tree-empty" style={{ "--depth": depth + 1 } as CSSProperties}>
                   Leer
@@ -321,7 +316,7 @@ export function Sidebar(props: Props) {
   const menuAlign = props.seite === "rechts" ? "end" : "start";
 
   return (
-    <nav className="sidebar" aria-label="Seiten" onContextMenu={(event) => setMenu({ kind: "new", anchor: atPointer(event), dir: "" })}>
+    <nav ref={navRef} className="sidebar" aria-label="Seiten" onContextMenu={(event) => setMenu({ kind: "new", anchor: atPointer(event), dir: "" })}>
       {/* Steht die Seitenleiste links, liegt der Kopf in der oberen Leiste: Freie Stellen ziehen das Fenster. */}
       {props.handy ? (
         <h1 className="handy-titel sidebar-handy-titel">Seiten</h1>
@@ -415,15 +410,21 @@ export function Sidebar(props: Props) {
         </section>
 
         <section className="sidebar-section sidebar-section--tree" aria-label="Seiten">
-          <div className="sidebar-section-head">
+          {/* Die Überschrift „Seiten“ und die Fläche unter dem Baum nehmen Einträge für die oberste Ebene an. */}
+          <div className="sidebar-section-head" data-ziel-ordner="">
             <h2 className="sidebar-section-title">Seiten</h2>
             <IconButton size="sm" label="Neu im Vault" onClick={(event) => openMenu({ kind: "new", anchor: below(event), dir: "" })}>
               <Plus />
             </IconButton>
           </div>
-          <ul className={cx("tree", dropTarget === "" && "drop-target")} role="tree" aria-label="Ordner und Seiten" {...dropProps("")}>
+          <ul className={cx("tree", dropTarget === "" && "drop-target")} role="tree" aria-label="Ordner und Seiten" data-ziel-ordner="">
             {tree.length === 0 ? <li className="tree-empty">Noch keine Seiten</li> : renderNodes(tree, 0)}
           </ul>
+          {gezogen?.phase === "zieht" && ablageGueltig(gezogen.quelle, "") && (
+            <div className={cx("tree-wurzel", dropTarget === "" && "drop-target")} data-ziel-ordner="">
+              In die oberste Ebene
+            </div>
+          )}
         </section>
       </div>
 

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { today, weekDays } from "./lib/calendar";
 import { installDevBackend } from "./lib/dev-backend";
+import { GREIFEN_MS, VERWEILEN_MS } from "./lib/ziehen";
 import tauriConf from "../src-tauri/tauri.conf.json";
 
 function vault() {
@@ -28,6 +29,18 @@ async function inTree() {
 async function openPage(folder: string, page: string) {
   fireEvent.click(await (await inTree()).findByText(folder));
   fireEvent.click(await (await inTree()).findByText(page));
+}
+
+/**
+ * Ziehen wie mit der Maus (seit Etappe 22 Pointer Events statt HTML5-Drag-and-Drop, src/lib/ziehen.ts): drücken,
+ * über das Ziel bewegen, loslassen. jsdom berechnet kein Layout, deshalb liegt `ziel` „unter dem Zeiger“.
+ * `y`: Zeigerhöhe über dem Ziel (im Notizbuch: davor oder dahinter).
+ */
+function ziehe(quelle: Element, ziel: Element, { y = 40, loslassen = true, pointerType = "mouse" } = {}) {
+  document.elementFromPoint = () => ziel;
+  fireEvent.pointerDown(quelle, { pointerId: 1, pointerType, button: 0, clientX: 5, clientY: 5 });
+  fireEvent.pointerMove(window, { pointerId: 1, pointerType, clientX: 5, clientY: y });
+  if (loslassen) fireEvent.pointerUp(window, { pointerId: 1, pointerType, clientX: 5, clientY: y });
 }
 
 /** Öffnet das „Neu“-Menü der Sidebar („Neue Seite“, bis Etappe 17 „Neu“) und wählt einen Eintrag. */
@@ -270,11 +283,10 @@ describe("Kanban", () => {
     const board = await openKanban();
     const card = within(board).getByRole("article", { name: "Umzug" });
     const target = within(board).getByRole("listitem", { name: "Spalte Erledigt" });
-    const data = new Map<string, string>();
-    const dataTransfer = { setData: (k: string, v: string) => data.set(k, v), getData: (k: string) => data.get(k) ?? "", dropEffect: "", effectAllowed: "" };
-    fireEvent.dragStart(card, { dataTransfer });
-    fireEvent.dragOver(target, { dataTransfer });
-    fireEvent.drop(target, { dataTransfer });
+    // Seit Etappe 22 mit Pointer Events (Maus und Finger) statt HTML5-Drag-and-Drop
+    ziehe(card, target, { loslassen: false });
+    expect(target.classList.contains("drop-target")).toBe(true);
+    fireEvent.pointerUp(window, { pointerId: 1, pointerType: "mouse", clientX: 5, clientY: 40 });
     await waitFor(() => expect(vault().files.get("Projekte/Umzug.md")).toContain("status: Erledigt\n"));
     expect(vault().files.get("Projekte/Umzug.md")).toContain("id: 8c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f\n");
     expect(within(target).getByRole("article", { name: "Umzug" })).toBeTruthy();
@@ -1193,12 +1205,10 @@ describe("HTML-Seiten (Etappe 10)", () => {
     fireEvent.click(await (await inTree()).findByText("Notizen"));
     const ideen = ((await (await inTree()).findByTitle("Notizen/Ideen.md")) as HTMLElement).closest(".tree-row")!;
     const vorlagen = (await (await inTree()).findByTitle("Vorlagen")).closest(".tree-row")!;
-    const data = new Map<string, string>();
-    const dataTransfer = { setData: (k: string, v: string) => data.set(k, v), getData: (k: string) => data.get(k) ?? "", dropEffect: "", effectAllowed: "" };
-    fireEvent.dragStart(ideen, { dataTransfer });
-    fireEvent.dragOver(vorlagen, { dataTransfer });
+    // Seit Etappe 22 mit Pointer Events (Maus und Finger) statt HTML5-Drag-and-Drop
+    ziehe(ideen, vorlagen, { loslassen: false });
     expect(vorlagen.classList.contains("drop-target")).toBe(true);
-    fireEvent.drop(vorlagen, { dataTransfer });
+    fireEvent.pointerUp(window, { pointerId: 1, pointerType: "mouse", clientX: 5, clientY: 40 });
     await waitFor(() => expect(vault().files.has("Vorlagen/Ideen.md")).toBe(true));
     expect(vault().files.has("Notizen/Ideen.md")).toBe(false);
     // Der <a href> in der HTML-Seite zeigt auf den neuen Ort, [[Ideen]] (über den Titel) bleibt gleich.
@@ -1207,9 +1217,11 @@ describe("HTML-Seiten (Etappe 10)", () => {
     expect(JSON.parse(vault().files.get(".localist/settings.json")!).favoriten).toEqual(["Vorlagen/Ideen.md", "Projekte"]);
     // Ein Ordner lässt sich nicht in sich selbst ziehen.
     const notizen = (await (await inTree()).findByTitle("Notizen")).closest(".tree-row")!;
-    fireEvent.dragStart(notizen, { dataTransfer });
-    fireEvent.dragOver(notizen, { dataTransfer });
+    await act(() => new Promise((fertig) => setTimeout(fertig, 0)));
+    ziehe(notizen, notizen, { loslassen: false });
     expect(notizen.classList.contains("drop-target")).toBe(false);
+    fireEvent.pointerUp(window, { pointerId: 1, pointerType: "mouse", clientX: 5, clientY: 40 });
+    expect(vault().files.has("Notizen/DNS.html")).toBe(true);
   });
 
   it("Nachrichten der Seite: nur aus dem eigenen iframe und nur gültige (Links, Tastenkürzel)", async () => {
@@ -1900,9 +1912,8 @@ describe("Notizbücher, Umwandeln und Export (Etappe 14)", () => {
     fireEvent.click(await (await inTree()).findByText("Lernen"));
     await screen.findByRole("heading", { name: "Lernen für die Prüfung", level: 1 });
     const eintrag = (name: string) => inhalt().getByText(name).closest("li")!;
-    fireEvent.dragStart(eintrag("Bausteine"));
-    fireEvent.dragOver(eintrag("Subnetting"), { clientY: -100 });
-    fireEvent.drop(eintrag("Subnetting"));
+    // Seit Etappe 22 mit Pointer Events; Zeiger in der oberen Hälfte von „Subnetting“ = davor
+    ziehe(eintrag("Bausteine"), eintrag("Subnetting"), { y: -100 });
     await waitFor(() => expect(vault().files.get("Lernen/_notizbuch.yaml")).toBe("titel: Lernen für die Prüfung\nseiten:\n  - Bausteine.html\n  - Subnetting.md\n"));
     expect(eintraege()).toEqual(["1Bausteine", "2Subnetting"]);
     fireEvent.keyDown(inhalt().getByText("Bausteine").closest("button")!, { key: "ArrowDown", altKey: true });
@@ -2955,5 +2966,170 @@ describe("Updates über GitHub Releases (Etappe 21)", () => {
     fireEvent.click(dialog.getByRole("button", { name: "Jetzt installieren" }));
     expect(await dialog.findByText("Wird installiert, Localist startet neu …")).toBeTruthy();
     await waitFor(() => expect(vault().update.befehle).toEqual(["check", "download_and_install", "restart"]));
+  });
+});
+
+describe("Ziehen und Ablegen (Etappe 22)", () => {
+  const zeile = async (pfad: string) => (await (await inTree()).findByTitle(pfad)).closest(".tree-row")!;
+  const loslassen = (pointerType = "mouse") => fireEvent.pointerUp(window, { pointerId: 1, pointerType, clientX: 5, clientY: 40 });
+  /** Nach dem Loslassen schluckt die Seite kurz den folgenden Klick (er gehört noch zum Ziehen). */
+  const kurzWarten = (ms = 0) => act(() => new Promise((fertig) => setTimeout(fertig, ms)));
+
+  it("Namenskonflikt im Ziel (auch über beide Typen): nichts wird verschoben, eine verständliche Meldung erscheint", async () => {
+    await openVaultFromStart();
+    act(() => vault().externalWrite("Vorlagen/Ideen.html", "<!doctype html><title>Ideen</title>"));
+    fireEvent.click(await (await inTree()).findByText("Vorlagen"));
+    await (await inTree()).findByTitle("Vorlagen/Ideen.html");
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    ziehe(await zeile("Notizen/Ideen.md"), await zeile("Vorlagen"));
+    expect((await screen.findByRole("alert")).textContent).toContain("„Ideen“ wurde nicht verschoben: In „Vorlagen“ gibt es schon eine Seite „Ideen“.");
+    expect(vault().files.has("Notizen/Ideen.md")).toBe(true);
+    expect(vault().files.has("Vorlagen/Ideen.md")).toBe(false);
+    expect(vault().files.get("Vorlagen/Ideen.html")).toBe("<!doctype html><title>Ideen</title>");
+  });
+
+  it("nach dem Verschieben: Meldung mit „Rückgängig“; Rückgängig schiebt zurück, Links und Favoriten wie vorher", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    await zeile("Notizen/Ideen.md");
+    const vorher = new Map(vault().files);
+    ziehe(await zeile("Notizen/Ideen.md"), await zeile("Vorlagen"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toMatch(/^„Ideen“ nach „Vorlagen“ verschoben\. Links in 2 Seiten angepasst\.Rückgängig$/));
+    expect(vault().files.get("Notizen/DNS.html")).toContain('<a href="../Vorlagen/Ideen.md">Ideen</a>');
+    expect(JSON.parse(vault().files.get(".localist/settings.json")!).favoriten).toEqual(["Vorlagen/Ideen.md", "Projekte"]);
+    await kurzWarten();
+    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "Rückgängig" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("„Ideen“ ist wieder in „Notizen“. Links in 2 Seiten angepasst."));
+    expect(vault().files.has("Vorlagen/Ideen.md")).toBe(false);
+    // Alle Dateien wieder genau wie vorher (Seite, Links in DNS.html, Favoriten)
+    expect([...vault().files.keys()].sort()).toEqual([...vorher.keys()].sort());
+    for (const [pfad, inhalt] of vorher) expect([pfad, vault().files.get(pfad)]).toEqual([pfad, inhalt]);
+  });
+
+  it("Verweilen über einem zugeklappten Ordner klappt ihn auf; Escape bricht ab, nichts wird verschoben", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    const vorlagen = await zeile("Vorlagen");
+    ziehe(await zeile("Notizen/Ideen.md"), vorlagen, { loslassen: false });
+    expect(vorlagen.classList.contains("drop-target")).toBe(true);
+    expect(vorlagen.closest("li")!.getAttribute("aria-expanded")).toBe("false");
+    await kurzWarten(VERWEILEN_MS - 250);
+    expect(vorlagen.closest("li")!.getAttribute("aria-expanded")).toBe("false");
+    await kurzWarten(400);
+    expect(vorlagen.closest("li")!.getAttribute("aria-expanded")).toBe("true");
+    expect(await (await inTree()).findByTitle("Vorlagen/Projekt.md")).toBeTruthy();
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(vorlagen.classList.contains("drop-target")).toBe(false);
+    expect(document.querySelector(".ziehen-geist")).toBeNull();
+    loslassen();
+    await kurzWarten(200);
+    expect(vault().files.has("Notizen/Ideen.md")).toBe(true);
+    expect(vault().files.has("Vorlagen/Ideen.md")).toBe(false);
+  });
+
+  it("in die oberste Ebene: Fläche „In die oberste Ebene“ (nur beim Ziehen) und die Überschrift „Seiten“", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    expect(document.querySelector(".tree-wurzel")).toBeNull();
+    const ideen = await zeile("Notizen/Ideen.md");
+    ziehe(ideen, ideen, { loslassen: false });
+    const wurzel = document.querySelector<HTMLElement>(".tree-wurzel")!;
+    expect(wurzel.textContent).toBe("In die oberste Ebene");
+    document.elementFromPoint = () => wurzel;
+    fireEvent.pointerMove(window, { pointerId: 1, pointerType: "mouse", clientX: 5, clientY: 80 });
+    expect(wurzel.classList.contains("drop-target")).toBe(true);
+    expect(screen.getByRole("tree").classList.contains("drop-target")).toBe(true);
+    loslassen();
+    await waitFor(() => expect(vault().files.has("Ideen.md")).toBe(true));
+    expect(document.querySelector(".tree-wurzel")).toBeNull();
+    // Die Überschrift „Seiten“ nimmt ebenfalls an: „Formatierung“ in die oberste Ebene
+    await kurzWarten();
+    ziehe(await zeile("Notizen/Formatierung.md"), document.querySelector(".sidebar-section--tree .sidebar-section-head")!);
+    await waitFor(() => expect(vault().files.has("Formatierung.md")).toBe(true));
+  });
+
+  it("Handy: lange drücken greift (unter 400 ms nicht), Ziehen legt ab; ohne Bewegung das Menü; Tippen öffnet", async () => {
+    localStorage.setItem("dev-platform", "android");
+    handyBildschirm();
+    await openVaultFromStart();
+    fireEvent.click(navigation().getByRole("button", { name: "Seiten" }));
+    const seiten = within(document.querySelector<HTMLElement>(".sidebar-shell.open")!).getByRole("tree");
+    fireEvent.click(await within(seiten).findByText("Notizen"));
+    const ideen = (await within(seiten).findByTitle("Notizen/Ideen.md")).closest(".tree-row")!;
+    const vorlagen = within(seiten).getByTitle("Vorlagen").closest(".tree-row")!;
+    const finger = { pointerId: 1, pointerType: "touch" };
+
+    // Lange drücken ohne Bewegung: Die Zeile hebt sich an, beim Loslassen erscheint das Menü (wie bisher), kein Systemmenü
+    fireEvent.pointerDown(ideen, { ...finger, clientX: 20, clientY: 20 });
+    await kurzWarten(GREIFEN_MS - 150);
+    expect(ideen.classList.contains("is-gegriffen")).toBe(false);
+    await kurzWarten(250);
+    expect(ideen.classList.contains("is-gegriffen")).toBe(true);
+    expect(fireEvent.contextMenu(ideen)).toBe(false);
+    expect(screen.queryByRole("menu")).toBeNull();
+    fireEvent.pointerUp(window, { ...finger, clientX: 21, clientY: 22 });
+    expect(await screen.findByRole("menu", { name: "Aktionen für „Ideen“" })).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    await kurzWarten();
+
+    // Lange drücken und ziehen: kein Menü, die Datei liegt danach im Zielordner, Meldung mit „Rückgängig“
+    document.elementFromPoint = () => vorlagen;
+    fireEvent.pointerDown(ideen, { ...finger, clientX: 20, clientY: 20 });
+    await kurzWarten(GREIFEN_MS + 50);
+    fireEvent.pointerMove(window, { ...finger, clientX: 20, clientY: 90 });
+    expect(vorlagen.classList.contains("drop-target")).toBe(true);
+    expect(ideen.classList.contains("is-gezogen")).toBe(true);
+    fireEvent.pointerUp(window, { ...finger, clientX: 20, clientY: 90 });
+    await waitFor(() => expect(vault().files.has("Vorlagen/Ideen.md")).toBe(true));
+    expect(screen.queryByRole("menu")).toBeNull();
+    // Die Meldung liegt außerhalb von <main> (dort inert) und ist über der Ansicht „Seiten“ bedienbar.
+    const meldung = await screen.findByRole("status");
+    expect(meldung.closest("main")).toBeNull();
+    expect(meldung.closest("[inert]")).toBeNull();
+    expect(within(meldung).getByRole("button", { name: "Rückgängig" })).toBeTruthy();
+
+    // Wischen (Bewegung vor 400 ms) greift nichts; kurzes Tippen öffnet wie bisher
+    await kurzWarten();
+    const formatierung = within(seiten).getByTitle("Notizen/Formatierung.md").closest(".tree-row")!;
+    fireEvent.pointerDown(formatierung, { ...finger, clientX: 20, clientY: 200 });
+    fireEvent.pointerMove(window, { ...finger, clientX: 20, clientY: 120 });
+    await kurzWarten(GREIFEN_MS + 50);
+    expect(formatierung.classList.contains("is-gegriffen")).toBe(false);
+    fireEvent.pointerCancel(window, finger);
+    fireEvent.click(within(formatierung as HTMLElement).getByTitle("Notizen/Formatierung.md"));
+    await waitFor(() => expect((screen.getByRole("textbox", { name: "Seitentitel" }) as HTMLInputElement).value).toBe("Formatierung"));
+  });
+
+  it("Kanban und Notizbuch-Reihenfolge per Finger (lange drücken, ziehen, loslassen)", async () => {
+    await openVaultFromStart();
+    fireEvent.click(await (await inTree()).findByText("Projekte"));
+    fireEvent.click(await screen.findByRole("button", { name: "Ansicht hinzufügen" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Kanban" }));
+    const board = await screen.findByRole("list", { name: "Kanban nach status" });
+    const karte = within(board).getByRole("article", { name: "Umzug" });
+    const spalte = within(board).getByRole("listitem", { name: "Spalte In Arbeit" });
+    const finger = { pointerId: 1, pointerType: "touch" };
+    document.elementFromPoint = () => spalte;
+    fireEvent.pointerDown(karte, { ...finger, clientX: 20, clientY: 20 });
+    await kurzWarten(GREIFEN_MS + 50);
+    expect(karte.classList.contains("is-gegriffen")).toBe(true);
+    fireEvent.pointerMove(window, { ...finger, clientX: 220, clientY: 20 });
+    expect(spalte.classList.contains("drop-target")).toBe(true);
+    fireEvent.pointerUp(window, { ...finger, clientX: 220, clientY: 20 });
+    await waitFor(() => expect(vault().files.get("Projekte/Umzug.md")).toContain("status: In Arbeit\n"));
+
+    await kurzWarten();
+    fireEvent.click(await (await inTree()).findByText("Lernen"));
+    await screen.findByRole("heading", { name: "Lernen für die Prüfung", level: 1 });
+    const inhaltsverzeichnis = within(screen.getByRole("navigation", { name: "Inhaltsverzeichnis" }));
+    const eintrag = (name: string) => inhaltsverzeichnis.getByText(name).closest("li")!;
+    document.elementFromPoint = () => eintrag("Bausteine");
+    fireEvent.pointerDown(eintrag("Subnetting"), { ...finger, clientX: 20, clientY: 5 });
+    await kurzWarten(GREIFEN_MS + 50);
+    fireEvent.pointerMove(window, { ...finger, clientX: 20, clientY: 60 });
+    expect(eintrag("Bausteine").classList.contains("drop-after")).toBe(true);
+    fireEvent.pointerUp(window, { ...finger, clientX: 20, clientY: 60 });
+    await waitFor(() => expect(vault().files.get("Lernen/_notizbuch.yaml")).toBe("titel: Lernen für die Prüfung\nseiten:\n  - Bausteine.html\n  - Subnetting.md\n"));
   });
 });

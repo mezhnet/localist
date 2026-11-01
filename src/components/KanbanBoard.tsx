@@ -1,10 +1,12 @@
 // Kanban-Ansicht: eine Spalte pro Wert einer Status- oder Auswahl-Eigenschaft.
-// Karten lassen sich per Drag & Drop in eine andere Spalte ziehen; das ändert den Wert in der Datei.
+// Karten lassen sich in eine andere Spalte ziehen (src/lib/ziehen.ts: Maus sofort, Finger nach langem Drücken);
+// das ändert den Wert in der Datei.
 import { FileText, Plus } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import type { DatabaseConfig, Row, ViewConfig } from "../lib/database";
 import { groupRows } from "../lib/kanban";
 import { formatValue, RESERVED_FIELDS } from "../lib/properties";
+import { useZiehen } from "../lib/ziehen";
 import { Badge, Button } from "./ui";
 
 interface Props {
@@ -23,37 +25,36 @@ interface Props {
 
 export function KanbanBoard({ rows, view, config, property, icons, onOpen, onMove, onCreate }: Props) {
   const columns = groupRows(rows, view, config, property);
-  const dragged = useRef<string | null>(null);
-  const [over, setOver] = useState<string | null | undefined>(undefined);
+  const board = useRef<HTMLDivElement>(null);
 
-  const drop = (value: string | null, path: string | undefined) => {
-    setOver(undefined);
-    const row = rows.find((r) => r.path === (path || dragged.current));
-    dragged.current = null;
-    if (!row) return;
+  const drop = (row: Row, value: string | null) => {
     const current = row.values[property];
     const currentValue = current === undefined || current === null || current === "" ? null : String(current);
     if ((currentValue ?? "").toLowerCase() !== (value ?? "").toLowerCase()) onMove(row, value);
   };
 
+  /** Ziel ist die Spalte unter dem Zeiger (`data-spalte`, "" = „Ohne …“). */
+  const ziehen = useZiehen<Row, { wert: string | null }>({
+    zielAn: (element) => {
+      const spalte = element.closest<HTMLElement>("[data-spalte]");
+      if (!spalte || !board.current?.contains(spalte)) return null;
+      return { wert: spalte.dataset.spalte || null };
+    },
+    onAblegen: (row, ziel) => drop(row, ziel.wert),
+  });
+  /** Spalte, in die gerade abgelegt würde (null = „Ohne …“, undefined = keine). */
+  const over = ziehen.zustand?.ziel ? ziehen.zustand.ziel.wert : undefined;
+  const gezogen = ziehen.zustand;
+
   return (
-    <div className="kanban" role="list" aria-label={`Kanban nach ${property}`}>
+    <div className="kanban" role="list" aria-label={`Kanban nach ${property}`} ref={board}>
       {columns.map((column) => (
         <section
           key={column.value ?? "\0ohne"}
           role="listitem"
           aria-label={`Spalte ${column.label}`}
           className={`kanban-column${over === column.value ? " drop-target" : ""}${column.value === null ? " empty-column" : ""}`}
-          onDragOver={(event) => {
-            event.preventDefault();
-            if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-            setOver(column.value);
-          }}
-          onDragLeave={() => setOver(undefined)}
-          onDrop={(event) => {
-            event.preventDefault();
-            drop(column.value, event.dataTransfer?.getData("text/plain"));
-          }}
+          data-spalte={column.value ?? ""}
         >
           <header className="kanban-column-header">
             <span className={`kanban-label status-${(column.value ?? "ohne").toLowerCase().replace(/\s+/g, "-")}`}>{column.label}</span>
@@ -62,15 +63,9 @@ export function KanbanBoard({ rows, view, config, property, icons, onOpen, onMov
           {column.rows.map((row) => (
             <article
               key={row.path}
-              className="kanban-card"
-              draggable
+              className={`kanban-card${gezogen?.quelle.path === row.path ? (gezogen.phase === "gegriffen" ? " is-gegriffen" : " is-gezogen") : ""}`}
               aria-label={row.title}
-              onDragStart={(event) => {
-                dragged.current = row.path;
-                event.dataTransfer?.setData("text/plain", row.path);
-                if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-              }}
-              onDragEnd={() => setOver(undefined)}
+              {...ziehen.griff(row)}
               onClick={() => onOpen(row.path)}
               onKeyDown={(event) => event.key === "Enter" && onOpen(row.path)}
               tabIndex={0}
