@@ -75,6 +75,22 @@ export function verschieben(reihenfolge: readonly string[], datei: string, ziel:
 }
 
 /**
+ * „Rückgängig“ nach dem Verschieben aus dem Notizbuch: `datei` kommt wieder an ihren alten Platz in `seiten` – vor
+ * den ersten Eintrag, der in der alten Reihenfolge `vorher` nach ihr kam und noch da ist (sonst ans Ende). Stand sie
+ * vorher nicht in der Liste oder steht sie schon wieder darin, bleibt der Text unverändert.
+ */
+export function notizbuchWiederEinfuegen(text: string, datei: string, vorher: readonly string[]): string {
+  const klein = (name: string) => name.toLowerCase();
+  const alt = vorher.findIndex((name) => klein(name) === klein(datei));
+  const seiten = notizbuchLesen(text).seiten;
+  if (alt === -1 || seiten.some((name) => klein(name) === klein(datei))) return text;
+  const danach = vorher.slice(alt + 1).map(klein);
+  const index = seiten.findIndex((name) => danach.includes(klein(name)));
+  const neu = index === -1 ? [...seiten, datei] : [...seiten.slice(0, index), datei, ...seiten.slice(index)];
+  return notizbuchMitReihenfolge(text, neu);
+}
+
+/**
  * Nach Umbenennen, Verschieben oder Umwandeln einer Seite: Einträge in `seiten` anpassen. `alt` und `neu`
  * sind Dateinamen; `neu` = null, wenn die Seite den Ordner verlassen hat (dann fällt der Eintrag weg).
  */

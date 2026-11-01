@@ -1,6 +1,6 @@
 // Notizbücher: _notizbuch.yaml lesen und schreiben, Reihenfolge der Seiten.
 import { describe, expect, it } from "vitest";
-import { notizbuchLesen, notizbuchMitReihenfolge, notizbuchNeu, notizbuchReihenfolge, notizbuchUmbenennen, verschieben } from "./notizbuch";
+import { notizbuchLesen, notizbuchMitReihenfolge, notizbuchNeu, notizbuchReihenfolge, notizbuchUmbenennen, notizbuchWiederEinfuegen, verschieben } from "./notizbuch";
 
 describe("_notizbuch.yaml", () => {
   it("liest Titel und Seiten, auch mit Kommentaren und fehlerhaftem Inhalt", () => {
@@ -38,5 +38,17 @@ describe("_notizbuch.yaml", () => {
     expect(notizbuchUmbenennen(text, "Ideen.md", "Ideen.html")).toBe("titel: X\nseiten:\n  - Ideen.html\n  - DNS.html\n");
     expect(notizbuchUmbenennen(text, "dns.html", null)).toBe("titel: X\nseiten:\n  - Ideen.md\n");
     expect(notizbuchUmbenennen(text, "Fehlt.md", "Neu.md")).toBe(text);
+  });
+
+  it("„Rückgängig“ nach dem Verschieben: die Seite kommt an ihren alten Platz im Notizbuch zurück (Etappe 22)", () => {
+    const vorher = ["A.md", "B.html", "C.md", "D.md"];
+    const ohneB = "titel: X\nseiten:\n  - A.md\n  - C.md\n  - D.md\n";
+    expect(notizbuchWiederEinfuegen(ohneB, "B.html", vorher)).toBe("titel: X\nseiten:\n  - A.md\n  - B.html\n  - C.md\n  - D.md\n");
+    // Der Nachfolger fehlt inzwischen: vor den nächsten vorhandenen, sonst ans Ende
+    expect(notizbuchWiederEinfuegen("titel: X\nseiten:\n  - A.md\n  - D.md\n", "B.html", vorher)).toBe("titel: X\nseiten:\n  - A.md\n  - B.html\n  - D.md\n");
+    expect(notizbuchWiederEinfuegen("titel: X\nseiten:\n  - A.md\n  - C.md\n", "D.md", vorher)).toBe("titel: X\nseiten:\n  - A.md\n  - C.md\n  - D.md\n");
+    // Stand nicht in der Liste oder steht schon wieder darin: unverändert
+    expect(notizbuchWiederEinfuegen(ohneB, "Neu.md", vorher)).toBe(ohneB);
+    expect(notizbuchWiederEinfuegen("titel: X\nseiten:\n  - b.html\n", "B.html", vorher)).toBe("titel: X\nseiten:\n  - b.html\n");
   });
 });

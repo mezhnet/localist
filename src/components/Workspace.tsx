@@ -43,7 +43,7 @@ import type { EigenerBaustein } from "../lib/eigene-bausteine";
 import { eigenstaendigesHtml } from "../lib/export";
 import { LOCALIST_CSS, LOCALIST_JS } from "../lib/gebuendelt";
 import { seiteAlsHtml } from "../lib/notiz-darstellung";
-import { NOTIZBUCH_DATEI, notizbuchNeu, notizbuchReihenfolge, notizbuchUmbenennen } from "../lib/notizbuch";
+import { NOTIZBUCH_DATEI, notizbuchLesen, notizbuchNeu, notizbuchReihenfolge, notizbuchUmbenennen, notizbuchWiederEinfuegen } from "../lib/notizbuch";
 import {
   confirmAction,
   createFolder,
@@ -686,7 +686,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     try {
       // Vorher speichern: Auch die offene Seite kann Links enthalten, die gleich angepasst werden.
       await saverRef.current?.flush();
-      const oldPages = allPages(tree);
+      // Der aktuelle Baum, nicht der beim Zeichnen gemerkte: „Rückgängig“ läuft aus einer älteren Meldung heraus.
+      const oldPages = allPages(treeRef.current);
       const newPath = await action();
       if (newPath === node.path) return true;
       // Alle Reiter folgen (Seiten, Datenbanken und Notizbücher in einem umbenannten Ordner auch).
@@ -726,25 +727,50 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       return false;
     }
     const herkunft = parentDir(node.path);
+    // Verlässt eine Seite ein Notizbuch, fällt ihr Eintrag weg; für „Rückgängig“ die Reihenfolge vorher merken.
+    const notizbuchVorher = node.kind === "page" ? await notizbuchSeiten(herkunft) : null;
     return relocate(node, () => moveEntry(node.path, targetDir), false, (newPath, changed) => ({
       kind: "info",
       text: [`„${node.name}“ nach „${ordnerName(targetDir)}“ verschoben.`, linksText(changed)].filter(Boolean).join(" "),
-      aktion: { label: "Rückgängig", onClick: () => void rueckgaengig(newPath, herkunft) },
+      aktion: { label: "Rückgängig", onClick: () => void rueckgaengig(newPath, herkunft, notizbuchVorher) },
     }));
   };
 
-  /** „Rückgängig“ nach dem Verschieben: zurück in den alten Ordner, Links, Reiter und Favoriten folgen wieder. */
-  const rueckgaengig = async (path: string, herkunft: string) => {
+  /** Reihenfolge im Notizbuch `folder` (null, wenn der Ordner keins ist oder die Datei fehlt). */
+  const notizbuchSeiten = async (folder: string): Promise<string[] | null> => {
+    if (!folder || !findNode(treeRef.current, folder)?.notebook) return null;
+    try {
+      return notizbuchLesen(await readPage(`${folder}/${NOTIZBUCH_DATEI}`)).seiten;
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * „Rückgängig“ nach dem Verschieben: zurück in den alten Ordner; Links, Reiter und Favoriten folgen wieder, und eine
+   * Seite bekommt im Notizbuch ihren alten Platz zurück.
+   */
+  const rueckgaengig = async (path: string, herkunft: string, notizbuchVorher: string[] | null) => {
     setNotice(null);
     const node = findNode(treeRef.current, path);
     if (!node) {
       showError(`„${pageTitle(path)}“ ist nicht mehr da und kann nicht zurückgeschoben werden.`);
       return;
     }
-    await relocate(node, () => moveEntry(path, herkunft), false, (_, changed) => ({
+    let zurueck = "";
+    const ok = await relocate(node, () => moveEntry(path, herkunft).then((neu) => (zurueck = neu)), false, (_, changed) => ({
       kind: "info",
       text: [`„${node.name}“ ist wieder in „${ordnerName(herkunft)}“.`, linksText(changed)].filter(Boolean).join(" "),
     }));
+    if (!ok || !notizbuchVorher || !zurueck) return;
+    const datei = `${herkunft}/${NOTIZBUCH_DATEI}`;
+    try {
+      const text = await readPage(datei);
+      const wieder = notizbuchWiederEinfuegen(text, zurueck.slice(herkunft.length + 1), notizbuchVorher);
+      if (wieder !== text) await writePage(datei, wieder);
+    } catch (error) {
+      showError(errorMessage(error));
+    }
   };
 
   /**

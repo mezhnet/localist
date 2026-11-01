@@ -3006,6 +3006,60 @@ describe("Ziehen und Ablegen (Etappe 22)", () => {
     for (const [pfad, inhalt] of vorher) expect([pfad, vault().files.get(pfad)]).toEqual([pfad, inhalt]);
   });
 
+  it("„Rückgängig“ stellt alles genau wieder her: HTML-Seite mit anderer Ordnertiefe, Pfad-Links, Platz im Notizbuch", async () => {
+    await openVaultFromStart();
+    // Pfad-Link [[Notizen/Ideen]] (wird beim Verschieben zu [[Vorlagen/Ideen]])
+    act(() => vault().externalWrite("Pfadlink.md", "---\nid: 0b1c2d3e-4f50-4617-8a9b-0c1d2e3f4a5b\n---\nSiehe [[Notizen/Ideen]].\n"));
+    fireEvent.click(await (await inTree()).findByText("Notizen"));
+    fireEvent.click(await (await inTree()).findByText("Lernen"));
+    await (await inTree()).findByTitle("Pfadlink.md");
+    const alleGleich = (vorher: Map<string, string>) => {
+      expect([...vault().files.keys()].sort()).toEqual([...vorher.keys()].sort());
+      // Angepasste Pfade schreibt die App (wie seit Etappe 10) mit Umlauten statt %C3%A4 – dieselbe Adresse.
+      const einheitlich = (text: string) => text.replace(/%C3%A4/g, "ä");
+      for (const [pfad, alt] of vorher) {
+        const jetzt = einheitlich(vault().files.get(pfad) ?? "");
+        const inhalt = einheitlich(alt);
+        if (jetzt !== inhalt) {
+          let i = 0;
+          while (i < jetzt.length && jetzt[i] === inhalt[i]) i++;
+          throw new Error(`${pfad} weicht ab ab Zeichen ${i}: vorher „${inhalt.slice(i - 60, i + 60)}“, jetzt „${jetzt.slice(i - 60, i + 60)}“`);
+        }
+      }
+    };
+    const rueckgaengig = async (text: string) => {
+      await kurzWarten();
+      fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "Rückgängig" }));
+      await waitFor(() => expect(screen.getByRole("status").textContent).toContain(text));
+    };
+
+    // 1. HTML-Seite „DNS“ (relative Links, Bild, Bausteine) aus „Notizen“ in die oberste Ebene und zurück
+    let vorher = new Map(vault().files);
+    ziehe(await zeile("Notizen/DNS.html"), screen.getByRole("tree"));
+    await waitFor(() => expect(vault().files.get("DNS.html")).toContain('<a href="Notizen/Ideen.md">'));
+    await rueckgaengig("„DNS“ ist wieder in „Notizen“.");
+    await waitFor(() => expect(vault().files.has("DNS.html")).toBe(false));
+    alleGleich(vorher);
+
+    // 2. „Ideen“ nach „Vorlagen“: [[Notizen/Ideen]] wird [[Vorlagen/Ideen]], nach Rückgängig wieder wie vorher
+    vorher = new Map(vault().files);
+    ziehe(await zeile("Notizen/Ideen.md"), await zeile("Vorlagen"));
+    await waitFor(() => expect(vault().files.get("Pfadlink.md")).toContain("[[Vorlagen/Ideen]]"));
+    await rueckgaengig("„Ideen“ ist wieder in „Notizen“.");
+    await waitFor(() => expect(vault().files.get("Pfadlink.md")).toContain("[[Notizen/Ideen]]"));
+    alleGleich(vorher);
+
+    // 3. „Subnetting“ verlässt das Notizbuch „Lernen“ (Eintrag fällt weg) und kommt an seinen alten Platz zurück
+    vorher = new Map(vault().files);
+    ziehe(await zeile("Lernen/Subnetting.md"), await zeile("Notizen"));
+    await waitFor(() => expect(vault().files.get("Lernen/_notizbuch.yaml")).not.toContain("Subnetting.md"));
+    await rueckgaengig("„Subnetting“ ist wieder in „Lernen“.");
+    await waitFor(() => expect(vault().files.get("Lernen/_notizbuch.yaml")).toBe(vorher.get("Lernen/_notizbuch.yaml")));
+    alleGleich(vorher);
+    // Das Vorschau-Backend meldet Schreibvorgänge 250 ms später: erst danach aufräumen.
+    await kurzWarten(400);
+  });
+
   it("Verweilen über einem zugeklappten Ordner klappt ihn auf; Escape bricht ab, nichts wird verschoben", async () => {
     await openVaultFromStart();
     fireEvent.click(await (await inTree()).findByText("Notizen"));
