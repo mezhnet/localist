@@ -16,10 +16,19 @@
 - [ ] Arbeitsregel 6 erfüllt, APK baut, Sicherheitstest 21/21, Klicklisten 1.0, 2.0, 2.1, 2.3 und 2.4 abgehakt.
 - [ ] Version 2.4.0 gesetzt, „Neu in Version 2.4“ in `README.md` und `ANLEITUNG.md`.
 
+## Klickliste „Version 2.4“
+Feste Liste für Version 2.4, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.4` (Maus bei 1280 × 800, Punkt 4 bei 360 × 740 mit Touch; die Uhr der Vorschau wird über `__devVault.vorspulen` vorgestellt).
+
+Letzter Stand: 2026-11-01 14:09, Etappe 23, alle 4 Punkte bestanden.
+- [x] Pomodoro öffnen, Fokus auf 1 Min. stellen, starten, zu einer Notiz wechseln: Der Mini-Timer läuft weiter.
+- [x] Ablauf (Zeit in der Vorschau vorspulen): Meldung erscheint, die Session steht unter „Heute“.
+- [x] „Pomodoro für diese Seite starten“ im „…“-Menü von „Ideen“: Der Link zur Seite erscheint.
+- [x] Handy 360 × 740: Mini-Leiste über der Navigationsleiste, Klick öffnet die Ansicht.
+
 ## Klickliste „Version 2.3“
 Feste Liste für Version 2.3, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.3` (Maus bei 1280 × 800, Finger bei 360 × 740 mit Touch).
 
-Letzter Stand: 2026-11-01 02:54, Etappe 22, alle 4 Punkte bestanden.
+Letzter Stand: 2026-11-01 14:40, Etappe 23, alle 4 Punkte bestanden.
 - [x] Seite in einen Ordner ziehen, danach „Rückgängig“.
 - [x] Ordner in einen anderen Ordner ziehen; ein Link auf eine Seite darin funktioniert danach noch.
 - [x] Handy-Ansicht 360 × 740 mit Touch: lange drücken, ziehen, ablegen.
@@ -28,7 +37,7 @@ Letzter Stand: 2026-11-01 02:54, Etappe 22, alle 4 Punkte bestanden.
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 1.0` (echte Tastatur und Maus in Microsoft Edge).
 
-Letzter Stand: 2026-11-01 03:20, Etappe 22, alle 12 Punkte bestanden (Punkt 6 zieht seit Etappe 22 mit der Maus).
+Letzter Stand: 2026-11-01 14:33, Etappe 23, alle 12 Punkte bestanden (Punkt 6 zieht seit Etappe 22 mit der Maus).
 - [x] Notiz bearbeiten: Seite „Notizen/Ideen“ öffnen, Text tippen, nach kurzer Zeit ist er gespeichert.
 - [x] Callout: Über das „/“-Menü einen Callout einfügen; er wird als `> [!info]` gespeichert.
 - [x] Link: `[[` tippen, eine Seite aus den Vorschlägen wählen, Klick auf den Link öffnet sie.
@@ -45,7 +54,7 @@ Letzter Stand: 2026-11-01 03:20, Etappe 22, alle 12 Punkte bestanden (Punkt 6 zi
 ## Klickliste „Version 2.0“
 Feste Liste für Version 2.0, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.0`.
 
-Letzter Stand: 2026-11-01 03:21, Etappe 22, alle 7 Punkte bestanden.
+Letzter Stand: 2026-11-01 14:35, Etappe 23, alle 7 Punkte bestanden.
 - [x] HTML-Seite anlegen: „Neu“ → „HTML-Seite“ legt `Unbenannt.html` nach dem Speicherformat an (mit `localist-id`) und öffnet sie in „Geteilt“.
 - [x] Code bearbeiten: Im Code-Editor tippen; gespeichert wird nur die geänderte Stelle, die Vorschau zeigt den neuen Text.
 - [x] Jeder Baustein: alle 13 Bausteine über die Werkzeugleiste einfügen (Bild und Seitenlink mit Auswahl), in „Lesen“ dargestellt, Karteikarte per Klick umdrehen.
@@ -57,7 +66,7 @@ Letzter Stand: 2026-11-01 03:21, Etappe 22, alle 7 Punkte bestanden.
 ## Klickliste „Version 2.1“
 Feste Liste für Version 2.1, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.1` (1280 × 800).
 
-Letzter Stand: 2026-11-01 03:22, Etappe 22, alle 9 Punkte bestanden.
+Letzter Stand: 2026-11-01 14:38, Etappe 23, alle 9 Punkte bestanden.
 - [x] Tab/Shift+Tab in Liste und Code: In „Ideen“ einen Listenpunkt mit Tab einrücken und mit Umschalt+Tab ausrücken (gespeichert, Fokus bleibt im Editor); im Code-Editor von „DNS“ eine Zeile mit dem Cursor mitten darin ein- und ausrücken.
 - [x] „Im Explorer öffnen“ in der Vorschau-Simulation: Rechtsklick auf eine Seite → „Im Explorer öffnen“ zeigt die Meldung der Vorschau mit dem Pfad.
 - [x] Seitenleiste rechts und eingeklappt: Einstellungen → Darstellung → „Rechts“, dann Strg+. ein- und wieder ausklappen; beides wird gemerkt.
