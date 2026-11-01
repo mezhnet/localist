@@ -1,9 +1,38 @@
-# Anleitung für Localist 2.2.0
+# Anleitung für Localist 2.4.0
 
 Localist ist ein Notiz- und Projektmanager im Stil von Notion, der alle Seiten als Markdown-Dateien in einem Ordner
 deiner Wahl speichert. Neben Notizen gibt es interaktive HTML-Seiten mit Bausteinen wie Karteikarten, Quiz und
 Diagrammen. Diese Anleitung erklärt, wie du Localist installierst, benutzt, im Entwicklungsmodus startest, testest
 und selbst baust.
+
+## Neu in Version 2.4
+
+- **Pomodoro – konzentriert arbeiten mit Pausen:** Am PC steht in der Seitenleiste der neue Bereich **„Werkzeuge“**
+  mit **„Pomodoro“** (Strg+Klick öffnet es in einem neuen Reiter). Auf dem Handy gibt es auf der Startseite die
+  Schnellaktion **„Pomodoro“** und oben in **„Seiten“** denselben Eintrag. Die Ansicht zeigt einen großen Ring mit
+  der Restzeit, die Phase (Fokus, kurze Pause, lange Pause) und die Runde, z. B. „Runde 2 von 4“.
+- **Bedienen:** **Starten**, **Pausieren**, **Fortsetzen**, **Überspringen** (weiter zur nächsten Phase) und
+  **Zurücksetzen** (alles auf Anfang). Die **Leertaste** startet und pausiert, solange du nicht gerade in ein Feld
+  tippst. Nach 4 Fokus-Runden kommt die lange Pause.
+- **Läuft überall weiter:** Öffnest du eine Notiz, läuft der Timer weiter. Ein **Mini-Timer** zeigt Phase und
+  Restzeit mit Pause-Knopf: am PC unten in der Seitenleiste (eingeklappt oben in der Leiste), auf dem Handy als
+  schmale Leiste über der Navigationsleiste. Ein Klick darauf öffnet wieder die Ansicht. Localist rechnet mit der
+  Uhrzeit, zu der die Phase endet – die Zeit stimmt deshalb auch nach dem Ruhezustand oder einem Neustart der App.
+- **Am Ende einer Phase** spielt Localist einen kurzen, ruhigen Ton und zeigt eine Benachrichtigung, z. B. „Fokus
+  geschafft – Zeit für 5 Minuten Pause“. **Am PC kommt die Benachrichtigung nur, solange Localist geöffnet ist (auch
+  minimiert).** Auf dem Handy kommt sie auch, wenn Localist im Hintergrund oder das Handy gesperrt ist. Beim ersten
+  Timer erklärt Localist kurz, wozu die Benachrichtigung dient, und Android fragt nach der Erlaubnis. Lehnst du ab,
+  läuft der Timer trotzdem, nur ohne Benachrichtigung.
+- **Ziel und Seite:** Im Feld **„Woran arbeitest du?“** kannst du notieren, was du vorhast. Im „…“-Menü einer Seite
+  startet **„Pomodoro für diese Seite starten“** einen Fokus für genau diese Seite; die Ansicht zeigt dann einen Link
+  zu ihr. Die Verknüpfung läuft über die feste `id` der Seite und bleibt beim Umbenennen und Verschieben erhalten.
+- **Verlauf:** Jede beendete oder abgebrochene Fokus-Session speichert Localist im Vault unter
+  `.localist/pomodoro/JJJJ-MM.jsonl` (eine Datei pro Monat, eine Zeile pro Session). Pausen werden nicht
+  gespeichert. Die Ansicht zeigt **„Heute“** (Anzahl, Minuten und die Sessions mit Ziel und Seite) und **„Diese
+  Woche“** (Minuten seit Montag).
+- **Einstellungen → „Pomodoro“:** Dauern von Fokus (1–120 Minuten), kurzer und langer Pause, nach wie vielen Runden
+  die lange Pause kommt, **„Pausen automatisch starten“**, **„Fokus automatisch starten“** (beide anfangs aus) und
+  der Ton. Sie gelten für den Vault und stehen in `.localist/settings.json` unter `pomodoro`.
 
 ## Neu in Version 2.3.2
 
@@ -485,6 +514,8 @@ holst du sie mit jedem Dateimanager zurück.
 | Einstellungen des Vaults (z. B. Eigenschaftstypen, Favoriten) | `<Vault>\.localist\settings.json` |
 | Aussehen und Funktion der Bausteine (verwaltet Localist, nicht von Hand ändern) | `<Vault>\.localist\bausteine\localist.css` und `localist.js` |
 | Deine eigenen Bausteine | `<Vault>\.localist\bausteine\eigene\` (eine `.html`-Datei pro Baustein) |
+| Pomodoro-Verlauf (beendete und abgebrochene Fokus-Sessions) | `<Vault>\.localist\pomodoro\JJJJ-MM.jsonl` |
+| Der gerade laufende Pomodoro-Timer | im Browser-Speicher der App (WebView2), nicht im Vault |
 | Zuletzt geöffneter Vault | `%APPDATA%\de.localist.desktop\zustand.json` |
 | Suchindex (jederzeit löschbar) | `%LOCALAPPDATA%\de.localist.desktop\suchindex\` |
 | Modus und Akzentfarbe, Seitenleiste (links/rechts, eingeklappt), offene Reiter, Code links/rechts und Teilung in „Geteilt“, zuletzt gewählte Ansicht einer Datenbank oder HTML-Seite | im Browser-Speicher der App (WebView2), nicht im Vault |

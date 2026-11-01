@@ -9,6 +9,17 @@ kein Server, keine Telemetrie, alles funktioniert offline.
 - Volltextsuche, Schnellsuche (Strg+P), Vorlagen, Favoriten und Backlinks
 - HTML-Seiten (`.html`) mit Code-Editor und Bausteinen wie Karteikarten, Quiz und Diagrammen
 - Notizbücher: ein Ordner als kleine Website mit Inhaltsverzeichnis
+- Pomodoro-Timer mit Verlauf im Vault
+
+## Neu in Version 2.4
+
+- **Pomodoro:** Ein Fokus-Timer mit kurzen und langen Pausen (Standard 25 / 5 / 15 Minuten, lange Pause nach
+  4 Runden), am PC unter **Werkzeuge → Pomodoro** in der Seitenleiste, auf dem Handy als Schnellaktion auf der
+  Startseite. Er läuft weiter, wenn du eine andere Seite öffnest; ein kleiner Mini-Timer zeigt dann die Restzeit.
+- **Am Ende** ein kurzer Ton und eine Benachrichtigung. Am PC kommt die Benachrichtigung nur, solange Localist
+  geöffnet ist (auch minimiert). Auf dem Handy kommt sie auch, wenn Localist im Hintergrund ist.
+- **Verlauf im Vault:** Jede Fokus-Session steht in `.localist/pomodoro/JJJJ-MM.jsonl`, optional mit Ziel und
+  verknüpfter Seite („Pomodoro für diese Seite starten“ im „…“-Menü). Die Ansicht zeigt „Heute“ und „Diese Woche“.
 
 ## Neu in Version 2.3.2
 
