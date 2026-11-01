@@ -10,6 +10,11 @@ kein Server, keine Telemetrie, alles funktioniert offline.
 - HTML-Seiten (`.html`) mit Code-Editor und Bausteinen wie Karteikarten, Quiz und Diagrammen
 - Notizbücher: ein Ordner als kleine Website mit Inhaltsverzeichnis
 
+## Neu in Version 2.3.2
+
+- **Eigenes App-Symbol auf Android:** Auf dem Startbildschirm und in der App-Liste steht jetzt das Localist-Logo statt
+  des Tauri-Logos. Es passt sich der Symbolform des Handys an (Kreis, abgerundetes Quadrat) und wird nicht angeschnitten.
+
 ## Neu in Version 2.3.1
 
 - **Updates auf dem Handy:** „Nach Updates suchen“ gibt es jetzt auch auf Android (Einstellungen → „Über Localist“).

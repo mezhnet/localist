@@ -5,6 +5,12 @@ deiner Wahl speichert. Neben Notizen gibt es interaktive HTML-Seiten mit Baustei
 Diagrammen. Diese Anleitung erklärt, wie du Localist installierst, benutzt, im Entwicklungsmodus startest, testest
 und selbst baust.
 
+## Neu in Version 2.3.2
+
+- **Eigenes App-Symbol auf Android:** Localist zeigt auf dem Startbildschirm und in der App-Liste jetzt das eigene
+  Logo (blaue Fläche, Seite mit „L“) statt des Tauri-Logos. Das Update kommt wie gewohnt über **„Nach Updates
+  suchen“**.
+
 ## Neu in Version 2.3.1
 
 - **Updates auf dem Handy:** Auch auf Android steht unter **Einstellungen → „Über Localist“** jetzt **„Nach Updates
