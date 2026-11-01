@@ -6,7 +6,8 @@
 #
 # Befehle: finde <pid> | info <hwnd> | oben <hwnd> <0|1> | vorholen <hwnd> | klick <hwnd> x y | doppelklick <hwnd> x y
 #          ziehen <hwnd> x y dx dy | tasten <hwnd> <win+left|win+right|win+up|win+down|escape> | zeigen <hwnd>
-#          bild <hwnd> <datei> | ende
+#          bild <hwnd> <datei> | runter <hwnd> x y | gleiten <hwnd> x y [schritte] [ms] | hoch <hwnd>
+#          datei <hwnd> x0 y0 x1 y1 <Pfad> | ende
 $ErrorActionPreference = 'Stop'
 Add-Type -TypeDefinition @'
 using System;
@@ -95,6 +96,17 @@ public static class LocalistFenster {
     mouse_event(LINKS_HOCH, 0, 0, 0, UIntPtr.Zero);
   }
 
+  // Einzelschritte für scripts/ziehen-pruefung.mjs: Nach SetCursorPos schickt ein Bewegen um 0 Pixel ein echtes
+  // Mausereignis, damit auch das Ziehen von Windows (OLE) und die Seite die neue Position mitbekommen.
+  const uint BEWEGEN = 0x0001;
+  public static void Bewege(int x, int y) { SetCursorPos(x, y); mouse_event(BEWEGEN, 0, 0, 0, UIntPtr.Zero); }
+  public static void Runter(int x, int y) { Bewege(x, y); Thread.Sleep(80); mouse_event(LINKS_RUNTER, 0, 0, 0, UIntPtr.Zero); }
+  public static void Hoch() { mouse_event(LINKS_HOCH, 0, 0, 0, UIntPtr.Zero); }
+  public static void Gleiten(int x, int y, int schritte, int ms) {
+    POINT p; GetCursorPos(out p);
+    for (int i = 1; i <= schritte; i++) { Bewege(p.X + (x - p.X) * i / schritte, p.Y + (y - p.Y) * i / schritte); Thread.Sleep(ms); }
+  }
+
   const byte LWIN = 0x5B; const uint HOCH = 0x0002, ERWEITERT = 0x0001;
 
   public static void Tasten(string was) {
@@ -115,6 +127,54 @@ public static class LocalistFenster {
 }
 '@
 Add-Type -AssemblyName System.Drawing
+# Datei ziehen wie aus dem Explorer: Ein kleines eigenes Fenster startet mit gedrückter Maustaste ein echtes
+# Windows-Ziehen (OLE, Format CF_HDROP), ein zweiter Faden führt die Maus zum Ziel und lässt dort los.
+Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @'
+using System;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows.Forms;
+
+public static class LocalistDateiZiehen {
+  [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
+  [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
+  [DllImport("user32.dll")] static extern void mouse_event(uint flags, int dx, int dy, uint data, UIntPtr extra);
+  [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr ctx);
+  static void Bewege(int x, int y) { SetCursorPos(x, y); mouse_event(0x0001, 0, 0, 0, UIntPtr.Zero); }
+
+  public static string Ziehen(string datei, int x0, int y0, int x1, int y1) {
+    var form = new Form { FormBorderStyle = FormBorderStyle.None, StartPosition = FormStartPosition.Manual, TopMost = true, ShowInTaskbar = false, BackColor = Color.Orange };
+    form.Bounds = new Rectangle(x0 - 30, y0 - 30, 60, 60);
+    string ergebnis = "kein Ziehen";
+    form.MouseDown += (s, e) => {
+      var daten = new DataObject(DataFormats.FileDrop, new string[] { datei });
+      ergebnis = form.DoDragDrop(daten, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link).ToString();
+      form.Close();
+    };
+    form.Shown += (s, e) => {
+      var faden = new Thread(() => {
+        // Wie der Hauptfaden in echten Bildschirmpixeln rechnen (sonst skaliert Windows die Koordinaten)
+        SetThreadDpiAwarenessContext(new IntPtr(-4));
+        Thread.Sleep(300);
+        Bewege(x0, y0); Thread.Sleep(80);
+        mouse_event(0x0002, 0, 0, 0, UIntPtr.Zero); // links runter
+        Thread.Sleep(300);
+        for (int i = 1; i <= 30; i++) { Bewege(x0 + (x1 - x0) * i / 30, y0 + (y1 - y0) * i / 30); Thread.Sleep(30); }
+        Thread.Sleep(800);
+        mouse_event(0x0004, 0, 0, 0, UIntPtr.Zero); // links hoch
+        Thread.Sleep(5000);
+        try { form.BeginInvoke((Action)(() => form.Close())); } catch { }
+      });
+      faden.IsBackground = true;
+      faden.Start();
+    };
+    Application.Run(form);
+    return ergebnis;
+  }
+}
+'@
 # Alle Koordinaten in echten Bildschirmpixeln (Per-Monitor-DPI v2)
 [void][LocalistFenster]::SetThreadDpiAwarenessContext([IntPtr](-4))
 
@@ -171,6 +231,23 @@ while ($true) {
         [LocalistFenster]::Ziehen([int]$teile[2], [int]$teile[3], [int]$teile[4], [int]$teile[5]); Antwort @{ ok = $true }
       }
       'tasten' { Vorn $h; [LocalistFenster]::Tasten($teile[2]); Antwort @{ ok = $true } }
+      # Ziehen in Einzelschritten (scripts/ziehen-pruefung.mjs): runter <hwnd> x y | gleiten <hwnd> x y [schritte] [ms] | hoch <hwnd>
+      'runter' { Vorn $h; Zeiger $h ([int]$teile[2]) ([int]$teile[3]); [LocalistFenster]::Runter([int]$teile[2], [int]$teile[3]); Antwort @{ ok = $true } }
+      'gleiten' {
+        Vorn $h; Zeiger $h ([int]$teile[2]) ([int]$teile[3])
+        $schritte = if ($teile.Length -gt 4) { [int]$teile[4] } else { 15 }
+        $ms = if ($teile.Length -gt 5) { [int]$teile[5] } else { 25 }
+        [LocalistFenster]::Gleiten([int]$teile[2], [int]$teile[3], $schritte, $ms); Antwort @{ ok = $true }
+      }
+      'hoch' { [LocalistFenster]::Hoch(); Antwort @{ ok = $true } }
+      # datei <hwnd> <x0> <y0> <x1> <y1> <Pfad>: Datei von (x0, y0) außerhalb des Fensters nach (x1, y1) im Fenster ziehen
+      'datei' {
+        Vorn $h; Zeiger $h ([int]$teile[4]) ([int]$teile[5])
+        $pfad = ($teile[6..($teile.Length - 1)] -join ' ')
+        if (-not (Test-Path -LiteralPath $pfad)) { throw "Datei fehlt: $pfad" }
+        $effekt = [LocalistDateiZiehen]::Ziehen($pfad, [int]$teile[2], [int]$teile[3], [int]$teile[4], [int]$teile[5])
+        Antwort @{ ok = $true; effekt = $effekt }
+      }
       'zeigen' { [void][LocalistFenster]::ShowWindow($h, 9); Antwort @{ ok = $true } }
       'vorholen' { Antwort @{ ok = $true; vorn = [LocalistFenster]::SetForegroundWindow($h) } }
       'bild' {

@@ -2,18 +2,32 @@
 
 ## Aktueller Stand
 - Etappe: 22 – Ziehen und Ablegen auf PC und Handy (Version 2.3, in Arbeit). Auftrag: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 02:15
-- Nächster Schritt: Phase 1 – Ziehen mit dem Stand 2.2.1 in der gebauten `localist.exe` (echte Maus per `SendInput`) und im Emulator 5556 (`adb shell input motionevent`) nachstellen, Tabelle „Ziehen vorher“ eintragen.
+- Zuletzt aktualisiert: 2026-11-01 02:50
+- Nächster Schritt: Phase 2 – `dragDropEnabled: false` in `tauri.conf.json`, Schutz gegen Navigieren beim Ablegen fremder Dateien, gemeinsamer Zieh-Mechanismus `src/lib/ziehen.ts` (Pointer Events) für Seitenleiste, Kanban und Notizbuch, Regeln (Hervorhebung, Aufklappen, Auto-Scroll, Escape, Namenskonflikt, Rückgängig) mit Tests.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Phase 0 erledigt: Version 2.2 liegt im Archiv, `CLAUDE.md` ist ergänzt und committet.
-- [ ] Phase 1: Die Tabelle „Ziehen vorher“ (PC-EXE und Android) steht in `FORTSCHRITT.md`.
+- [x] Phase 1: Die Tabelle „Ziehen vorher“ (PC-EXE und Android) steht in `FORTSCHRITT.md`. (Abschnitt „Ziehen vorher“; `scripts/ziehen-pruefung.mjs … vorher`, `scripts/android-ziehen-pruefung.mjs … vorher`)
 - [ ] Am PC funktioniert Ziehen in der gebauten `localist.exe` mit echter Maus: Seitenleiste, Kanban, Ziehgriff, Notizbuch-Reihenfolge (Nachweis im Chat).
 - [ ] Ziehen in der Seitenleiste mit Hervorhebung, Aufklappen beim Verweilen, Auto-Scroll, Escape, Namenskonflikt-Meldung und „Rückgängig“, getestet.
 - [ ] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat.
 - [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt.
 - [ ] Version 2.3.0 gesetzt, „Neu in Version 2.3“ in `README.md` und `ANLEITUNG.md`.
+
+## Ziehen vorher (Phase 1, Stand 2.2.1)
+PC: gebaute `localist.exe` 2.2.1 mit echter Maus (`node scripts/ziehen-pruefung.mjs <exe> <Ordner> vorher`, Eingaben über `mouse_event` in `scripts/fenster-helfer.ps1`, Datei per OLE-Ziehen wie aus dem Explorer). Handy: Debug-APK 2.2.1 im Emulator 5556 (`node scripts/android-ziehen-pruefung.mjs <adb> <apk> <Ordner> vorher`, `input motionevent DOWN`, 0,9 s Pause, `MOVE` …, `UP`).
+
+| Ort | PC (EXE) | Handy (APK) | Ursache |
+|---|---|---|---|
+| Seite in einen Ordner | geht nicht | geht nicht | PC: Tauri fängt jedes Ziehen ab (`dragDropEnabled` fehlt): `dragstart 1`, `dragover 0`, `drop 0`, Zeiger „verboten“. Handy: langes Drücken öffnet das Menü „Aktionen für …“, ein Ziehen startet nicht. |
+| Ordner in einen Ordner | geht nicht | geht nicht | wie oben |
+| Seite in die Vault-Wurzel | geht nicht | nicht geprüft | PC wie oben; außerdem gibt es keine freie Ablagefläche für die Wurzel (nur eine Seite der Wurzel als Ziel). |
+| Kanban-Karte in eine andere Spalte | geht nicht | geht nicht | PC wie oben; Handy: HTML5-Ziehen per Finger startet auf der Karte nicht. |
+| Ziehgriff im Block-Editor | geht nicht | geht (senkrecht) | PC wie oben. Handy: Der Griff liegt am linken Rand (x ≈ 8 CSS-px); waagerechtes Ziehen von dort ist die Zurück-Geste von Android und schließt die App. |
+| Reihenfolge im Notizbuch | geht nicht | geht | PC wie oben; Handy: Android-WebView startet HTML5-Ziehen nach langem Druck. |
+| Bild aus dem Explorer in eine Notiz | geht nicht | – | Tauri nimmt die Datei an (Effekt `Copy, Move, Link`), die Seite bekommt kein `drop`. Natives Ablegen (`onDragDropEvent`, `tauri://drag-drop`) nutzt die App nirgends (grep in `src`, `src-tauri/src`: 0 Treffer). |
+| Tippen, Wischen, langes Drücken (Seitenleiste) | – | geht | Tippen öffnet, Wischen scrollt (`scrollTop` 0 → 1045), langes Drücken ohne Bewegung zeigt „Aktionen für „Ideen““, kein markierter Text. |
 
 ## Klickliste „Version 1.0“
 Feste Liste aus Arbeitsregel 7, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 1.0` (echte Tastatur und Maus in Microsoft Edge).
