@@ -1,9 +1,9 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 22 – Ziehen und Ablegen (abgeschlossen am 2026-11-01). Danach auf Wunsch von Emre Version 2.3.1: signierte Android-APK aus dem Release-Workflow und „Nach Updates suchen“ auf dem Handy (veröffentlicht 2026-11-01). Auftrag 2.3: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 12:55
-- Nächster Schritt: keiner offen. Release v2.3.1 steht mit Installer, MSI und `Localist_2.3.1_android.apk` (signiert, `3b6d407d…783f`). Neue Arbeit erst mit einem neuen Auftrag (2.4–2.6 unversioniert in `docs/`); dann Version 2.3 nach `archiv/` verschieben.
+- Etappe: 22 – Ziehen und Ablegen (abgeschlossen am 2026-11-01). Danach auf Wunsch von Emre Version 2.3.1: signierte Android-APK aus dem Release-Workflow und „Nach Updates suchen“ auf dem Handy (veröffentlicht 2026-11-01), dann 2.3.2 mit eigenem Android-App-Symbol. Auftrag 2.3: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
+- Zuletzt aktualisiert: 2026-11-01 13:11
+- Nächster Schritt: keiner offen. Release v2.3.2 steht mit Installer, MSI und `Localist_2.3.2_android.apk` (signiert, `3b6d407d…783f`, Adaptive Icon geprüft mit `aapt2`; Lauf 41303748053, beide Jobs grün). Im Hauptordner einmal `git pull`. Neue Arbeit erst mit einem neuen Auftrag (2.4–2.6 unversioniert in `docs/`); dann Version 2.3 nach `archiv/` verschieben.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
