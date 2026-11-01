@@ -235,21 +235,133 @@ describe("Über Localist: erst speichern, dann installieren", () => {
   });
 });
 
-describe("Über Localist: Android (kein Updater)", () => {
-  it("Handy-Einstellungen zeigen Version und „Neue Versionen auf GitHub ansehen“, der Knopf öffnet die Releases-Seite", async () => {
-    const { onOpenExternal } = oeffnen({ platform: "android", handy: true });
+describe("Über Localist: Android (Update mit der APK vom Release)", () => {
+  type Kanal = { id: number };
+  /** Die Rust-Seite auf Android nachgestellt; liefert die Liste der aufgerufenen Update-Befehle. */
+  function androidRust(suche: () => unknown, installieren: (args: { version: string; fortschritt: Kanal }) => Promise<void> = async () => {}) {
+    const befehle: string[] = [];
+    mockIPC(async (cmd, args) => {
+      if (cmd === "plugin:app|version") return tauriConf.version;
+      if (cmd.startsWith("android_update_")) befehle.push(cmd);
+      if (cmd === "android_update_suchen") return suche();
+      if (cmd === "android_update_installieren") return installieren(args as unknown as { version: string; fortschritt: Kanal });
+      return null;
+    });
+    return befehle;
+  }
+  /** Eine Nachricht des Kotlin-Teils über den Fortschritts-Kanal. */
+  const kanalMelden = (kanal: Kanal, index: number, geladen: number, gesamt: number) =>
+    (window as unknown as { __TAURI_INTERNALS__: { runCallback: (id: number, daten: unknown) => void } }).__TAURI_INTERNALS__.runCallback(kanal.id, {
+      index,
+      message: { geladen, gesamt },
+    });
+
+  it("Handy-Einstellungen: kein Netz ohne Klick, dann „Update verfügbar“ und sofort „Jetzt installieren“", async () => {
+    const befehle = androidRust(() => ({ art: "verfuegbar", version: "2.9.0" }));
+    oeffnen({ platform: "android", handy: true });
     const karte = screen.getByRole("region", { name: "Über Localist" });
     await waitFor(() => expect(karte.querySelector(".app-version")?.textContent).toBe(tauriConf.version));
-    expect(screen.queryByRole("button", { name: "Nach Updates suchen" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Neue Versionen auf GitHub ansehen" }));
-    expect(onOpenExternal).toHaveBeenCalledWith(RELEASES_SEITE);
-    expect(RELEASES_SEITE).toBe(tauriConf.plugins.updater.endpoints[0].replace(/\/latest\/download\/latest\.json$/, ""));
+    await act(async () => new Promise((ok) => setTimeout(ok, 20)));
+    expect(befehle).toEqual([]);
+    fireEvent.click(suchenKnopf());
+    expect(await screen.findByRole("button", { name: "Jetzt installieren" })).toBeTruthy();
+    expect(status()).toBe("Update verfügbar: v2.9.0");
+    expect(befehle).toEqual(["android_update_suchen"]);
     expect(updater.check).not.toHaveBeenCalled();
   });
 
-  it("auch ein breites Android-Gerät (PC-Dialog) hat keinen Updater", async () => {
-    oeffnen({ platform: "android" });
-    expect(screen.getByRole("button", { name: "Neue Versionen auf GitHub ansehen" })).toBeTruthy();
+  it("„Jetzt installieren“ speichert zuerst, lädt mit Fortschritt in Prozent und meldet dann den Installer von Android", async () => {
+    const reihenfolge: string[] = [];
+    const laden = zurueckhalten();
+    let kanal: Kanal | null = null;
+    androidRust(
+      () => ({ art: "verfuegbar", version: "2.9.0" }),
+      async ({ version, fortschritt }) => {
+        reihenfolge.push(`laden ${version}`);
+        kanal = fortschritt;
+        await laden.versprechen;
+      },
+    );
+    oeffnen({
+      platform: "android",
+      handy: true,
+      vorDemUpdate: async () => {
+        reihenfolge.push("speichern");
+      },
+    });
+    fireEvent.click(suchenKnopf());
+    fireEvent.click(await screen.findByRole("button", { name: "Jetzt installieren" }));
+    await waitFor(() => expect(kanal).not.toBeNull());
+    expect(reihenfolge).toEqual(["speichern", "laden 2.9.0"]);
+    act(() => kanalMelden(kanal!, 0, 0, 2000));
+    act(() => kanalMelden(kanal!, 1, 500, 2000));
+    await waitFor(() => expect(status()).toBe("Wird heruntergeladen … 25 %"));
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("25");
     expect(screen.queryByRole("button", { name: "Nach Updates suchen" })).toBeNull();
+    await act(async () => laden.loesen());
+    await waitFor(() => expect(status()).toContain("Android fragt jetzt, ob Localist aktualisiert werden soll"));
+    // Bricht Emre im Installer ab, kann er erneut suchen.
+    expect(suchenKnopf()).toBeTruthy();
+  });
+
+  it("die neue Version ohne fertige APK, kein Update und Fehler werden zu klaren Meldungen", async () => {
+    let antwort: () => unknown = () => ({ art: "nochNicht", version: "2.9.0" });
+    androidRust(() => antwort());
+    oeffnen({ platform: "android", handy: true });
+    await waitFor(() => expect(document.querySelector(".app-version")?.textContent).toBe(tauriConf.version));
+    fireEvent.click(suchenKnopf());
+    await waitFor(() => expect(status()).toBe("v2.9.0 ist für Android noch nicht fertig. Bitte in einigen Minuten erneut versuchen."));
+    expect(screen.queryByRole("button", { name: "Jetzt installieren" })).toBeNull();
+
+    antwort = () => ({ art: "aktuell" });
+    fireEvent.click(suchenKnopf());
+    await waitFor(() => expect(status()).toBe(`Du bist auf dem neuesten Stand (v${tauriConf.version})`));
+
+    antwort = () => {
+      throw "GitHub antwortet mit 503.";
+    };
+    fireEvent.click(suchenKnopf());
+    await waitFor(() => expect(status()).toBe("Keine Verbindung zu GitHub. Bitte später erneut versuchen."));
+  });
+
+  it("scheitert das Speichern, wird nichts geladen; scheitert der Download, steht die Ursache da", async () => {
+    let laden = 0;
+    androidRust(
+      () => ({ art: "verfuegbar", version: "2.9.0" }),
+      async () => {
+        laden += 1;
+        throw "Die geladene APK passt nicht zu Localist 2.9.0.";
+      },
+    );
+    let speichernKlappt = false;
+    oeffnen({
+      platform: "android",
+      handy: true,
+      vorDemUpdate: async () => {
+        if (!speichernKlappt) throw new Error("Datenträger voll");
+      },
+    });
+    fireEvent.click(suchenKnopf());
+    fireEvent.click(await screen.findByRole("button", { name: "Jetzt installieren" }));
+    await waitFor(() => expect(status()).toContain("Es wurde nichts installiert."));
+    expect(laden).toBe(0);
+
+    speichernKlappt = true;
+    fireEvent.click(suchenKnopf());
+    fireEvent.click(await screen.findByRole("button", { name: "Jetzt installieren" }));
+    await waitFor(() => expect(status()).toBe("Update fehlgeschlagen: Die geladene APK passt nicht zu Localist 2.9.0."));
+    expect(laden).toBe(1);
+  });
+
+  it("„Neue Versionen auf GitHub ansehen“ bleibt auf Android und öffnet die Releases-Seite; am PC gibt es ihn nicht", async () => {
+    androidRust(() => ({ art: "aktuell" }));
+    const { onOpenExternal } = oeffnen({ platform: "android" });
+    expect(suchenKnopf()).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Neue Versionen auf GitHub ansehen" }));
+    expect(onOpenExternal).toHaveBeenCalledWith(RELEASES_SEITE);
+    expect(RELEASES_SEITE).toBe(tauriConf.plugins.updater.endpoints[0].replace(/\/latest\/download\/latest\.json$/, ""));
+    cleanup();
+    oeffnen({ platform: "windows" });
+    expect(screen.queryByRole("button", { name: "Neue Versionen auf GitHub ansehen" })).toBeNull();
   });
 });

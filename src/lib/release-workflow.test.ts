@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import workflowText from "../../.github/workflows/release.yml?raw";
 import releaseConf from "../../src-tauri/tauri.release.conf.json";
 import tauriConf from "../../src-tauri/tauri.conf.json";
+import androidUpdate from "../../src-tauri/src/android_update.rs?raw";
+import androidGitignore from "../../src-tauri/gen/android/.gitignore?raw";
 
 interface Schritt {
   name?: string;
@@ -19,7 +21,7 @@ const dokument = parseDocument(workflowText, { uniqueKeys: true });
 const workflow = dokument.toJS() as {
   on: { push: { tags: string[] } };
   permissions: Record<string, string>;
-  jobs: Record<string, { "runs-on": string; steps: Schritt[] }>;
+  jobs: Record<string, { "runs-on": string; needs?: string; env?: Record<string, string>; steps: Schritt[] }>;
 };
 const job = Object.values(workflow.jobs)[0];
 const schritte = job.steps;
@@ -27,10 +29,10 @@ const tauriSchritte = schritte.filter((s) => s.uses?.startsWith("tauri-apps/taur
 const position = (passt: (s: Schritt) => boolean) => schritte.findIndex(passt);
 
 describe("release.yml", () => {
-  it("ist gültiges YAML ohne Warnungen, ein Job auf windows-latest, ausgelöst durch Tags v*, mit contents: write", () => {
+  it("ist gültiges YAML ohne Warnungen, Windows-Job auf windows-latest und Android-Job danach, ausgelöst durch Tags v*, mit contents: write", () => {
     expect(dokument.errors).toEqual([]);
     expect(dokument.warnings).toEqual([]);
-    expect(Object.keys(workflow.jobs)).toHaveLength(1);
+    expect(Object.keys(workflow.jobs)).toEqual(["release", "android"]);
     expect(workflow.on).toEqual({ push: { tags: ["v*"] } });
     expect(job["runs-on"]).toBe("windows-latest");
     expect(workflow.permissions).toEqual({ contents: "write" });
@@ -83,7 +85,41 @@ describe("release.yml", () => {
     const ausdruecke = [...workflowText.matchAll(/\$\{\{([^}]*)\}\}/g)].map((m) => m[1].trim());
     expect(ausdruecke.length).toBeGreaterThan(0);
     for (const ausdruck of ausdruecke) expect(/^(secrets|vars|github)\./.test(ausdruck), ausdruck).toBe(true);
-    for (const schritt of schritte) expect(schritt.if ?? "").not.toContain("secrets.");
+    for (const schritt of [...schritte, ...workflow.jobs.android.steps]) expect(schritt.if ?? "").not.toContain("secrets.");
+  });
+});
+
+describe("release.yml: Android-APK (seit Version 2.3.1)", () => {
+  const android = workflow.jobs.android;
+  const run = (teil: string) => android.steps.findIndex((s) => (s.run ?? "").includes(teil));
+
+  it("läuft auf ubuntu-latest erst nach dem Windows-Job und lädt ins selbe Ziel hoch", () => {
+    expect(android["runs-on"]).toBe("ubuntu-latest");
+    expect(android.needs).toBe("release");
+    expect(android.env?.GH_REPO).toContain("github.repository");
+    expect(android.env?.GH_TOKEN).toBe("${{ vars.RELEASE_OWNER != '' && vars.RELEASE_REPO != '' && secrets.RELEASES_TOKEN || secrets.GITHUB_TOKEN }}");
+    for (const schritt of android.steps) expect(Boolean(schritt.uses) !== Boolean(schritt.run), JSON.stringify(schritt)).toBe(true);
+  });
+
+  it("bricht ohne Schlüssel mit klarer Meldung ab; der Schlüssel kommt aus den Secrets nach RUNNER_TEMP, nie ins Repository", () => {
+    expect(run("ANDROID_KEYSTORE_BASE64 und ANDROID_KEYSTORE_PASSWORD fehlen")).toBe(0);
+    const schreiben = android.steps[run("base64 --decode")];
+    expect(schreiben.env).toEqual({ KEYSTORE: "${{ secrets.ANDROID_KEYSTORE_BASE64 }}", PASSWORT: "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" });
+    expect(schreiben.run).toContain('> "$RUNNER_TEMP/localist-android.jks"');
+    expect(schreiben.run).toContain("> src-tauri/gen/android/keystore.properties");
+    expect(androidGitignore.split(/\r?\n/)).toContain("keystore.properties");
+  });
+
+  it("baut die APK nach npm ci, prüft die Signatur und hängt sie unter dem Namen an, den android_update.rs erwartet", () => {
+    const ci = android.steps.findIndex((s) => s.run === "npm ci");
+    const bauen = run("npx tauri android build --apk --target aarch64");
+    const hochladen = run("gh release upload");
+    expect(ci >= 0 && ci < run("base64 --decode") && run("base64 --decode") < bauen && bauen < hochladen).toBe(true);
+    const schritt = android.steps[hochladen].run ?? "";
+    expect(schritt).toContain('DATEI="Localist_${VERSION}_android.apk"');
+    expect(schritt.indexOf('"$APKSIGNER" verify --print-certs "$DATEI"')).toBeGreaterThan(-1);
+    expect(schritt.indexOf('"$APKSIGNER" verify --print-certs "$DATEI"')).toBeLessThan(schritt.indexOf("gh release upload"));
+    expect(androidUpdate).toContain('format!("{basis}/download/v{version}/Localist_{version}_android.apk")');
   });
 });
 

@@ -5,6 +5,20 @@ deiner Wahl speichert. Neben Notizen gibt es interaktive HTML-Seiten mit Baustei
 Diagrammen. Diese Anleitung erklärt, wie du Localist installierst, benutzt, im Entwicklungsmodus startest, testest
 und selbst baust.
 
+## Neu in Version 2.3.1
+
+- **Updates auf dem Handy:** Auch auf Android steht unter **Einstellungen → „Über Localist“** jetzt **„Nach Updates
+  suchen“**. Erst nach diesem Klick fragt Localist bei GitHub nach, nie von selbst. Gibt es eine neue Version,
+  erscheint sofort **„Jetzt installieren“**: Localist speichert alles, lädt die neue APK (mit Prozentanzeige) und
+  öffnet den Installer von Android. Dort auf **„Aktualisieren“** tippen. Beim ersten Mal fragt Android vorher, ob
+  Localist Apps installieren darf: „Aus dieser Quelle zulassen“ einschalten und zurück.
+- **Einmal neu installieren:** Ab 2.3.1 ist die APK mit einem festen Schlüssel signiert und viel kleiner (etwa 8 MB
+  statt 300 MB). Über die alte 2.3.0 installiert Android sie deshalb nicht. Einmal die alte Localist-App
+  deinstallieren, dann `Localist_2.3.1_android.apk` aus dem Release installieren und den Vault wieder öffnen. Ein
+  Vault im internen Speicher (z. B. `Documents`) bleibt dabei erhalten; ein Vault im „App-Speicher“ würde mit
+  gelöscht. Danach gehen alle Updates ohne Deinstallieren.
+- **Automatisch gebaut:** Die APK baut GitHub jetzt bei jedem Release selbst, neben dem Windows-Installer.
+
 ## Neu in Version 2.3
 
 - **Ziehen und Ablegen:** Seiten und Ordner lassen sich in der Seitenleiste in einen anderen Ordner ziehen – jetzt
@@ -428,8 +442,9 @@ Ergebnis: `src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-unive
 (für echte Handys mit ARM-Prozessor und für den Emulator am PC). Der erste Build lädt Gradle und Bibliotheken
 herunter und dauert einige Minuten.
 
-Die Debug-APK ist automatisch signiert und lässt sich direkt installieren. Für eine Veröffentlichung, etwa im Play
-Store, bräuchte es eine Release-APK mit eigenem Signaturschlüssel. Für die eigene Nutzung ist das nicht nötig.
+Die Debug-APK ist automatisch signiert und lässt sich direkt installieren, aber nur zum Testen am PC. Die APK für
+das Handy kommt fertig signiert aus jedem Release (`Localist_X.Y.Z_android.apk`, siehe `ANLEITUNG-RELEASE.md`,
+Schritt 7); Updates danach gehen über „Nach Updates suchen“.
 
 ### Auf das Handy bringen
 

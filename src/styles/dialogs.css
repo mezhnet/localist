@@ -187,7 +187,9 @@
 
 .update-status--sucht .update-meldung,
 .update-status--laedt .update-meldung,
-.update-status--installiert .update-meldung {
+.update-status--installiert .update-meldung,
+.update-status--nochNicht .update-meldung,
+.update-status--installer .update-meldung {
   color: var(--color-text-muted);
 }
 

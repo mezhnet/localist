@@ -1,8 +1,8 @@
-# Release von Localist für Windows (Etappe 21).
+# Release von Localist für Windows (Etappe 21) und Android (seit Version 2.3.1).
 # Läuft, sobald ein Versions-Tag wie v2.2.1 gepusht wird (siehe scripts/version.mjs und ANLEITUNG-RELEASE.md).
 # Erst laufen alle Tests; schlägt einer fehl, entsteht kein Release. Danach baut tauri-action den Installer,
 # signiert ihn für den Updater und lädt Installer, .sig-Datei und latest.json in ein GitHub-Release hoch.
-# Die Android-APK wird danach von Hand angehängt (ANLEITUNG-RELEASE.md, Schritt 7).
+# Danach baut der Job „android“ die signierte APK und hängt sie an dasselbe Release (ANLEITUNG-RELEASE.md, Schritt 7).
 #
 # Release-Ziel: Sind die Repository-Variablen RELEASE_OWNER und RELEASE_REPO gesetzt, geht das Release in jenes
 # (öffentliche) Repository, mit dem Token aus dem Secret RELEASES_TOKEN. Sonst geht es in dieses Repository.
@@ -69,7 +69,7 @@ jobs:
           args: --config src-tauri/tauri.release.conf.json
           tagName: v__VERSION__
           releaseName: "Localist v__VERSION__"
-          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen. Auf Android: die Datei mit der Endung .apk unten herunterladen und auf dem Handy antippen."
+          releaseBody: "Neue Version von Localist. Unter Windows und Android: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder unten den Installer (Windows) bzw. die APK (Android) herunterladen."
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
@@ -91,9 +91,88 @@ jobs:
           args: --config src-tauri/tauri.release.conf.json
           tagName: v__VERSION__
           releaseName: "Localist v__VERSION__"
-          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen. Auf Android: die Datei mit der Endung .apk unten herunterladen und auf dem Handy antippen."
+          releaseBody: "Neue Version von Localist. Unter Windows und Android: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder unten den Installer (Windows) bzw. die APK (Android) herunterladen."
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
           # latest.json zeigt unter "windows-x86_64" auf den NSIS-Installer (Localist_X.Y.Z_x64-setup.exe).
           updaterJsonPreferNsis: true
+
+  android:
+    name: Android-APK bauen und anhängen
+    # Erst wenn das Release steht; der Job oben legt es an und lädt latest.json hoch.
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      # Dasselbe Ziel wie oben: dieses Repository oder RELEASE_OWNER/RELEASE_REPO.
+      GH_REPO: ${{ vars.RELEASE_OWNER != '' && vars.RELEASE_REPO != '' && format('{0}/{1}', vars.RELEASE_OWNER, vars.RELEASE_REPO) || github.repository }}
+      GH_TOKEN: ${{ vars.RELEASE_OWNER != '' && vars.RELEASE_REPO != '' && secrets.RELEASES_TOKEN || secrets.GITHUB_TOKEN }}
+      NDK_VERSION: "28.2.13676358"
+    steps:
+      - name: Schlüssel für die APK vorhanden?
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORT: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ] || [ -z "$PASSWORT" ]; then
+            echo "::error::Die Secrets ANDROID_KEYSTORE_BASE64 und ANDROID_KEYSTORE_PASSWORD fehlen (ANLEITUNG-RELEASE.md, Schritt 7). Das Release hat deshalb keine APK."
+            exit 1
+          fi
+
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Java einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Android-SDK einrichten
+        uses: android-actions/setup-android@v3
+
+      - name: NDK installieren
+        run: sdkmanager --install "ndk;$NDK_VERSION"
+
+      - name: Rust einrichten
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Rust-Build zwischenspeichern
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Pakete installieren
+        run: npm ci
+
+      # Der Schlüssel liegt nur für diesen Lauf auf dem Rechner von GitHub, nie im Repository.
+      - name: Schlüssel aus den Secrets schreiben
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORT: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/localist-android.jks"
+          printf 'storeFile=%s\nkeyAlias=localist\npassword=%s\n' "$RUNNER_TEMP/localist-android.jks" "$PASSWORT" > src-tauri/gen/android/keystore.properties
+
+      # Nur für Handys mit ARM-Prozessor (64 Bit), das sind praktisch alle aktuellen Android-Handys.
+      - name: APK bauen
+        run: |
+          export NDK_HOME="$ANDROID_HOME/ndk/$NDK_VERSION"
+          npx tauri android build --apk --target aarch64
+
+      - name: Signatur prüfen und APK an das Release hängen
+        run: |
+          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          DATEI="Localist_${VERSION}_android.apk"
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "$DATEI"
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$APKSIGNER" verify --print-certs "$DATEI" | grep "SHA-256"
+          gh release upload "v${VERSION}" "$DATEI" --clobber

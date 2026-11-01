@@ -12,6 +12,10 @@
          Eine normale Berechtigung ohne Rückfrage; fehlt sie, vibriert einfach nichts. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Updates: Nach "Nach Updates suchen" und "Jetzt installieren" öffnet Localist den Installer von Android
+         mit der neuen APK. Beim ersten Mal fragt Android, ob Localist Apps installieren darf. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- AndroidTV support -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
 

@@ -1,26 +1,32 @@
-// Updates über GitHub Releases (nur am PC, Etappe 21).
+// Updates über GitHub Releases (PC seit Etappe 21, Android seit Version 2.3.1).
 // Gefragt wird nur nach einem Klick auf „Nach Updates suchen“: nie beim Start, nie beim Öffnen der Einstellungen und
-// nie im Hintergrund. Die Anfrage selbst stellt der Rust-Teil des Plugins `tauri-plugin-updater`, deshalb bleibt die
-// CSP der Oberfläche unverändert (kein Netzwerk aus der WebView).
+// nie im Hintergrund. Die Anfrage selbst stellt am PC der Rust-Teil von `tauri-plugin-updater`, auf Android der
+// Kotlin-Teil `AktualisierenPlugin.kt` (über src-tauri/src/android_update.rs). Deshalb bleibt die CSP der Oberfläche
+// unverändert (kein Netzwerk aus der WebView).
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
 import { errorMessage } from "./autosave";
+import { androidUpdateInstallieren, androidUpdateSuchen } from "./vault-api";
 
-/** Releases-Seite für Android (dort gibt es keinen Updater), passend zum Endpoint in tauri.conf.json. */
+/** Releases-Seite, passend zum Endpoint in tauri.conf.json. */
 export const RELEASES_SEITE = "https://github.com/mezhnet/localist/releases";
 
-/** Auf Android und iOS gibt es den Updater nicht, dort führt ein Knopf zur Releases-Seite. */
-export function hatUpdater(platform: string): boolean {
-  return platform !== "android" && platform !== "ios";
+/** Wie Localist sich aktualisiert: am PC mit tauri-plugin-updater, auf Android mit der APK vom Release, sonst gar nicht. */
+export function updateWeg(platform: string): "pc" | "android" | null {
+  if (platform === "android") return "android";
+  return platform === "ios" ? null : "pc";
 }
 
 export type UpdateZustand =
   | { art: "bereit" }
   | { art: "sucht" }
   | { art: "aktuell"; version: string }
-  | { art: "verfuegbar"; version: string; notizen: string; update: Update }
+  /** `update` gibt es nur am PC; auf Android wird die APK zu `version` geladen. */
+  | { art: "verfuegbar"; version: string; notizen: string; update: Update | null }
+  | { art: "nochNicht"; version: string }
   | { art: "laedt"; prozent: number | null }
   | { art: "installiert" }
+  | { art: "installer" }
   | { art: "fehler"; meldung: string };
 
 /** Versionsnummer zum Anzeigen, immer mit „v“ davor. */
@@ -39,10 +45,14 @@ export function updateText(zustand: UpdateZustand): string {
       return `Du bist auf dem neuesten Stand (${mitV(zustand.version)})`;
     case "verfuegbar":
       return `Update verfügbar: ${mitV(zustand.version)}`;
+    case "nochNicht":
+      return `${mitV(zustand.version)} ist für Android noch nicht fertig. Bitte in einigen Minuten erneut versuchen.`;
     case "laedt":
       return zustand.prozent === null ? "Wird heruntergeladen …" : `Wird heruntergeladen … ${zustand.prozent} %`;
     case "installiert":
       return "Wird installiert, Localist startet neu …";
+    case "installer":
+      return "Android fragt jetzt, ob Localist aktualisiert werden soll: dort auf „Aktualisieren“ tippen. Beim ersten Mal fragt Android vorher, ob Localist Apps installieren darf. Ist das Fenster von Android wieder zu, noch einmal auf „Nach Updates suchen“ tippen.";
     case "fehler":
       return zustand.meldung;
   }
@@ -65,6 +75,41 @@ export async function nachUpdatesSuchen(aktuelleVersion: string): Promise<Update
   } catch {
     return { art: "fehler", meldung: KEINE_VERBINDUNG };
   }
+}
+
+/** Android: fragt GitHub ab (nur nach dem Klick). Fehler werden zur Meldung, die App läuft weiter. */
+export async function androidNachUpdatesSuchen(aktuelleVersion: string): Promise<UpdateZustand> {
+  try {
+    const antwort = await androidUpdateSuchen();
+    if (antwort.art === "verfuegbar") return { art: "verfuegbar", version: antwort.version, notizen: "", update: null };
+    if (antwort.art === "nochNicht") return { art: "nochNicht", version: antwort.version };
+    return { art: "aktuell", version: aktuelleVersion };
+  } catch {
+    return { art: "fehler", meldung: KEINE_VERBINDUNG };
+  }
+}
+
+/**
+ * Android: speichert alles Ausstehende (scheitert das, wird nichts geladen), lädt die APK mit Fortschritt und öffnet
+ * den Installer von Android. Die App läuft dabei weiter; Android beendet sie erst beim Installieren.
+ */
+export async function androidUpdateLaden(version: string, speichern: () => Promise<void>, melden: (zustand: UpdateZustand) => void): Promise<void> {
+  try {
+    await speichern();
+  } catch (error) {
+    melden({ art: "fehler", meldung: `Update fehlgeschlagen: Deine Änderungen ließen sich nicht speichern (${kurzeUrsache(error)}). Es wurde nichts installiert.` });
+    return;
+  }
+  melden({ art: "laedt", prozent: null });
+  try {
+    await androidUpdateInstallieren(version, (geladen, gesamt) => {
+      melden({ art: "laedt", prozent: gesamt > 0 ? Math.min(100, Math.floor((geladen / gesamt) * 100)) : null });
+    });
+  } catch (error) {
+    melden({ art: "fehler", meldung: `Update fehlgeschlagen: ${kurzeUrsache(error)}` });
+    return;
+  }
+  melden({ art: "installer" });
 }
 
 /**

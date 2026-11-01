@@ -10,6 +10,14 @@ kein Server, keine Telemetrie, alles funktioniert offline.
 - HTML-Seiten (`.html`) mit Code-Editor und Bausteinen wie Karteikarten, Quiz und Diagrammen
 - Notizbücher: ein Ordner als kleine Website mit Inhaltsverzeichnis
 
+## Neu in Version 2.3.1
+
+- **Updates auf dem Handy:** „Nach Updates suchen“ gibt es jetzt auch auf Android (Einstellungen → „Über Localist“).
+  Ist eine neue Version da, erscheint sofort **„Jetzt installieren“**; Localist lädt die APK und öffnet den Installer
+  von Android. Gefragt wird nur nach dem Klick.
+- **Signierte APK an jedem Release:** GitHub baut die APK bei jedem Release selbst (etwa 8 MB). Von 2.3.0 aus einmal
+  die alte App deinstallieren und die neue installieren, danach gehen Updates direkt in der App.
+
 ## Neu in Version 2.3
 
 - **Ziehen und Ablegen geht wieder – auch in der installierten App und auf dem Handy:** Seiten und Ordner in der

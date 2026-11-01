@@ -1,6 +1,7 @@
 //! Tauri-Kommandos für die Oberfläche. Die eigentliche Dateiarbeit steckt in `vault.rs`,
 //! der Dateiwächter in `watcher.rs`. Fehler gehen als deutsche Meldungen an die Oberfläche.
 
+mod android_update;
 mod bausteine;
 mod eigene;
 mod export;
@@ -289,6 +290,18 @@ async fn statusleiste_setzen(app: AppHandle, dunkel: bool) -> Result<(), String>
     statusleiste::setzen(&app, dunkel)
 }
 
+/// Android: sucht nach einem Klick auf „Nach Updates suchen“ eine neuere Version (siehe android_update.rs).
+#[tauri::command]
+async fn android_update_suchen(app: AppHandle) -> Result<android_update::Suche, String> {
+    android_update::suchen(&app).await
+}
+
+/// Android: lädt die APK der gefundenen Version und öffnet den Installer von Android.
+#[tauri::command]
+async fn android_update_installieren(app: AppHandle, version: String, fortschritt: tauri::ipc::Channel<serde_json::Value>) -> Result<(), String> {
+    android_update::installieren(&app, &version, fortschritt).await
+}
+
 /// Startpunkte für die eigene Ordnerauswahl auf dem Handy.
 #[tauri::command]
 async fn storage_locations(app: AppHandle) -> Result<Vec<vault::FolderEntry>, String> {
@@ -379,6 +392,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(statusleiste::init())
+        .plugin(android_update::init())
         .manage(state)
         // HTML-Seiten für die abgeschottete Anzeige (siehe page_scheme.rs).
         .register_asynchronous_uri_scheme_protocol(page_scheme::SCHEME, |ctx, request, responder| {
@@ -450,6 +464,8 @@ pub fn run() {
             vault_index,
             app_platform,
             statusleiste_setzen,
+            android_update_suchen,
+            android_update_installieren,
             storage_locations,
             list_folders,
             create_folder_at,

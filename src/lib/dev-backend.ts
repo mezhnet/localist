@@ -349,6 +349,11 @@ export function installDevBackend(): void {
         // Android-Statusleiste: Ein Browser-Tab hat keine, wie am PC passiert nichts.
         case "statusleiste_setzen":
           return null;
+        // Updates auf Android: Die Vorschau fragt nie bei GitHub und installiert nichts.
+        case "android_update_suchen":
+          return { art: "aktuell" };
+        case "android_update_installieren":
+          throw "Browser-Vorschau: Hier wird nichts installiert.";
         // Eigener Fensterrahmen: Die Vorschau merkt sich nur die Befehle (ein Browser-Tab hat kein eigenes Fenster).
         case "plugin:window|minimize":
         case "plugin:window|close":

@@ -1,11 +1,21 @@
 // Abschnitt „Über Localist“ in den Einstellungen (PC-Dialog und Handy-Seite): Versionsnummer und Updates.
-// Am PC sucht der Knopf „Nach Updates suchen“ über GitHub Releases (src/lib/updates.ts), erst nach dem Klick.
-// Auf Android gibt es keinen Updater; dort öffnet ein Knopf die Releases-Seite im Standardbrowser.
+// Am PC und auf Android sucht der Knopf „Nach Updates suchen“ über GitHub Releases (src/lib/updates.ts), erst nach
+// dem Klick. Ist ein Update da, erscheint sofort „Jetzt installieren“. Auf Android führt zusätzlich ein Knopf zur
+// Releases-Seite im Standardbrowser.
 import { getVersion } from "@tauri-apps/api/app";
 import { Download, ExternalLink, RefreshCw } from "lucide-react";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { useEffect, useRef, useState } from "react";
-import { hatUpdater, nachUpdatesSuchen, RELEASES_SEITE, updateInstallieren, updateText, type UpdateZustand } from "../lib/updates";
+import {
+  androidNachUpdatesSuchen,
+  androidUpdateLaden,
+  nachUpdatesSuchen,
+  RELEASES_SEITE,
+  updateInstallieren,
+  updateText,
+  updateWeg,
+  type UpdateZustand,
+} from "../lib/updates";
 import { Button } from "./ui";
 
 interface Props {
@@ -22,7 +32,7 @@ interface Props {
 export function UeberLocalist({ platform, vorDemUpdate, onOpenExternal, onLaeuft, handy = false }: Props) {
   const [version, setVersion] = useState<string | null>(null);
   const [zustand, setZustand] = useState<UpdateZustand>({ art: "bereit" });
-  const updater = hatUpdater(platform);
+  const weg = updateWeg(platform);
   const laeuft = zustand.art === "laedt" || zustand.art === "installiert";
 
   // Nur die eigene Versionsnummer (aus tauri.conf.json); keine Anfrage ins Netz.
@@ -47,7 +57,7 @@ export function UeberLocalist({ platform, vorDemUpdate, onOpenExternal, onLaeuft
   const suchen = async () => {
     freigeben();
     setZustand({ art: "sucht" });
-    const ergebnis = await nachUpdatesSuchen(version ?? "");
+    const ergebnis = weg === "android" ? await androidNachUpdatesSuchen(version ?? "") : await nachUpdatesSuchen(version ?? "");
     if (ergebnis.art === "verfuegbar") offenRef.current = ergebnis.update;
     setZustand(ergebnis);
   };
@@ -55,13 +65,15 @@ export function UeberLocalist({ platform, vorDemUpdate, onOpenExternal, onLaeuft
   const installieren = async () => {
     if (zustand.art !== "verfuegbar") return;
     // Ab hier gehört die Ressource der Installation, und die Einstellungen bleiben offen (sofort, ohne neues Rendern),
-    // bis ein Fehler die Installation beendet.
+    // bis ein Fehler die Installation beendet oder Android seinen Installer zeigt.
     offenRef.current = null;
     onLaeuft?.(true);
-    await updateInstallieren(zustand.update, vorDemUpdate, (neu) => {
-      if (neu.art === "fehler") onLaeuft?.(false);
+    const melden = (neu: UpdateZustand) => {
+      if (neu.art === "fehler" || neu.art === "installer") onLaeuft?.(false);
       setZustand(neu);
-    });
+    };
+    if (zustand.update) await updateInstallieren(zustand.update, vorDemUpdate, melden);
+    else await androidUpdateLaden(zustand.version, vorDemUpdate, melden);
   };
 
   const text = updateText(zustand);
@@ -72,10 +84,10 @@ export function UeberLocalist({ platform, vorDemUpdate, onOpenExternal, onLaeuft
         <h3>Über Localist</h3>
         <p>
           Version <span className="app-version">{version ?? "…"}</span>. Alle Seiten liegen als normale Dateien in deinem Vault. Keine Konten, kein Server,
-          keine Telemetrie – Localist funktioniert offline. {updater ? "Nur nach Klick auf „Nach Updates suchen“ fragt Localist bei GitHub nach einer neuen Version." : ""}
+          keine Telemetrie – Localist funktioniert offline. {weg ? "Nur nach Klick auf „Nach Updates suchen“ fragt Localist bei GitHub nach einer neuen Version." : ""}
         </p>
       </div>
-      {updater ? (
+      {weg && (
         <>
           {zustand.art !== "verfuegbar" && !laeuft && (
             <Button className={knopfKlasse} icon={<RefreshCw />} disabled={zustand.art === "sucht"} onClick={() => void suchen()}>
@@ -106,7 +118,8 @@ export function UeberLocalist({ platform, vorDemUpdate, onOpenExternal, onLaeuft
             </Button>
           )}
         </>
-      ) : (
+      )}
+      {weg !== "pc" && (
         <Button className={knopfKlasse} icon={<ExternalLink />} onClick={() => onOpenExternal(RELEASES_SEITE)}>
           Neue Versionen auf GitHub ansehen
         </Button>

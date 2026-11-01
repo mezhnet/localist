@@ -14,9 +14,29 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// Schlüssel für die Release-APK: src-tauri/gen/android/keystore.properties mit storeFile, password und keyAlias.
+// Die Datei steht nie im Repository; der Release-Workflow schreibt sie aus den Secrets (siehe ANLEITUNG-RELEASE.md).
+// Fehlt sie, bleibt die Release-APK unsigniert. Debug-APKs signiert Android wie bisher mit dem Debug-Schlüssel.
+val keystoreProperties = Properties().apply {
+    val propFile = rootProject.file("keystore.properties")
+    if (propFile.exists()) {
+        propFile.inputStream().use { load(it) }
+    }
+}
+
 android {
     compileSdk = 37
     namespace = "de.localist.desktop"
+    signingConfigs {
+        if (!keystoreProperties.isEmpty) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("password")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("password")
+            }
+        }
+    }
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "de.localist.desktop"
@@ -39,6 +59,9 @@ android {
             }
         }
         getByName("release") {
+            if (!keystoreProperties.isEmpty) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                enable = true
             }
@@ -56,6 +79,11 @@ android {
     }
     buildFeatures {
         buildConfig = true
+    }
+    // Die Lint-Prüfung vor jedem Release-Build stürzt bei den Kotlin-Plugins ab (Fehler in Lint selbst,
+    // „findFirCompiledSymbol only works on compiled declarations“). Debug-Builds prüfen sie ohnehin nicht.
+    lint {
+        checkReleaseBuilds = false
     }
 }
 

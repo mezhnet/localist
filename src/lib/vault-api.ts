@@ -1,7 +1,7 @@
 // Schnittstelle zwischen Oberfläche und Rust-Seite (Tauri-Kommandos und Ereignisse).
 // Alle Pfade außer dem Vault-Wurzelpfad sind relativ zum Vault und verwenden "/" als Trenner.
 // Fehler kommen aus Rust als deutsche Meldungen (string) und werden als Promise-Rejection geliefert.
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { Channel, convertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { EigenerBaustein } from "./eigene-bausteine";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { ask, open, save } from "@tauri-apps/plugin-dialog";
@@ -214,6 +214,21 @@ export function appPlatform(): Promise<string> {
 /** Android: Symbole der Statusleiste passend zum Modus der App (dunkel = helle Symbole). Am PC tut die Rust-Seite nichts. */
 export function statusleisteSetzen(dunkel: boolean): Promise<void> {
   return invoke<void>("statusleiste_setzen", { dunkel });
+}
+
+/** Antwort der Update-Suche auf Android (src-tauri/src/android_update.rs). */
+export type AndroidSuche = { art: "aktuell" } | { art: "verfuegbar"; version: string } | { art: "nochNicht"; version: string };
+
+/** Android: fragt GitHub nach einer neueren Version (nur nach dem Klick auf „Nach Updates suchen“). */
+export function androidUpdateSuchen(): Promise<AndroidSuche> {
+  return invoke<AndroidSuche>("android_update_suchen");
+}
+
+/** Android: lädt die APK zu `version` und öffnet den Installer von Android; `onFortschritt` erhält die geladenen Bytes. */
+export function androidUpdateInstallieren(version: string, onFortschritt: (geladen: number, gesamt: number) => void): Promise<void> {
+  const fortschritt = new Channel<{ geladen: number; gesamt: number }>();
+  fortschritt.onmessage = ({ geladen, gesamt }) => onFortschritt(geladen, gesamt);
+  return invoke<void>("android_update_installieren", { version, fortschritt });
 }
 
 /** Startpunkte für die eigene Ordnerauswahl (Android: interner Speicher und App-Speicher). */

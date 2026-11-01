@@ -126,7 +126,7 @@ git push --follow-tags
 - `scripts/version.mjs` setzt die Versionsnummer überall gleich (`package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `Cargo.lock`), baut die Oberfläche neu, committet „Version 2.2.1“ und legt den Tag `v2.2.1` an. Hast du noch ungespeicherte Änderungen (nicht committet), bricht es ab und ändert nichts.
 - `git push --follow-tags` lädt Commit und Tag hoch. Der Tag startet die Action.
 - Unter **„Actions“** warten, bis der Lauf grün ist. Erst dann finden die Apps das Update.
-- Danach die Android-APK an dasselbe Release hängen (Schritt 7). Das gehört zu jeder Version dazu.
+- Die Android-APK baut derselbe Lauf danach selbst und hängt sie an dasselbe Release (Schritt 7).
 
 ---
 
@@ -150,17 +150,29 @@ Localist hat keine gekaufte Code-Signatur. Deshalb zeigt Windows SmartScreen bei
 
 ## 7. Handy (Android)
 
-Auf Android gibt es den Updater nicht. In den Einstellungen unter „Über Localist“ öffnet **„Neue Versionen auf GitHub ansehen“** die Releases-Seite im Browser.
+Auch auf Android sucht **„Nach Updates suchen“** (Einstellungen → „Über Localist“) nach einer neuen Version. Ist eine da, lädt **„Jetzt installieren“** die APK vom Release und öffnet den Installer von Android.
 
-Zu jeder Version gehört eine APK. Sobald der Lauf grün ist, die APK mit derselben Version bauen und unter dem Namen `Localist_X.Y.Z_android-debug.apk` an das Release hängen (einmalig vorher `gh auth login`), hier für 2.3.0:
+Die APK baut derselbe Release-Lauf selbst: Nach dem Windows-Installer baut der Job **„Android-APK bauen und anhängen“** die APK und hängt sie als `Localist_X.Y.Z_android.apk` an dasselbe Release. Sie ist mit einem eigenen Schlüssel signiert. Android installiert ein Update nur, wenn es mit **demselben** Schlüssel signiert ist wie die installierte App.
+
+**Schlüssel einmal eintragen.** Der Schlüssel liegt nur auf deinem PC in `C:\Users\emre\.localist-android\`:
+
+- `localist-android.jks` – der Schlüssel selbst. Geheim halten, nie ins Repository, nie verschicken.
+- `passwort.txt` – sein Passwort.
+- `github-secrets.env` – beides fertig zum Eintragen bei GitHub.
+
+Im Projektordner einmal ausführen:
 
 ```
-npx tauri android build --debug --apk --target aarch64 --target x86_64
-copy src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk Localist_2.3.0_android-debug.apk
-gh release upload v2.3.0 Localist_2.3.0_android-debug.apk
-del Localist_2.3.0_android-debug.apk
+gh secret set -f C:\Users\emre\.localist-android\github-secrets.env
+gh secret list
 ```
 
-Bei Weg (b) zusätzlich `--repo DEIN_NAME/localist-releases` anhängen.
+Der erste Befehl legt die Secrets `ANDROID_KEYSTORE_BASE64` und `ANDROID_KEYSTORE_PASSWORD` an, der zweite zeigt sie (nur die Namen). Danach die Datei `github-secrets.env` löschen; `localist-android.jks` und `passwort.txt` bleiben.
 
-Wichtig: Das ist eine **Debug-APK**. Android installiert sie über eine schon installierte Localist-APK nur, wenn beide auf demselben PC gebaut wurden (gleicher Debug-Schlüssel). Sonst muss die alte App erst deinstalliert werden. Eine signierte Release-APK kommt mit einem späteren Auftrag.
+**Sichern:** Den Ordner `C:\Users\emre\.localist-android` genauso wie `C:\Users\emre\.tauri` auf einen USB-Stick oder in deinen Passwort-Manager kopieren. **Ohne diesen Schlüssel nimmt Localist auf dem Handy keine Updates mehr an.** Mit einem neuen Schlüssel müsste die App auf jedem Handy einmal deinstalliert werden.
+
+Fehlen die Secrets, wird der Android-Job rot („Die Secrets … fehlen“). Der Windows-Installer ist dann trotzdem veröffentlicht; nach dem Eintragen den Lauf unter „Actions“ mit **„Re-run failed jobs“** wiederholen.
+
+**Umstieg von 2.3.0:** Bis 2.3.0 hing eine Debug-APK am Release (`…_android-debug.apk`, signiert mit dem Debug-Schlüssel deines PCs). Über sie installiert Android die neue APK nicht. Deshalb einmal die alte App deinstallieren und die neue installieren (siehe `ANLEITUNG.md`, „Neu in Version 2.3.1“). Danach gehen Updates wieder ohne Deinstallieren.
+
+Eine signierte APK am PC bauen (nur zum Testen): `src-tauri\gen\android\keystore.properties` mit den Zeilen `storeFile=C:/Users/emre/.localist-android/localist-android.jks`, `keyAlias=localist` und `password=` plus dem Passwort aus `passwort.txt` anlegen (Git ignoriert die Datei), dann `npx tauri android build --apk --target aarch64`. Danach die Datei wieder löschen.
