@@ -173,6 +173,14 @@ Der erste Befehl legt die Secrets `ANDROID_KEYSTORE_BASE64` und `ANDROID_KEYSTOR
 
 Fehlen die Secrets, wird der Android-Job rot („Die Secrets … fehlen“). Der Windows-Installer ist dann trotzdem veröffentlicht; nach dem Eintragen den Lauf unter „Actions“ mit **„Re-run failed jobs“** wiederholen.
 
+Musste dagegen die Workflow-Datei selbst repariert werden (das wirkt nicht auf alte Läufe), die APK für das schon veröffentlichte Release von Hand nachbauen lassen: unter „Actions“ → „Release“ → **„Run workflow“** mit dem Tag, oder im Terminal:
+
+```
+gh workflow run release.yml -f tag=v2.3.1
+```
+
+Dabei entsteht kein neues Release; nur die APK wird gebaut und an das Release dieses Tags gehängt.
+
 **Umstieg von 2.3.0:** Bis 2.3.0 hing eine Debug-APK am Release (`…_android-debug.apk`, signiert mit dem Debug-Schlüssel deines PCs). Über sie installiert Android die neue APK nicht. Deshalb einmal die alte App deinstallieren und die neue installieren (siehe `ANLEITUNG.md`, „Neu in Version 2.3.1“). Danach gehen Updates wieder ohne Deinstallieren.
 
 Eine signierte APK am PC bauen (nur zum Testen): `src-tauri\gen\android\keystore.properties` mit den Zeilen `storeFile=C:/Users/emre/.localist-android/localist-android.jks`, `keyAlias=localist` und `password=` plus dem Passwort aus `passwort.txt` anlegen (Git ignoriert die Datei), dann `npx tauri android build --apk --target aarch64`. Danach die Datei wieder löschen.
