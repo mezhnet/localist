@@ -1,9 +1,9 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 23 – Pomodoro, Grundversion (in Arbeit). Auftrag: `docs/auftrag-version-2.4.md`. Version 2.3: `archiv/FORTSCHRITT-2.3.md`, 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 14:25
-- Nächster Schritt: Echte Benachrichtigungen belegt (EXE: `scripts/benachrichtigung-pruefung.mjs`, Emulator 5556: `scripts/android-benachrichtigung-pruefung.mjs`, Fotos in `docs/screenshots/etappe-23/`). Offen: Befund der Prüfrunde (Sonnet) abarbeiten, Klicklisten 1.0/2.0/2.1/2.3, `cargo test`, `node scripts/version.mjs 2.4.0`, danach EXE und APK mit 2.4.0 bauen, Sicherheitstest 21/21, voller `npm test`, Abschluss mit Nachweisen im Chat.
+- Etappe: 23 – Pomodoro, Grundversion (abgeschlossen am 2026-11-01, Version 2.4.0). Auftrag: `docs/auftrag-version-2.4.md`. Version 2.3: `archiv/FORTSCHRITT-2.3.md`, 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
+- Zuletzt aktualisiert: 2026-11-01 14:50
+- Nächster Schritt: Etappe 23 ist abgeschlossen (Commit „Etappe 23 abgeschlossen …“, Tag v2.4.0 liegt nur lokal). Emre veröffentlicht mit `git push --follow-tags`. Der nächste Auftrag liegt als `docs/auftrag-version-2.5.md` bereit (Phase 0: Version 2.4 nach `archiv/` verschieben).
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1|2.3`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -13,8 +13,8 @@
 - [x] Der Timer läuft überall weiter, rechnet mit dem Endzeitpunkt und übersteht Ruhezustand und Neustart (Tests). Mini-Timer auf PC und Handy. (`pomodoro-timer.test.ts`, `PomodoroView.test.tsx`)
 - [x] Ton und Benachrichtigung am Ende. Auf Android kommt sie auch bei App im Hintergrund (Nachweis mit `adb` im Chat). (`pomodoro-timer.test.ts`, `PomodoroView.test.tsx`; `dumpsys notification`: id 2301, Launcher vorn)
 - [x] Ziel, „Pomodoro für diese Seite starten“ und Verlauf in `.localist/pomodoro/YYYY-MM.jsonl` mit „Heute“ und „Diese Woche“, getestet. (`pomodoro.test.ts`, `PomodoroView.test.tsx`)
-- [ ] Arbeitsregel 6 erfüllt, APK baut, Sicherheitstest 21/21, Klicklisten 1.0, 2.0, 2.1, 2.3 und 2.4 abgehakt.
-- [ ] Version 2.4.0 gesetzt, „Neu in Version 2.4“ in `README.md` und `ANLEITUNG.md`.
+- [x] Arbeitsregel 6 erfüllt, APK baut, Sicherheitstest 21/21, Klicklisten 1.0, 2.0, 2.1, 2.3 und 2.4 abgehakt. (`npm test` 47 Dateien/570, `cargo test` 53, `tsc` ohne Fehler, `npm run tauri build` 2.4.0 EXIT=0, APK 2.4.0 EXIT=0, Sicherheitstest 21/21, Klicklisten 12/12, 7/7, 9/9, 4/4, 4/4, Handy-Prüfung 30/30)
+- [x] Version 2.4.0 gesetzt, „Neu in Version 2.4“ in `README.md` und `ANLEITUNG.md`. (2dff1da „Version 2.4.0“, Tag v2.4.0; 188aabf)
 
 ## Klickliste „Version 2.4“
 Feste Liste für Version 2.4, automatisch mit `node scripts/klickliste.mjs <Vorschau-URL> "<Etappe>" 2.4` (Maus bei 1280 × 800, Punkt 4 bei 360 × 740 mit Touch; die Uhr der Vorschau wird über `__devVault.vorspulen` vorgestellt).
@@ -81,12 +81,14 @@ Letzter Stand: 2026-11-01 14:38, Etappe 23, alle 9 Punkte bestanden.
 - Etappen 0–20 und der Nachtrag „Android-Statusleiste“: `archiv/FORTSCHRITT-bis-2.1.md`.
 - Etappe 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31): `archiv/FORTSCHRITT-2.2.md`.
 - Etappe 22 – Ziehen und Ablegen auf PC und Handy (abgeschlossen am 2026-11-01), danach 2.3.1 und 2.3.2: `archiv/FORTSCHRITT-2.3.md`.
+- Etappe 23 – Pomodoro, Grundversion (abgeschlossen am 2026-11-01, Version 2.4.0): Werkzeug „Pomodoro“ mit Ring, Phasen, Leertaste, automatischem Start, Mini-Timer (PC, obere Leiste, Handy), Benachrichtigung und Ton am Ende, Ziel, „Pomodoro für diese Seite starten“, Verlauf `.localist/pomodoro/JJJJ-MM.jsonl` mit „Heute“/„Diese Woche“, Einstellungen. Nachweise oben bei den Kriterien, Screenshots in `docs/screenshots/etappe-23/`.
 
 ## Prüfrunden
 - Runde 1 (2026-11-01, ein lesender Sonnet-Agent, vier Fragen des Auftrags): kein A, ein B – ein beim Start schon abgelaufener Timer konnte beim ersten Fokus des Fensters vor der Anmeldung des Vaults mit Standardwerten abgeschlossen werden (falsche Phase/kein automatischer Start). Behoben: `pruefen` wartet auf die erste Anmeldung, Test „Zurückkehren in die App vor der Anmeldung …“. Dazu selbst gefunden: Leertaste kam in Tests manchmal vor dem Hörer an → `useLayoutEffect` (10/10 Läufe grün).
 - Runde 2 (eigene Prüfung ohne Agent: automatische Tests, Klicklisten, Builds): keine Funde A/B → Schluss.
 
 ## Offene Probleme
+- Für Emre: Version 2.4.0 ist committet und als Tag v2.4.0 angelegt, aber nicht gepusht. Veröffentlichen mit `git push --follow-tags` (der Release-Workflow baut Installer und signierte APK).
 - Für Emre: `%USERPROFILE%\.tauri\localist.key` sichern und den ersten echten Update-Test machen (2.2.1 installieren, 2.2.2 veröffentlichen, in der App aktualisieren; `ANLEITUNG-RELEASE.md`, Schritt 5). Erstes Release [v2.2.1](https://github.com/mezhnet/localist/releases/tag/v2.2.1) ist veröffentlicht (Run 41224614969 grün, `latest.json` mit Version 2.2.1, Signaturen mit Schlüssel-ID 6BEE31F67A3C789E).
 - Debug-APKs hängen an v2.2.1 und v2.3.0 (`…_android-debug.apk`, Debug-Schlüssel dieses PCs). Ab 2.3.1 baut der Release-Workflow eine signierte APK (`Localist_X.Y.Z_android.apk`); von 2.3.0 aus einmal deinstallieren (Android lehnt sie sonst mit `INSTALL_FAILED_UPDATE_INCOMPATIBLE` ab, im Emulator gesehen).
 - Für Emre: `C:\Users\emre\.localist-android\github-secrets.env` löschen (Secrets sind bei GitHub), den Ordner wie `.tauri` sichern. Auf dem Handy einmal die alte App deinstallieren und `Localist_2.3.1_android.apk` installieren.
