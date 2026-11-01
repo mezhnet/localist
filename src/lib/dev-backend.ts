@@ -9,6 +9,7 @@ import bundledJs from "../../src-tauri/seite/localist.js?raw";
 import tauriConf from "../../src-tauri/tauri.conf.json";
 import { EIGENE_DIR, eigenerBausteinDatei, eigenerBausteinLesen, eigenerBausteinName } from "./eigene-bausteine";
 import { newHtmlPage, resolveRelative } from "./html";
+import { jetzt, vorspulen } from "./uhr";
 import { VAULT_CHANGED_EVENT, type TreeNode, type VaultChange } from "./vault-api";
 
 const ROOT = "beispiel-vault (Browser-Vorschau)";
@@ -63,6 +64,38 @@ interface DevVault {
    * kamen ("check", "download_and_install", "restart"). Startwert aus localStorage "dev-update".
    */
   update: { szenario: UpdateSzenario; befehle: string[] };
+  /**
+   * Simulierte Benachrichtigungen: gezeigte (Titel und Text) und geplante (id → Zeitpunkt). Erlaubnis aus
+   * localStorage "dev-benachrichtigung" ("abgelehnt" oder "offen"), sonst erteilt.
+   */
+  benachrichtigungen: { gezeigt: { titel: string; text: string }[]; geplant: Map<number, { zeitpunkt: number; titel: string; text: string }> };
+  /** Stellt die Uhr der App vor (src/lib/uhr.ts), z. B. damit ein Pomodoro sofort abläuft. */
+  vorspulen: (ms: number) => void;
+}
+
+/** Zeigt eine simulierte Benachrichtigung als Meldung oben rechts (nur Browser-Vorschau, 8 Sekunden). */
+function benachrichtigungZeigen(titel: string, text: string) {
+  if (import.meta.env.MODE === "test") return;
+  let liste = document.getElementById("dev-benachrichtigungen");
+  if (!liste) {
+    liste = document.createElement("div");
+    liste.id = "dev-benachrichtigungen";
+    liste.setAttribute("role", "status");
+    liste.style.cssText =
+      "position:fixed;top:48px;right:16px;z-index:10000;display:flex;flex-direction:column;gap:8px;max-width:320px;pointer-events:none";
+    document.body.append(liste);
+  }
+  const karte = document.createElement("div");
+  karte.className = "dev-benachrichtigung";
+  karte.style.cssText =
+    "background:var(--color-surface-raised);color:var(--color-text);border:1px solid var(--color-border);border-radius:10px;box-shadow:var(--shadow-md);padding:10px 14px;font:13px/1.4 var(--font-sans, sans-serif)";
+  const kopf = document.createElement("strong");
+  kopf.textContent = `Benachrichtigung (Vorschau): ${titel}`;
+  const zeile = document.createElement("div");
+  zeile.textContent = text;
+  karte.append(kopf, zeile);
+  liste.append(karte);
+  setTimeout(() => karte.remove(), 8000);
 }
 
 export type UpdateSzenario = "verfuegbar" | "aktuell" | "fehler" | "installfehler";
@@ -188,6 +221,23 @@ export function installDevBackend(): void {
     szenario: (["verfuegbar", "aktuell", "fehler", "installfehler"] as const).find((s) => s === gespeichertesSzenario) ?? "verfuegbar",
     befehle: [],
   };
+
+  const benachrichtigungen: DevVault["benachrichtigungen"] = { gezeigt: [], geplant: new Map() };
+  const zeigen = (titel: string, text: string) => {
+    benachrichtigungen.gezeigt.push({ titel, text });
+    benachrichtigungZeigen(titel, text);
+  };
+  // Geplante Benachrichtigungen: wie in benachrichtigung.rs ein Blick auf die Uhr pro Takt (hier 250 ms).
+  if (import.meta.env.MODE !== "test") {
+    setInterval(() => {
+      for (const [id, plan] of [...benachrichtigungen.geplant]) {
+        if (jetzt() < plan.zeitpunkt) continue;
+        benachrichtigungen.geplant.delete(id);
+        zeigen(plan.titel, plan.text);
+      }
+    }, 250);
+  }
+  const erlaubnisStand = () => localStorage.getItem("dev-benachrichtigung");
 
   let missing = false;
   // Simulierter Gerätespeicher für die Ordnerauswahl auf Android (localStorage "dev-platform" = "android").
@@ -369,6 +419,31 @@ export function installDevBackend(): void {
           return maximiert;
         case "sicherheitstest_info":
           return null;
+        // Benachrichtigungen (src/lib/benachrichtigungen.ts): statt des Systems eine Meldung in der Oberfläche.
+        case "plugin:notification|is_permission_granted": {
+          const stand = erlaubnisStand();
+          return stand === "abgelehnt" ? false : stand === "offen" ? null : true;
+        }
+        case "plugin:notification|request_permission": {
+          const stand = erlaubnisStand();
+          if (stand === "offen") localStorage.setItem("dev-benachrichtigung", "abgelehnt");
+          return stand === "offen" || stand === "abgelehnt" ? "denied" : "granted";
+        }
+        case "plugin:notification|notify": {
+          const o = a.options as { id?: number; title: string; body?: string; schedule?: { at: { date: string } } };
+          if (o.schedule) benachrichtigungen.geplant.set(o.id ?? 0, { zeitpunkt: Date.parse(o.schedule.at.date), titel: o.title, text: o.body ?? "" });
+          else zeigen(o.title, o.body ?? "");
+          return null;
+        }
+        case "plugin:notification|cancel":
+          for (const id of a.notifications as number[]) benachrichtigungen.geplant.delete(id);
+          return null;
+        case "benachrichtigung_planen":
+          benachrichtigungen.geplant.set(a.id, { zeitpunkt: a.zeitpunkt, titel: a.titel, text: a.text });
+          return null;
+        case "benachrichtigung_abbrechen":
+          benachrichtigungen.geplant.delete(a.id);
+          return null;
         // Versionsnummer wie in der App aus tauri.conf.json.
         case "plugin:app|version":
           return tauriConf.version;
@@ -470,6 +545,8 @@ export function installDevBackend(): void {
     explorer,
     fenster,
     update,
+    benachrichtigungen,
+    vorspulen,
     externalWrite(path, content) {
       const isNew = !files.has(path);
       files.set(path, content);

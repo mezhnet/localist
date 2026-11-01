@@ -3,11 +3,11 @@
 ## Aktueller Stand
 - Etappe: 23 – Pomodoro, Grundversion (in Arbeit). Auftrag: `docs/auftrag-version-2.4.md`. Version 2.3: `archiv/FORTSCHRITT-2.3.md`, 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
 - Zuletzt aktualisiert: 2026-11-01 13:30
-- Nächster Schritt: Phase 1 – `tauri-plugin-notification` einbinden, `src/lib/benachrichtigungen.ts` mit Tests.
+- Nächster Schritt: Phase 2 – Timer-Logik `src/lib/pomodoro.ts` (Endzeitpunkt, Phasenfolge, Neustart), dann Verlauf, Ansicht, Mini-Timer. Echte Benachrichtigung in EXE und Emulator kommt mit dem ersten Build von Phase 2.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1|2.3`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
-- [ ] Phase 0 erledigt, `CLAUDE.md` ergänzt (Werkzeuge, Pomodoro-Verlauf) und committet.
+- [x] Phase 0 erledigt, `CLAUDE.md` ergänzt (Werkzeuge, Pomodoro-Verlauf) und committet. (a6db38a „CLAUDE.md aktualisiert“, 2b1e925; Archiv `archiv/FORTSCHRITT-2.3.md`)
 - [ ] `src/lib/benachrichtigungen.ts` mit Plugin auf Windows und Android, Berechtigung mit Erklärung, getestet, je eine echte Benachrichtigung in EXE und Emulator.
 - [ ] Pomodoro-Ansicht mit Phasen, einstellbaren Dauern, langer Pause nach N Runden, Leertaste und automatischem Start, getestet.
 - [ ] Der Timer läuft überall weiter, rechnet mit dem Endzeitpunkt und übersteht Ruhezustand und Neustart (Tests). Mini-Timer auf PC und Handy.
@@ -87,4 +87,6 @@ Letzter Stand: 2026-11-01 03:22, Etappe 22, alle 9 Punkte bestanden.
 - Erledigte Einträge bis Version 2.3 stehen im Archiv.
 
 ## Entscheidungen
+- 2026-11-01: Benachrichtigungen mit `tauri-plugin-notification` 2.8 (MIT/Apache). Laut Quellcode ignoriert der PC-Teil `schedule` („the scheduling … options are ignored“); Planen geht nur auf Android (AlarmManager). Deshalb plant am PC `src-tauri/src/benachrichtigung.rs`: ein Thread schaut jede Sekunde auf die Systemuhr (nicht auf eine Wartezeit, so stimmt es auch nach dem Ruhezustand) und zeigt die Benachrichtigung über das Plugin; neu planen oder abbrechen macht alte Planungen ungültig. Nur solange Localist läuft. Rechte: nur `is-permission-granted`, `request-permission`, `notify`, `cancel` in `default.json`.
+- 2026-11-01: Genaue Zeitpunkte auf Android brauchen ab Android 12 die Erlaubnis für exakte Alarme; ohne sie plant das Plugin ungenau (`setAndAllowWhileIdle`, Android darf um bis zu 75 % der Wartezeit verschieben). Gewählt: `USE_EXACT_ALARM` (ab 13) und `SCHEDULE_EXACT_ALARM` mit `maxSdkVersion="32"` im Manifest, beide ohne Rückfrage; geplant wird mit `allowWhileIdle: true` (`setExactAndAllowWhileIdle`, kommt auch im Ruhemodus). Play-Store-Regeln für `USE_EXACT_ALARM` betreffen Localist nicht (APK über GitHub). `POST_NOTIFICATIONS` bringt das Plugin mit; Localist fragt erst beim ersten Timer, nach einem Satz Erklärung, und danach nie wieder.
 Entscheidungen bis Version 2.1: `archiv/FORTSCHRITT-bis-2.1.md`, Version 2.2: `archiv/FORTSCHRITT-2.2.md`, Version 2.3: `archiv/FORTSCHRITT-2.3.md`, jeweils Abschnitt „Entscheidungen“.

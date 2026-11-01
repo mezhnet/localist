@@ -12,6 +12,14 @@
          Eine normale Berechtigung ohne Rückfrage; fehlt sie, vibriert einfach nichts. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Pomodoro: Die Benachrichtigung am Ende einer Phase kommt zum genauen Zeitpunkt, auch wenn Localist im
+         Hintergrund ist (AlarmManager über tauri-plugin-notification). Ohne diese Rechte plant Android ungenau und
+         kann die Benachrichtigung um viele Minuten verschieben. USE_EXACT_ALARM (ab Android 13) und
+         SCHEDULE_EXACT_ALARM (Android 12) gibt Android ohne Rückfrage. POST_NOTIFICATIONS bringt das Plugin mit;
+         danach fragt Localist erst beim ersten Timer. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
     <!-- Updates: Nach "Nach Updates suchen" und "Jetzt installieren" öffnet Localist den Installer von Android
          mit der neuen APK. Beim ersten Mal fragt Android, ob Localist Apps installieren darf. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />

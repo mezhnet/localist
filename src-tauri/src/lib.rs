@@ -3,6 +3,7 @@
 
 mod android_update;
 mod bausteine;
+mod benachrichtigung;
 mod eigene;
 mod export;
 mod page_scheme;
@@ -391,6 +392,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        // Benachrichtigungen (Etappe 23): nur lokal, auf Android geplant über den AlarmManager, am PC über benachrichtigung.rs.
+        .plugin(tauri_plugin_notification::init())
         .plugin(statusleiste::init())
         .plugin(android_update::init())
         .manage(state)
@@ -479,7 +482,9 @@ pub fn run() {
             anhang_pfad,
             datei_base64,
             export_schreiben,
-            notiz_darstellung_setzen
+            notiz_darstellung_setzen,
+            benachrichtigung::benachrichtigung_planen,
+            benachrichtigung::benachrichtigung_abbrechen
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");

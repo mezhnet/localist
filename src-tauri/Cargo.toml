@@ -26,6 +26,7 @@ tauri-plugin-dialog = "2.8.3"
 notify = "8.2.0"
 notify-debouncer-full = "0.7.0"
 uuid = { version = "1.29.0", features = ["v4"] }
+tauri-plugin-notification = "2"
 
 
 # Android hat keinen System-Papierkorb; dort verschiebt die App gelöschte Einträge in .localist/Papierkorb.
