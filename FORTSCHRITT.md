@@ -1,9 +1,9 @@
 # Fortschritt
 
 ## Aktueller Stand
-- Etappe: 22 – Ziehen und Ablegen auf PC und Handy (Version 2.3, in Arbeit). Auftrag: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 03:22
-- Nächster Schritt: Prüfrunde 2 (voller Testlauf, Klicklisten 1.0/2.0/2.1/2.3); ohne Funde A/B: `node scripts/version.mjs 2.3.0`, `npm run tauri build`, Sicherheitstest, APK, Abschluss-Commit.
+- Etappe: 22 – Ziehen und Ablegen auf PC und Handy (abgeschlossen am 2026-11-01). Version 2.3 ist fertig. Auftrag: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
+- Zuletzt aktualisiert: 2026-11-01 03:36
+- Nächster Schritt: keiner offen in `CLAUDE.md`. Emre pusht `git push --follow-tags` (Tag `v2.3.0`). Neue Arbeit erst mit einem neuen Auftrag (2.4–2.6 liegen unversioniert in `docs/`); dann Version 2.3 nach `archiv/` verschieben.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
@@ -12,8 +12,8 @@
 - [x] Am PC funktioniert Ziehen in der gebauten `localist.exe` mit echter Maus: Seitenleiste, Kanban, Ziehgriff, Notizbuch-Reihenfolge (Nachweis im Chat). (`node scripts/ziehen-pruefung.mjs src-tauri/target/release/localist.exe docs/screenshots/etappe-22 nachher`: alle 9 Orte „geht“, Ziehgriff `dragover 47`/`drop 1`; Bild aus dem Explorer wird abgewiesen (OLE-Effekt `None`), die Seite bleibt)
 - [x] Ziehen in der Seitenleiste mit Hervorhebung, Aufklappen beim Verweilen, Auto-Scroll, Escape, Namenskonflikt-Meldung und „Rückgängig“, getestet. (`src/lib/ziehen.ts`, Tests `src/lib/ziehen.test.tsx` 13, `tree.test.ts` „Regeln beim Ziehen …“ 2, `App.test.tsx` „Ziehen und Ablegen (Etappe 22)“ 6; Klickliste 2.3 4/4)
 - [x] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat. (`scripts/android-ziehen-pruefung.mjs … nachher` im Emulator 5556: alle 8 Punkte „geht“; Screenshots `docs/screenshots/etappe-22/android-seite-ziehen.png`, `android-kanban-ziehen.png`; Tests mit falschen Zeitgebern in `ziehen.test.tsx`; `scripts/handy-pruefung.mjs` 26/26, Tippflächen ≥ 44 px)
-- [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt.
-- [ ] Version 2.3.0 gesetzt, „Neu in Version 2.3“ in `README.md` und `ANLEITUNG.md`.
+- [x] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt. (`npm test` 43 Dateien/508, `cargo test` 44, `tsc` ohne Fehler, `npm run tauri build` 2.3.0 EXIT=0, APK 2.3.0 EXIT=0, Sicherheitstest 21/21, Klicklisten 12/12, 7/7, 9/9, 4/4)
+- [x] Version 2.3.0 gesetzt, „Neu in Version 2.3“ in `README.md` und `ANLEITUNG.md`. (`node scripts/version.mjs 2.3.0` → cd6f92e „Version 2.3.0“, Tag `v2.3.0`; daac3f0)
 
 ## Ziehen vorher (Phase 1, Stand 2.2.1)
 PC: gebaute `localist.exe` 2.2.1 mit echter Maus (`node scripts/ziehen-pruefung.mjs <exe> <Ordner> vorher`, Eingaben über `mouse_event` in `scripts/fenster-helfer.ps1`, Datei per OLE-Ziehen wie aus dem Explorer). Handy: Debug-APK 2.2.1 im Emulator 5556 (`node scripts/android-ziehen-pruefung.mjs <adb> <apk> <Ordner> vorher`, `input motionevent DOWN`, 0,9 s Pause, `MOVE` …, `UP`).
@@ -84,11 +84,14 @@ Letzter Stand: 2026-11-01 03:22, Etappe 22, alle 9 Punkte bestanden.
 ## Abgeschlossene Etappen
 - Etappen 0–20 und der Nachtrag „Android-Statusleiste“: `archiv/FORTSCHRITT-bis-2.1.md`.
 - Etappe 21 – Updates über GitHub Releases (abgeschlossen am 2026-10-31): `archiv/FORTSCHRITT-2.2.md`.
+- Etappe 22 – Ziehen und Ablegen auf PC und Handy (abgeschlossen am 2026-11-01): Phase 0 2775801, 20f0eee, 16823e3; Phase 1 e7eacc0; Phase 2 2636b5e, aa5810e; Phase 3 2cb5069; Prüfrunde 1 daac3f0, Funde behoben 9e85bc2; Version 2.3.0 cd6f92e (Tag `v2.3.0`); Screenshots `docs/screenshots/etappe-22/` (6 Bilder). Endnachweis mit EXE und APK 2.3.0: `scripts/ziehen-pruefung.mjs … nachher` alle 9 Orte „geht“, `scripts/android-ziehen-pruefung.mjs … nachher` alle 8 Punkte „geht“.
 
 ## Prüfrunden
 - Runde 1 (2026-11-01): Arbeitsregel 6 grün, Klicklisten 12/12, 7/7, 9/9, 4/4, Sicherheitstest 21/21. Unabhängige Prüfung (Sonnet, lesend): B1 „Rückgängig“ rechnete mit dem Baum von vor dem Verschieben (Links in der verschobenen HTML-Seite bei anderer Ordnertiefe und Pfad-Links wie `[[Notizen/Ideen]]` blieben falsch), B2 „Rückgängig“ gab der Seite ihren Platz im Notizbuch nicht zurück. Beide behoben (`relocate` nimmt `treeRef.current`, `notizbuchWiederEinfuegen`), Test „„Rückgängig“ stellt alles genau wieder her …“ (scheitert ohne den Fix).
+- Runde 2 (2026-11-01): `npm test` 508/508, Klicklisten 12/12, 7/7, 9/9, 4/4 – keine Funde A/B, Schluss.
 
 ## Offene Probleme
+- Für Emre: `git push --follow-tags` schickt Version 2.3.0 samt Tag `v2.3.0` zu GitHub; der Release-Workflow baut dann Installer und `latest.json`.
 - Für Emre: `%USERPROFILE%\.tauri\localist.key` sichern und den ersten echten Update-Test machen (2.2.1 installieren, 2.2.2 veröffentlichen, in der App aktualisieren; `ANLEITUNG-RELEASE.md`, Schritt 5). Erstes Release [v2.2.1](https://github.com/mezhnet/localist/releases/tag/v2.2.1) ist veröffentlicht (Run 41224614969 grün, `latest.json` mit Version 2.2.1, Signaturen mit Schlüssel-ID 6BEE31F67A3C789E).
 - Debug-APK 2.2.1 hängt am Release v2.2.1 (`Localist_2.2.1_android-debug.apk`, 299 244 782 Bytes, sha256 `60c5bc4e…0ea4`, im Emulator 5556 als 2.2.1 geprüft). Signierte Release-APK kommt mit einem späteren Auftrag.
 - Hinweis von GitHub, nicht dringend: `actions/checkout@v4` und `actions/setup-node@v4` nutzen noch Node 20 und laufen erzwungen mit Node 24. Bei Gelegenheit auf neuere Hauptversionen anheben.
