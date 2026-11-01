@@ -4,7 +4,7 @@
 // src/lib/pomodoro-timer.ts und läuft weiter, wenn diese Ansicht geschlossen wird. In der Ansicht startet und
 // pausiert die Leertaste den Timer, solange kein Eingabefeld (oder Knopf) den Fokus hat.
 import { Link2, Pause, Play, RotateCcw, SkipForward, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   lokaleZeit,
   PHASEN_NAME,
@@ -53,7 +53,8 @@ export function PomodoroView({ index, onOpenPage, onEinstellungen, handy = false
   const seitePfad = timer.seite ? pfadZurId(index, timer.seite) : null;
   const heute = useHeute(verlauf, jetzt);
 
-  useEffect(() => {
+  // Gleich beim Anzeigen anmelden (nicht erst nach dem Zeichnen): Auch ein sofortiger Druck auf die Leertaste zählt.
+  useLayoutEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== " " || event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.defaultPrevented) return;
       if (leertasteGehoertAnderem(event.target) || leertasteGehoertAnderem(document.activeElement)) return;

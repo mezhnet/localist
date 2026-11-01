@@ -83,7 +83,8 @@ Letzter Stand: 2026-11-01 14:38, Etappe 23, alle 9 Punkte bestanden.
 - Etappe 22 – Ziehen und Ablegen auf PC und Handy (abgeschlossen am 2026-11-01), danach 2.3.1 und 2.3.2: `archiv/FORTSCHRITT-2.3.md`.
 
 ## Prüfrunden
-- noch keine
+- Runde 1 (2026-11-01, ein lesender Sonnet-Agent, vier Fragen des Auftrags): kein A, ein B – ein beim Start schon abgelaufener Timer konnte beim ersten Fokus des Fensters vor der Anmeldung des Vaults mit Standardwerten abgeschlossen werden (falsche Phase/kein automatischer Start). Behoben: `pruefen` wartet auf die erste Anmeldung, Test „Zurückkehren in die App vor der Anmeldung …“. Dazu selbst gefunden: Leertaste kam in Tests manchmal vor dem Hörer an → `useLayoutEffect` (10/10 Läufe grün).
+- Runde 2 (eigene Prüfung ohne Agent: automatische Tests, Klicklisten, Builds): keine Funde A/B → Schluss.
 
 ## Offene Probleme
 - Für Emre: `%USERPROFILE%\.tauri\localist.key` sichern und den ersten echten Update-Test machen (2.2.1 installieren, 2.2.2 veröffentlichen, in der App aktualisieren; `ANLEITUNG-RELEASE.md`, Schritt 5). Erstes Release [v2.2.1](https://github.com/mezhnet/localist/releases/tag/v2.2.1) ist veröffentlicht (Run 41224614969 grün, `latest.json` mit Version 2.2.1, Signaturen mit Schlüssel-ID 6BEE31F67A3C789E).

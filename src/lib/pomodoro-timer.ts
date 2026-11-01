@@ -80,6 +80,8 @@ export function pomodoroErzeugen(abh: Abhaengigkeiten = {}) {
   let timer = neuerTimer(einstellungen);
   let offen: OffeneSession[] = [];
   let anmeldung: Anmeldung | null = null;
+  /** Die Einstellungen eines Vaults sind bekannt (erste Anmeldung); vorher wird nichts abgeschlossen. */
+  let eingestellt = false;
   let verlauf = 0;
   let stand: PomodoroStand;
   const hoerer = new Set<() => void>();
@@ -179,6 +181,9 @@ export function pomodoroErzeugen(abh: Abhaengigkeiten = {}) {
 
   /** Schließt abgelaufene Phasen ab; `true`, wenn sich etwas geändert hat. */
   function pruefen(): boolean {
+    // Vor der ersten Anmeldung gelten noch die Standardwerte: Phasenfolge und automatischer Start kämen sonst aus
+    // ihnen statt aus dem Vault (z. B. beim ersten Fokus des Fensters nach einem Neustart).
+    if (!eingestellt) return false;
     const jetzt = uhr();
     const schritt = ablaufen(timer, einstellungen, jetzt);
     if (schritt.beendet.length === 0) return false;
@@ -214,6 +219,7 @@ export function pomodoroErzeugen(abh: Abhaengigkeiten = {}) {
     anmelden(neu: Anmeldung) {
       anmeldung = neu;
       einstellungen = neu.einstellungen;
+      eingestellt = true;
       timer = einstellungenAnwenden(timer, einstellungen);
       if (!pruefen()) {
         speichern();

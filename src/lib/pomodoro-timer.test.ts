@@ -107,6 +107,25 @@ describe("läuft weiter und rechnet mit dem Endzeitpunkt", () => {
     expect(JSON.parse(speicher.get(SPEICHER_SCHLUESSEL)!)).toMatchObject({ timer: { phase: "kurz" }, offen: [] });
   });
 
+  it("Neustart nach dem Endzeitpunkt: Zurückkehren in die App vor der Anmeldung schließt nichts mit Standardwerten ab", async () => {
+    const eigene = { ...STANDARD_EINSTELLUNGEN, runden: 1, pausenAuto: true };
+    const vorher = neu();
+    await anmelden(vorher, eigene);
+    await vorher.starten();
+    await vorher.beenden();
+    vi.setSystemTime(T0 + 30 * MINUTE);
+    const nachher = neu();
+    // Das Fenster bekommt den Fokus, bevor der Vault seine Einstellungen gelesen hat.
+    window.dispatchEvent(new Event("focus"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(nachher.stand().timer).toMatchObject({ phase: "fokus", lauf: "laeuft" });
+    expect(geschrieben).toEqual([]);
+    // Erst mit den Einstellungen des Vaults: nach 1 Runde die lange Pause, automatisch gestartet am Ende des Fokus.
+    await anmelden(nachher, eigene);
+    expect(nachher.stand().timer).toMatchObject({ phase: "lang", lauf: "laeuft", ende: T0 + 25 * MINUTE + 15 * MINUTE });
+    expect(geschrieben).toEqual([expect.objectContaining({ minuten: 25, abgebrochen: false })]);
+  });
+
   it("reguläres Ende: Ton, Session im Verlauf, die Benachrichtigung wird nicht abgebrochen", async () => {
     const store = neu();
     await anmelden(store);
