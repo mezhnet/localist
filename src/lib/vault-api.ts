@@ -66,6 +66,11 @@ export function writePage(path: string, content: string): Promise<void> {
   return invoke<void>("write_page", { path, content });
 }
 
+/** Pomodoro-Verlauf: hängt eine Zeile an `.localist/pomodoro/<monat>.jsonl` an (atomar, siehe src-tauri/src/pomodoro.rs). */
+export function pomodoroAnhaengen(monat: string, zeile: string): Promise<void> {
+  return invoke("pomodoro_anhaengen", { monat, zeile });
+}
+
 /**
  * Legt eine Notiz `<dir>/<title>.md` (Frontmatter mit id) oder eine HTML-Seite `<dir>/<title>.html`
  * (Speicherformat mit localist-id) an und liefert den relativen Pfad.

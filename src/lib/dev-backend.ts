@@ -360,6 +360,14 @@ export function installDevBackend(): void {
             await fetch(`/__localist-dev/darstellung?pfad=${encodeURIComponent(a.pfad)}`, { method: "PUT", body: a.html }).catch(() => {});
           }
           return null;
+        // Pomodoro-Verlauf wie in src-tauri/src/pomodoro.rs: Zeile anhängen, nichts sonst verändern.
+        case "pomodoro_anhaengen": {
+          if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(a.monat))) throw `Ungültiger Monat für den Pomodoro-Verlauf: ${a.monat}`;
+          const pfad = `.localist/pomodoro/${a.monat}.jsonl`;
+          const alt = files.get(pfad) ?? "";
+          files.set(pfad, `${alt}${alt && !alt.endsWith("\n") ? "\n" : ""}${a.zeile}\n`);
+          return null;
+        }
         case "plugin:dialog|save":
           return `C:/Export/${a.options?.defaultPath ?? "Seite.html"}`;
         // Eigene Bausteine (wie src-tauri/src/eigene.rs)

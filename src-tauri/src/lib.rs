@@ -7,6 +7,7 @@ mod benachrichtigung;
 mod eigene;
 mod export;
 mod page_scheme;
+mod pomodoro;
 mod search_index;
 mod security_test;
 mod statusleiste;
@@ -197,6 +198,12 @@ async fn list_tree(state: State<'_, AppState>) -> Result<Vec<vault::TreeNode>, S
 #[tauri::command]
 async fn read_page(state: State<'_, AppState>, path: String) -> Result<String, String> {
     vault::read_text(&vault::resolve(&state.root()?, &path)?)
+}
+
+/// Pomodoro-Verlauf: hängt eine Session an `.localist/pomodoro/<monat>.jsonl` an (siehe pomodoro.rs).
+#[tauri::command]
+async fn pomodoro_anhaengen(state: State<'_, AppState>, monat: String, zeile: String) -> Result<(), String> {
+    pomodoro::anhaengen(&state.root()?, &monat, &zeile)
 }
 
 #[tauri::command]
@@ -484,7 +491,8 @@ pub fn run() {
             export_schreiben,
             notiz_darstellung_setzen,
             benachrichtigung::benachrichtigung_planen,
-            benachrichtigung::benachrichtigung_abbrechen
+            benachrichtigung::benachrichtigung_abbrechen,
+            pomodoro_anhaengen
         ])
         .run(tauri::generate_context!())
         .expect("Die App konnte nicht gestartet werden");
