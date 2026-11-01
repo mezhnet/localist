@@ -3,6 +3,7 @@
 # Erst laufen alle Tests; schlägt einer fehl, entsteht kein Release. Danach baut tauri-action den Installer,
 # signiert ihn für den Updater und lädt Installer, .sig-Datei und latest.json in ein GitHub-Release hoch.
 # Danach baut der Job „android“ die signierte APK und hängt sie an dasselbe Release (ANLEITUNG-RELEASE.md, Schritt 7).
+# Von Hand gestartet („Run workflow“ mit einem vorhandenen Tag) baut er nur die APK für dieses Release nach.
 #
 # Release-Ziel: Sind die Repository-Variablen RELEASE_OWNER und RELEASE_REPO gesetzt, geht das Release in jenes
 # (öffentliche) Repository, mit dem Token aus dem Secret RELEASES_TOKEN. Sonst geht es in dieses Repository.
@@ -12,6 +13,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Vorhandener Versions-Tag, dessen Release eine APK bekommen soll (z. B. v2.3.1)"
+        required: true
 
 permissions:
   contents: write
@@ -23,6 +29,7 @@ concurrency:
 jobs:
   release:
     name: Windows-Installer bauen und veröffentlichen
+    if: ${{ github.event_name == 'push' }}
     runs-on: windows-latest
     steps:
       # Git für Windows wandelt beim Auschecken sonst alle Zeilenenden in CRLF um. Tests und Beispiel-Vault erwarten
@@ -100,8 +107,10 @@ jobs:
 
   android:
     name: Android-APK bauen und anhängen
-    # Erst wenn das Release steht; der Job oben legt es an und lädt latest.json hoch.
+    # Erst wenn das Release steht; der Job oben legt es an und lädt latest.json hoch. Von Hand gestartet gibt es
+    # den Job oben nicht, das Release steht dann schon.
     needs: release
+    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() || needs.release.result == 'success' }}
     runs-on: ubuntu-latest
     env:
       # Dasselbe Ziel wie oben: dieses Repository oder RELEASE_OWNER/RELEASE_REPO.
@@ -121,6 +130,8 @@ jobs:
 
       - name: Code holen
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
 
       - name: Node einrichten
         uses: actions/setup-node@v4
@@ -134,8 +145,11 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # Ohne „packages“ will die Aktion das Paket „tools“ installieren, das es nicht mehr gibt (Lauf zu v2.3.1).
       - name: Android-SDK einrichten
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: NDK installieren
         run: sdkmanager --install "ndk;$NDK_VERSION"

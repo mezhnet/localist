@@ -19,9 +19,9 @@ interface Schritt {
 
 const dokument = parseDocument(workflowText, { uniqueKeys: true });
 const workflow = dokument.toJS() as {
-  on: { push: { tags: string[] } };
+  on: { push: { tags: string[] }; workflow_dispatch?: { inputs: Record<string, { required?: boolean }> } };
   permissions: Record<string, string>;
-  jobs: Record<string, { "runs-on": string; needs?: string; env?: Record<string, string>; steps: Schritt[] }>;
+  jobs: Record<string, { "runs-on": string; if?: string; needs?: string; env?: Record<string, string>; steps: Schritt[] }>;
 };
 const job = Object.values(workflow.jobs)[0];
 const schritte = job.steps;
@@ -33,7 +33,12 @@ describe("release.yml", () => {
     expect(dokument.errors).toEqual([]);
     expect(dokument.warnings).toEqual([]);
     expect(Object.keys(workflow.jobs)).toEqual(["release", "android"]);
-    expect(workflow.on).toEqual({ push: { tags: ["v*"] } });
+    expect(workflow.on.push).toEqual({ tags: ["v*"] });
+    // Von Hand nur mit einem vorhandenen Tag; ein Release (Windows-Job) entsteht dabei nie.
+    expect(Object.keys(workflow.on)).toEqual(["push", "workflow_dispatch"]);
+    expect(Object.keys(workflow.on.workflow_dispatch?.inputs ?? {})).toEqual(["tag"]);
+    expect(workflow.on.workflow_dispatch?.inputs.tag.required).toBe(true);
+    expect(job.if).toBe("${{ github.event_name == 'push' }}");
     expect(job["runs-on"]).toBe("windows-latest");
     expect(workflow.permissions).toEqual({ contents: "write" });
     for (const schritt of schritte) expect(Boolean(schritt.uses) !== Boolean(schritt.run), JSON.stringify(schritt)).toBe(true);
@@ -93,9 +98,14 @@ describe("release.yml: Android-APK (seit Version 2.3.1)", () => {
   const android = workflow.jobs.android;
   const run = (teil: string) => android.steps.findIndex((s) => (s.run ?? "").includes(teil));
 
-  it("läuft auf ubuntu-latest erst nach dem Windows-Job und lädt ins selbe Ziel hoch", () => {
+  it("läuft auf ubuntu-latest erst nach dem Windows-Job (von Hand ohne ihn, für den angegebenen Tag) und lädt ins selbe Ziel hoch", () => {
     expect(android["runs-on"]).toBe("ubuntu-latest");
     expect(android.needs).toBe("release");
+    expect(android.if).toBe("${{ github.event_name == 'workflow_dispatch' && !cancelled() || needs.release.result == 'success' }}");
+    const checkout = android.steps.find((s) => s.uses?.startsWith("actions/checkout@"));
+    expect(checkout?.with?.ref).toBe("${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}");
+    // setup-android ohne „packages“ scheitert am Paket „tools“, das es nicht mehr gibt.
+    expect(android.steps.find((s) => s.uses?.startsWith("android-actions/setup-android@"))?.with).toEqual({ packages: "platform-tools" });
     expect(android.env?.GH_REPO).toContain("github.repository");
     expect(android.env?.GH_TOKEN).toBe("${{ vars.RELEASE_OWNER != '' && vars.RELEASE_REPO != '' && secrets.RELEASES_TOKEN || secrets.GITHUB_TOKEN }}");
     for (const schritt of android.steps) expect(Boolean(schritt.uses) !== Boolean(schritt.run), JSON.stringify(schritt)).toBe(true);
