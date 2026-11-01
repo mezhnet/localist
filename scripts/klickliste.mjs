@@ -7,7 +7,7 @@
 // Aufruf, während die Vorschau läuft: node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" [1.0|2.0|2.1|2.3]
 // Rückfragen der Seite (window.confirm) beantwortet das Skript wie ein Mensch mit „OK“.
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -87,7 +87,7 @@ const ziehen = async (x1, y1, x2, y2, { halten = 0 } = {}) => {
  * Mit dem Finger: aufsetzen, `lang` ms ruhig liegen lassen (langes Drücken), in Schritten zum Ziel, loslassen
  * (Touch-Ereignisse über das Protokoll; die Seite bekommt daraus Pointer Events mit pointerType „touch“).
  */
-const finger = async (x1, y1, x2, y2, { lang = 700, schritte = 10 } = {}) => {
+const finger = async (x1, y1, x2, y2, { lang = 700, schritte = 10, bild } = {}) => {
   await send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x1, y: y1, id: 1 }] });
   await sleep(lang);
   for (let i = 1; i <= schritte; i++) {
@@ -95,6 +95,11 @@ const finger = async (x1, y1, x2, y2, { lang = 700, schritte = 10 } = {}) => {
     await sleep(40);
   }
   await sleep(300);
+  // Screenshot mitten im Ziehen (nur mit gesetztem SCREENSHOT_ORDNER, z. B. docs/screenshots/etappe-22)
+  if (bild && process.env.SCREENSHOT_ORDNER) {
+    const { data } = (await send("Page.captureScreenshot", { format: "png" })).result;
+    writeFileSync(join(process.env.SCREENSHOT_ORDNER, bild), Buffer.from(data, "base64"));
+  }
   await send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await sleep(500);
 };
@@ -380,7 +385,7 @@ try {
       await sleep(300);
       const von = await mitte(z("Notizen/Formatierung.md"));
       const nach = await mitte(z("Projekte"));
-      await finger(von.x, von.y, nach.x, nach.y);
+      await finger(von.x, von.y, nach.x, nach.y, { bild: "handy-ziehen-360x740.png" });
       erwarte(await waitFor(`window.__devVault.files.has("Projekte/Formatierung.md")`), "nicht verschoben");
       erwarte(!(await evaluate(`Boolean(document.querySelector('[role="menu"]'))`)), "Menü erschienen");
       return "„Formatierung“ per Finger nach „Projekte“ gelegt, kein Menü";

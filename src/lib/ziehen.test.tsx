@@ -2,7 +2,7 @@
 // Mit-Scrollen am Rand und der Schutz gegen fremde Dateien.
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fremdeDateienAbweisen, GREIFEN_MS, randScroll, RAND_PX, SCROLL_MAX_PX, useZiehen, VERWEILEN_MS } from "./ziehen";
+import { fremdeDateienAbweisen, GEIST_ABSTAND_PX, GREIFEN_MS, randScroll, RAND_PX, SCROLL_MAX_PX, useZiehen, VERWEILEN_MS } from "./ziehen";
 
 describe("randScroll: Mit-Scrollen am Rand", () => {
   it("scrollt nur in den Randzonen: am Beginn der Zone kaum, an der Kante und darüber hinaus am schnellsten", () => {
@@ -95,7 +95,8 @@ describe("useZiehen mit der Maus", () => {
     expect(getByTestId("a").className).toBe("");
     unterZeiger = getByTestId("b");
     fireEvent.pointerMove(window, { ...maus, clientX: 10, clientY: 40 });
-    expect(document.querySelector(".ziehen-geist")).not.toBeNull();
+    // Die Kopie liegt rechts unter dem Mauszeiger, nicht auf dem Ziel
+    expect(document.querySelector<HTMLElement>(".ziehen-geist")?.style.transform).toBe(`translate(${10 + GEIST_ABSTAND_PX}px, ${40 + GEIST_ABSTAND_PX}px)`);
     expect(document.documentElement.classList.contains("ist-ziehen")).toBe(true);
     expect(getByTestId("a").className).toBe("ist-zieht");
     expect(getByTestId("b").className).toBe("drop-target");
@@ -256,7 +257,8 @@ describe("useZiehen mit dem Finger (langes Drücken)", () => {
     expect(ziehenStattScrollen.defaultPrevented).toBe(true);
     const geist = document.querySelector<HTMLElement>(".ziehen-geist");
     expect(geist?.getAttribute("aria-hidden")).toBe("true");
-    expect(geist?.style.transform).toBe("translate(0px, 40px)");
+    // Die Kopie schwebt über dem Finger (jsdom: Kopie 0 × 0 px), damit sie weder vom Finger noch über dem Ziel liegt
+    expect(geist?.style.transform).toBe(`translate(10px, ${50 - 3 * GEIST_ABSTAND_PX}px)`);
     expect(getByTestId("b").className).toBe("drop-target");
     fireEvent.pointerUp(window, { ...finger, clientX: 10, clientY: 50 });
     expect(e.abgelegt).toEqual([["a", "b"]]);

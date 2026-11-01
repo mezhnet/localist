@@ -18,6 +18,8 @@ export const VERWEILEN_MS = 600;
 /** Breite der Randzone, in der die Liste beim Ziehen mitscrollt, und die größte Geschwindigkeit pro Bild. */
 export const RAND_PX = 40;
 export const SCROLL_MAX_PX = 16;
+/** Abstand der Kopie zum Zeiger (Maus: rechts darunter; Finger: das Dreifache darüber). */
+export const GEIST_ABSTAND_PX = 8;
 
 /**
  * Mit-Scrollen am Rand: Pixel pro Bild (negativ = nach oben bzw. links, 0 = nicht scrollen). Die Geschwindigkeit
@@ -155,11 +157,19 @@ export function useZiehen<Q, Z>(optionen: ZiehOptionen<Q, Z>) {
       }
       geist.setAttribute("aria-hidden", "true");
       geist.classList.add("ziehen-geist");
-      Object.assign(geist.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px` });
+      Object.assign(geist.style, { left: "0px", top: "0px", width: `${r.width}px` });
+      geist.style.setProperty("--depth", "0"); // Zeile der Seitenleiste: ohne Einzug
+
       document.body.append(geist);
     };
+    // Die Kopie liegt neben dem Zeiger, nicht auf dem Ziel: bei der Maus rechts darunter, beim Finger darüber
+    // (sonst verdeckte sie die Hervorhebung des Ziels bzw. der Finger die Kopie).
     const geistBewegen = () => {
-      if (geist) geist.style.transform = `translate(${pos.x - start.x}px, ${pos.y - start.y}px)`;
+      if (!geist) return;
+      const r = geist.getBoundingClientRect();
+      const x = finger ? pos.x - r.width / 2 : pos.x + GEIST_ABSTAND_PX;
+      const y = finger ? pos.y - r.height - 3 * GEIST_ABSTAND_PX : pos.y + GEIST_ABSTAND_PX;
+      geist.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
     };
 
     const zielSuchen = () => {

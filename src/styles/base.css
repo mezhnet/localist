@@ -126,8 +126,8 @@ h3 {
   background: var(--color-surface-raised);
 }
 
-/* Knopf in der Meldung, z. B. „Rückgängig“ nach dem Verschieben */
-.toast-aktion {
+/* Knopf in der Meldung, z. B. „Rückgängig“ nach dem Verschieben (in der Akzentfarbe, auch gegen .ui-button--ghost) */
+.toast .toast-aktion {
   flex-shrink: 0;
   color: var(--color-accent-text);
   font-weight: var(--font-weight-semibold);
@@ -143,6 +143,7 @@ h3 {
   position: fixed;
   z-index: var(--z-ziehen);
   box-sizing: border-box;
+  max-width: min(var(--ziehen-geist-breite), 80vw);
   margin: 0;
   list-style: none;
   border-radius: var(--radius-md);
@@ -150,6 +151,11 @@ h3 {
   box-shadow: var(--shadow-lg);
   opacity: var(--ziehen-geist-deckkraft);
   pointer-events: none;
+}
+
+/* In der Kopie keine Knöpfe („⋯“, „+“): Sie zeigt nur, was gezogen wird. */
+.ziehen-geist .tree-action {
+  display: none;
 }
 
 html.ist-ziehen,

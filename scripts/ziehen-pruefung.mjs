@@ -229,6 +229,11 @@ try {
   eintrag("Reihenfolge im Notizbuch", buchOk, eN);
 
   // A. Seite in einen Ordner (nachher: mit Screenshot beim Ziehen, Hervorhebung und „Rückgängig“ per echtem Klick)
+  if (nachher) {
+    // Modus „Hell“ (ein frisches Profil folgt sonst dem System, das dunkel sein kann)
+    await evaluate(`document.querySelector('.modus-umschalter [aria-label="Hell"]').click(); true`);
+    await sleep(600);
+  }
   await ereignisse();
   let markiert = "";
   await ziehe(await punkt(row("Notizen/Ideen.md")), await punkt(row("Archiv")), {

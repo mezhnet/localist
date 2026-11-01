@@ -322,6 +322,7 @@
   --ziehen-anheben: scale(1.02);
   --ziehen-quelle-deckkraft: 0.45;
   --ziehen-geist-deckkraft: 0.94;
+  --ziehen-geist-breite: 280px;
 }
 
 /* Akzentfarben im Modus Hell (Orange steht oben im :root). Die App setzt data-accent am <html>. */

@@ -1,0 +1,100 @@
+{
+  "report": [
+    "Fenster 275,266 1804 × 1204, vorn: true, DPI 144, Arbeitsfläche 2880 × 1728",
+    "Kanban „Umzug“ Geplant → Erledigt: verschoben (dragstart 0, dragover 0, drop 0, pointermove 26, pointercancel 0)",
+    "Ziehgriff „Hier sammle …“ unter „Lesezeichen …“: verschoben (dragstart 1, dragover 47, drop 1, pointermove 3, pointercancel 1)",
+    "Notizbuch „Subnetting“ hinter „Bausteine“: umsortiert (dragstart 0, dragover 0, drop 0, pointermove 26, pointercancel 0)",
+    "Seitenleiste „Ideen“ → „Archiv“: verschoben (dragstart 0, dragover 0, drop 0, pointermove 26, pointercancel 0), hervorgehoben beim Ziehen: „Archiv“",
+    "Meldung „„Ideen“ nach „Archiv“ verschoben. Links in 2 Seiten angepasst.Rückgängig“; Klick auf „Rückgängig“: „Ideen“ wieder in „Notizen“: ja, Link in DNS.html wieder „Ideen.md“: ja",
+    "Verweilen über „Vorlagen“: aufgeklappt vorher false, nach 1,1 s true; Escape vor dem Loslassen: nichts verschoben ja",
+    "Namenskonflikt „DNS“ → „Archiv“ (dort „DNS.md“): Meldung „„DNS“ wurde nicht verschoben: In „Archiv“ gibt es schon eine Seite „DNS“.“, beide Dateien unverändert: ja",
+    "Seitenleiste Ordner „Entwürfe“ → „Archiv“: verschoben (dragstart 0, dragover 0, drop 0, pointermove 26, pointercancel 0)",
+    "Seitenleiste „Formatierung“ → Vault-Wurzel: verschoben (dragstart 0, dragover 0, drop 0, pointermove 26, pointercancel 0)",
+    "Modus Schwarz: „Wurzel-Notiz“ → „Archiv“: verschoben",
+    "Bild aus dem „Explorer“ (OLE-Ziehen, Ergebnis None) auf die Notiz: drop in der Seite 0 (Dateien 0), Seite unverändert, Bild in der Notiz: nein"
+  ],
+  "tabelle": [
+    {
+      "ort": "Kanban-Karte in eine andere Spalte",
+      "pc": true,
+      "ursache": {
+        "pointermove": 26,
+        "pointerdown": 1,
+        "pointerup": 1
+      }
+    },
+    {
+      "ort": "Ziehgriff im Block-Editor",
+      "pc": true,
+      "ursache": {
+        "pointermove": 3,
+        "pointerdown": 1,
+        "dragstart": 1,
+        "pointercancel": 1,
+        "dragenter": 8,
+        "dragover": 47,
+        "drop": 1
+      }
+    },
+    {
+      "ort": "Reihenfolge im Notizbuch",
+      "pc": true,
+      "ursache": {
+        "pointermove": 26,
+        "pointerdown": 1,
+        "pointerup": 1
+      }
+    },
+    {
+      "ort": "Seite in einen Ordner",
+      "pc": true,
+      "ursache": {
+        "pointermove": 26,
+        "pointerdown": 1,
+        "pointerup": 1
+      }
+    },
+    {
+      "ort": "Rückgängig nach dem Verschieben",
+      "pc": true,
+      "ursache": {}
+    },
+    {
+      "ort": "Aufklappen beim Verweilen und Escape",
+      "pc": true,
+      "ursache": {}
+    },
+    {
+      "ort": "Namenskonflikt-Meldung",
+      "pc": true,
+      "ursache": {}
+    },
+    {
+      "ort": "Ordner in einen Ordner",
+      "pc": true,
+      "ursache": {
+        "pointermove": 26,
+        "pointerdown": 1,
+        "pointerup": 1
+      }
+    },
+    {
+      "ort": "Seite in die Vault-Wurzel",
+      "pc": true,
+      "ursache": {
+        "pointermove": 26,
+        "pointerdown": 1,
+        "pointerup": 1
+      }
+    },
+    {
+      "ort": "Bild aus dem Explorer in eine Notiz",
+      "pc": false,
+      "ursache": {
+        "dragenter": 10,
+        "dragover": 32,
+        "pointermove": 1
+      }
+    }
+  ]
+}

@@ -2,14 +2,14 @@
 
 ## Aktueller Stand
 - Etappe: 22 – Ziehen und Ablegen auf PC und Handy (Version 2.3, in Arbeit). Auftrag: `docs/auftrag-version-2.3.md`. Version 2.2: `archiv/FORTSCHRITT-2.2.md`, bis 2.1: `archiv/FORTSCHRITT-bis-2.1.md`.
-- Zuletzt aktualisiert: 2026-11-01 02:55
-- Nächster Schritt: EXE mit echter Maus prüfen (`node scripts/ziehen-pruefung.mjs src-tauri/target/release/localist.exe docs/screenshots/etappe-22 nachher`), dann Phase 3 im Emulator (`scripts/android-ziehen-pruefung.mjs … nachher`, APK neu bauen).
+- Zuletzt aktualisiert: 2026-11-01 03:10
+- Nächster Schritt: Phase 3 – APK bauen (`npx tauri android build --debug --apk --target aarch64 --target x86_64`), im Emulator 5556 prüfen (`scripts/android-ziehen-pruefung.mjs … nachher`), Tippflächen mit `scripts/handy-pruefung.mjs`.
 - Hinweise für spätere Sitzungen: (a) Handy = schmaler Bildschirm unter 769 px (`useSchmal()` in `Reiterleiste.tsx`, Klasse `is-handy` am `.workspace`), Navigationsleiste `src/components/Navigationsleiste.tsx`, Leiste über der Tastatur `src/components/Tastaturleiste.tsx`, Handy-Einstellungen `HandyEinstellungen` in `Dialogs.tsx`. (b) Prüfskripte: `scripts/handy-pruefung.mjs` (360 × 740, Tippflächen ≥ 44 px, auch im iframe), `scripts/vorlage-vergleich.mjs … handy` (Vorlagen 03–05), `scripts/android-handy-pruefung.mjs` und `scripts/android-statusleiste-pruefung.mjs` (Emulator, nur mit `ANDROID_SERIAL`), `scripts/klickliste.mjs … 1.0|2.0|2.1`. (c) Fremden Emulator „Kartei_Test“ (`emulator-5554`) nie anfassen, eigenen „Medium_Phone_API_37.0“ auf Port 5556 starten. (d) Nach einem Versionswechsel `npm run build`, damit die gebündelten Bausteine die neue Version tragen. (e) Bash-Heredocs verschlucken `\\`: Umbau-Skripte mit dem Write-Werkzeug schreiben.
 
 ## Fertig-Kriterien der aktuellen Etappe
 - [x] Phase 0 erledigt: Version 2.2 liegt im Archiv, `CLAUDE.md` ist ergänzt und committet.
 - [x] Phase 1: Die Tabelle „Ziehen vorher“ (PC-EXE und Android) steht in `FORTSCHRITT.md`. (Abschnitt „Ziehen vorher“; `scripts/ziehen-pruefung.mjs … vorher`, `scripts/android-ziehen-pruefung.mjs … vorher`)
-- [ ] Am PC funktioniert Ziehen in der gebauten `localist.exe` mit echter Maus: Seitenleiste, Kanban, Ziehgriff, Notizbuch-Reihenfolge (Nachweis im Chat).
+- [x] Am PC funktioniert Ziehen in der gebauten `localist.exe` mit echter Maus: Seitenleiste, Kanban, Ziehgriff, Notizbuch-Reihenfolge (Nachweis im Chat). (`node scripts/ziehen-pruefung.mjs src-tauri/target/release/localist.exe docs/screenshots/etappe-22 nachher`: alle 9 Orte „geht“, Ziehgriff `dragover 47`/`drop 1`; Bild aus dem Explorer wird abgewiesen (OLE-Effekt `None`), die Seite bleibt)
 - [x] Ziehen in der Seitenleiste mit Hervorhebung, Aufklappen beim Verweilen, Auto-Scroll, Escape, Namenskonflikt-Meldung und „Rückgängig“, getestet. (`src/lib/ziehen.ts`, Tests `src/lib/ziehen.test.tsx` 13, `tree.test.ts` „Regeln beim Ziehen …“ 2, `App.test.tsx` „Ziehen und Ablegen (Etappe 22)“ 6; Klickliste 2.3 4/4)
 - [ ] Auf dem Handy greift langes Drücken eine Zeile und lässt sich ablegen. Scrollen, Tippen und Kontextmenü funktionieren wie vorher. Kanban und Notizbuch-Reihenfolge gehen auch per Finger. Nachweis mit `adb` im Chat.
 - [ ] Arbeitsregel 6 erfüllt, APK baut, `localist.exe --sicherheitstest` 21/21, Klicklisten 1.0, 2.0, 2.1 und 2.3 abgehakt.
