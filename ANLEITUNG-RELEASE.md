@@ -126,6 +126,7 @@ git push --follow-tags
 - `scripts/version.mjs` setzt die Versionsnummer überall gleich (`package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `Cargo.lock`), baut die Oberfläche neu, committet „Version 2.2.1“ und legt den Tag `v2.2.1` an. Hast du noch ungespeicherte Änderungen (nicht committet), bricht es ab und ändert nichts.
 - `git push --follow-tags` lädt Commit und Tag hoch. Der Tag startet die Action.
 - Unter **„Actions“** warten, bis der Lauf grün ist. Erst dann finden die Apps das Update.
+- Danach die Android-APK an dasselbe Release hängen (Schritt 7). Das gehört zu jeder Version dazu.
 
 ---
 
@@ -151,10 +152,13 @@ Localist hat keine gekaufte Code-Signatur. Deshalb zeigt Windows SmartScreen bei
 
 Auf Android gibt es den Updater nicht. In den Einstellungen unter „Über Localist“ öffnet **„Neue Versionen auf GitHub ansehen“** die Releases-Seite im Browser.
 
-Die APK lässt sich vorerst von Hand an ein Release hängen (einmalig vorher `gh auth login`):
+Zu jeder Version gehört eine APK. Sobald der Lauf grün ist, die APK mit derselben Version bauen und unter dem Namen `Localist_X.Y.Z_android-debug.apk` an das Release hängen (einmalig vorher `gh auth login`), hier für 2.3.0:
 
 ```
-gh release upload v2.2.1 src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk
+npx tauri android build --debug --apk --target aarch64 --target x86_64
+copy src-tauri\gen\android\app\build\outputs\apk\universal\debug\app-universal-debug.apk Localist_2.3.0_android-debug.apk
+gh release upload v2.3.0 Localist_2.3.0_android-debug.apk
+del Localist_2.3.0_android-debug.apk
 ```
 
 Bei Weg (b) zusätzlich `--repo DEIN_NAME/localist-releases` anhängen.

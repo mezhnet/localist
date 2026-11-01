@@ -2,6 +2,7 @@
 # Läuft, sobald ein Versions-Tag wie v2.2.1 gepusht wird (siehe scripts/version.mjs und ANLEITUNG-RELEASE.md).
 # Erst laufen alle Tests; schlägt einer fehl, entsteht kein Release. Danach baut tauri-action den Installer,
 # signiert ihn für den Updater und lädt Installer, .sig-Datei und latest.json in ein GitHub-Release hoch.
+# Die Android-APK wird danach von Hand angehängt (ANLEITUNG-RELEASE.md, Schritt 7).
 #
 # Release-Ziel: Sind die Repository-Variablen RELEASE_OWNER und RELEASE_REPO gesetzt, geht das Release in jenes
 # (öffentliche) Repository, mit dem Token aus dem Secret RELEASES_TOKEN. Sonst geht es in dieses Repository.
@@ -68,7 +69,7 @@ jobs:
           args: --config src-tauri/tauri.release.conf.json
           tagName: v__VERSION__
           releaseName: "Localist v__VERSION__"
-          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen."
+          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen. Auf Android: die Datei mit der Endung .apk unten herunterladen und auf dem Handy antippen."
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
@@ -90,7 +91,7 @@ jobs:
           args: --config src-tauri/tauri.release.conf.json
           tagName: v__VERSION__
           releaseName: "Localist v__VERSION__"
-          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen."
+          releaseBody: "Neue Version von Localist. Unter Windows: in Localist unter Einstellungen → „Über Localist“ → „Nach Updates suchen“, oder den Installer unten herunterladen. Auf Android: die Datei mit der Endung .apk unten herunterladen und auf dem Handy antippen."
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
