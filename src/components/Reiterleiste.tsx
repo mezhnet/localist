@@ -1,7 +1,7 @@
 // Reiterleiste über dem Inhalt (PC, Vorlage 01/02): fester Reiter „Startseite“ ohne ×, dann die offenen Reiter mit
 // Typ-Symbol und ×, am Ende „+“. Der aktive Reiter ist unterstrichen. Mittelklick schließt einen Reiter.
 // Die Logik (öffnen, schließen, wechseln, merken) steht in src/lib/reiter.ts.
-import { Blocks, BookOpen, Database, FileCode, FileText, House, Plus, X } from "lucide-react";
+import { Blocks, BookOpen, Database, FileCode, FileText, House, Plus, Timer, X } from "lucide-react";
 import { useEffect, useRef, useSyncExternalStore, type MouseEvent as ReactMouseEvent } from "react";
 import { isHtmlPath } from "../lib/html";
 import { istFest, type Reiter, type ReiterInhalt, type ReiterStand } from "../lib/reiter";
@@ -11,12 +11,14 @@ import { cx } from "./ui";
 export function reiterTitel(inhalt: ReiterInhalt): string {
   if (inhalt.art === "start") return "Startseite";
   if (inhalt.art === "bausteine") return "Bausteine";
+  if (inhalt.art === "pomodoro") return "Pomodoro";
   return pageTitle(inhalt.pfad);
 }
 
 export function ReiterSymbol({ inhalt }: { inhalt: ReiterInhalt }) {
   if (inhalt.art === "start") return <House aria-hidden="true" />;
   if (inhalt.art === "bausteine") return <Blocks aria-hidden="true" />;
+  if (inhalt.art === "pomodoro") return <Timer aria-hidden="true" />;
   if (inhalt.art === "datenbank") return <Database aria-hidden="true" />;
   if (inhalt.art === "notizbuch") return <BookOpen aria-hidden="true" />;
   return isHtmlPath(inhalt.pfad) ? <FileCode aria-hidden="true" /> : <FileText aria-hidden="true" />;

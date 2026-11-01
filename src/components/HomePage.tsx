@@ -2,8 +2,9 @@
 // Knöpfen für Datenbank, Vorlage und „+ Notiz“, „Zuletzt bearbeitet“ als Tabelle (mit „Alle Seiten“) und die
 // Favoriten als Chips. Ein Klick öffnet im aktuellen Reiter, Strg+Klick oder Mittelklick in einem neuen.
 // Auf dem Handy (Vorlage 03-handy-startseite-hell.png) stehen oben Vault-Umschalter, „Darstellung“ und
-// „Einstellungen“; „Schnell notieren“ hat nur „+“, „Zuletzt bearbeitet“ ist eine Karte mit „Alle“ und kurzen Zeiten.
-import { ChevronsUpDown, CornerDownLeft, Database, FileCode, FileText, FolderOpen, FolderSearch, LayoutTemplate, Plus, Settings, SlidersHorizontal, Star } from "lucide-react";
+// „Einstellungen“; „Schnell notieren“ hat nur „+“, darunter die Schnellaktion „Pomodoro“ (am PC steht sie in der
+// Seitenleiste unter „Werkzeuge“), „Zuletzt bearbeitet“ ist eine Karte mit „Alle“ und kurzen Zeiten.
+import { ChevronsUpDown, CornerDownLeft, Database, FileCode, FileText, FolderOpen, FolderSearch, LayoutTemplate, Plus, Settings, SlidersHorizontal, Star, Timer } from "lucide-react";
 import { useMemo, useState } from "react";
 import { allePagesNachZeit, greeting, kurzesDatum, kurzeZeit, recentPages, relativeTime } from "../lib/home";
 import { isHtmlPath } from "../lib/html";
@@ -25,6 +26,8 @@ export interface HandyKopf {
   /** „Vault im Explorer öffnen“ (fehlt auf Android). */
   onRevealVault?: () => void;
   onOpenSettings: () => void;
+  /** Schnellaktion „Pomodoro“ */
+  onOpenPomodoro: () => void;
 }
 
 interface Props {
@@ -57,6 +60,15 @@ export function HomePage(props: Props) {
       </header>
 
       <SchnellNotieren onQuickNote={props.onQuickNote} onCreateNote={props.onCreateNote} onCreateDatabase={props.onCreateDatabase} onCreateFromTemplate={props.onCreateFromTemplate} />
+
+      {props.handy && (
+        <div className="home-schnellaktionen" role="group" aria-label="Schnellaktionen">
+          <button type="button" className="home-chip home-schnellaktion" onClick={props.handy.onOpenPomodoro}>
+            <Timer className="home-schnellaktion-symbol" aria-hidden="true" />
+            <span className="home-chip-name">Pomodoro</span>
+          </button>
+        </div>
+      )}
 
       <section className="home-section home-zuletzt" aria-label={alle ? "Alle Seiten" : "Zuletzt bearbeitet"}>
         <div className="home-section-head">

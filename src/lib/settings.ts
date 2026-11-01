@@ -11,12 +11,15 @@ export type VaultSettings = Record<string, unknown>;
 
 export interface VaultSettingsState {
   settings: VaultSettings;
+  /** Die Datei ist gelesen (oder fehlt bzw. ist beschädigt); vorher gelten noch keine Werte des Vaults. */
+  geladen: boolean;
   /** Ändert die Einstellungen und speichert sie sofort. */
   update: (change: (settings: VaultSettings) => VaultSettings) => Promise<void>;
 }
 
 export function useVaultSettings(onError: (message: string) => void): VaultSettingsState {
   const [settings, setSettings] = useState<VaultSettings>({});
+  const [geladen, setGeladen] = useState(false);
   const ref = useRef<VaultSettings>({});
   /** Die Datei ist kein gültiges JSON: nicht überschreiben, sonst gingen Einstellungen verloren. */
   const broken = useRef(false);
@@ -35,9 +38,11 @@ export function useVaultSettings(onError: (message: string) => void): VaultSetti
         } catch {
           broken.current = true;
         }
+        setGeladen(true);
       },
       () => {
         // Datei fehlt: Sie wird beim ersten Speichern angelegt.
+        if (!cancelled) setGeladen(true);
       },
     );
     return () => {
@@ -64,5 +69,5 @@ export function useVaultSettings(onError: (message: string) => void): VaultSetti
     [onError],
   );
 
-  return { settings, update };
+  return { settings, geladen, update };
 }

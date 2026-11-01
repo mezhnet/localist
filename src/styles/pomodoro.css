@@ -1,0 +1,717 @@
+/* Werkzeug „Pomodoro“ (Etappe 23): Ansicht mit Fortschrittsring, Mini-Timer (Seitenleiste, obere Leiste, Handy),
+   Bereich „Werkzeuge“ in der Seitenleiste, Schnellaktion auf der Handy-Startseite und der Abschnitt in den
+   Einstellungen. Im Stil der Startseite (Vorlage 01/03), nur mit Werten aus tokens.css. */
+
+/* ---------- Ansicht ---------- */
+.pomodoro {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(var(--pomodoro-width) + 2 * var(--space-6));
+  margin: 0 auto;
+  padding: var(--home-padding-top) var(--space-6) var(--space-24);
+}
+
+.pomodoro-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.pomodoro-titel {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.pomodoro-einstellungen.ui-button {
+  color: var(--color-text-muted);
+}
+
+/* Phasen als ruhige Chips; die aktuelle in der Akzentfarbe */
+.pomodoro-phasen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pomodoro-phasen-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: var(--size-home-chip);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pomodoro-phasen-chip.is-aktiv {
+  border-color: transparent;
+  background: var(--color-accent-chip);
+  color: var(--color-accent-chip-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pomodoro-phasen-dauer {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Ring mit Restzeit in der Mitte */
+.pomodoro-uhr {
+  position: relative;
+  width: min(var(--size-pomodoro-ring), 100%);
+  aspect-ratio: 1;
+  margin: var(--space-6) auto 0;
+}
+
+.pomodoro-ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pomodoro-ring circle {
+  fill: none;
+  stroke-width: var(--pomodoro-ring-strich);
+}
+
+.pomodoro-ring-spur {
+  stroke: var(--color-border);
+}
+
+.pomodoro-ring-rest {
+  stroke: var(--color-accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--duration-normal) linear;
+}
+
+/* Pausen in Grün: Auf einen Blick ist klar, ob gerade Fokus oder Erholung ist. */
+.pomodoro:is(.phase-kurz, .phase-lang) .pomodoro-ring-rest {
+  stroke: var(--color-success);
+}
+
+.pomodoro-uhr-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.pomodoro-phase {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.pomodoro-zeit {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-pomodoro-zeit);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.pomodoro-runde {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+}
+
+.pomodoro-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+.pomodoro-start.ui-button {
+  min-width: calc(var(--size-pomodoro-ring) / 2);
+  height: var(--size-control-lg);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pomodoro-knopf.ui-button {
+  height: var(--size-control-lg);
+  color: var(--color-text-muted);
+}
+
+/* Ziel und verknüpfte Seite */
+.pomodoro-ziel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-10);
+}
+
+.pomodoro-ziel-label {
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pomodoro-seite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pomodoro-seite > svg {
+  flex-shrink: 0;
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.pomodoro-seite-link,
+.pomodoro-session-seite {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent-text);
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--color-link-underline);
+  text-underline-offset: var(--space-0-5);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pomodoro-seite-link:hover,
+.pomodoro-session-seite:hover {
+  text-decoration-color: currentColor;
+}
+
+.pomodoro-seite-link:focus-visible,
+.pomodoro-session-seite:focus-visible {
+  border-radius: var(--radius-xs);
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.pomodoro-seite-fehlt {
+  font-style: italic;
+}
+
+.pomodoro-seite-loesen.ui-icon-button {
+  color: var(--color-text-muted);
+}
+
+/* Heute und Diese Woche */
+.pomodoro-verlauf {
+  margin-top: var(--space-10);
+}
+
+.pomodoro-zahlen {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.pomodoro-zahl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-subtle);
+}
+
+.pomodoro-zahl-name,
+.pomodoro-zahl-zusatz {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pomodoro-zahl-wert {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+}
+
+.pomodoro-verlauf-titel {
+  margin: var(--space-6) 0 var(--space-2);
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pomodoro-sessions {
+  margin: 0;
+  padding: 0;
+  border-top: var(--border-width) solid var(--color-border);
+  list-style: none;
+}
+
+.pomodoro-session {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-home-row);
+  padding: var(--space-1-5) var(--space-2-5);
+  border-bottom: var(--border-width) solid var(--color-border);
+  font-size: var(--font-size-md);
+}
+
+.pomodoro-session-zeit,
+.pomodoro-session-minuten {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.pomodoro-session-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.pomodoro-session-ziel {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pomodoro-session-seite {
+  font-size: var(--font-size-sm);
+}
+
+.pomodoro-session.is-abgebrochen .pomodoro-session-ziel {
+  color: var(--color-text-muted);
+}
+
+.pomodoro-leer,
+.pomodoro-hinweis {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pomodoro-hinweis {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pomodoro-ring-rest {
+    transition: none;
+  }
+}
+
+/* ---------- Seitenleiste: Bereich „Werkzeuge“ ---------- */
+.sidebar-werkzeuge {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Mini-Timer ---------- */
+.mini-timer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+/* Dünner Balken unten: wie weit die Phase schon ist */
+.mini-timer::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: var(--mini-timer-fortschritt, 0%);
+  height: var(--size-mini-timer-balken);
+  background: var(--color-accent);
+  transition: width var(--duration-normal) linear;
+}
+
+.mini-timer.is-pause::after {
+  background: var(--color-success);
+}
+
+.mini-timer-oeffnen {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  height: var(--size-mini-timer);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mini-timer-oeffnen:hover {
+  background: var(--color-hover);
+}
+
+.mini-timer-oeffnen:focus-visible {
+  outline: none;
+  box-shadow: inset var(--shadow-focus);
+}
+
+.mini-timer-symbol {
+  flex-shrink: 0;
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  color: var(--color-accent-text);
+}
+
+.mini-timer.is-pause .mini-timer-symbol {
+  color: var(--color-success);
+}
+
+.mini-timer-phase {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-timer-zeit {
+  flex-shrink: 0;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-timer.is-pausiert .mini-timer-zeit {
+  color: var(--color-text-muted);
+}
+
+.mini-timer-knopf.ui-icon-button {
+  flex-shrink: 0;
+  margin-right: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+/* PC: unten in der Seitenleiste, über „Darstellung“ */
+.mini-timer.is-seitenleiste {
+  margin-bottom: var(--space-2);
+}
+
+/* PC, Seitenleiste eingeklappt: in der oberen Leiste neben dem Knopf zum Ausklappen */
+.mini-timer.is-leiste {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: var(--space-2);
+}
+
+.mini-timer.is-leiste .mini-timer-oeffnen {
+  height: var(--size-control-md);
+}
+
+.mini-timer.is-leiste .mini-timer-phase {
+  flex: none;
+}
+
+/* Handy: schmale Leiste über der Navigationsleiste, so breit wie sie */
+.mini-timer.is-handy {
+  flex-shrink: 0;
+  margin: var(--space-2) var(--handy-nav-gap) 0;
+  border-radius: var(--radius-handy-knopf);
+  background: var(--color-handy-karte);
+  box-shadow: var(--shadow-handy-nav);
+}
+
+.mini-timer.is-handy .mini-timer-oeffnen {
+  height: var(--size-handy-mini-timer);
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-md);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mini-timer.is-handy .mini-timer-oeffnen:active {
+  background: var(--color-active);
+}
+
+.mini-timer.is-handy .mini-timer-symbol {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+.mini-timer.is-handy .mini-timer-knopf.ui-icon-button {
+  width: var(--size-control-touch);
+  height: var(--size-control-touch);
+}
+
+.mini-timer.is-handy .mini-timer-knopf .ui-button__icon svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+/* Beim Schreiben fehlt die Navigationsleiste (layout.css); dann auch die Mini-Leiste: Sie verdeckt nie die Leiste
+   über der Tastatur. */
+body:has(.tastaturleiste) .mini-timer.is-handy {
+  display: none;
+}
+
+@media (max-width: 768px) and (pointer: coarse) {
+  .workspace:has(.main :is(input, textarea, [contenteditable="true"]):focus) .mini-timer.is-handy {
+    display: none;
+  }
+}
+
+/* „Seiten“ und Meldungen liegen über der Navigationsleiste: mit Mini-Leiste entsprechend höher */
+@media (max-width: 768px) {
+  .workspace.hat-mini-timer {
+    --handy-nav-platz: calc(var(--size-handy-nav) + var(--space-2) + max(var(--handy-nav-gap), env(safe-area-inset-bottom)) + var(--size-handy-mini-timer) + var(--space-2));
+  }
+
+  .workspace.is-handy.hat-mini-timer > .toast {
+    bottom: calc(var(--handy-nav-platz) + var(--space-2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-timer::after {
+    transition: none;
+  }
+}
+
+/* ---------- Handy-Startseite: Schnellaktion „Pomodoro“ ---------- */
+.home-schnellaktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.home-schnellaktion-symbol {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  color: var(--color-accent-text);
+}
+
+/* ---------- Einstellungen: Abschnitt „Pomodoro“ ---------- */
+.pomodoro-felder {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+
+.pomodoro-feld {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+.pomodoro-feld-eingabe {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.pomodoro-feld-eingabe .ui-input {
+  width: calc(var(--size-control-lg) * 1.6);
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.pomodoro-feld-einheit {
+  min-width: calc(var(--size-control-lg) * 1.3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pomodoro-einstellungen.is-handy {
+  padding: 0;
+}
+
+.pomodoro-einstellungen.is-handy .pomodoro-felder {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-handy-karte);
+  background: var(--color-handy-karte);
+}
+
+.pomodoro-einstellungen.is-handy .pomodoro-feld {
+  min-height: var(--size-handy-zeile);
+  font-size: var(--font-size-lg);
+}
+
+.pomodoro-einstellungen.is-handy .pomodoro-feld + .pomodoro-feld {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.pomodoro-einstellungen.is-handy .pomodoro-feld-eingabe .ui-input {
+  height: var(--size-control-touch);
+}
+
+.pomodoro-einstellungen.is-handy .settings-karte {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-handy-karte);
+  background: var(--color-handy-karte);
+}
+
+.pomodoro-einstellungen.is-handy .settings-karte h4 {
+  font-size: var(--font-size-handy-vault);
+  font-weight: var(--font-weight-bold);
+}
+
+.pomodoro-einstellungen.is-handy .settings-karte p {
+  font-size: var(--font-size-handy-text);
+  line-height: var(--line-height-snug);
+}
+
+/* ---------- Handy: Ansicht ---------- */
+@media (max-width: 768px) {
+  .pomodoro.is-handy {
+    max-width: none;
+    padding: var(--space-4) var(--handy-padding) var(--space-8);
+  }
+
+  .pomodoro.is-handy .pomodoro-titel {
+    font-size: var(--font-size-handy-titel);
+  }
+
+  .pomodoro.is-handy .pomodoro-phasen {
+    margin-top: var(--space-5);
+  }
+
+  .pomodoro.is-handy .pomodoro-uhr {
+    width: min(var(--size-pomodoro-ring-handy), 100%);
+    margin-top: var(--space-4);
+  }
+
+  .pomodoro.is-handy .pomodoro-zeit {
+    font-size: var(--font-size-pomodoro-zeit-handy);
+  }
+
+  /* Tippflächen mindestens 44 px */
+  .pomodoro.is-handy :is(.pomodoro-start, .pomodoro-knopf, .pomodoro-einstellungen).ui-button {
+    height: var(--size-control-touch);
+  }
+
+  .pomodoro.is-handy .pomodoro-knoepfe {
+    gap: var(--space-1);
+  }
+
+  .pomodoro.is-handy .pomodoro-start.ui-button {
+    min-width: calc(var(--size-pomodoro-ring-handy) / 2.4);
+    padding: 0 var(--space-4);
+  }
+
+  /* Zurücksetzen und Überspringen als runde Symbol-Knöpfe neben „Starten“ (der Name bleibt für Bildschirmleser) */
+  .pomodoro.is-handy .pomodoro-knopf.ui-button {
+    width: var(--size-control-touch);
+    padding: 0;
+    border-radius: var(--radius-full);
+  }
+
+  .pomodoro.is-handy .pomodoro-knopf .ui-button__icon svg {
+    width: var(--size-icon-lg);
+    height: var(--size-icon-lg);
+  }
+
+  .pomodoro.is-handy .pomodoro-knopf .ui-button__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Nur die Namen der Phasen, damit alle drei in eine Zeile passen */
+  .pomodoro.is-handy .pomodoro-phasen-dauer {
+    display: none;
+  }
+
+  .pomodoro.is-handy .pomodoro-ziel {
+    margin-top: var(--space-8);
+  }
+
+  .pomodoro.is-handy .pomodoro-ziel-feld.ui-input {
+    height: var(--size-control-touch);
+    font-size: var(--font-size-lg);
+  }
+
+  .pomodoro.is-handy :is(.pomodoro-seite-link, .pomodoro-session-seite) {
+    min-height: var(--size-control-touch);
+  }
+
+  .pomodoro.is-handy .pomodoro-seite-loesen.ui-icon-button {
+    width: var(--size-control-touch);
+    height: var(--size-control-touch);
+  }
+
+  .pomodoro.is-handy .pomodoro-zahl {
+    border-radius: var(--radius-handy-karte);
+    background: var(--color-handy-karte);
+  }
+
+  .pomodoro.is-handy .pomodoro-session {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "text minuten"
+      "zeit minuten";
+    gap: 0 var(--space-3);
+    padding: var(--space-2) var(--space-1);
+  }
+
+  .pomodoro.is-handy .pomodoro-session-zeit {
+    grid-area: zeit;
+  }
+
+  .pomodoro.is-handy .pomodoro-session-text {
+    grid-area: text;
+  }
+
+  .pomodoro.is-handy .pomodoro-session-minuten {
+    grid-area: minuten;
+  }
+}

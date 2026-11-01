@@ -524,6 +524,11 @@ export function installDevBackend(): void {
         case "import_attachment":
           return String(a.source).startsWith(`${ROOT}/`) ? String(a.source).slice(ROOT.length + 1) : "Anhänge/skizze.png";
         case "plugin:dialog|message": {
+          // message() mit nur einem Knopf ({ OkCustom: "Weiter" }): ein Hinweis ohne Wahl.
+          if (typeof a.buttons?.OkCustom === "string") {
+            window.alert(a.message);
+            return a.buttons.OkCustom;
+          }
           // ask() übergibt die Knöpfe als { OkCancelCustom: [ok, abbrechen] } und vergleicht mit dem ok-Text.
           const [ok, cancel] = a.buttons?.OkCancelCustom ?? ["Yes", "No"];
           return window.confirm(a.message) ? ok : cancel;

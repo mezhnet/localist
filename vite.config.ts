@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 // @ts-expect-error type error without @types/node package
@@ -185,6 +185,8 @@ export default defineConfig(() => ({
     // CSS bleibt in Tests sonst leer. Der Inhalt wird nur gebraucht, wenn ein Test eine Datei mit ?raw liest
     // (Prüfung des Design-Systems in src/styles/tokens.test.ts).
     css: { include: [/\.css\?raw$/] },
+    // Arbeitskopien anderer Sitzungen (.claude/worktrees/…) haben ihren eigenen Stand und werden hier nicht getestet.
+    exclude: [...configDefaults.exclude, ".claude/**"],
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

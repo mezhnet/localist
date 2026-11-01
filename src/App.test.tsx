@@ -2336,7 +2336,7 @@ describe("Fensterrahmen ohne Windows-Titelleiste (Etappe 18)", () => {
     expect(document.querySelector("[data-tauri-drag-region]")).toBeNull();
   });
 
-  it("tauri.conf.json ohne Titelleiste, Capabilities nur um die Fensterrechte erweitert", async () => {
+  it("tauri.conf.json ohne Titelleiste, Capabilities nur um die Fensterrechte (und seit Etappe 23 die Benachrichtigungen) erweitert", async () => {
     const { default: conf } = await import("../src-tauri/tauri.conf.json");
     const { default: capability } = await import("../src-tauri/capabilities/default.json");
     expect(conf.app.windows[0].decorations).toBe(false);
@@ -2350,6 +2350,11 @@ describe("Fensterrahmen ohne Windows-Titelleiste (Etappe 18)", () => {
       "core:window:allow-close",
       "opener:default",
       "dialog:default",
+      // Etappe 23: nur die vier Befehle, die src/lib/benachrichtigungen.ts braucht
+      "notification:allow-is-permission-granted",
+      "notification:allow-request-permission",
+      "notification:allow-notify",
+      "notification:allow-cancel",
     ]);
   });
 });
@@ -2384,7 +2389,7 @@ describe("CSS: Inhalt als abgesetzte Fläche (Etappe 18, jsdom misst kein Layout
 describe("Seitenleiste nach der Vorlage (Etappe 18)", () => {
   const seitenleiste = () => within(screen.getByRole("navigation", { name: "Seiten" }));
 
-  it("Aufbau von oben nach unten: Vault-Umschalter, Suchen, Volltextsuche, Startseite, Bausteine, Neue Seite, Favoriten, Seiten, Modus, Einstellungen", async () => {
+  it("Aufbau von oben nach unten: Vault-Umschalter, Suchen, Volltextsuche, Startseite, Bausteine, Neue Seite, Werkzeuge (seit Etappe 23), Favoriten, Seiten, Modus, Einstellungen", async () => {
     await openVaultFromStart();
     const nav = document.querySelector(".sidebar")!;
     expect(nav.querySelector(".sidebar-header .vault-avatar")?.textContent).toBe("T");
@@ -2397,7 +2402,8 @@ describe("Seitenleiste nach der Vorlage (Etappe 18)", () => {
       "Neue Seite",
     ]);
     expect([...nav.querySelectorAll(".sidebar-nav .ui-kbd")].map((el) => el.textContent)).toEqual(["Strg P", "Strg ⇧ F"]);
-    expect([...nav.querySelectorAll(".sidebar-section-title")].map((el) => el.textContent)).toEqual(["Favoriten", "Seiten"]);
+    expect([...nav.querySelectorAll(".sidebar-section-title")].map((el) => el.textContent)).toEqual(["Werkzeuge", "Favoriten", "Seiten"]);
+    expect(seitenleiste().getByRole("region", { name: "Werkzeuge" }).textContent).toBe("WerkzeugePomodoro");
     expect(seitenleiste().getByRole("region", { name: "Seiten" }).querySelector('[role="tree"]')).toBeTruthy();
     expect(seitenleiste().getByRole("button", { name: "Neu im Vault" })).toBeTruthy();
     // Unten: Modus (drei Knöpfe), Trennlinie, Einstellungen mit der Versionsnummer daneben

@@ -1,5 +1,6 @@
 // Sidebar nach der Vorlage (01/02): oben der Vault-Umschalter, dann Suchen, Volltextsuche, Startseite, Bausteine und
-// „Neue Seite“ (öffnet das „Neu“-Menü), darunter die Favoriten und der Ordnerbaum („Seiten“), unten Modus und Einstellungen.
+// „Neue Seite“ (öffnet das „Neu“-Menü), darunter die Werkzeuge (Pomodoro), die Favoriten und der Ordnerbaum („Seiten“),
+// unten der Mini-Timer (solange ein Pomodoro läuft), Modus und Einstellungen.
 // Seiten und Ordner lassen sich anlegen, umbenennen, anheften, verschieben und löschen (per Rechtsklick, "⋯"-Knopf,
 // F2 oder Entf). Verschieben geht auch per Ziehen (src/lib/ziehen.ts): mit der Maus sofort, mit dem Finger nach
 // langem Drücken; Verweilen über einem zugeklappten Ordner klappt ihn auf, Escape bricht ab. Notizen und
@@ -29,6 +30,7 @@ import {
   Star,
   StarOff,
   TextSearch,
+  Timer,
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
@@ -36,6 +38,7 @@ import packageInfo from "../../package.json";
 import { ablageGueltig, ancestorFolders, findNode, parentDir } from "../lib/tree";
 import { useZiehen } from "../lib/ziehen";
 import { ModusUmschalter } from "./Darstellung";
+import { MiniTimer } from "./MiniTimer";
 import { oeffnenKlick } from "./Reiterleiste";
 import type { TreeNode } from "../lib/vault-api";
 import { Button, cx, IconButton, Input, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, type MenuAnchor } from "./ui";
@@ -49,6 +52,10 @@ export interface SidebarActions {
   onOpenHome: () => void;
   /** Bereich „Bausteine“ (Bibliothek und Hilfe) öffnen. */
   onOpenLibrary: (neu?: boolean) => void;
+  /** Werkzeug „Pomodoro“ öffnen (auch über den Mini-Timer). */
+  onOpenPomodoro: (neu?: boolean) => void;
+  /** „Pomodoro für diese Seite starten“ im Menü einer Seite. */
+  onPomodoroForPage: (node: TreeNode) => void;
   onCreate: (kind: CreateKind, dir: string) => void;
   onRename: (node: TreeNode, newName: string) => void;
   /** Per Ziehen in einen Ordner gelegt ("" = Vault-Wurzel). */
@@ -85,6 +92,8 @@ interface Props extends SidebarActions {
   homeActive: boolean;
   /** Der Bereich „Bausteine“ ist offen. */
   libraryActive?: boolean;
+  /** Die Ansicht „Pomodoro“ ist offen (dann gibt es unten keinen Mini-Timer). */
+  pomodoroActive?: boolean;
   /** Angeheftete Seiten und Datenbanken (Pfade). */
   favorites: string[];
   /** Emoji-Icons der Seiten (aus dem Frontmatter). */
@@ -383,6 +392,19 @@ export function Sidebar(props: Props) {
           )}
         </div>
 
+        <section className="sidebar-section sidebar-werkzeuge" aria-label="Werkzeuge">
+          <h2 className="sidebar-section-title">Werkzeuge</h2>
+          <Button
+            variant="ghost"
+            className={cx("sidebar-item", props.pomodoroActive && "active")}
+            icon={<Timer />}
+            {...oeffnenKlick((neu) => props.onOpenPomodoro(neu))}
+            title="Fokus-Timer mit Pausen und Verlauf"
+          >
+            Pomodoro
+          </Button>
+        </section>
+
         <section className="sidebar-section" aria-label="Favoriten">
           <h2 className="sidebar-section-title">Favoriten</h2>
           {favoriteNodes.length === 0 ? (
@@ -430,6 +452,7 @@ export function Sidebar(props: Props) {
 
       {!props.handy && (
         <div className="sidebar-footer">
+          {!props.pomodoroActive && <MiniTimer ort="seitenleiste" onOeffnen={(neu) => props.onOpenPomodoro(neu)} />}
           <div className="sidebar-darstellung">
             <span className="sidebar-section-label">Darstellung</span>
             <ModusUmschalter />
@@ -478,6 +501,7 @@ export function Sidebar(props: Props) {
             onNotebook={() => (menu.node.notebook ? props.onOpenNotebook(menu.node.path) : props.onConvertToNotebook(menu.node.path))}
             onConvertToHtml={() => props.onConvertToHtml(menu.node)}
             onExport={() => props.onExport(menu.node)}
+            onPomodoro={() => props.onPomodoroForPage(menu.node)}
             onReveal={props.onRevealInExplorer && (() => props.onRevealInExplorer?.(menu.node.path))}
           />
         </Menu>
@@ -525,11 +549,13 @@ export interface NodeItemsProps {
   onNotebook: () => void;
   onConvertToHtml: () => void;
   onExport: () => void;
+  /** „Pomodoro für diese Seite starten“ (nur bei Seiten). */
+  onPomodoro?: () => void;
   /** „Im Explorer öffnen“ (fehlt auf dem Handy). */
   onReveal?: () => void;
 }
 
-export function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase, onNotebook, onConvertToHtml, onExport, onReveal }: NodeItemsProps) {
+export function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, onDelete, onToggleFavorite, onDatabase, onNotebook, onConvertToHtml, onExport, onPomodoro, onReveal }: NodeItemsProps) {
   const isFolder = node.kind === "folder";
   // Ein Ordner ist entweder Datenbank oder Notizbuch (liegen beide Dateien darin, gilt er als Datenbank).
   const notebook = node.notebook && !node.database;
@@ -561,6 +587,11 @@ export function NodeItems({ node, tree, favorite, onCreate, onRename, onMove, on
           <MenuItem icon={<FileDown />} onSelect={onExport}>
             Als HTML-Datei exportieren …
           </MenuItem>
+          {onPomodoro && (
+            <MenuItem icon={<Timer />} onSelect={onPomodoro}>
+              Pomodoro für diese Seite starten
+            </MenuItem>
+          )}
           <MenuSeparator />
         </>
       )}

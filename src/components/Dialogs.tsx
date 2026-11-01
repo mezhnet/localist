@@ -1,6 +1,6 @@
 // Dialoge über dem Arbeitsbereich: Schnellsuche (Strg+P), Volltextsuche, Vorlagen-Auswahl und Einstellungen.
 // Die drei Such-Dialoge sind Listen mit Eingabefeld, die sich mit Pfeiltasten, Enter und Escape bedienen lassen.
-import { ChevronLeft, ChevronRight, FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Palette, Search, TextSearch } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileCode, FileText, Folder, FolderInput, FolderOpen, House, LayoutTemplate, Palette, Search, TextSearch, Timer } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { PageRef } from "../lib/links";
@@ -9,8 +9,10 @@ import { isHtmlPath } from "../lib/html";
 import { CODE_SEITEN, useCodeSeite, type CodeSeite } from "../lib/html-editor";
 import { isInside, parentDir } from "../lib/tree";
 import type { TreeNode } from "../lib/vault-api";
+import type { PomodoroEinstellungen as PomodoroWerte } from "../lib/pomodoro";
 import { AKZENTE, MODI, useTheme } from "../lib/theme";
 import { DarstellungEinstellungen } from "./Darstellung";
+import { PomodoroEinstellungen, pomodoroKurz } from "./PomodoroEinstellungen";
 import { oeffnenKlick } from "./Reiterleiste";
 import { UeberLocalist } from "./UeberLocalist";
 import { Button, Dialog, Input, Kbd, Segmented } from "./ui";
@@ -308,10 +310,14 @@ interface SettingsProps {
   onOpenExternal: (url: string) => void;
   /** Handy: eigene Seiten über dem ganzen Bildschirm statt Dialog (Vorlage 05). */
   handy?: boolean;
+  /** Abschnitt „Pomodoro“ (Werte aus `.localist/settings.json`); fehlt er, gibt es den Abschnitt nicht. */
+  pomodoro?: { einstellungen: PomodoroWerte; onChange: (einstellungen: PomodoroWerte) => void };
+  /** Gleich auf der Seite „Pomodoro“ öffnen (z. B. aus der Ansicht „Pomodoro“). */
+  start?: "pomodoro";
 }
 
 export function SettingsDialog({ handy = false, ...props }: SettingsProps) {
-  const { vaultName, vaultRoot, onSwitchVault, platform, vorDemUpdate, onOpenExternal } = props;
+  const { vaultName, vaultRoot, onSwitchVault, platform, vorDemUpdate, onOpenExternal, pomodoro } = props;
   const [codeSeite, setCodeSeite] = useCodeSeite();
   // Solange ein Update lädt oder installiert wird, bleiben die Einstellungen offen: So kann nichts Neues
   // ungespeichert sein, wenn sich die App für den Installer beendet.
@@ -320,6 +326,10 @@ export function SettingsDialog({ handy = false, ...props }: SettingsProps) {
   const onClose = () => {
     if (!updateLaeuft.current) props.onClose();
   };
+  // Aus der Ansicht „Pomodoro“ geöffnet: gleich den Abschnitt „Pomodoro“ zeigen.
+  useEffect(() => {
+    if (!handy && props.start === "pomodoro") document.querySelector(".settings-dialog .pomodoro-einstellungen")?.scrollIntoView?.({ block: "start" });
+  }, [handy, props.start]);
   if (handy) return <HandyEinstellungen {...props} onClose={onClose} onUpdateLaeuft={setUpdateLaeuft} />;
   return (
     <Dialog label="Einstellungen" title="Einstellungen" onClose={onClose} size="md" className="settings-dialog">
@@ -333,6 +343,7 @@ export function SettingsDialog({ handy = false, ...props }: SettingsProps) {
           <Segmented<CodeSeite> label="Code-Editor" options={CODE_SEITEN} value={codeSeite} onChange={setCodeSeite} />
         </div>
       </section>
+      {pomodoro && <PomodoroEinstellungen einstellungen={pomodoro.einstellungen} onChange={pomodoro.onChange} />}
       <section className="settings-section">
         <div className="settings-row">
           <div className="settings-text">
@@ -368,12 +379,16 @@ function HandyEinstellungen({
   vorDemUpdate,
   onOpenExternal,
   onUpdateLaeuft,
+  pomodoro,
+  start,
 }: Omit<SettingsProps, "handy"> & { onUpdateLaeuft: (laeuft: boolean) => void }) {
-  const [seite, setSeite] = useState<"uebersicht" | "darstellung">("uebersicht");
+  const [seite, setSeite] = useState<"uebersicht" | "darstellung" | "pomodoro">(start ?? "uebersicht");
   const [codeSeite, setCodeSeite] = useCodeSeite();
   const { resolved, wieSystem, akzent } = useTheme();
   const ref = useRef<HTMLDivElement>(null);
-  const zurueck = () => (seite === "darstellung" ? setSeite("uebersicht") : onClose());
+  // Unterseiten führen zur Übersicht zurück; wer direkt auf „Pomodoro“ kam, schließt damit.
+  const zurueck = () => (seite !== "uebersicht" && !(start && seite === start) ? setSeite("uebersicht") : onClose());
+  const unterseite = seite !== "uebersicht" && !(start && seite === start);
   // Fokus auf die Seite (für Bildschirmleser und Escape), danach zurück, wo er war.
   useEffect(() => {
     const vorher = document.activeElement as HTMLElement | null;
@@ -387,7 +402,7 @@ function HandyEinstellungen({
     ref.current?.focus({ preventScroll: true });
   }, [seite]);
   const modus = wieSystem ? `Wie System (${MODI.find((m) => m.value === resolved)?.label})` : MODI.find((m) => m.value === resolved)?.label;
-  const titel = seite === "darstellung" ? "Darstellung" : "Einstellungen";
+  const titel = seite === "darstellung" ? "Darstellung" : seite === "pomodoro" ? "Pomodoro" : "Einstellungen";
   return createPortal(
     <div
       ref={ref}
@@ -403,14 +418,16 @@ function HandyEinstellungen({
       }}
     >
       <header className="handy-seite-kopf">
-        <button type="button" className="handy-zurueck" aria-label={seite === "darstellung" ? "Zurück zu „Einstellungen“" : "Einstellungen schließen"} onClick={zurueck}>
+        <button type="button" className="handy-zurueck" aria-label={unterseite ? "Zurück zu „Einstellungen“" : "Einstellungen schließen"} onClick={zurueck}>
           <ChevronLeft aria-hidden="true" />
-          <span>{seite === "darstellung" ? "Einstellungen" : "Zurück"}</span>
+          <span>{unterseite ? "Einstellungen" : "Zurück"}</span>
         </button>
       </header>
       <h1 className="handy-titel handy-seite-titel">{titel}</h1>
       {seite === "darstellung" ? (
         <DarstellungEinstellungen handy />
+      ) : seite === "pomodoro" && pomodoro ? (
+        <PomodoroEinstellungen handy einstellungen={pomodoro.einstellungen} onChange={pomodoro.onChange} />
       ) : (
         <div className="handy-einstellungen">
           <button type="button" className="handy-einstellung handy-karte" onClick={() => setSeite("darstellung")}>
@@ -423,6 +440,16 @@ function HandyEinstellungen({
             </span>
             <ChevronRight aria-hidden="true" />
           </button>
+          {pomodoro && (
+            <button type="button" className="handy-einstellung handy-karte" onClick={() => setSeite("pomodoro")}>
+              <Timer aria-hidden="true" />
+              <span className="handy-einstellung-text">
+                <span className="handy-einstellung-name">Pomodoro</span>
+                <span className="handy-einstellung-wert">{pomodoroKurz(pomodoro.einstellungen)}</span>
+              </span>
+              <ChevronRight aria-hidden="true" />
+            </button>
+          )}
           <section className="handy-karte settings-row" aria-label="HTML-Seiten">
             <div className="settings-text">
               <h3>HTML-Seiten</h3>

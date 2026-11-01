@@ -1,10 +1,11 @@
 // Klicklisten „Version 1.0“ (Arbeitsregel 7), „Version 2.0“ (Etappe 15), „Version 2.1“ (Etappe 20, Punkt 9 seit
-// Etappe 21) und „Version 2.3“ (Etappe 22, Ziehen und Ablegen) automatisch in der Browser-Vorschau:
+// Etappe 21), „Version 2.3“ (Etappe 22, Ziehen und Ablegen) und „Version 2.4“ (Etappe 23, Pomodoro; die Uhr der
+// Vorschau wird über `__devVault.vorspulen` vorgestellt) automatisch in der Browser-Vorschau:
 // steuert Microsoft Edge im Hintergrund mit echter Tastatur, Maus und (Liste 2.3) Fingern über das DevTools-Protokoll
 // und prüft nach jedem Schritt die Datei im Arbeitsspeicher der Vorschau (dev-backend.ts). Echte Dateien ändern sich
 // nicht. Seit Etappe 22 zieht auch die Kanban-Karte mit der Maus (Pointer Events statt HTML5-Drag-and-Drop).
 //
-// Aufruf, während die Vorschau läuft: node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" [1.0|2.0|2.1|2.3]
+// Aufruf, während die Vorschau läuft: node scripts/klickliste.mjs http://localhost:1430 "Etappe 15" [1.0|2.0|2.1|2.3|2.4]
 // Rückfragen der Seite (window.confirm) beantwortet das Skript wie ein Mensch mit „OK“.
 import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -407,6 +408,89 @@ try {
       await finger(von.x, von.y, spalte.x, spalte.y);
       erwarte(await waitFor(`window.__devVault.files.get("Projekte/Umzug.md").includes("status: In Arbeit")`), "Karte nicht verschoben");
       return "„Umzug“ per Finger von „Geplant“ nach „In Arbeit“ (status: In Arbeit)";
+    });
+  } else if (liste === "2.4") {
+    // Etappe 23: Pomodoro mit Maus (1280 × 800), danach Handy 360 × 740 mit Touch
+    const ansichtOffen = `document.querySelector('.pomodoro')`;
+    const zeit = (wo) => evaluate(`document.querySelector(${JSON.stringify(wo)})?.textContent ?? ""`);
+    const sekunden = (text) => text.split(":").reduce((summe, teil) => summe * 60 + Number(teil), 0);
+    const ideenOeffnen = async () => {
+      if ((await evaluate(`document.querySelector('.tree [title="Notizen"]')?.closest('li').getAttribute('aria-expanded')`)) !== "true") {
+        await klickAuf(`document.querySelector('.tree [title="Notizen"]')?.closest('.tree-row').querySelector('.tree-toggle')`);
+        await sleep(300);
+      }
+      await klickAuf(`document.querySelector('.tree [title="Notizen/Ideen.md"]')`);
+      erwarte(await waitFor(`document.querySelector('.page-title')?.value === "Ideen"`), "„Ideen“ nicht geöffnet");
+    };
+
+    await pruefen(1, "Pomodoro öffnen, Fokus auf 1 Min., starten, zu einer Notiz wechseln: Der Mini-Timer läuft weiter", async () => {
+      await klickAuf(`document.querySelector('.sidebar-werkzeuge .sidebar-item')`);
+      erwarte(await waitFor(ansichtOffen), "Ansicht „Pomodoro“ nicht geöffnet");
+      await klickAuf(`document.querySelector('.pomodoro-einstellungen')`);
+      const feld = `document.querySelector('[role="dialog"] input[aria-label="Fokus (1–120 Min.)"]')`;
+      erwarte(await waitFor(feld), "Abschnitt „Pomodoro“ in den Einstellungen fehlt");
+      await klickAuf(feld);
+      await evaluate(`${feld}.select()`);
+      await tippen("1");
+      await taste("Enter");
+      erwarte(await waitFor(`JSON.parse(window.__devVault.files.get(".localist/settings.json") ?? "{}").pomodoro?.fokus === 1`), "Fokus nicht in settings.json");
+      await taste("Escape");
+      erwarte(await waitFor(`!document.querySelector('[role="dialog"]') && document.querySelector('.pomodoro-zeit')?.textContent === "01:00"`), "Ansicht zeigt nicht 01:00");
+      await klickAuf(knopf("Starten"));
+      erwarte(await waitFor(`document.querySelector('.pomodoro-start')?.textContent === "Pausieren"`), "Timer startet nicht");
+      await ideenOeffnen();
+      const mini = ".mini-timer.is-seitenleiste .mini-timer-zeit";
+      erwarte(await waitFor(`document.querySelector(${JSON.stringify(mini)})`), "kein Mini-Timer in der Seitenleiste");
+      const vorher = await zeit(mini);
+      await sleep(2200);
+      const nachher = await zeit(mini);
+      erwarte(sekunden(nachher) < sekunden(vorher), `Mini-Timer steht: ${vorher} → ${nachher}`);
+      return `settings.json pomodoro.fokus = 1, Ansicht 01:00, gestartet; auf „Ideen“ zeigt der Mini-Timer unten in der Seitenleiste ${vorher} → ${nachher}`;
+    });
+
+    await pruefen(2, "Ablauf (Zeit vorgespult): Meldung erscheint, die Session steht unter „Heute“", async () => {
+      await evaluate(`window.__devVault.vorspulen(61000); true`);
+      erwarte(await waitFor(`[...document.querySelectorAll('.dev-benachrichtigung')].some((e) => e.textContent.includes("Fokus geschafft"))`), "keine Meldung");
+      const meldung = await evaluate(`[...document.querySelectorAll('.dev-benachrichtigung')].map((e) => e.textContent).find((t) => t.includes("Fokus geschafft"))`);
+      const zeile = await evaluate(`[...window.__devVault.files].find(([pfad]) => pfad.startsWith(".localist/pomodoro/"))`);
+      erwarte(zeile && JSON.parse(zeile[1].trim().split("\n").pop()).minuten === 1, `Verlauf: ${JSON.stringify(zeile)}`);
+      await klickAuf(`document.querySelector('.sidebar-werkzeuge .sidebar-item')`);
+      erwarte(await waitFor(`document.querySelector('.pomodoro-sessions .pomodoro-session')`), "„Heute“ ohne Session");
+      const heute = await evaluate(`document.querySelector('.pomodoro-zahl[aria-label="Heute"]').textContent + " – " + document.querySelector('.pomodoro-session').textContent`);
+      return `Meldung „${meldung}“; ${zeile[0]}: ${zeile[1].trim()}; unter „Heute“: ${heute}`;
+    });
+
+    await pruefen(3, "„Pomodoro für diese Seite starten“ im „…“-Menü von „Ideen“: Der Link zur Seite erscheint", async () => {
+      await ideenOeffnen();
+      await klickAuf(`document.querySelector('.topbar-mehr')`);
+      await klickAuf(knopf("Pomodoro für diese Seite starten"));
+      erwarte(await waitFor(`document.querySelector('.pomodoro-seite-link')?.textContent === "Ideen"`), "kein Link zur Seite");
+      const id = await evaluate(`(window.__devVault.files.get("Notizen/Ideen.md").match(/^id: (.+)$/m) ?? [])[1] ?? ""`);
+      erwarte(/^[0-9a-f-]{36}$/.test(id), `keine id in Ideen.md: ${id}`);
+      const reiter = await evaluate(`[...document.querySelectorAll('[role="tab"]')].map((t) => t.textContent.trim()).join(", ")`);
+      await klickAuf(`document.querySelector('.pomodoro-seite-link')`);
+      erwarte(await waitFor(`document.querySelector('.page-title')?.value === "Ideen"`), "Link öffnet „Ideen“ nicht");
+      return `Link „Ideen“ in der Ansicht, Ideen.md hat jetzt id ${id}, Reiter: ${reiter}; Klick auf den Link öffnet „Ideen“`;
+    });
+
+    await pruefen(4, "Handy 360 × 740: Mini-Leiste über der Navigationsleiste, Klick öffnet die Ansicht", async () => {
+      await klickAuf(`document.querySelector('.sidebar-werkzeuge .sidebar-item')`);
+      erwarte(await waitFor(ansichtOffen), "Ansicht nicht geöffnet");
+      await klickAuf(knopf("Starten"));
+      erwarte(await waitFor(`document.querySelector('.pomodoro-start')?.textContent === "Pausieren"`), "Timer startet nicht");
+      // Handy mit Touch; der Timer übersteht das Neuladen (App-Speicher).
+      await send("Emulation.setDeviceMetricsOverride", { width: 360, height: 740, deviceScaleFactor: 2, mobile: true });
+      await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+      await send("Page.navigate", { url: base });
+      await waitFor(`document.querySelector('.handy-nav')`);
+      erwarte(await waitFor(`document.querySelector('.mini-timer.is-handy')`), "keine Mini-Leiste auf dem Handy");
+      const mini = await rechteck(`document.querySelector('.mini-timer.is-handy')`);
+      const nav = await rechteck(`document.querySelector('.handy-nav')`);
+      erwarte(mini.bottom <= nav.top && nav.top - mini.bottom <= 16 && mini.height >= 44, `Lage: Leiste ${JSON.stringify(mini)}, Navigation ${JSON.stringify(nav)}`);
+      const text = await zeit(".mini-timer.is-handy .mini-timer-oeffnen");
+      await klickAuf(`document.querySelector('.mini-timer.is-handy .mini-timer-oeffnen')`);
+      erwarte(await waitFor(ansichtOffen), "Klick öffnet die Ansicht nicht");
+      return `Mini-Leiste „${text}“ (${Math.round(mini.height)} px hoch) ${Math.round(nav.top - mini.bottom)} px über der Navigationsleiste; Klick öffnet „Pomodoro“`;
     });
   } else if (liste === "2.1") {
     // Klickliste „Version 2.1“ (Etappe 20)

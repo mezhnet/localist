@@ -1,5 +1,5 @@
 // Reiter (PC): ein fester Reiter „Startseite“ und beliebig viele weitere mit je einer Seite, Datenbank, einem
-// Notizbuch, der Seite „Bausteine“ oder einer Startseite (Strg+T). Hier steht nur die Logik ohne Oberfläche:
+// Notizbuch, der Seite „Bausteine“, einem Werkzeug (Pomodoro) oder einer Startseite (Strg+T). Hier steht nur die Logik ohne Oberfläche:
 // öffnen, schließen, wechseln, Pfaden folgen (Umbenennen, Verschieben, Umwandeln, Löschen) und das Merken der
 // offenen Reiter pro Vault im App-Speicher (Schlüssel „reiter:<Vault-Pfad>“, nicht im Vault).
 import { isInside, movePath } from "./tree";
@@ -9,7 +9,8 @@ export type ReiterInhalt =
   | { art: "seite"; pfad: string }
   | { art: "datenbank"; pfad: string }
   | { art: "notizbuch"; pfad: string }
-  | { art: "bausteine" };
+  | { art: "bausteine" }
+  | { art: "pomodoro" };
 
 /** Scrollposition eines Reiters: Inhaltsfläche, Code-Editor und Vorschau in „Geteilt“ (Pixel). */
 export interface ReiterScroll {
@@ -162,7 +163,7 @@ interface Gemerkt {
 function gueltigerInhalt(wert: unknown): ReiterInhalt | null {
   if (wert === null || typeof wert !== "object") return null;
   const inhalt = wert as Record<string, unknown>;
-  if (inhalt.art === "start" || inhalt.art === "bausteine") return { art: inhalt.art };
+  if (inhalt.art === "start" || inhalt.art === "bausteine" || inhalt.art === "pomodoro") return { art: inhalt.art };
   if ((inhalt.art === "seite" || inhalt.art === "datenbank" || inhalt.art === "notizbuch") && typeof inhalt.pfad === "string" && inhalt.pfad !== "") {
     return { art: inhalt.art, pfad: inhalt.pfad };
   }

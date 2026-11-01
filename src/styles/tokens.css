@@ -279,6 +279,16 @@
   --radius-handy-karte: 14px;
   --radius-handy-leiste: 18px;
   --radius-handy-knopf: 12px;
+  /* Pomodoro (Etappe 23): Ansicht, Ring (Strichbreite in Einheiten des SVG, Ring 120 breit) und Mini-Timer */
+  --pomodoro-width: 560px;
+  --size-pomodoro-ring: 288px;
+  --size-pomodoro-ring-handy: 252px;
+  --pomodoro-ring-strich: 4;
+  --font-size-pomodoro-zeit: 56px;
+  --font-size-pomodoro-zeit-handy: 48px;
+  --size-mini-timer: 34px;
+  --size-handy-mini-timer: 48px;
+  --size-mini-timer-balken: 2px;
   /* Schalter (an/aus) */
   --size-switch-width: 40px;
   --size-switch-height: 24px;

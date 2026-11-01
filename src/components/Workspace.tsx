@@ -1,5 +1,5 @@
-// Arbeitsbereich eines geöffneten Vaults: Sidebar links, rechts Reiter mit Startseite, Seite, Datenbank, Notizbuch
-// oder Bausteinen. Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen, anheften) und die Meldungen des
+// Arbeitsbereich eines geöffneten Vaults: Sidebar links, rechts Reiter mit Startseite, Seite, Datenbank, Notizbuch,
+// Bausteinen oder dem Werkzeug „Pomodoro“. Hier laufen alle Aktionen zusammen (anlegen, umbenennen, löschen, anheften) und die Meldungen des
 // Dateiwächters. Die Reiter-Logik steht in src/lib/reiter.ts; angezeigt wird immer nur der aktive Reiter.
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -7,12 +7,15 @@ import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, X } fro
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WikiLinkContext, type WikiLinkActions } from "../editor/wikilink";
 import { AutoSaver, errorMessage, speicherZustandZuruecksetzen } from "../lib/autosave";
+import { ERKLAERUNG, erlaubnisVorDemStart, HINWEIS_OHNE_ERLAUBNIS } from "../lib/benachrichtigungen";
 import { instantiateHtmlTemplate, isHtmlPath, pathMapper, readHead, rewriteReferences, setTitle } from "../lib/html";
 import { allPages, linkPageName, linkTargetFor, renamedTarget, resolveLink, rewriteLinks, type PageRef } from "../lib/links";
 import { today } from "../lib/calendar";
 import { createDatabaseConfig, VIEWS_FILE, type DatabaseConfig } from "../lib/database";
 import { readFavorites, removeFromFavorites, renameInFavorites, toggleFavorite, withFavorites } from "../lib/favorites";
 import { pageIcons, schnellNotiz } from "../lib/home";
+import { einstellungenLesen, mitEinstellungen, monatVon, sessionZeile, type PomodoroEinstellungen } from "../lib/pomodoro";
+import { pomodoro } from "../lib/pomodoro-timer";
 import { DEFAULT_STATUS_OPTIONS } from "../lib/properties";
 import { instantiateTemplate, TEMPLATES_DIR, type IndexEntry } from "../lib/search";
 import {
@@ -35,6 +38,7 @@ import {
 } from "../lib/reiter";
 import { ScrollGedaechtnisContext, scrollWiederherstellen, type ScrollGedaechtnis } from "../lib/scroll-gedaechtnis";
 import { storedEingeklappt, storeEingeklappt, useEingeklappt, useSeitenleisteSeite } from "../lib/seitenleiste";
+import { mitSeitenId, seitenId } from "../lib/seiten-id";
 import { useVaultSettings } from "../lib/settings";
 import { getFrontmatterField, splitFrontmatter } from "../markdown/frontmatter";
 import { childrenOf, findNode, isInside, namensKonflikt, pageTitle, parentDir, sortTree, uniqueName } from "../lib/tree";
@@ -51,11 +55,13 @@ import {
   dateiBase64,
   deleteEntry,
   exportSchreiben,
+  hinweisZeigen,
   imExplorerZeigen,
   listEigeneBausteine,
   pickExportTarget,
   listTree,
   onVaultChanged,
+  pomodoroAnhaengen,
   readPage,
   moveEntry,
   renameEntry,
@@ -70,6 +76,8 @@ import { MoveDialog, QuickSwitcher, SearchDialog, SettingsDialog, TemplatePicker
 import { HomePage } from "./HomePage";
 import { Navigationsleiste, type NavZiel } from "./Navigationsleiste";
 import { BausteinBibliothek } from "./BausteinBibliothek";
+import { MiniTimer, usePomodoroAktiv } from "./MiniTimer";
+import { PomodoroView } from "./PomodoroView";
 import { HtmlPageView } from "./HtmlPageView";
 import { NotizbuchView } from "./NotizbuchView";
 import { PageView } from "./PageView";
@@ -117,6 +125,10 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   const notebook = aktiv.inhalt.art === "notizbuch" ? aktiv.inhalt.pfad : null;
   /** Bereich „Bausteine“ (Bibliothek und Hilfe) ist offen. */
   const library = aktiv.inhalt.art === "bausteine";
+  /** Werkzeug „Pomodoro“ ist offen. */
+  const pomodoroOffen = aktiv.inhalt.art === "pomodoro";
+  /** Ein Pomodoro läuft oder ist pausiert: Mini-Timer zeigen (außer in der Ansicht selbst). */
+  const miniTimer = usePomodoroAktiv() && !pomodoroOffen;
   const [externalVersion, setExternalVersion] = useState(0);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -157,7 +169,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     | { kind: "quick" }
     | { kind: "search"; query?: string }
     | { kind: "template"; dir: string }
-    | { kind: "settings" }
+    | { kind: "settings"; start?: "pomodoro" }
     | { kind: "move"; node: TreeNode }
     | null
   >(null);
@@ -175,6 +187,31 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     vaultSettings.update((settings) => withFavorites(settings, change(readFavorites(settings))));
   const reloadConfigRef = useRef(schemas.reloadConfig);
   reloadConfigRef.current = schemas.reloadConfig;
+
+  // Pomodoro: Der Timer (src/lib/pomodoro-timer.ts) lebt außerhalb dieser Ansicht. Sobald die Einstellungen des Vaults
+  // gelesen sind, meldet sich der Vault an: Abgelaufenes wird abgeschlossen, wartende Sessions werden geschrieben.
+  const pomodoroEinstellungen = useMemo(() => einstellungenLesen(vaultSettings.settings), [vaultSettings.settings]);
+  const pomodoroEinstellungenRef = useRef(pomodoroEinstellungen);
+  pomodoroEinstellungenRef.current = pomodoroEinstellungen;
+  useEffect(() => {
+    if (!vaultSettings.geladen) return;
+    void pomodoro.anmelden({
+      vault: vault.root,
+      einstellungen: pomodoroEinstellungenRef.current,
+      schreiben: (session) => pomodoroAnhaengen(monatVon(session.start), sessionZeile(session)),
+      // Vor dem ersten Timer einmal erklären und nach der Erlaubnis für Benachrichtigungen fragen (Android 13+).
+      vorStart: async () => {
+        const { hinweis } = await erlaubnisVorDemStart(() => hinweisZeigen(ERKLAERUNG, "Benachrichtigungen"));
+        if (hinweis) setNotice({ kind: "info", text: HINWEIS_OHNE_ERLAUBNIS });
+      },
+      onFehler: showError,
+    });
+    return () => pomodoro.abmelden(vault.root);
+  }, [vaultSettings.geladen, vault.root, showError]);
+  useEffect(() => {
+    if (vaultSettings.geladen) pomodoro.einstellungenSetzen(pomodoroEinstellungen);
+  }, [vaultSettings.geladen, pomodoroEinstellungen]);
+  const pomodoroEinstellungenSetzen = (einstellungen: PomodoroEinstellungen) => void vaultSettings.update((settings) => mitEinstellungen(settings, einstellungen));
 
   // Hinweise verschwinden nach einigen Sekunden von selbst, Fehler bleiben bis zum Schließen stehen.
   useEffect(() => {
@@ -440,6 +477,44 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
   };
 
   const openLibrary = (neu = false) => oeffnenIn({ art: "bausteine" }, neu);
+
+  /**
+   * Werkzeug „Pomodoro“: im aktuellen Reiter, Strg+Klick in einem neuen. `vorhandener` (Mini-Timer, „für diese Seite
+   * starten“): Ist es schon in einem Reiter offen, dorthin wechseln.
+   */
+  const openPomodoro = (neu = false, vorhandener = false) =>
+    wechsel((stand) => {
+      const offen = vorhandener && !neu ? stand.reiter.find((reiter) => reiter.inhalt.art === "pomodoro") : undefined;
+      return offen ? aktivieren(stand, offen.id) : oeffnen(stand, { art: "pomodoro" }, { neuerReiter: neu, ohneLeiste: ohneLeisteRef.current });
+    });
+
+  /**
+   * „Pomodoro für diese Seite starten“: verknüpft den Timer über die feste id der Seite (nicht den Pfad). Fehlt die
+   * id, bekommt die Seite sie jetzt (nur dieses Feld bzw. Tag wird geschrieben). Am PC öffnet sich die Ansicht in
+   * einem eigenen Reiter, damit die Seite offen bleibt; ein noch nicht gestarteter Fokus startet.
+   */
+  const pomodoroFuerSeite = async (node: TreeNode) => {
+    if (node.kind !== "page") return;
+    try {
+      await saverRef.current?.flush();
+      const inhalt = await readPage(node.path);
+      let id = seitenId(node.path, inhalt);
+      if (!id) {
+        id = crypto.randomUUID();
+        await writePage(node.path, mitSeitenId(node.path, inhalt, id));
+        if (offeneSeite() === node.path) setExternalVersion((version) => version + 1);
+        setVaultVersion((version) => version + 1);
+      }
+      pomodoro.seiteSetzen(id);
+      const vorhanden = standRef.current.reiter.some((reiter) => reiter.inhalt.art === "pomodoro");
+      await openPomodoro(!ohneLeisteRef.current && !vorhanden, true);
+      // Nur ein bereitstehender Fokus startet von selbst (eine anstehende Pause entscheidet man selbst).
+      const { timer } = pomodoro.stand();
+      if (timer.lauf === "bereit" && timer.phase === "fokus") void pomodoro.starten();
+    } catch (error) {
+      showError(errorMessage(error));
+    }
+  };
 
   /** Macht einen Ordner zur Datenbank: legt _ansichten.yaml mit den erkannten Eigenschaften an. */
   const convertToDatabase = async (folder: string) => {
@@ -910,6 +985,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
         onNotebook: () => void (currentNode.notebook ? openNotebook(currentNode.path) : convertToNotebook(currentNode.path)),
         onConvertToHtml: () => void convertToHtml(currentNode),
         onExport: () => void exportPage(currentNode),
+        onPomodoro: currentNode.kind === "page" ? () => void pomodoroFuerSeite(currentNode) : undefined,
         onReveal: explorer ? () => void revealInExplorer(currentNode.path) : undefined,
       }
     : null;
@@ -919,7 +995,16 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
     dialog?.kind === "settings" ? "einstellungen" : dialog?.kind === "quick" || dialog?.kind === "search" ? "suchen" : menuOpen ? "seiten" : homeActive ? "start" : null;
 
   return (
-    <div className={cx("workspace", `seitenleiste-${seitenleisteSeite}`, fensterrahmen && "hat-fensterleiste", eingeklappt && "is-eingeklappt", schmal && "is-handy")}>
+    <div
+      className={cx(
+        "workspace",
+        `seitenleiste-${seitenleisteSeite}`,
+        fensterrahmen && "hat-fensterleiste",
+        eingeklappt && "is-eingeklappt",
+        schmal && "is-handy",
+        schmal && miniTimer && "hat-mini-timer",
+      )}
+    >
       <div id="seitenleiste" className={cx("sidebar-shell", menuOpen && "open")} inert={schmal && !menuOpen ? true : undefined}>
         <Sidebar
           vaultName={vault.name}
@@ -940,6 +1025,9 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           onOpenHome={() => void openHome()}
           libraryActive={library}
           onOpenLibrary={(neu) => void openLibrary(neu)}
+          pomodoroActive={pomodoroOffen}
+          onOpenPomodoro={(neu) => void openPomodoro(neu)}
+          onPomodoroForPage={(node) => void pomodoroFuerSeite(node)}
           onConvertToDatabase={(path) => void convertToDatabase(path)}
           onOpenNotebook={(path, neu) => void openNotebook(path, neu)}
           onConvertToNotebook={(path) => void convertToNotebook(path)}
@@ -973,6 +1061,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
         >
           {seitenleisteSeite === "rechts" ? eingeklappt ? <PanelRightOpen /> : <PanelRightClose /> : eingeklappt ? <PanelLeftOpen /> : <PanelLeftClose />}
         </IconButton>
+        {/* Eingeklappt steht der Mini-Timer in der oberen Leiste (sonst unten in der Seitenleiste). */}
+        {eingeklappt && !schmal && miniTimer && <MiniTimer ort="leiste" onOeffnen={(neu) => void openPomodoro(neu, true)} />}
       </Fensterleiste>
       {/* Handy: Hinter der Ansicht „Seiten“ ist der Inhalt nicht erreichbar (weder per Tippen noch per Tab). */}
       <main className="main" inert={schmal && menuOpen ? true : undefined}>
@@ -987,7 +1077,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
         <div className="main-scroll" ref={mainScroll}>
         <SeitenKopf
           ordner={current ? ancestorNames(current) : []}
-          titel={current ? pageTitle(current) : vaultMissing ? vault.name : library ? "Bausteine" : "Startseite"}
+          titel={current ? pageTitle(current) : vaultMissing ? vault.name : library ? "Bausteine" : pomodoroOffen ? "Pomodoro" : "Startseite"}
           istSeite={page !== null}
           geaendert={page ? index.find((entry) => entry.path === page.path)?.modified : undefined}
           node={currentNode}
@@ -1013,6 +1103,14 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           </div>
         ) : !baumGeladen && aktiv.inhalt.art !== "start" ? null : library ? (
           <BausteinBibliothek key={aktiv.ansicht} eigene={eigene} onEigeneChanged={loadEigene} onError={showError} />
+        ) : pomodoroOffen ? (
+          <PomodoroView
+            key={aktiv.ansicht}
+            index={index}
+            handy={schmal}
+            onOpenPage={(path, neu) => void openPage(path, false, neu)}
+            onEinstellungen={() => setDialog({ kind: "settings", start: "pomodoro" })}
+          />
         ) : notebook ? (
           <NotizbuchView
             key={aktiv.ansicht}
@@ -1101,6 +1199,7 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
                     },
                     onRevealVault: explorer ? () => void revealInExplorer("") : undefined,
                     onOpenSettings: () => setDialog({ kind: "settings" }),
+                    onOpenPomodoro: () => void openPomodoro(false, true),
                   }
                 : undefined
             }
@@ -1124,6 +1223,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
           </IconButton>
         </div>
       )}
+      {/* Handy: schmale Leiste über der Navigationsleiste (beim Schreiben ausgeblendet wie die Navigationsleiste). */}
+      {schmal && miniTimer && !menuOpen && <MiniTimer ort="handy" onOeffnen={() => void openPomodoro(false, true)} />}
       {schmal && (
         <Navigationsleiste
           aktiv={navAktiv}
@@ -1199,6 +1300,8 @@ export function Workspace({ vault, platform, onSwitchVault }: Props) {
       {dialog?.kind === "settings" && (
         <SettingsDialog
           handy={schmal}
+          start={dialog.start}
+          pomodoro={{ einstellungen: pomodoroEinstellungen, onChange: pomodoroEinstellungenSetzen }}
           vaultName={vault.name}
           vaultRoot={vault.root}
           onClose={() => setDialog(null)}

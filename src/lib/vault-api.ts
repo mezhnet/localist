@@ -4,7 +4,7 @@
 import { Channel, convertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { EigenerBaustein } from "./eigene-bausteine";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { ask, open, save } from "@tauri-apps/plugin-dialog";
+import { ask, message, open, save } from "@tauri-apps/plugin-dialog";
 
 /** Geöffneter Vault: absoluter Pfad und Anzeigename (Ordnername). */
 export interface VaultInfo {
@@ -265,4 +265,9 @@ export async function pickVaultFolder(): Promise<string | null> {
 /** Ja/Abbrechen-Dialog, z. B. vor dem Löschen. */
 export function confirmAction(message: string, title = "Bestätigung"): Promise<boolean> {
   return ask(message, { title, kind: "warning", okLabel: "Ja", cancelLabel: "Abbrechen" });
+}
+
+/** Ein Satz zur Erklärung mit „Weiter“ (z. B. vor der Frage nach Benachrichtigungen). */
+export async function hinweisZeigen(text: string, title: string): Promise<void> {
+  await message(text, { title, kind: "info", okLabel: "Weiter" });
 }
